@@ -1,0 +1,125 @@
+#ifndef ELECTROMAGNETIC_H_
+#define ELECTROMAGNETIC_H_
+
+#include <complex>
+#include "constants.h"
+
+using std::complex;
+
+/**
+ * @brief The ElectroMagnetic class implements EM properties for scatterers.
+ * The ElectroMagnetic class can be used to create a collection of related
+ * electromagnetic properties for scatterers which are either directly
+ * initialized or calculated from existing data.
+ */
+
+class ElectroMagnetic {
+private:
+	//
+public:
+	/**
+	 * Default constructor for ElectroMagnetic.
+	 * Initializes epsilon, mu, epsilon_r and mu_r with vacuum values.
+	 */
+	ElectroMagnetic();
+
+	/**
+	 * Initialization constructor for ElectroMagnetic.
+	 * Initializes epsilon_r and mu_r with RELATIVE values by calling init_r.
+	 * @param epsilon_r_ the complex relative value for permittivity.
+	 * @param mu_r_ the complex relative value for permeability.
+	 * @see init_r()
+	 */
+	ElectroMagnetic(complex<double> epsilon_r_, complex<double> mu_r_);
+
+	/**
+	 * Default destructor for ElectroMagnetic.
+	 */
+	virtual ~ElectroMagnetic();
+	//Model variables
+	int modelType;	/**< Mode being used. Currently supports 0 - fixed, 1 - Sellmeier, 2 - Drude. */
+	double B1;
+	double C1;
+	double B2;
+	double C2;
+	double B3;
+	double C3;
+	double B4;
+	double C4;
+	double B5;
+	double C5;
+	double lambda;
+	complex<double> plasma_freq;
+	complex<double> damping_freq;
+
+	//Fundamental Frequency variables
+	complex<double> epsilon; 	/**< The absolute electric permittivity. */
+	complex<double> mu; 		/**< The absolute magnetic permeability. */
+	complex<double> epsilon_r; 	/**< The relative electric permittivity. */
+	complex<double> mu_r; 		/**< The relative magnetic permeability. */
+
+	//Second Harmonic variables
+	complex<double> a_SH;			/**< The a Non-Linear coefficient (cfn13arx). */
+	complex<double> b_SH;			/**< The b Non-Linear coefficient (cfn13arx). */
+	complex<double> d_SH;			/**< The d Non-Linear coefficient (cfn13arx). */
+	complex<double> epsilon_SH;		/**< The absolute second harmonic electric permittivity. */
+	complex<double> mu_SH;			/**< The absolute second harmonic magnetic permeability. */
+	complex<double> epsilon_r_SH;	/**< The relative second harmonic electric permittivity. */
+	complex<double>mu_r_SH;			/**< The relative second harmonic magnetic permeability. */
+
+	/**
+	 * Initialization function for ElectroMagnetic.
+	 * Initializes epsilon and mu with ABSOLUTE values. Calculates relative
+	 * values. Set non-linear values to Bachelier values.
+	 * @param epsilon_ the complex absolute value for permittivity.
+	 * @param mu_ the complex absolute value for permeability.
+	 * @see ElectroMagnetic()
+	 * @see init_r()
+	 */
+	void init(complex<double> epsilon_, complex<double> mu_);
+
+	/**
+	 * Initialization function for ElectroMagnetic.
+	 * Initializes epsilon_r and mu_r with RELATIVE values. Calculate absolute
+	 * values. Set non-linear values to Bachelier values.
+	 * @param epsilon_r_ the complex relative value for permittivity.
+	 * @param mu_r_ the complex relative value for permeability.
+	 * @see ElectroMagnetic()
+	 * @see init()
+	 */
+	void init_r(complex<double> epsilon_r_, complex<double> mu_r_);
+
+	/**
+	 * Initialization function for Electromagnetic using the Sellmeier equation.
+	 * DOES NOT CALCULATE THE VALUES! USE UPDATE FOR THAT!
+	 * @param B1_ the Sellmeier B1 parameter.
+	 * @param C1_ the Sellmeier C1 parameter.
+	 * @param B2_ the Sellmeier B2 parameter.
+	 * @param C2_ the Sellmeier C2 parameter.
+	 * @param B3_ the Sellmeier B3 parameter.
+	 * @param C3_ the Sellmeier C3 parameter.
+	 * @param mu_r_ the magnetic permeabilitty (relative).
+	 * @param lambda_ the simulation wavelength.
+	 */
+	void initSellmeier_r(double B1_, double C1_, double B2_, double C2_, double B3_, double C3_, double B4_, double C4_, double B5_, double C5_, complex<double> mu_r_);
+
+	void initDrudeModel_r(complex<double> plasma_frequency_, complex<double> damping_frequency_, complex<double> mu_r_);
+
+	/**
+	 * Populates the Sellmeier coefficients.
+	 */
+	void populateSellmeier();
+
+	void populateDrudeModel();
+
+	/**
+	 * Updates the ElectroMagnetic object to a new wavelength.
+	 * @param lambda_ the new wavelength.
+	 */
+	void update(double lambda_);
+};
+
+#endif /* ELECTROMAGNETIC_H_ */
+
+
+
