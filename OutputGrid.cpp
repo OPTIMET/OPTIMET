@@ -141,23 +141,30 @@ void OutputGrid::pushData(SphericalP<complex<double> > data_)
 		// Select sequence of points in the file dataspace(fid).
 		// Write new selection of points to the dataset(dataset).
 		// Repeat for all six components.
+		double real, imag;
+		real = data_.rrr.real();
 		H5Sselect_elements(vecDSpaceId[0], H5S_SELECT_SET, 1, (const hsize_t *)coord);
-		H5Dwrite(vecDataId[0], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[0], H5P_DEFAULT, &data_.rrr.real());
+		H5Dwrite(vecDataId[0], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[0], H5P_DEFAULT, &real);
 
+		imag = data_.rrr.imag();
 		H5Sselect_elements(vecDSpaceId[1], H5S_SELECT_SET, 1, (const hsize_t *)coord);
-		H5Dwrite(vecDataId[1], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[1], H5P_DEFAULT, &data_.rrr.imag());
+		H5Dwrite(vecDataId[1], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[1], H5P_DEFAULT, &imag);
 
+		real = data_.the.real();
 		H5Sselect_elements(vecDSpaceId[2], H5S_SELECT_SET, 1, (const hsize_t *)coord);
-		H5Dwrite(vecDataId[2], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[2], H5P_DEFAULT, &data_.the.real());
+		H5Dwrite(vecDataId[2], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[2], H5P_DEFAULT, &real);
 
+		imag = data_.the.imag();
 		H5Sselect_elements(vecDSpaceId[3], H5S_SELECT_SET, 1, (const hsize_t *)coord);
-		H5Dwrite(vecDataId[3], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[3], H5P_DEFAULT, &data_.the.imag());
+		H5Dwrite(vecDataId[3], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[3], H5P_DEFAULT, &imag);
 
+		real = data_.phi.real();
 		H5Sselect_elements(vecDSpaceId[4], H5S_SELECT_SET, 1, (const hsize_t *)coord);
-		H5Dwrite(vecDataId[4], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[4], H5P_DEFAULT, &data_.phi.real());
+		H5Dwrite(vecDataId[4], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[4], H5P_DEFAULT, &real);
 
+		imag = data_.phi.imag();
 		H5Sselect_elements(vecDSpaceId[5], H5S_SELECT_SET, 1, (const hsize_t *)coord);
-		H5Dwrite(vecDataId[5], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[5], H5P_DEFAULT, &data_.phi.imag());
+		H5Dwrite(vecDataId[5], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[5], H5P_DEFAULT, &imag);
 
 		//Close the auxiliary dataspace
 		H5Sclose(mid2);

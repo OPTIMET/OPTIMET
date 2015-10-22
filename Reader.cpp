@@ -105,8 +105,8 @@ int Reader::readGeometry()
 				//Read mu first
 				if(!strcmp(node.child("mu").attribute("type").value(), "relative"))
 				{
-					aux_mu.real() = node.child("mu").attribute("value.real").as_double();
-					aux_mu.imag() = node.child("mu").attribute("value.imag").as_double();
+					aux_mu.real(node.child("mu").attribute("value.real").as_double());
+					aux_mu.imag(node.child("mu").attribute("value.imag").as_double());
 				}
 
 				//Now the two epsilon models
@@ -114,8 +114,8 @@ int Reader::readGeometry()
 				if(!strcmp(node.child("epsilon").attribute("type").value(), "relative"))
 				{
 					// Static values
-					aux_epsilon.real() = node.child("epsilon").attribute("value.real").as_double();
-					aux_epsilon.imag() = node.child("epsilon").attribute("value.imag").as_double();
+					aux_epsilon.real(node.child("epsilon").attribute("value.real").as_double());
+					aux_epsilon.imag(node.child("epsilon").attribute("value.imag").as_double());
 					work_object.elmag.init_r(aux_epsilon, aux_mu);
 				}
 
@@ -123,8 +123,8 @@ int Reader::readGeometry()
 				{
 					//Drude model
 //					input_frequency = node.child("epsilon").child("parameters").attribute("input_frequency").as_double();
-					plasma_freq.real() = node.child("epsilon").child("parameters").attribute("plasma_frequency").as_double();
-					damping_freq.real() = node.child("epsilon").child("parameters").attribute("damping_frequency").as_double();
+					plasma_freq.real(node.child("epsilon").child("parameters").attribute("plasma_frequency").as_double());
+					damping_freq.real(node.child("epsilon").child("parameters").attribute("damping_frequency").as_double());
 					damping_freq*=complex<double>(0., 1.);
 	//				aux_epsilon = 1. - ( (plasma_freq*plasma_freq) / (input_freq*(input_freq+damping_freq)) );
 		//			work_object.elmag.init_r(aux_epsilon, aux_mu);
@@ -176,10 +176,10 @@ int Reader::readGeometry()
         {
 			complex<double> aux_epsilon = complex<double>(1.0, 0.);
 			complex<double> aux_mu = complex<double>(1.0, 0.);
-            aux_epsilon.real() = geo_node.child("background").child("epsilon").attribute("value.real").as_double();
-			aux_epsilon.imag() = geo_node.child("background").child("epsilon").attribute("value.imag").as_double();
-			aux_mu.real() = geo_node.child("background").child("mu").attribute("value.real").as_double();
-			aux_mu.imag() = geo_node.child("background").child("mu").attribute("value.imag").as_double();
+            aux_epsilon.real(geo_node.child("background").child("epsilon").attribute("value.real").as_double());
+			aux_epsilon.imag(geo_node.child("background").child("epsilon").attribute("value.imag").as_double());
+			aux_mu.real(geo_node.child("background").child("mu").attribute("value.real").as_double());
+			aux_mu.imag(geo_node.child("background").child("mu").attribute("value.imag").as_double());
 			run->geometry.bground.init_r(aux_epsilon, aux_mu);
        }
 //        else if(strcmp(geo_node.child("background").attribute("type").value(), "relative"))
