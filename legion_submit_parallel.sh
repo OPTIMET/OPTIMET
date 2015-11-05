@@ -31,21 +31,16 @@
 # Replace "<your_UCL_id>" with your UCL user ID :)
 #$ -wd /home/uceealj/Scratch/output/0_scaling/2_weak_scaling/2_Np2/64_Np64
 
-# Set up teh desired module environment 
-# compilers
-module unload compilers
-module load compilers/intel/13.0/028
-module load compilers/intel/13.0/028_cxx11
+# Set up teh desired module environment
+module purge
+# compilers/MKL
+module load gcc-libs compilers/intel
 # MPI
-module unload mpi
-module load mpi/intel/4.1.0/024/testing
-# MKL
-module unload mkl
-module load mkl/11.0/001
+module load mpi/intel/2015/update3/intel
 # GSL
-module load gsl/1.15/intel
+module load gsl
 # HDF5
-module load hdf/5-1.8.7/intel
+module load hdf/5-1.8.15-p1-impi
 
 # 9. Run the application.
 gerun $HOME/1_AJ/3_OPTIMET/1_OPTIMET_Parallel_test/5_serial_to_parallel/2_INTEL/0_test_jobs/2_parallel/2_weak_scaling/2_Np2/64_Np64/Optimet3DP
