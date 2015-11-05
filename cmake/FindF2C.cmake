@@ -1,5 +1,5 @@
 find_path(F2C_INCLUDE_DIR NAMES f2c.h)
-find_library(F2C_LIBRARY NAMES f2c)
+find_library(F2C_LIBRARY NAMES libf2c.a f2c)
 
 set(F2C_INCLUDE_DIRS ${F2C_INCLUDE_DIR})
 set(F2C_LIBRARIES ${F2C_LIBRARY})
