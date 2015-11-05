@@ -682,8 +682,8 @@ int main(int argc, char *argv[])
 		Qext=complex<double>(0.0, 0.0);
 		Qabs=complex<double>(0.0, 0.0);
 		Qsca=complex<double>(0.0, 0.0);
-		complex<double> Cext_E[Cext_nMax+1];
-		complex<double> Cext_H[Cext_nMax+1];
+		std::vector<complex<double> > Cext_E(Cext_nMax+1);
+		std::vector<complex<double> > Cext_H(Cext_nMax+1);
 		int cext_opi=0;
 		for(cext_opi=0; cext_opi<=Cext_nMax; cext_opi++){
 			Cext_E[cext_opi]=complex<double>(0.0, 0.0);
