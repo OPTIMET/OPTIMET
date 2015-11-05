@@ -1,17 +1,22 @@
 cmake_minimum_required(VERSION 3.2)
+project(Optimet3DP)
 
-project(Optimet3D)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
-
-find_package(GSL REQUIRED)
+find_package(MKL REQUIRED)
 find_package(HDF5 REQUIRED)
-find_package(Armadillo REQUIRED)
+find_package(GSL REQUIRED)
+find_package(MPI REQUIRED)
 find_package(F2C REQUIRED)
 
-include_directories(${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${ARMADILLO_INCLUDE_DIRS} ${F2C_INCLUDE_DIRS})
+set(MKL_LIBRARIES iomp5 mkl_scalapack_lp64 mkl_intel_lp64 mkl_core
+    mkl_intel_thread mkl_blacs_intelmpi_lp64 pthread m)
 
-file(GLOB SRC ${CMAKE_SOURCE_DIR}/*.c* ${CMAKE_SOURCE_DIR}/pugi/*.c*)
+include_directories(${MKL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${GSL_INCLUDE_DIRS}
+                    ${MPI_INCLUDE_DIRS} ${F2C_INCLUDE_DIRS})
 
-add_executable(Optimet3D ${SRC})
-target_link_libraries(Optimet3D ${GSL_LIBRARIES} ${HDF5_LIBRARIES} ${ARMADILLO_LIBRARIES} ${F2C_LIBRARIES})
+file(GLOB SRC ${CMAKE_SOURCE_DIR}/*.c*)
+
+add_executable(Optimet3DP ${SRC})
+target_link_libraries(Optimet3DP ${MKL_LIBRARIES} ${HDF5_LIBRARIES}
+                      ${GSL_LIBRARIES} ${MPI_LIBRARIES} ${F2C_LIBRARIES})

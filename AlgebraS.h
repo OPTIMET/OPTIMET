@@ -1,8 +1,10 @@
 #ifndef ALGEBRAS_H_
 #define ALGEBRAS_H_
 #include "Tools.h"
-#include <armadillo>
+//#include <armadillo>
 #include <complex>
+#define MKL_Complex16 std::complex<double>
+#include "externals.h"
 
 using std::complex;
 
@@ -32,7 +34,11 @@ public:
 	 * @param b the b vector (free terms).
 	 * @param x the x vector (solution return).
 	 */
-	static void solveMatrixVector(complex<double> **A, int rows_A_, int cols_A_, complex<double> *b, complex<double> *x);
+	static void solveMatrixVector		(complex<double> **A, int rows_A_, int cols_A_, complex<double> *b, complex<double> *x);
+
+	static void solveMatrixVectorBP_AJ	(complex<double> **A, int rows_A_, int cols_A_, complex<double> *b, complex<double> *x, int pMax_, int noRowBlocks_, int noColBlocks_);
+
+	static void solveMatrixVectorBP_CB(complex<double> **A, int rows_A_, int cols_A_, complex<double> *b, complex<double> *x, int nMax_, int noColBlocks_, int context_);
 };
 
 #endif /* ALGEBRA__H_ */

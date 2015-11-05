@@ -156,27 +156,27 @@ int Geometry::getTLocal(double omega_, int objectIndex_, int nMax_, complex<doub
 	J_n.init(r_0, 0, 0, nMax_);
 	if(J_n.populate())
 	{
-		cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!"<<endl;
+		cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!";
 		return 1;
 	}
 
 	Jrho_n.init(rho*r_0, 0, 0, nMax_);
 	if(Jrho_n.populate())
 	{
-		cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!"<<endl;
+		cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!";
 		return 1;
 	}
 
 	H_n.init(r_0, 1, 0, nMax_);
 	if(H_n.populate())
 	{
-		cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!"<<endl;
+		cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!";
 	}
 
 	Hrho_n.init(rho*r_0, 1, 0, nMax_);
 	if(Hrho_n.populate())
 	{
-		cerr << "Error computing Hankel functions. Amos said: " << Hrho_n.ierr << "!"<<endl;
+		cerr << "Error computing Hankel functions. Amos said: " << Hrho_n.ierr << "!";
 	}
 
 	CompoundIterator p;
@@ -257,14 +257,14 @@ int Geometry::getNLSources(double omega_, int objectIndex_, int nMax_, complex<d
 	J_n.init(x_j2, 0, 0, nMax_);
 	if(J_n.populate())
 	{
-		cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!"<<endl;
+		cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!";
 		return 1;
 	}
 
 	H_n.init(x_b2, 1, 0, nMax_);
 	if(H_n.populate())
 	{
-		cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!"<<endl;
+		cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!";
 	}
 
 	CompoundIterator p;
@@ -318,14 +318,14 @@ int Geometry::getIaux(double omega_, int objectIndex_, int nMax_, complex<double
 	J_n.init(r_0, 0, 0, nMax_);
 	if(J_n.populate())
 	{
-		cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!"<<endl;
+		cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!";
 		return 1;
 	}
 
 	Jrho_n.init(rho*r_0, 0, 0, nMax_);
 	if(Jrho_n.populate())
 	{
-		cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!"<<endl;
+		cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!";
 		return 1;
 	}
 
@@ -334,7 +334,7 @@ int Geometry::getIaux(double omega_, int objectIndex_, int nMax_, complex<double
 	H_n.init(r_0, 1, 0, nMax_);
 	if(H_n.populate())
 	{
-		cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!"<<endl;
+		cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!";
 	}
 
 	CompoundIterator p;
@@ -386,14 +386,14 @@ int  Geometry::getCabsAux (double omega_, int objectIndex_, int nMax_, double *C
 	J_n.init(r_0, 0, 0, nMax_);
 	if(J_n.populate())
 	{
-		cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!"<<endl;
+		cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!";
 		return 1;
 	}
 
 	Jrho_n.init(rho*r_0, 0, 0, nMax_);
 	if(Jrho_n.populate())
 	{
-		cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!"<<endl;
+		cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!";
 		return 1;
 	}
 
@@ -402,7 +402,7 @@ int  Geometry::getCabsAux (double omega_, int objectIndex_, int nMax_, double *C
 	H_n.init(r_0, 1, 0, nMax_);
 	if(H_n.populate())
 	{
-		cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!"<<endl;
+		cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!";
 	}
 
 	CompoundIterator p;

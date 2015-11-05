@@ -3,8 +3,8 @@
 
 #include "Geometry.h"
 #include "Excitation.h"
-#include "Output.h"
-#include "OutputGrid.h"
+//#include "Output.h"
+//#include "OutputGrid.h"
 
 /**
  * The Run class implements a single instance of a run.
@@ -12,8 +12,15 @@
  * 	1. The Geometry - needed on all nodes so must be copied.
  * 	2. The Excitation - specific excitation data; iteration of wavelength,
  * 						etc. will be done using this.
- * 	3. The Solver - solves the problem.
- * 	4. The Result - the final data once request is processed.
+ * 	3. The Request - what do we want out of this? (uncertain)
+ * 	@todo Determine if Request should go into Case and implement.
+ * 	4. The Solution - the results of the computation (scattering coefficients,
+ * 		internal coefficients).
+ * 	@todo Implement the Solution class.
+ * 	5. The Solver - solves the problem (uncertain).
+ * 	@todo Determine best scenario for using Solver.
+ * 	6. The Result - the final data once request is processed (uncertain).
+ * 	@todo Determine how Result will work and if it's in Case or Simulation.
  */
 class Run
 {

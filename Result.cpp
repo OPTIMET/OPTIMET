@@ -101,6 +101,10 @@ void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<complex<double> >
 
 	if(intInd < 0) //Outside a sphere
 	{
+		/**
+		 * @todo: Optimize this for!
+		 */
+
 		if(!flagSH) //this a fundamental frequency result - calculate the incoming field
 		{
 			//Incoming field
@@ -232,10 +236,19 @@ void Result::getEHFields(Spherical<double> R_, SphericalP<complex<double> > &EFi
 	CompoundIterator p;
 
 	//Check for inner point and set to 0
+	/**
+	 * @todo: Find a more elegant way to do this.
+	 * @todo: Add internal field calculations.
+	*/
+
 	int intInd = geometry->checkInner(R_);
 
 	if(intInd < 0) //Outside a sphere
 	{
+		/**
+		 * @todo: Optimize this for!
+		 */
+
 		if(!flagSH) //this a fundamental frequency result - calculate the incoming field
 		{
 			//Incoming field
@@ -330,10 +343,19 @@ SphericalP<complex<double> > Result::getEFieldC(Spherical<double> R_, int projec
 	CompoundIterator p;
 
 	//Check for inner point and set to 0
+	/**
+	 * @todo: Find a more elegant way to do this.
+	 * @todo: Add internal field calculations.
+	*/
+
 	int intInd = geometry->checkInner(R_);
 
 	if(intInd < 0) //Outside a sphere
 	{
+		/**
+		 * @todo: Optimize this for!
+		 */
+
 		if(!flagSH) //this a fundamental frequency result - calculate the incoming field
 		{
 			//Incoming field
@@ -414,6 +436,9 @@ double Result::getExtinctionCrossSection()
 	int pMax = Tools::iteratorMax(nMax);
 
 	double Cext(0.);
+	/**
+	 * @todo: store the values of the incoming field coefficients and do not calculate them again.
+	 */
 	complex<double> *Q_local = new complex<double>[2*pMax];
 
 	for(int j=0; j<geometry->noObjects; j++)
@@ -458,7 +483,7 @@ double Result::getAbsorptionCrossSection()
 	delete [] Cabs_aux;
 	return ( 1 / (real(waveK) * real(waveK))) * Cabs;
 }
-
+/*
 int Result::setFields(OutputGrid oEGrid_, OutputGrid oHGrid_, int projection_)
 {
 	if(!initDone)
@@ -476,7 +501,7 @@ int Result::setFields(OutputGrid oEGrid_, OutputGrid oHGrid_, int projection_)
 	{
 		Rloc = oEGrid_.getPoint();
 		oHGrid_.getPoint();
-		cout << "Calculating fields for point " << oEGrid_.iterator+1 << " out of " << oEGrid_.gridPoints << endl;
+//		cout << "Calculating fields for point " << oEGrid_.iterator+1 << " out of " << oEGrid_.gridPoints << endl;
 
 		SphericalP<complex<double> > EField;
 		SphericalP<complex<double> > HField;
@@ -518,7 +543,7 @@ int Result::setFieldsModal(OutputGrid oEGrid_, OutputGrid oHGrid_, int projectio
 	}
 	return 0;
 }
-
+*/
 void Result::centerScattering()
 {
 	CompoundIterator p,q;
@@ -621,11 +646,20 @@ void Result::getEHFieldsContCheck(Spherical<double> R_, SphericalP<complex<doubl
 	CompoundIterator p;
 
 	//Check for inner point and set to 0
+	/**
+	 * @todo: Find a more elegant way to do this.
+	 * @todo: Add internal field calculations.
+	*/
+
 	int intInd = geometry->checkInner(R_);
 	intInd = inside_;
 
 	if(intInd < 0) //Outside a sphere
 	{
+		/**
+		 * @todo: Optimize this for!
+		 */
+
 		if(!flagSH) //this a fundamental frequency result - calculate the incoming field
 		{
 			//Incoming field
@@ -726,8 +760,8 @@ void Result::writeContinuityCheck(int objectIndex_)
 		ofstream H1_err_mag("H1_err_mag");
 		ofstream H2_err_mag("H2_err_mag");
 		ofstream H3_err_mag("H3_err_mag");
-		int max_ii = 180;					// theta observation range (increment by 1 degree) - [1, max_ii-1]
-		int max_jj = 180;					// phi   observation range (increment by 1 degree) - [1, max_jj-1]
+		int max_ii = 10;					// theta observation range (increment by 1 degree) - [1, max_ii-1]
+		int max_jj = 10;					// phi   observation range (increment by 1 degree) - [1, max_jj-1]
 		for(int ii=1; ii<=max_ii-1; ii++){
 			for(int jj=1; jj<=max_jj-1; jj++){
 

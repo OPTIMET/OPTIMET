@@ -37,20 +37,14 @@ public:
 	 */
 	virtual ~ElectroMagnetic();
 	//Model variables
-	int modelType;	/**< Mode being used. Currently supports 0 - fixed, 1 - Sellmeier, 2 - Drude. */
+	int modelType;	/**< Mode being used. Currently supports 0 - fixed, 1 - sellmeier. */
 	double B1;
 	double C1;
 	double B2;
 	double C2;
 	double B3;
 	double C3;
-	double B4;
-	double C4;
-	double B5;
-	double C5;
 	double lambda;
-	complex<double> plasma_freq;
-	complex<double> damping_freq;
 
 	//Fundamental Frequency variables
 	complex<double> epsilon; 	/**< The absolute electric permittivity. */
@@ -101,16 +95,12 @@ public:
 	 * @param mu_r_ the magnetic permeabilitty (relative).
 	 * @param lambda_ the simulation wavelength.
 	 */
-	void initSellmeier_r(double B1_, double C1_, double B2_, double C2_, double B3_, double C3_, double B4_, double C4_, double B5_, double C5_, complex<double> mu_r_);
-
-	void initDrudeModel_r(complex<double> plasma_frequency_, complex<double> damping_frequency_, complex<double> mu_r_);
+	void initSellmeier_r(double B1_, double C1_, double B2_, double C2_, double B3_, double C3_, double mu_r_);
 
 	/**
 	 * Populates the Sellmeier coefficients.
 	 */
 	void populateSellmeier();
-
-	void populateDrudeModel();
 
 	/**
 	 * Updates the ElectroMagnetic object to a new wavelength.
