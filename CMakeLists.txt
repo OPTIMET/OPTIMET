@@ -7,7 +7,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 find_package(GSL REQUIRED)
 find_package(HDF5 REQUIRED)
 find_package(Armadillo REQUIRED)
-find_package(f2c REQUIRED)
+find_package(F2C REQUIRED)
 
 include_directories(${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${ARMADILLO_INCLUDE_DIRS} ${F2C_INCLUDE_DIRS})
 
