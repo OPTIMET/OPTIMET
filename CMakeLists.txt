@@ -15,3 +15,13 @@ file(GLOB SRC ${CMAKE_SOURCE_DIR}/*.c* ${CMAKE_SOURCE_DIR}/pugi/*.c*)
 
 add_executable(Optimet3D ${SRC})
 target_link_libraries(Optimet3D ${GSL_LIBRARIES} ${HDF5_LIBRARIES} ${ARMADILLO_LIBRARIES} ${F2C_LIBRARIES})
+
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doxygen.config
+    ${CMAKE_CURRENT_BINARY_DIR}/doxygen.config @ONLY)
+  add_custom_target(doc ${DOXYGEN_EXECUTABLE}
+    ${CMAKE_CURRENT_BINARY_DIR}/doxygen.config
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating API documentation with Doxygen" VERBATIM)
+endif(DOXYGEN_FOUND)
