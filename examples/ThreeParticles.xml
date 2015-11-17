@@ -1,0 +1,39 @@
+<simulation>
+  <harmonics nmax="20" />
+</simulation>
+
+<source type="planewave">
+  <wavelength value="1460" />
+  <propagation theta="45" phi="90" />
+  <polarization Etheta.real="0.0" Etheta.imag="0.0"
+    Ephi.real="1.0" Ephi.imag="0.0" />
+</source>
+
+<geometry>
+  <object type="sphere">
+    <cartesian x="0.0" y="0.0" z="0.0" />
+    <properties radius="500.0" />
+    <epsilon type="relative" value.real="13.0" value.imag="0.0" />
+    <mu type="relative" value.real="1.0" value.imag="0.0" />
+  </object>
+    <object type="sphere">
+      <cartesian x="0.0" y="1500" z="1500" />
+      <properties radius="500.0" />
+      <epsilon type="relative" value.real="13.0" value.imag="0.0" />
+      <mu type="relative" value.real="1.0" value.imag="0.0" />
+    </object>
+      <object type="sphere">
+        <cartesian x="0.0" y="-1500" z="-1500" />
+        <properties radius="500.0" />
+        <epsilon type="relative" value.real="13.0" value.imag="0.0" />
+        <mu type="relative" value.real="1.0" value.imag="0.0" />
+      </object>
+</geometry>
+
+<output type="field">
+  <grid type="cartesian">
+    <x min="-0.1" max="0.1" steps="2" />
+    <y min="-3000" max="3000" steps="201" />
+    <z min="-3000" max="3000" steps="201" />
+  </grid>
+</output>
