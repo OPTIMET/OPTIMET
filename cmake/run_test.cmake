@@ -21,7 +21,7 @@ execute_process(
 )
 
 if( test_not_successful )
-  message( SEND_ERROR "Failed to run ${test_cmd}" )
+  message( SEND_ERROR "${test_cmd} returned ${test_not_successful}" )
 endif( test_not_successful )
 
 list(LENGTH output_blessed len1)
