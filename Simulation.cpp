@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
 
 using std::ofstream;
 using std::cout;

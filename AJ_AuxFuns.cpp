@@ -10,7 +10,7 @@
 
 #include <cmath>
 #include <iostream>
-#include <cmath>
+#include <cstdlib>
 
 //#define PI 3.14159265358979323846
 
