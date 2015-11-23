@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <complex>
+#include <cstdlib>
 
 using std::ofstream;
 
