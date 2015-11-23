@@ -3,15 +3,9 @@
 
 #include "Geometry.h"
 #include "Excitation.h"
-#include "CompoundIterator.h"
 #include "Coupling.h"
-#include "Tools.h"
-#include "AlgebraS.h"
-#include "Algebra.h"
-#include "constants.h"
 #include "Result.h"
 #include <complex>
-#include <iostream>
 
 using std::complex;
 

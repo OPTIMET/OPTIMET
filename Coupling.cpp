@@ -1,5 +1,13 @@
 #include "Coupling.h"
 
+#include "Tools.h"
+#include "CompoundIterator.h"
+#include "PeriodicCoupling.h"
+#include "constants.h"
+
+#include <cmath>
+#include <iostream>
+
 using std::cerr;
 using std::abs;
 

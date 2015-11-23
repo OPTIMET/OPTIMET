@@ -1,4 +1,15 @@
 #include "Geometry.h"
+#include "Coupling.h"
+
+#include "Tools.h"
+#include "Bessel.h"
+#include "CompoundIterator.h"
+#include "Symbol.h"
+#include "Algebra.h"
+#include "constants.h"
+
+#include <iostream>
+#include <cmath>
 
 using std::cerr;
 using std::endl;
@@ -694,12 +705,3 @@ void Geometry::rebuildStructure()
 		}
 	}
 }
-
-
-
-
-
-
-
-
-

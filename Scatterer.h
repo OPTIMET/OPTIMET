@@ -3,7 +3,6 @@
 
 #include "Spherical.h"
 #include "ElectroMagnetic.h"
-#include "Tools.h"
 
 /**
  * The Scatterer class is the highest level element of a geometry.

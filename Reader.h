@@ -1,20 +1,8 @@
 #ifndef READER_H_
 #define READER_H_
 
-#include "Geometry.h"
-#include "Tools.h"
-#include "Scatterer.h"
-#include "Spherical.h"
-#include "Cartesian.h"
-#include "ElectroMagnetic.h"
-#include "constants.h"
-#include "pugi/pugixml.hpp"
 #include "Run.h"
-#include "aliases.h"
-#include <iostream>
-#include <cstring>
-
-using namespace pugi;
+#include "pugi/pugixml.hpp"
 
 /**
  * The Reader class is used to read a simulation case file.
@@ -25,7 +13,7 @@ class Reader
 {
 private:
 	Run *run;				/**< Pointer to the Run object. */
-	xml_document inputFile;	/**< The input file. */
+	pugi::xml_document inputFile;	/**< The input file. */
 	bool initDone;			/**< Specifies if object was initialized. */
 public:
 	/**
@@ -68,7 +56,7 @@ public:
      * @param geo_node_ the geometry node.
      * @return number of objects pushed, 0 if failure.
      */
-    int readStructure(xml_node geo_node_);
+    int readStructure(pugi::xml_node geo_node_);
 
 	int readSimulation(char* fileName_);
 

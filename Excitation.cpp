@@ -1,5 +1,14 @@
 #include "Excitation.h"
-#include <fstream>
+
+#include "Algebra.h"
+#include "Tools.h"
+#include "constants.h"
+#include "AuxCoefficients.h"
+#include "CompoundIterator.h"
+#include "Coupling.h"
+
+#include <iostream>
+#include <cmath>
 
 using std::cerr;
 using std::pow;
@@ -11,7 +20,7 @@ Excitation::Excitation()
 	initDone = false;
 }
 
-Excitation::Excitation(unsigned long type_, SphericalP<complex<double> > Einc_,
+Excitation::Excitation(unsigned long type_, SphericalP<std::complex<double> > Einc_,
 		Spherical<double> waveKInc_, int nMax_)
 {
 	init(type_, Einc_, waveKInc_, nMax_);
@@ -26,7 +35,7 @@ Excitation::~Excitation()
 	}
 }
 
-void Excitation::init(unsigned long type_, SphericalP<complex<double> > Einc_,
+void Excitation::init(unsigned long type_, SphericalP<std::complex<double> > Einc_,
 		Spherical<double> vKInc_, int nMax_)
 {
 	type = type_;
@@ -38,14 +47,14 @@ void Excitation::init(unsigned long type_, SphericalP<complex<double> > Einc_,
 	lambda = 2*consPi / waveK.real();
 	omega = consC * waveK.real();
 
-	dataIncAp = new complex<double> [Tools::iteratorMax(nMax)];
-	dataIncBp = new complex<double> [Tools::iteratorMax(nMax)];
+	dataIncAp = new std::complex<double> [Tools::iteratorMax(nMax)];
+	dataIncBp = new std::complex<double> [Tools::iteratorMax(nMax)];
 
 	initDone = true;
 }
 
 
-void Excitation::update(unsigned long type_, SphericalP<complex<double> > Einc_,
+void Excitation::update(unsigned long type_, SphericalP<std::complex<double> > Einc_,
 		Spherical<double> vKInc_, int nMax_)
 {
 	type = type_;
@@ -80,16 +89,16 @@ int Excitation::populate()
 
 	for(p=0; p<p.max(nMax); p++)
 	{
-		SphericalP <complex<double> > C_local = coef.dataCp[p];
-		SphericalP <complex<double> > B_local = coef.dataBp[p];
+		SphericalP <std::complex<double> > C_local = coef.dataCp[p];
+		SphericalP <std::complex<double> > B_local = coef.dataBp[p];
 
-		SphericalP<complex<double> > conjAux(conj(C_local.rrr),
-				conj(C_local.the), conj(C_local.phi)); //Complex conjugate of C
+		SphericalP<std::complex<double> > conjAux(conj(C_local.rrr),
+				conj(C_local.the), conj(C_local.phi)); //std::complex conjugate of C
 		dataIncAp[p] = 4*consPi * pow(-1.0, p.second) * pow(consCi, p.first)
 				* coef.dn[p.first] * (conjAux * Einc) * exp(consCmi * (double)p.second * vKInc.phi);
 
-		conjAux = SphericalP<complex<double> >(conj(B_local.rrr),
-						conj(B_local.the), conj(B_local.phi)); //Complex conjugate of B
+		conjAux = SphericalP<std::complex<double> >(conj(B_local.rrr),
+						conj(B_local.the), conj(B_local.phi)); //std::complex conjugate of B
 		dataIncBp[p] = 4*consPi * pow(-1.0, p.second) * pow(consCi, p.first-1)
 						* coef.dn[p.first] * (conjAux * Einc) * exp(consCmi * (double)p.second * vKInc.phi);
 	}
@@ -98,7 +107,7 @@ int Excitation::populate()
 }
 
 int Excitation::getIncLocal(Spherical<double> point_,
-		complex<double>* Inc_local_, int nMax_)
+		std::complex<double>* Inc_local_, int nMax_)
 {
 	if(!initDone)
 	{
@@ -117,11 +126,11 @@ int Excitation::getIncLocal(Spherical<double> point_,
 	int pMax = p.max(nMax_);
 	int qMax = q.max(nMax_);
 
-	complex<double> *Inc_direct = new complex<double>[2*pMax];
-	complex<double> **T_AB = new complex<double>*[2*(p.max(nMax))];
+	std::complex<double> *Inc_direct = new std::complex<double>[2*pMax];
+	std::complex<double> **T_AB = new std::complex<double>*[2*(p.max(nMax))];
 	for(p=0; p<(int)(2*p.max(nMax)); p++)
 	{
-		T_AB[p] = new complex<double>[2*p.max(nMax)];
+		T_AB[p] = new std::complex<double>[2*p.max(nMax)];
  	}
 
 	for(p=0; p<pMax; p++)
@@ -162,8 +171,3 @@ void Excitation::updateWavelength(double lambda_)
 
 	update(type, Einc, vKInc_local, nMax);
 }
-
-
-
-
-

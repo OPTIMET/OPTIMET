@@ -1,18 +1,9 @@
 #ifndef COUPLING_H_
 #define COUPLING_H_
 
-#include "AuxCoefficients.h"
 #include "Spherical.h"
-#include "Tools.h"
-#include "Legendre.h"
-#include "Bessel.h"
-#include "CompoundIterator.h"
-#include "PeriodicCoupling.h"
-#include "constants.h"
-#include "gsl/gsl_sf_gamma.h"
+
 #include <complex>
-#include <cmath>
-#include <iostream>
 
 using std::complex;
 

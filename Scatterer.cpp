@@ -1,4 +1,5 @@
 #include "Scatterer.h"
+#include "Tools.h"
 
 Scatterer::Scatterer()
 {
@@ -32,5 +33,3 @@ void Scatterer::init(Spherical<double> vR_, ElectroMagnetic elmag_, double radiu
 	sourceCoef = new complex<double>[2*Tools::iteratorMax(nMax)];
 	initDone = true;
 }
-
-

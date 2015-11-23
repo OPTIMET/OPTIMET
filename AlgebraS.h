@@ -1,7 +1,6 @@
 #ifndef ALGEBRAS_H_
 #define ALGEBRAS_H_
-#include "Tools.h"
-#include <armadillo>
+
 #include <complex>
 
 using std::complex;

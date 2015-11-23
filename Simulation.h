@@ -1,20 +1,6 @@
 #ifndef SIMULATION_H_
 #define SIMULATION_H_
 
-#include "Spherical.h"
-#include "AuxCoefficients.h"
-#include "Bessel.h"
-#include "Reader.h"
-#include "CompoundIterator.h"
-#include "Legendre.h"
-#include "Excitation.h"
-#include "Coupling.h"
-#include "SphericalP.h"
-#include "Solver.h"
-#include "Result.h"
-#include "Symbol.h"
-#include "Run.h"
-
 /**
  * The Simulation class implements a full simulation.
  * A Simulation object will create a set of Cases and Requests based

@@ -1,8 +1,6 @@
 #ifndef COMPOUNDITERATOR_H_
 #define COMPOUNDITERATOR_H_
 
-#include <cmath>
-
 /**
  * The CompoundIterator class implements compound iterators.
  * Iterators map p -> (n, m) -> p using a specified mapping function.

@@ -1,5 +1,10 @@
 #include "Tools.h"
 
+#include "gsl/gsl_sf_legendre.h"
+#include "gsl/gsl_sf_gamma.h"
+#include <cmath>
+#include <assert.h>
+
 using std::sin;
 using std::cos;
 using std::acos;
@@ -198,7 +203,3 @@ void Tools::Pol2Cart(double rho_, double theta_, double &x_, double &y_)
 	x_ = rho_ * cos(theta_);
 	y_ = rho_ * sin(theta_);
 }
-
-
-
-

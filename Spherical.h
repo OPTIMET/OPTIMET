@@ -3,12 +3,8 @@
 
 #include "Cartesian.h"
 #include "SphericalP.h"
-#include <complex>
 #include <cmath>
-#include <iostream>
 
-using std::complex;
-using std::conj;
 using std::sqrt;
 using std::sin;
 using std::cos;

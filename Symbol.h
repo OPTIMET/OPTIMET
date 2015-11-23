@@ -7,13 +7,8 @@
 #ifndef SPECFUN_H_
 #define SPECFUN_H_
 
-#include <cmath>
-#include "constants.h"
-#include "Bessel.h"
-#include "CompoundIterator.h"
 #include "Scatterer.h"
 #include "ElectroMagnetic.h"
-#include "gsl/gsl_sf_coupling.h"
 
 class Symbol
 {

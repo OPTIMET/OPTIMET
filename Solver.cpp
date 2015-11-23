@@ -1,8 +1,13 @@
 #include "Solver.h"
 
-#include<iomanip>
+#include "CompoundIterator.h"
+#include "Tools.h"
+#include "AlgebraS.h"
+#include "Algebra.h"
+#include "constants.h"
+#include "aliases.h"
+#include <iostream>
 
-#include <fstream>
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -460,7 +465,3 @@ void Solver::update(Geometry* geometry_, Excitation* incWave_, long nMax_)
 
 	populate();
 }
-
-
-
-

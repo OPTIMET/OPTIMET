@@ -2,7 +2,6 @@
 #define BESSEL_H_
 
 #include <complex>
-#include "constants.h"
 
 using std::complex;
 
