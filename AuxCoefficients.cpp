@@ -1,6 +1,18 @@
 #include "AuxCoefficients.h"
 
-using std::cerr;
+#include "constants.h"
+#include "Tools.h"
+#include "Legendre.h"
+#include "Bessel.h"
+#include "CompoundIterator.h"
+
+#include <cmath>
+#include <cstdlib>
+#include <iostream>
+
+#include "gsl/gsl_sf_gamma.h"
+
+
 using std::abs;
 using std::sqrt;
 
@@ -536,7 +548,7 @@ int AuxCoefficients::populate()
 {
 	if(!initDone)
 	{
-		cerr << "AuxCoefficients object was not initialized!";
+		std::cerr << "AuxCoefficients object was not initialized!";
 		return 1;
 	}
 

@@ -1,5 +1,12 @@
 #include "Legendre.h"
 
+#include "gsl/gsl_sf_legendre.h"
+#include "gsl/gsl_sf_gamma.h"
+#include "CompoundIterator.h"
+#include "Tools.h"
+#include <iostream>
+#include <cmath>
+
 using std::cerr;
 using std::pow;
 using std::abs;
@@ -89,5 +96,3 @@ int Legendre::populate()
 
 	return 0;
 }
-
-

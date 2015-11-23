@@ -2,7 +2,6 @@
 #define ELECTROMAGNETIC_H_
 
 #include <complex>
-#include "constants.h"
 
 using std::complex;
 
@@ -120,6 +119,3 @@ public:
 };
 
 #endif /* ELECTROMAGNETIC_H_ */
-
-
-

@@ -1,4 +1,5 @@
 #include "ElectroMagnetic.h"
+#include "constants.h"
 
 //#include "Reader.h"
 //using std::cout;
@@ -62,7 +63,7 @@ void ElectroMagnetic::init_r(complex<double> epsilon_r_, complex<double> mu_r_)
 	modelType = 0;
 }
 
-// Sellmeier 
+// Sellmeier
 void ElectroMagnetic::initSellmeier_r(double B1_, double C1_, double B2_,
 		double C2_, double B3_, double C3_, double B4_, double C4_, double B5_, double C5_, complex<double> mu_r_)
 {
@@ -133,5 +134,3 @@ void ElectroMagnetic::update(double lambda_)
 		populateDrudeModel();
 	}
 }
-
-

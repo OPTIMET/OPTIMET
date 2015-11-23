@@ -1,4 +1,14 @@
 #include "Simulation.h"
+
+#include "Reader.h"
+#include "CompoundIterator.h"
+#include "Excitation.h"
+#include "Solver.h"
+#include "Result.h"
+#include "Run.h"
+#include "aliases.h"
+#include "Output.h"
+
 #include <iostream>
 #include <fstream>
 
@@ -93,7 +103,7 @@ int Simulation::run()
 		oEGrid.close();
 		oHGrid.close();
 		oFile.close();
-		
+
 //		result.writeContinuityCheck(0);
 	}
 
@@ -317,5 +327,3 @@ int Simulation::done()
 	//Placeholder method. Not needed at the moment.
 	return 0;
 }
-
-

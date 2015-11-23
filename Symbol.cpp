@@ -1,5 +1,11 @@
 #include "Symbol.h"
 
+#include <cmath>
+#include "constants.h"
+#include "Bessel.h"
+#include "CompoundIterator.h"
+#include "gsl/gsl_sf_coupling.h"
+
 using std::sqrt;
 using std::pow;
 
@@ -318,6 +324,3 @@ complex<double> Symbol::upp_mn(int m, int n, int nMax_, complex<double> cmn_1, c
 
 
 // ------------------------------------------------------------------------------------------------
-
-
-

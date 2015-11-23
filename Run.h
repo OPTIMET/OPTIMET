@@ -2,9 +2,8 @@
 #define RUN_H_
 
 #include "Geometry.h"
+#include "CompoundIterator.h"
 #include "Excitation.h"
-#include "Output.h"
-#include "OutputGrid.h"
 
 /**
  * The Run class implements a single instance of a run.

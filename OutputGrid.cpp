@@ -1,5 +1,10 @@
 #include "OutputGrid.h"
 
+#include "aliases.h"
+#include "Cartesian.h"
+#include "Tools.h"
+#include <cmath>
+
 using std::abs;
 
 OutputGrid::OutputGrid()
@@ -200,6 +205,3 @@ void OutputGrid::close()
 		delete [] cursor;
 	}
 }
-
-
-

@@ -1,5 +1,7 @@
 #include "CompoundIterator.h"
 
+#include <cmath>
+
 using std::sqrt;
 
 CompoundIterator::CompoundIterator()
@@ -141,6 +143,3 @@ CompoundIterator::operator long()
 {
 	return compound;
 }
-
-
-

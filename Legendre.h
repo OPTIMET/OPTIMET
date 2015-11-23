@@ -1,13 +1,6 @@
 #ifndef LEGENDRE_H_
 #define LEGENDRE_H_
 
-#include "gsl/gsl_sf_legendre.h"
-#include "gsl/gsl_sf_gamma.h"
-#include "CompoundIterator.h"
-#include "Tools.h"
-#include <iostream>
-#include <cmath>
-
 
 /**
  * The Legendre class implements associated Legendre polynomials using gsl.

@@ -2,15 +2,7 @@
 #define GEOMETRY_H_
 
 #include "Scatterer.h"
-#include "Tools.h"
-#include "Bessel.h"
-#include "CompoundIterator.h"
-#include "Tools.h"
-#include "Symbol.h"
 #include "Excitation.h"
-#include "Algebra.h"
-#include <iostream>
-#include <cmath>
 
 /**
  * The Geometry class implements a list of objects and properties of the medium.

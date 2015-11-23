@@ -1,5 +1,7 @@
 #include "Algebra.h"
 
+#include <gsl/gsl_cblas.h>
+
 Algebra::Algebra()
 {
 	//
@@ -68,4 +70,3 @@ void Algebra::vectorToMatrix(long rows_, long columns_, complex<double>* V_,
 			T_[i][j] = V_[i*rows_ + j];
 		}
 }
-

@@ -1,14 +1,10 @@
 #ifndef OUTPUT_GRID_H_
 #define OUTPUT_GRID_H_
 
-#include "aliases.h"
 #include "Spherical.h"
-#include "Output.h"
 #include "SphericalP.h"
-#include "Cartesian.h"
-#include "Tools.h"
+#include <complex>
 #include <hdf5.h>
-#include <cmath>
 
 /**
  * The OutputGrid class implements the field output grid and processes the HDF5 datasets.
@@ -95,13 +91,13 @@ public:
 	 * Push data to current iterator position in HDF5 file.
 	 * @param data_ the data in SphericalP<complex <double> > format.
 	 */
-	void pushData(SphericalP<complex <double> > data_);
+	void pushData(SphericalP<std::complex <double> > data_);
 
 	/**
 	 * Push data to current iterator position in HDF5 file and move to next positon.
 	 * @param data_ the data in SphericalP<complex <double> > format.
 	 */
-	void pushDataNext(SphericalP<complex <double> > data_);
+	void pushDataNext(SphericalP<std::complex <double> > data_);
 
 	/**
 	 * Close the grid to close all HDF5 structures.

@@ -1,16 +1,10 @@
 #ifndef AUX_COEFFICIENTS_H_
 #define AUX_COEFFICIENTS_H_
 
-#include "constants.h"
 #include "Spherical.h"
 #include "SphericalP.h"
-#include "Tools.h"
-#include "Legendre.h"
-#include "Bessel.h"
+
 #include <complex>
-#include <cmath>
-#include <cstdlib>
-#include "gsl/gsl_sf_gamma.h"
 
 using std::complex;
 

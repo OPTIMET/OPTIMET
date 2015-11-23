@@ -1,8 +1,6 @@
 #ifndef ALGEBRA_H_
 #define ALGEBRA_H_
-#include "Tools.h"
-#include <gsl/gsl_cblas.h>
-#include <gsl/gsl_linalg.h>
+
 #include <complex>
 
 using std::complex;
@@ -53,7 +51,7 @@ public:
 	 */
 	static void multiplyVectorMatrix(complex<double> **A, int rows_A_, int cols_A_, complex<double> *X,
 			complex<double> *Y, complex<double> alpha_, complex<double> beta_);
-			
+
 				/**
 	 * Convert a Matrix into a Vector.
 	 * @param rows_ the number of rows of the matrix.

@@ -7,6 +7,18 @@
 
 #include "PeriodicCoupling.h"
 
+#include "Tools.h"
+#include "Legendre.h"
+#include "Bessel.h"
+#include "Symbol.h"
+#include "CompoundIterator.h"
+#include "constants.h"
+#include "AJ_AuxFuns.h"
+
+#include <cmath>
+
+#include "gsl/gsl_sf_gamma.h"
+
 double PeriodicCoupling::a_nm_p(double n, double m)
 {
 	return -sqrt( ((n+m+1.)*(n-m+1.))/((2.*n+1.)*(2.*n+3.)) );

@@ -1,16 +1,22 @@
-#include "AJ_AuxFuns.h"
-#include "AuxCoefficients.h"
-#include "gsl/gsl_sf_gamma.h"
 
+#include "AJ_AuxFuns.h"
+
+#include "AuxCoefficients.h"
+#include "Bessel.h"
+#include "CompoundIterator.h"
+// #include "Scatterer.h"
+#include "Spherical.h"
+#include "constants.h"
+
+#include <cmath>
 #include <iostream>
-using std::cerr;
-using std::cout;
+#include <cmath>
 
 //#define PI 3.14159265358979323846
 
 // -----------------------------------------------------------------------
 // computes all corresponding Spherical Harmonics values given (nMax, m)
-int compute_YJn_m(Spherical<double> R, complex<double> waveK, int BHreg, int nMax, int m, complex<double> *YJnm){
+int compute_YJn_m(Spherical<double> R, std::complex<double> waveK, int BHreg, int nMax, int m, std::complex<double> *YJnm){
 
 
 	int i(0), n(0);
@@ -34,7 +40,7 @@ int compute_YJn_m(Spherical<double> R, complex<double> waveK, int BHreg, int nMa
 	besselH_R.populate();
 
 	double dm = pow(-1., double(m));					// Legendre to Wigner function
-	complex<double> exp_imphi(cos(double(m) * R.phi), sin(double(m) * R.phi));
+	std::complex<double> exp_imphi(cos(double(m) * R.phi), sin(double(m) * R.phi));
 
 	for (i = 0; i <= nMax; i++) {
 
@@ -67,12 +73,12 @@ int compute_YJn_m(Spherical<double> R, complex<double> waveK, int BHreg, int nMa
 
 // -----------------------------------------------------------------------
 // computes all corresponding Spherical Harmonics values given (nMax) - m=[-nMax, nMax]
-int compute_YJp(Spherical<double> R, complex<double> waveK, int BHreg, int nMax, complex<double> *dataYJp){
+int compute_YJp(Spherical<double> R, std::complex<double> waveK, int BHreg, int nMax, std::complex<double> *dataYJp){
 
 	CompoundIterator p;
 	CompoundIterator q;
-	complex<double> *YJnm;
-	YJnm = new complex<double> [nMax+1];
+	std::complex<double> *YJnm;
+	YJnm = new std::complex<double> [nMax+1];
 
 	// (n,m)=(0,0)
 	compute_YJn_m(R, waveK, BHreg, nMax, 0, YJnm);
@@ -99,7 +105,7 @@ int compute_YJp(Spherical<double> R, complex<double> waveK, int BHreg, int nMax,
 
 // -----------------------------------------------------------------------
 // computes all corresponding Spherical Harmonics values given (nMax, m)
-int compute_Yn_m(Spherical<double> R, complex<double> waveK, int nMax, int m, complex<double> *Ynm){
+int compute_Yn_m(Spherical<double> R, std::complex<double> waveK, int nMax, int m, std::complex<double> *Ynm){
 
 
 	int i(0), n(0);
@@ -118,7 +124,7 @@ int compute_Yn_m(Spherical<double> R, complex<double> waveK, int nMax, int m, co
 	auxCoefficients.VIGdVIG(nMax, m, R, Wigner, dWigner);
 
 	double dm = pow(-1., double(m));					// Legendre to Wigner function
-	complex<double> exp_imphi(cos(double(m) * R.phi), sin(double(m) * R.phi));
+	std::complex<double> exp_imphi(cos(double(m) * R.phi), sin(double(m) * R.phi));
 
 	for (i = 0; i <= nMax; i++) {
 
@@ -147,12 +153,12 @@ int compute_Yn_m(Spherical<double> R, complex<double> waveK, int nMax, int m, co
 
 // -----------------------------------------------------------------------
 // computes all corresponding Spherical Harmonics values given (nMax) - m=[-nMax, nMax]
-int compute_Yp(Spherical<double> R, complex<double> waveK, int nMax, complex<double> *dataYp){
+int compute_Yp(Spherical<double> R, std::complex<double> waveK, int nMax, std::complex<double> *dataYp){
 
 	CompoundIterator p;
 	CompoundIterator q;
-	complex<double> *Yn_m;
-	Yn_m = new complex<double> [nMax+1];
+	std::complex<double> *Yn_m;
+	Yn_m = new std::complex<double> [nMax+1];
 
 	// (n,m)=(0,0)
 	compute_Yn_m(R, waveK, nMax, 0, Yn_m);
@@ -176,23 +182,23 @@ int compute_Yp(Spherical<double> R, complex<double> waveK, int nMax, complex<dou
 }
 /*
 // T local
-int getTLocal(double omega_, Scatterer particle, int nMax_, complex<double> ** T_local_)
+int getTLocal(double omega_, Scatterer particle, int nMax_, std::complex<double> ** T_local_)
 {
 
-	cout<<"So far so good";
+	std::cout<<"So far so good";
 
-	complex<double> k_s = omega_ * sqrt(particle.elmag.epsilon * particle.elmag.mu);
-	complex<double> k_b = omega_ * sqrt(consEpsilon0 * consMu0);
+	std::complex<double> k_s = omega_ * sqrt(particle.elmag.epsilon * particle.elmag.mu);
+	std::complex<double> k_b = omega_ * sqrt(consEpsilon0 * consMu0);
 
-	complex<double> rho = k_s / k_b;
-	complex<double> r_0 = k_b * particle.radius;
-	complex<double> mu_sob = particle.elmag.mu /consMu0;
+	std::complex<double> rho = k_s / k_b;
+	std::complex<double> r_0 = k_b * particle.radius;
+	std::complex<double> mu_sob = particle.elmag.mu /consMu0;
 
-	complex<double> psi(0., 0.), ksi(0., 0.);
-	complex<double> dpsi(0., 0.), dksi(0., 0.);
+	std::complex<double> psi(0., 0.), ksi(0., 0.);
+	std::complex<double> dpsi(0., 0.), dksi(0., 0.);
 
-	complex<double> psirho(0., 0.), ksirho(0., 0.);
-	complex<double> dpsirho(0., 0.), dksirho(0., 0.);
+	std::complex<double> psirho(0., 0.), ksirho(0., 0.);
+	std::complex<double> dpsirho(0., 0.), dksirho(0., 0.);
 	// AJ -----------------------------------------------------------------------------------------------------
 
 	Bessel J_n;
@@ -203,27 +209,27 @@ int getTLocal(double omega_, Scatterer particle, int nMax_, complex<double> ** T
 	J_n.init(r_0, 0, 0, nMax_);
 	if(J_n.populate())
 	{
-		cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!";
+		std::cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!";
 		return 1;
 	}
 
 	Jrho_n.init(rho*r_0, 0, 0, nMax_);
 	if(Jrho_n.populate())
 	{
-		cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!";
+		std::cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!";
 		return 1;
 	}
 
 	H_n.init(r_0, 1, 0, nMax_);
 	if(H_n.populate())
 	{
-		cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!";
+		std::cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!";
 	}
 
 	Hrho_n.init(rho*r_0, 1, 0, nMax_);
 	if(Hrho_n.populate())
 	{
-		cerr << "Error computing Hankel functions. Amos said: " << Hrho_n.ierr << "!";
+		std::cerr << "Error computing Hankel functions. Amos said: " << Hrho_n.ierr << "!";
 	}
 
 	CompoundIterator p;
@@ -263,13 +269,13 @@ int getTLocal(double omega_, Scatterer particle, int nMax_, complex<double> ** T
 			}
 			else
 			{
-				T_local_[p][q] = complex<double>(0.0, 0.0);
-				T_local_[(int)p+pMax][(int)q+qMax] == complex<double>(0.0, 0.0);
+				T_local_[p][q] = std::complex<double>(0.0, 0.0);
+				T_local_[(int)p+pMax][(int)q+qMax] == std::complex<double>(0.0, 0.0);
 			}
 
 			//Set the rest of the matrix to (0.0, 0.0)
-			T_local_[(int)p+pMax][q] = complex<double>(0.0, 0.0);
-			T_local_[p][(int)q+qMax] = complex<double>(0.0, 0.0);
+			T_local_[(int)p+pMax][q] = std::complex<double>(0.0, 0.0);
+			T_local_[p][(int)q+qMax] = std::complex<double>(0.0, 0.0);
 		}
 
 	return 0;

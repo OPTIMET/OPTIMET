@@ -1,8 +1,19 @@
 #include "Reader.h"
 
+#include "Geometry.h"
+#include "Scatterer.h"
+#include "Spherical.h"
+#include "Cartesian.h"
+#include "constants.h"
+#include "Tools.h"
+#include <iostream>
+#include <cstring>
+
 using std::cerr;
 using std::endl;
 using std::strcmp;
+
+using namespace pugi;
 
 Reader::Reader()
 {
@@ -208,7 +219,7 @@ int Reader::readExcitation()
     int source_type;
     double wavelength;
     SphericalP<complex<double> > Einc(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
-    Spherical<double> vKinc(0.0, 0.0, 0.0);   
+    Spherical<double> vKinc(0.0, 0.0, 0.0);
 
     //Determine source type
     if(!strcmp(ext_node.attribute("type").value(), "planewave"))
@@ -511,10 +522,10 @@ int Reader::readOutput()
             lam_final = out_node.child("scan").child("wavelength").attribute("final").as_double();
 			run->params[0] = out_node.child("scan").child("wavelength").attribute("initial").as_double() * 1e-9;
             run->params[1] = out_node.child("scan").child("wavelength").attribute("final").as_double()* 1e-9;
-			
+
 			int stepsize(0), steps(0);
 			stepsize = out_node.child("scan").child("wavelength").attribute("stepsize").as_double();
-			
+
 			// claculate no of steps
 			steps = int(lam_final - lam_start) / stepsize;
             run->params[2] = steps+1;
@@ -584,6 +595,3 @@ int Reader::readSimulation(char* fileName_)
 
 	return 0;
 }
-
-
-

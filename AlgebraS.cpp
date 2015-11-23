@@ -1,5 +1,7 @@
 #include "AlgebraS.h"
 
+#include <armadillo>
+
 using arma::solve;
 using arma::Mat;
 using arma::Col;

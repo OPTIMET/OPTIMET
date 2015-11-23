@@ -1,6 +1,13 @@
 #include "Result.h"
+#include "Coupling.h"
+#include "Algebra.h"
+#include "constants.h"
+#include "Tools.h"
+#include "AuxCoefficients.h"
+
 #include <iostream>
 #include <fstream>
+#include <complex>
 
 using std::ofstream;
 
@@ -753,4 +760,3 @@ void Result::writeContinuityCheck(int objectIndex_)
 		E1_err_mag.close();	E2_err_mag.close();	E3_err_mag.close();
 		H1_err_mag.close();	H2_err_mag.close();	H3_err_mag.close();
 }
-

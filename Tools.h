@@ -1,13 +1,8 @@
 #ifndef TOOLS_H_
 #define TOOLS_H_
 
-#include "gsl/gsl_sf_legendre.h"
-#include "gsl/gsl_sf_gamma.h"
 #include "Spherical.h"
 #include "Cartesian.h"
-#include <cmath>
-#include <cstdlib>
-#include <assert.h>
 #include <complex>
 
 using std::complex;
