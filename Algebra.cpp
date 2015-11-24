@@ -13,15 +13,16 @@ Algebra::~Algebra()
 	//
 }
 
-void Algebra::multiplyMatrixMatrix(complex<double>** A, int rows_A_, int cols_A_,
-		complex<double>** B, int rows_B_, int cols_B_,
-		complex<double>** C, complex<double> alpha_, complex<double> beta_)
+void Algebra::multiplyMatrixMatrix(std::complex<double>** A, int rows_A_,
+	int cols_A_, std::complex<double>** B, int rows_B_, int cols_B_,
+	std::complex<double>** C, std::complex<double> alpha_,
+	std::complex<double> beta_)
 {
 
 	//GNU Scientific Library CBLas implementation
-	complex<double> *A_cblas = new complex<double>[rows_A_ * cols_A_];
-	complex<double> *B_cblas = new complex<double>[rows_B_ * cols_B_];
-	complex<double> *C_cblas = new complex<double>[rows_A_ * cols_B_];
+	std::complex<double> *A_cblas = new std::complex<double>[rows_A_ * cols_A_];
+	std::complex<double> *B_cblas = new std::complex<double>[rows_B_ * cols_B_];
+	std::complex<double> *C_cblas = new std::complex<double>[rows_A_ * cols_B_];
 
 	matrixToVector(rows_A_, cols_A_, A, A_cblas);
 	matrixToVector(rows_B_, cols_B_, B, B_cblas);
@@ -35,11 +36,11 @@ void Algebra::multiplyMatrixMatrix(complex<double>** A, int rows_A_, int cols_A_
 	delete [] C_cblas;
 }
 
-void Algebra::multiplyVectorMatrix(complex<double>** A, int rows_A_,
-		int cols_A_, complex<double>* X, complex<double>* Y,
-		complex<double> alpha_, complex<double> beta_)
+void Algebra::multiplyVectorMatrix(std::complex<double>** A, int rows_A_,
+		int cols_A_, std::complex<double>* X, std::complex<double>* Y,
+		std::complex<double> alpha_, std::complex<double> beta_)
 {
-	complex<double> *A_cblas = new complex<double>[rows_A_ * cols_A_];
+	std::complex<double> *A_cblas = new std::complex<double>[rows_A_ * cols_A_];
 
 	matrixToVector(rows_A_, cols_A_, A, A_cblas);
 
@@ -48,8 +49,8 @@ void Algebra::multiplyVectorMatrix(complex<double>** A, int rows_A_,
 	delete [] A_cblas;
 }
 
-void Algebra::matrixToVector(long rows_, long columns_, complex<double>** T_,
-		complex<double>* V_)
+void Algebra::matrixToVector(long rows_, long columns_,
+	std::complex<double>** T_, std::complex<double>* V_)
 {
 	int i,j;
 
@@ -60,8 +61,8 @@ void Algebra::matrixToVector(long rows_, long columns_, complex<double>** T_,
 		}
 }
 
-void Algebra::vectorToMatrix(long rows_, long columns_, complex<double>* V_,
-		complex<double>** T_)
+void Algebra::vectorToMatrix(long rows_, long columns_,
+	std::complex<double>* V_, std::complex<double>** T_)
 {
 	int i,j;
 	for(i=0; i<rows_; i++)

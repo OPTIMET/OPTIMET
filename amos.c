@@ -71,7 +71,7 @@ dgamln_ (doublereal * z, integer * ierr)
 
   /* System generated locals */
   integer i__1;
-  doublereal ret_val;
+  doublereal ret_val = 0.0;
 
   /* Builtin functions */
   double log (doublereal);
@@ -2055,7 +2055,7 @@ L60:
       goto L140;
     }
 L70:
-  if (znr < 0. || znr == 0. && zni < 0. && *m == 2)
+  if (znr < 0. || (znr == 0. && zni < 0. && *m == 2))
     {
       goto L80;
     }

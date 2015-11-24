@@ -3,8 +3,6 @@
 
 #include <complex>
 
-using std::complex;
-
 /**
  * The AlgebraS class provides wrappers to common Linear Algebra operations.
  * AlgebraS is used to ensure portability between different LAPACK, SCALAPACK and
@@ -31,7 +29,7 @@ public:
 	 * @param b the b vector (free terms).
 	 * @param x the x vector (solution return).
 	 */
-	static void solveMatrixVector(complex<double> **A, int rows_A_, int cols_A_, complex<double> *b, complex<double> *x);
+	static void solveMatrixVector(std::complex<double> **A, int rows_A_, int cols_A_, std::complex<double> *b, std::complex<double> *x);
 };
 
 #endif /* ALGEBRA__H_ */

@@ -8,6 +8,7 @@
 #include "Tools.h"
 #include <iostream>
 #include <cstring>
+#include <vector>
 
 using std::cerr;
 using std::endl;
@@ -367,15 +368,15 @@ int Reader::readStructure(xml_node geo_node_)
 		run->geometry.pushObject(work_object);
 
 		//Create vectors for r, theta, x and y, X and Y
-		double X[No-1];			// to store x-axis location of particles for all arm
-		double Y[No-1];			// to store y-axis location of particles for all arm
+		std::vector<double> X(No-1);			// to store x-axis location of particles for all arm
+		std::vector<double> Y(No-1);			// to store y-axis location of particles for all arm
 
 		int i=0, j=0;
 
 		// AJ -----------------------------------------------------------------------
 		double Theta_rot = 2*consPi/arms;
-		double x[Np-1];			// to store x-axis location of particles for each arm
-		double y[Np-1];			// to store y-axis location of particles for each arm
+		std::vector<double> x(Np-1);			// to store x-axis location of particles for each arm
+		std::vector<double> y(Np-1);			// to store y-axis location of particles for each arm
 		j=0;
 		for(i=0; i<Np-1; i++){
 			double x_;

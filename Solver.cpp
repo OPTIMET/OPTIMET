@@ -21,7 +21,7 @@ Solver::Solver()
 
 Solver::Solver(Geometry* geometry_, Excitation* incWave_, int method_, long nMax_)
 {
-	init(geometry_, incWave_, method_, nMax);
+	init(geometry_, incWave_, method_, nMax_);
 }
 
 Solver::~Solver()
