@@ -32,7 +32,7 @@ configure_file(examples/OneParticle.xml examples/OneParticle.xml COPYONLY)
 add_test(NAME OneParticle
   COMMAND ${CMAKE_COMMAND}
   -Dtest_cmd=${CMAKE_BINARY_DIR}/Optimet3D\;${CMAKE_BINARY_DIR}/examples/OneParticle
-  -Ddiff_cmd=${HDF5_DIFF_EXECUTABLE}
+  -Ddiff_cmd=${HDF5_DIFF_EXECUTABLE}\;-d1.8e-12
   -Doutput_blessed=${CMAKE_SOURCE_DIR}/test-data/OneParticle.h5
   -Doutput_test=${CMAKE_BINARY_DIR}/examples/OneParticle.h5
   -P ${CMAKE_SOURCE_DIR}/cmake/run_test.cmake
@@ -51,7 +51,7 @@ configure_file(examples/ThreeParticles.xml examples/ThreeParticles.xml COPYONLY)
 add_test(NAME ThreeParticles
   COMMAND ${CMAKE_COMMAND}
   -Dtest_cmd=${CMAKE_BINARY_DIR}/Optimet3D\;${CMAKE_BINARY_DIR}/examples/ThreeParticles
-  -Ddiff_cmd=${HDF5_DIFF_EXECUTABLE}
+  -Ddiff_cmd=${HDF5_DIFF_EXECUTABLE}\;-d6.4e-09
   -Doutput_blessed=${CMAKE_SOURCE_DIR}/test-data/ThreeParticles.h5
   -Doutput_test=${CMAKE_BINARY_DIR}/examples/ThreeParticles.h5
   -P ${CMAKE_SOURCE_DIR}/cmake/run_test.cmake
