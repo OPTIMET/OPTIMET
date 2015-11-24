@@ -595,6 +595,8 @@ int PeriodicCoupling::compute_OMEGAnmlk(complex<double> waveK, int n_max, comple
 	m_Matsize1 = 2*(n_max+e)+1;					// up to and including (n_max+e)	: indexed from 0 + 1 for m==0
 	complex<double> ****Z_nmlk, ****OMEGA_1_nmlk, ****OMEGA_2_nmlk;
 	Z_nmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
+	OMEGA_1_nmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
+	OMEGA_2_nmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
 	for (i = 0; i < n_Matsize1; i++) {
 		for (j = 0; j < m_Matsize1; j++) {
 			for (ii = 0; ii < n_Matsize1; ii++) {

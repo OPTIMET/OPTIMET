@@ -16,8 +16,6 @@
  */
 class Run
 {
-private:
-	bool initDone;	/**< Specifies if the object has been initialized. */
 public:
 	Geometry geometry; 		/**< The Geometry of the case. */
 	Excitation excitation;	/**< The Excitation of the case. */

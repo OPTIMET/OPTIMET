@@ -3,8 +3,6 @@
 
 #include <complex>
 
-using std::complex;
-
 /**
  * The Algebra class provides wrappers to common Linear Algebra operations.
  * Algebra is used to ensure portability between different LAPACK, SCALAPACK and
@@ -36,8 +34,10 @@ public:
 	 * @param alpha the scalar alpha.
 	 * @param beta the scalar beta.
 	 */
-	static void multiplyMatrixMatrix(complex<double> **A, int rows_A_, int cols_A_, complex<double> **B,
-			int rows_B_, int cols_B_, complex<double> **C, complex<double> alpha_, complex<double> beta_);
+	static void multiplyMatrixMatrix(std::complex<double> **A, int rows_A_,
+		int cols_A_, std::complex<double> **B,
+		int rows_B_, int cols_B_, std::complex<double> **C,
+		std::complex<double> alpha_, std::complex<double> beta_);
 
 	/**
 	 * Implements the multiplication Y = alpha*A*X + beta*Y
@@ -49,8 +49,10 @@ public:
 	 * @param alpha_ the scalar alpha.
 	 * @param beta_ the scalar beta.
 	 */
-	static void multiplyVectorMatrix(complex<double> **A, int rows_A_, int cols_A_, complex<double> *X,
-			complex<double> *Y, complex<double> alpha_, complex<double> beta_);
+	static void multiplyVectorMatrix(std::complex<double> **A, int rows_A_,
+		int cols_A_, std::complex<double> *X,
+		std::complex<double> *Y, std::complex<double> alpha_,
+		std::complex<double> beta_);
 
 				/**
 	 * Convert a Matrix into a Vector.
@@ -59,7 +61,8 @@ public:
 	 * @param T_ the matrix.
 	 * @param V_ the vector.
 	 */
-	static void matrixToVector(long rows_, long columns_, complex<double> **T_, complex<double> *V_);
+	static void matrixToVector(long rows_, long columns_,
+		std::complex<double> **T_, std::complex<double> *V_);
 
 	/**
 	 * Convert a Vector into a Matrix.
@@ -68,7 +71,8 @@ public:
 	 * @param V_ the vector.
 	 * @param T_ the matrix.
 	 */
-	static void vectorToMatrix(long rows_, long columns_, complex<double> *V_, complex<double> **T_);
+	static void vectorToMatrix(long rows_, long columns_,
+		std::complex<double> *V_, std::complex<double> **T_);
 };
 
 #endif /* ALGEBRA_H_ */

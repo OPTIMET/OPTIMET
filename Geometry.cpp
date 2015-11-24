@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <vector>
 
 using std::cerr;
 using std::endl;
@@ -228,7 +229,7 @@ int Geometry::getTLocal(double omega_, int objectIndex_, int nMax_, complex<doub
 			else
 			{
 				T_local_[p][q] = complex<double>(0.0, 0.0);
-				T_local_[(int)p+pMax][(int)q+qMax] == complex<double>(0.0, 0.0);
+				T_local_[(int)p+pMax][(int)q+qMax] = complex<double>(0.0, 0.0);
 			}
 
 			//Set the rest of the matrix to (0.0, 0.0)
@@ -500,7 +501,7 @@ int Geometry::setSourcesSingle(Excitation *incWave_, complex<double> *internalCo
 	return 0;
 }
 
-int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, complex<double> *internalCoef_FF_, int nMax_,
+int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, complex<double> *, int nMax_,
 		complex<double> *Q_SH_local_)
 {
 	CompoundIterator p;
@@ -598,8 +599,8 @@ void Geometry::rebuildStructure()
 		No = noObjects;
 
 		//Create vectors for r, theta, x and y, X and Y
-		double X[No-1];
-		double Y[No-1];
+		std::vector<double> X(No-1);
+		std::vector<double> Y(No-1);
 
 		int j=0;
 

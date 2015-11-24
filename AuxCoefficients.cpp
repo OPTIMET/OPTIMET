@@ -217,9 +217,6 @@ int AuxCoefficients::compute_Nn(int nMax, int m_, Spherical<double> R, complex<d
 	besselH.init(R.rrr*waveK, BHreg	, 0, nMax);
 	besselH.populate();
 
-	double BH, dBH;
-	double dwK = R.rrr*waveK.real();
-
 	double dm = pow(-1., double(m_));					// Legendre to Wigner function
 	complex<double> exp_imphi(cos(double(m_) * R.phi), sin(double(m_) * R.phi));
 

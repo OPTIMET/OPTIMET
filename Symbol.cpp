@@ -138,7 +138,7 @@ double Symbol::C_11m1(int J1, int M1, int J2, int M2, int J, int M)
 }
 
 // A numbers
-complex<double> Symbol::A_0(int m, int n, double R, complex<double> waveK_i, complex<double> cmn_1)
+complex<double> Symbol::A_0(int, int n, double R, complex<double> waveK_i, complex<double> cmn_1)
 {
 	int BHreg =1;
 	Bessel besselH;
@@ -149,7 +149,7 @@ complex<double> Symbol::A_0(int m, int n, double R, complex<double> waveK_i, com
 
 }
 
-complex<double> Symbol::A_1(int m, int n, double R, complex<double> waveK_i, complex<double> dmn_1)
+complex<double> Symbol::A_1(int, int n, double R, complex<double> waveK_i, complex<double> dmn_1)
 {
 	int BHreg =1;
 	Bessel besselH;
@@ -161,7 +161,7 @@ complex<double> Symbol::A_1(int m, int n, double R, complex<double> waveK_i, com
 
 }
 
-complex<double> Symbol::A_m1(int m, int n, double R, complex<double> waveK_i, complex<double> dmn_1)
+complex<double> Symbol::A_m1(int, int n, double R, complex<double> waveK_i, complex<double> dmn_1)
 {
 	int BHreg =1;
 	Bessel besselH;
@@ -258,7 +258,7 @@ complex<double> Symbol::vp_mn(int m, int n, int nMax_, complex<double> cmn_1, co
 	return sum*complex<double>(-2., 0.)*(-b_non/2.)*sqrt(mu_b/eps_b)/sqrt(mu_0/eps_0);
 }
 
-complex<double> Symbol::upp_mn(int m, int n, int nMax_, complex<double> cmn_1, complex<double> dmn_1, double omega_, Scatterer *object_, ElectroMagnetic bground_)
+complex<double> Symbol::upp_mn(int m, int n, int nMax_, complex<double> cmn_1, complex<double> dmn_1, double omega_, Scatterer *object_, ElectroMagnetic)
 {
 
 	// Basic relations ------------------------------------

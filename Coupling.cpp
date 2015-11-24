@@ -47,14 +47,12 @@ void Coupling::TransferCoefficients(Spherical<double> R, complex<double> waveK, 
 	complex<double> AlBe2(0., 0.);				// auxiliary coefficients
 	complex<double> AlBe3(0., 0.);				// auxiliary coefficients
 	complex<double> AlBe4(0., 0.);				// auxiliary coefficients
-	double A1(0.), A2(0.), A3(0.), A4(0.);		// auxiliary coefficients
+	double A1(0.), A2(0.), A3(0.);				// auxiliary coefficients
 	double B1(0.), B2(0.), B3(0.);				// auxiliary coefficients
-	int k_mirror(0), m_mirror(0);				// for calculating (negative)m
 	int p=(0), q(0);							// compound like iterator
 	CompoundIterator pl, ql; 					// Create a compound iterator
 
 	// Assign corresponding input values ---------------------------------------------
-	complex<double> wkR	= R.rrr*waveK;
 	complex<double> wkRconj(0., 0.);
 	complex<double> exp_iwk_theji(0., 0.);		// function of m & theji
 
@@ -219,7 +217,7 @@ Coupling::Coupling()
 Coupling::Coupling(Spherical<double> relR_, complex<double> waveK_,
 		int regular_, long nMax_)
 {
-	init(relR, waveK, regular, nMax);
+	init(relR_, waveK_, regular_, nMax_);
 }
 
 Coupling::~Coupling()

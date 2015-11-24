@@ -105,7 +105,7 @@ int compute_YJp(Spherical<double> R, std::complex<double> waveK, int BHreg, int 
 
 // -----------------------------------------------------------------------
 // computes all corresponding Spherical Harmonics values given (nMax, m)
-int compute_Yn_m(Spherical<double> R, std::complex<double> waveK, int nMax, int m, std::complex<double> *Ynm){
+int compute_Yn_m(Spherical<double> R, std::complex<double>, int nMax, int m, std::complex<double> *Ynm){
 
 
 	int i(0), n(0);

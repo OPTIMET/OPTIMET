@@ -114,13 +114,13 @@ bool CompoundIterator::operator >=(int compound_)
 	return compound >= compound_;
 }
 
-void CompoundIterator::operator ++(int compound_)
+void CompoundIterator::operator ++(int)
 {
 	compound ++;
 	backwardMap();
 }
 
-void CompoundIterator::operator --(int compound_)
+void CompoundIterator::operator --(int)
 {
 	if(compound >= 0)
 	{
