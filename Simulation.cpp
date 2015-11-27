@@ -42,7 +42,7 @@ int Simulation::run()
 {
 
 	//Read the case file
-	char name[64];
+	char name[4096];
 	Run run;
 
 	Reader reader;
