@@ -17,38 +17,15 @@ using std::ofstream;
 using std::cout;
 using std::endl;
 
-Simulation::Simulation()
-{
-  initDone = false;
-}
-
-Simulation::Simulation(char *caseFile_)
-{
-  init(caseFile_);
-}
-
-Simulation::~Simulation()
-{
-  //
-}
-
-void Simulation::init(char* caseFile_)
-{
-  caseFile = caseFile_;
-  initDone = true;
-}
-
 int Simulation::run()
 {
 
   //Read the case file
-  char name[4096];
   Run run;
 
   Reader reader;
   reader.init(&run);
-  sprintf(name, "%s.xml", caseFile);
-  if(reader.readSimulation(name))
+  if(reader.readSimulation(caseFile + ".xml"))
     return 1;
 
   //Initialize the solver
@@ -58,20 +35,12 @@ int Simulation::run()
   solver.init(&(run.geometry), &(run.excitation), O3DSolverIndirect, run.nMax);
   solver.populate();
 
-  // AJ
-//  cout<<"bground.epsilon = "<<run.geometry.bground.epsilon<<endl;
-  //cout<<"bground.mu = "<<run.geometry.bground.mu<<endl;
-
-//  cout<<"bground.epsilon_r = "<<run.geometry.bground.epsilon_r<<endl;
-  //cout<<"bground.mu_r = "<<run.geometry.bground.mu_r<<endl;
-
   //Determine the simulation type and proceed accordingly
   if(run.outputType == 0) //Field simulation
   {
 
     Output oFile;
-    sprintf(name, "%s.h5", caseFile);
-    oFile.init(name);
+    oFile.init((caseFile + ".h5").c_str());
 
     Result result;
     result.init(&(run.geometry), &(run.excitation), run.nMax);
@@ -104,22 +73,14 @@ int Simulation::run()
     oEGrid.close();
     oHGrid.close();
     oFile.close();
-
-//    result.writeContinuityCheck(0);
   }
 
   if(run.outputType == 11) //Wavelength scan
   {
     Result result;
 
-    ofstream outASec;
-    ofstream outESec;
-
-    sprintf(name, "%s_AbsorptionCS.dat", caseFile);
-    outASec.open(name);
-
-    sprintf(name, "%s_ExtinctionCS.dat", caseFile);
-    outESec.open(name);
+    ofstream outASec(caseFile + "_AbsorptionCS.dat");
+    ofstream outESec(caseFile + "_ExtinctionCS.dat");
 
     //Now scan over the wavelengths given in params
     double lami = run.params[0];
@@ -157,14 +118,8 @@ int Simulation::run()
   {
     Result result;
 
-    ofstream outASec;
-    ofstream outESec;
-
-    sprintf(name, "%s_AbsorptionCS.dat", caseFile);
-    outASec.open(name);
-
-    sprintf(name, "%s_ExtinctionCS.dat", caseFile);
-    outESec.open(name);
+    ofstream outASec(caseFile + "_AbsorptionCS.dat");
+    ofstream outESec(caseFile + "_ExtinctionCS.dat");
 
     //Now scan over the wavelengths given in params
     double radi = run.params[3];
@@ -216,18 +171,9 @@ int Simulation::run()
   {
     Result result;
 
-    ofstream outASec;
-    ofstream outESec;
-    ofstream outParams;
-
-    sprintf(name, "%s_AbsorptionCS.dat", caseFile);
-    outASec.open(name);
-
-    sprintf(name, "%s_ExtinctionCS.dat", caseFile);
-    outESec.open(name);
-
-    sprintf(name, "%s_RadiusLambda.dat", caseFile);
-    outParams.open(name);
+    ofstream outASec(caseFile + "_AbsorptionCS.dat");
+    ofstream outESec(caseFile + "_ExtinctionCS.dat");
+    ofstream outParams(caseFile + "_RadiusLambda.dat");
 
     //Now scan over the wavelengths given in params
     double lami = run.params[0];
@@ -295,14 +241,8 @@ int Simulation::run()
   if(run.outputType == 2)
   {
     //Scattering coefficients requests
-    ofstream outPCoef;
-    ofstream outQCoef;
-
-    sprintf(name, "%s_pCoefficients.dat", caseFile);
-    outPCoef.open(name);
-
-    sprintf(name, "%s_qCoefficients.dat", caseFile);
-    outQCoef.open(name);
+    ofstream outPCoef(caseFile + "_pCoefficients.dat");
+    ofstream outQCoef(caseFile + "_qCoefficients.dat");
 
     Result result;
     result.init(&(run.geometry), &(run.excitation), run.nMax);

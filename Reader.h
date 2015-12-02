@@ -1,6 +1,7 @@
 #ifndef READER_H_
 #define READER_H_
 
+#include <string>
 #include "Run.h"
 #include "pugi/pugixml.hpp"
 
@@ -58,7 +59,7 @@ public:
      */
     int readStructure(pugi::xml_node geo_node_);
 
-  int readSimulation(char* fileName_);
+  int readSimulation(std::string const& fileName_);
 
   /**
    * Read the output requests.

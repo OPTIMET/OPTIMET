@@ -560,11 +560,11 @@ void Reader::init(Run *run_)
   initDone = true;
 }
 
-int Reader::readSimulation(char* fileName_)
+int Reader::readSimulation(std::string const & fileName_)
 {
   xml_parse_result fileResult;
 
-  fileResult = inputFile.load_file(fileName_);
+  fileResult = inputFile.load_file(fileName_.c_str());
 
   if(!fileResult)
   {
