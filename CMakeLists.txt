@@ -25,3 +25,12 @@ if(DOXYGEN_FOUND)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Generating API documentation with Doxygen" VERBATIM)
 endif(DOXYGEN_FOUND)
+
+if(EXISTS "${PROJECT_SOURCE_DIR}/test-data/OneParticle.h5")
+  enable_testing()
+  include(regression)
+else()
+  message(WARNING "The git submodule test-data has not been downloaded.\n"
+    "Do `git submodule update --init --recursive` to do so now.\n"
+    "Until then, tests that need this data will be disabled")
+endif()

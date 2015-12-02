@@ -1,6 +1,17 @@
 #include "Simulation.h"
+
+#include "Reader.h"
+#include "CompoundIterator.h"
+#include "Excitation.h"
+#include "Solver.h"
+#include "Result.h"
+#include "Run.h"
+#include "aliases.h"
+#include "Output.h"
+
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
 
 using std::ofstream;
 using std::cout;
@@ -8,314 +19,312 @@ using std::endl;
 
 Simulation::Simulation()
 {
-	initDone = false;
+  initDone = false;
 }
 
 Simulation::Simulation(char *caseFile_)
 {
-	init(caseFile_);
+  init(caseFile_);
 }
 
 Simulation::~Simulation()
 {
-	//
+  //
 }
 
 void Simulation::init(char* caseFile_)
 {
-	caseFile = caseFile_;
-	initDone = true;
+  caseFile = caseFile_;
+  initDone = true;
 }
 
 int Simulation::run()
 {
 
-	//Read the case file
-	char name[64];
-	Run run;
-
-	Reader reader;
-	reader.init(&run);
-	sprintf(name, "%s.xml", caseFile);
-	if(reader.readSimulation(name))
-		return 1;
-
-	//Initialize the solver
-
-	Solver solver;
-
-	solver.init(&(run.geometry), &(run.excitation), O3DSolverIndirect, run.nMax);
-	solver.populate();
-
-	// AJ
-//	cout<<"bground.epsilon = "<<run.geometry.bground.epsilon<<endl;
-	//cout<<"bground.mu = "<<run.geometry.bground.mu<<endl;
-
-//	cout<<"bground.epsilon_r = "<<run.geometry.bground.epsilon_r<<endl;
-	//cout<<"bground.mu_r = "<<run.geometry.bground.mu_r<<endl;
-
-	//Determine the simulation type and proceed accordingly
-	if(run.outputType == 0) //Field simulation
-	{
-
-		Output oFile;
-		sprintf(name, "%s.h5", caseFile);
-		oFile.init(name);
-
-		Result result;
-		result.init(&(run.geometry), &(run.excitation), run.nMax);
-		solver.solve(result.scatter_coef, result.internal_coef);
-
-		OutputGrid oEGrid;
-		OutputGrid oHGrid;
-		oEGrid.init(O3DCartesianRegular, run.params, oFile.getHandle("Field_E"));
-		oHGrid.init(O3DCartesianRegular, run.params, oFile.getHandle("Field_H"));
-
-		if(run.singleMode)
-		{
-			if(run.dominantAuto)
-			{
-				CompoundIterator p;
-				p = result.getDominant();
-				result.setFieldsModal(oEGrid, oHGrid, run.projection, p, run.singleComponent);
-				cout << "Field output finished. Mode given is for n = " << p.first << " and m = " << p. second << "." << endl;
-			}
-			else
-			{
-				result.setFieldsModal(oEGrid, oHGrid, run.projection, run.singleModeIndex, run.singleComponent);
-			}
-		}
-		else
-		{
-			result.setFields(oEGrid, oHGrid, run.projection);
-		}
-
-		oEGrid.close();
-		oHGrid.close();
-		oFile.close();
-		
-//		result.writeContinuityCheck(0);
-	}
-
-	if(run.outputType == 11) //Wavelength scan
-	{
-		Result result;
-
-		ofstream outASec;
-		ofstream outESec;
-
-		sprintf(name, "%s_AbsorptionCS.dat", caseFile);
-		outASec.open(name);
-
-		sprintf(name, "%s_ExtinctionCS.dat", caseFile);
-		outESec.open(name);
-
-		//Now scan over the wavelengths given in params
-		double lami = run.params[0];
-		double lamf = run.params[1];
-		int steps = run.params[2];
-
-		double lam;
-		double lams;
-
-		lams = (lamf - lami) / (steps-1);
-
-		for(int i=0; i<steps; i++)
-		{
-			lam = lami + i * lams;
-
-			cout << "Solving for Lambda = " << lam << endl;
-
-			run.excitation.updateWavelength(lam);
-			run.geometry.update(&(run.excitation));
-			solver.update(&(run.geometry), &(run.excitation), run.nMax);
+  //Read the case file
+  char name[4096];
+  Run run;
+
+  Reader reader;
+  reader.init(&run);
+  sprintf(name, "%s.xml", caseFile);
+  if(reader.readSimulation(name))
+    return 1;
+
+  //Initialize the solver
+
+  Solver solver;
+
+  solver.init(&(run.geometry), &(run.excitation), O3DSolverIndirect, run.nMax);
+  solver.populate();
+
+  // AJ
+//  cout<<"bground.epsilon = "<<run.geometry.bground.epsilon<<endl;
+  //cout<<"bground.mu = "<<run.geometry.bground.mu<<endl;
+
+//  cout<<"bground.epsilon_r = "<<run.geometry.bground.epsilon_r<<endl;
+  //cout<<"bground.mu_r = "<<run.geometry.bground.mu_r<<endl;
+
+  //Determine the simulation type and proceed accordingly
+  if(run.outputType == 0) //Field simulation
+  {
+
+    Output oFile;
+    sprintf(name, "%s.h5", caseFile);
+    oFile.init(name);
+
+    Result result;
+    result.init(&(run.geometry), &(run.excitation), run.nMax);
+    solver.solve(result.scatter_coef, result.internal_coef);
 
-			Result result;
-			result.init(&(run.geometry), &(run.excitation), run.nMax);
-			solver.solve(result.scatter_coef, result.internal_coef);
+    OutputGrid oEGrid;
+    OutputGrid oHGrid;
+    oEGrid.init(O3DCartesianRegular, run.params, oFile.getHandle("Field_E"));
+    oHGrid.init(O3DCartesianRegular, run.params, oFile.getHandle("Field_H"));
 
-			outASec << lam << "\t" << result.getAbsorptionCrossSection() << endl;
-			outESec << lam << "\t" << result.getExtinctionCrossSection() << endl;
-		}
+    if(run.singleMode)
+    {
+      if(run.dominantAuto)
+      {
+        CompoundIterator p;
+        p = result.getDominant();
+        result.setFieldsModal(oEGrid, oHGrid, run.projection, p, run.singleComponent);
+        cout << "Field output finished. Mode given is for n = " << p.first << " and m = " << p. second << "." << endl;
+      }
+      else
+      {
+        result.setFieldsModal(oEGrid, oHGrid, run.projection, run.singleModeIndex, run.singleComponent);
+      }
+    }
+    else
+    {
+      result.setFields(oEGrid, oHGrid, run.projection);
+    }
 
-		outASec.close();
-		outESec.close();
-	}
+    oEGrid.close();
+    oHGrid.close();
+    oFile.close();
 
-	if(run.outputType == 12) //Radius scan
-	{
-		Result result;
+//    result.writeContinuityCheck(0);
+  }
+
+  if(run.outputType == 11) //Wavelength scan
+  {
+    Result result;
+
+    ofstream outASec;
+    ofstream outESec;
+
+    sprintf(name, "%s_AbsorptionCS.dat", caseFile);
+    outASec.open(name);
 
-		ofstream outASec;
-		ofstream outESec;
+    sprintf(name, "%s_ExtinctionCS.dat", caseFile);
+    outESec.open(name);
 
-		sprintf(name, "%s_AbsorptionCS.dat", caseFile);
-		outASec.open(name);
+    //Now scan over the wavelengths given in params
+    double lami = run.params[0];
+    double lamf = run.params[1];
+    int steps = run.params[2];
 
-		sprintf(name, "%s_ExtinctionCS.dat", caseFile);
-		outESec.open(name);
+    double lam;
+    double lams;
 
-		//Now scan over the wavelengths given in params
-		double radi = run.params[3];
-		double radf = run.params[4];
-		int radsteps = run.params[5];
+    lams = (lamf - lami) / (steps-1);
 
-		double rad;
-		double rads;
+    for(int i=0; i<steps; i++)
+    {
+      lam = lami + i * lams;
 
-		rads = (radf - radi) / (radsteps-1);
+      cout << "Solving for Lambda = " << lam << endl;
 
-		for(int i=0; i<radsteps; i++)
-		{
-			rad = radi + i * rads;
+      run.excitation.updateWavelength(lam);
+      run.geometry.update(&(run.excitation));
+      solver.update(&(run.geometry), &(run.excitation), run.nMax);
 
-			cout << "Solving for R = " << rad << endl;
+      Result result;
+      result.init(&(run.geometry), &(run.excitation), run.nMax);
+      solver.solve(result.scatter_coef, result.internal_coef);
 
-			for(int k=0; k<run.geometry.noObjects; k++)
-			{
-				run.geometry.updateRadius(rad, k);
-			}
+      outASec << lam << "\t" << result.getAbsorptionCrossSection() << endl;
+      outESec << lam << "\t" << result.getExtinctionCrossSection() << endl;
+    }
 
-			if(run.geometry.structureType == 1)
-			{
-				run.geometry.rebuildStructure();
-			}
+    outASec.close();
+    outESec.close();
+  }
 
-			if(!run.geometry.validate())
-			{
-				std::cerr << "Geometry no longer valid!";
-				exit(1);
-			}
+  if(run.outputType == 12) //Radius scan
+  {
+    Result result;
 
-			solver.update(&(run.geometry), &(run.excitation), run.nMax);
+    ofstream outASec;
+    ofstream outESec;
 
-			Result result;
-			result.init(&(run.geometry), &(run.excitation), run.nMax);
-			solver.solve(result.scatter_coef, result.internal_coef);
+    sprintf(name, "%s_AbsorptionCS.dat", caseFile);
+    outASec.open(name);
 
-			outASec << rad << "\t" << result.getAbsorptionCrossSection() << endl;
-			outESec << rad << "\t" << result.getExtinctionCrossSection() << endl;
-		}
+    sprintf(name, "%s_ExtinctionCS.dat", caseFile);
+    outESec.open(name);
 
-		outASec.close();
-		outESec.close();
-	}
+    //Now scan over the wavelengths given in params
+    double radi = run.params[3];
+    double radf = run.params[4];
+    int radsteps = run.params[5];
 
-	if(run.outputType == 112) //R vs Wavelength scan
-	{
-		Result result;
+    double rad;
+    double rads;
 
-		ofstream outASec;
-		ofstream outESec;
-		ofstream outParams;
+    rads = (radf - radi) / (radsteps-1);
 
-		sprintf(name, "%s_AbsorptionCS.dat", caseFile);
-		outASec.open(name);
+    for(int i=0; i<radsteps; i++)
+    {
+      rad = radi + i * rads;
 
-		sprintf(name, "%s_ExtinctionCS.dat", caseFile);
-		outESec.open(name);
+      cout << "Solving for R = " << rad << endl;
 
-		sprintf(name, "%s_RadiusLambda.dat", caseFile);
-		outParams.open(name);
+      for(int k=0; k<run.geometry.noObjects; k++)
+      {
+        run.geometry.updateRadius(rad, k);
+      }
 
-		//Now scan over the wavelengths given in params
-		double lami = run.params[0];
-		double lamf = run.params[1];
-		int lamsteps = run.params[2];
+      if(run.geometry.structureType == 1)
+      {
+        run.geometry.rebuildStructure();
+      }
 
-		double radi = run.params[3];
-		double radf = run.params[4];
-		int radsteps = run.params[5];
+      if(!run.geometry.validate())
+      {
+        std::cerr << "Geometry no longer valid!";
+        exit(1);
+      }
 
-		double lam, lams, rad, rads;
+      solver.update(&(run.geometry), &(run.excitation), run.nMax);
 
-		lams = (lamf - lami) / (lamsteps-1);
-		rads = (radf - radi) / (radsteps-1);
+      Result result;
+      result.init(&(run.geometry), &(run.excitation), run.nMax);
+      solver.solve(result.scatter_coef, result.internal_coef);
 
-		for(int i=0; i<lamsteps; i++)
-		{
-			lam = lami + i * lams;
+      outASec << rad << "\t" << result.getAbsorptionCrossSection() << endl;
+      outESec << rad << "\t" << result.getExtinctionCrossSection() << endl;
+    }
 
-			for(int j=0; j<radsteps; j++)
-			{
-				rad = radi + j * rads;
+    outASec.close();
+    outESec.close();
+  }
 
-				cout << "Solving for Lambda = " << lam << " and R =" << rad << endl;
+  if(run.outputType == 112) //R vs Wavelength scan
+  {
+    Result result;
 
-				run.excitation.updateWavelength(lam);
-				run.geometry.update(&(run.excitation));
-				for(int k=0; k<run.geometry.noObjects; k++)
-				{
-					run.geometry.updateRadius(rad, k);
-				}
+    ofstream outASec;
+    ofstream outESec;
+    ofstream outParams;
 
-				if(run.geometry.structureType == 1)
-				{
-					run.geometry.rebuildStructure();
-				}
+    sprintf(name, "%s_AbsorptionCS.dat", caseFile);
+    outASec.open(name);
 
-				if(!run.geometry.validate())
-				{
-					std::cerr << "Geometry no longer valid!";
-					exit(1);
-				}
+    sprintf(name, "%s_ExtinctionCS.dat", caseFile);
+    outESec.open(name);
 
-				solver.update(&(run.geometry), &(run.excitation), run.nMax);
+    sprintf(name, "%s_RadiusLambda.dat", caseFile);
+    outParams.open(name);
 
-				Result result;
-				result.init(&(run.geometry), &(run.excitation), run.nMax);
-				solver.solve(result.scatter_coef, result.internal_coef);
+    //Now scan over the wavelengths given in params
+    double lami = run.params[0];
+    double lamf = run.params[1];
+    int lamsteps = run.params[2];
 
-				outASec << result.getAbsorptionCrossSection() << "\t";
-				outESec << result.getExtinctionCrossSection() << "\t";
-				outParams << "(" << rad*1e9 << " , " << lam*1e9 << ")" << "\t";
-			}
+    double radi = run.params[3];
+    double radf = run.params[4];
+    int radsteps = run.params[5];
 
-			outASec << endl;
-			outESec << endl;
-			outParams << endl;
-		}
+    double lam, lams, rad, rads;
 
-		outASec.close();
-		outESec.close();
-		outParams.close();
-	}
+    lams = (lamf - lami) / (lamsteps-1);
+    rads = (radf - radi) / (radsteps-1);
 
-	if(run.outputType == 2)
-	{
-		//Scattering coefficients requests
-		ofstream outPCoef;
-		ofstream outQCoef;
+    for(int i=0; i<lamsteps; i++)
+    {
+      lam = lami + i * lams;
 
-		sprintf(name, "%s_pCoefficients.dat", caseFile);
-		outPCoef.open(name);
+      for(int j=0; j<radsteps; j++)
+      {
+        rad = radi + j * rads;
 
-		sprintf(name, "%s_qCoefficients.dat", caseFile);
-		outQCoef.open(name);
+        cout << "Solving for Lambda = " << lam << " and R =" << rad << endl;
 
-		Result result;
-		result.init(&(run.geometry), &(run.excitation), run.nMax);
-		solver.solve(result.scatter_coef, result.internal_coef);
+        run.excitation.updateWavelength(lam);
+        run.geometry.update(&(run.excitation));
+        for(int k=0; k<run.geometry.noObjects; k++)
+        {
+          run.geometry.updateRadius(rad, k);
+        }
 
-		CompoundIterator p;
+        if(run.geometry.structureType == 1)
+        {
+          run.geometry.rebuildStructure();
+        }
 
-		for(p=0; p<p.max(run.nMax); p++)
-		{
-			outPCoef << p.first << "\t" << p.second << "\t" << abs(result.scatter_coef[p]) << endl;
-			outQCoef << p.first << "\t" << p.second << "\t" << abs(result.scatter_coef[p.compound + p.max(run.nMax)]) << endl;
-		}
+        if(!run.geometry.validate())
+        {
+          std::cerr << "Geometry no longer valid!";
+          exit(1);
+        }
 
-		outPCoef.close();
-		outQCoef.close();
-	}
+        solver.update(&(run.geometry), &(run.excitation), run.nMax);
 
-	return 0;
+        Result result;
+        result.init(&(run.geometry), &(run.excitation), run.nMax);
+        solver.solve(result.scatter_coef, result.internal_coef);
+
+        outASec << result.getAbsorptionCrossSection() << "\t";
+        outESec << result.getExtinctionCrossSection() << "\t";
+        outParams << "(" << rad*1e9 << " , " << lam*1e9 << ")" << "\t";
+      }
+
+      outASec << endl;
+      outESec << endl;
+      outParams << endl;
+    }
+
+    outASec.close();
+    outESec.close();
+    outParams.close();
+  }
+
+  if(run.outputType == 2)
+  {
+    //Scattering coefficients requests
+    ofstream outPCoef;
+    ofstream outQCoef;
+
+    sprintf(name, "%s_pCoefficients.dat", caseFile);
+    outPCoef.open(name);
+
+    sprintf(name, "%s_qCoefficients.dat", caseFile);
+    outQCoef.open(name);
+
+    Result result;
+    result.init(&(run.geometry), &(run.excitation), run.nMax);
+    solver.solve(result.scatter_coef, result.internal_coef);
+
+    CompoundIterator p;
+
+    for(p=0; p<p.max(run.nMax); p++)
+    {
+      outPCoef << p.first << "\t" << p.second << "\t" << abs(result.scatter_coef[p]) << endl;
+      outQCoef << p.first << "\t" << p.second << "\t" << abs(result.scatter_coef[p.compound + p.max(run.nMax)]) << endl;
+    }
+
+    outPCoef.close();
+    outQCoef.close();
+  }
+
+  return 0;
 }
 
 int Simulation::done()
 {
-	//Placeholder method. Not needed at the moment.
-	return 0;
+  //Placeholder method. Not needed at the moment.
+  return 0;
 }
-
-

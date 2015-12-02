@@ -18,7 +18,7 @@
  * The block syntax (for 20 harmonics) is:
  * @code{.xml}
  * <simulation>
- * 	<harmonics nmax="20" />
+ *  <harmonics nmax="20" />
  * </simulation>
  * @endcode
  *
@@ -43,10 +43,10 @@
  *
  * @code{.xml}
  * <object type="sphere">
- * 	<cartesian x="100.0" y="50.0" z="-200.0" />
- * 	<properties radius="300.0" />
- * 	<epsilon type="relative" value="13" />
- * 	<mu type="relative" value="1" />
+ *  <cartesian x="100.0" y="50.0" z="-200.0" />
+ *  <properties radius="300.0" />
+ *  <epsilon type="relative" value="13" />
+ *  <mu type="relative" value="1" />
  * </object>
  * @endcode
  *
@@ -59,12 +59,12 @@
  *
  * @code{.xml}
  * <object type="sphere">
- * 	<spherical rrr="100.0" the="1.8" phi="3.14" />
- * 	<properties radius="200.0" />
- * 	<epsilon type="sellmeier"/>
- * 		<parameters B1="10.6684293" C1="0.301516485" B2="0.003043475" C2="1.13475115" B3="1.54133408" C3="1104.0" />
- * 	</epsilon>
- * 	<mu type="relative" value="1" />
+ *  <spherical rrr="100.0" the="1.8" phi="3.14" />
+ *  <properties radius="200.0" />
+ *  <epsilon type="sellmeier"/>
+ *    <parameters B1="10.6684293" C1="0.301516485" B2="0.003043475" C2="1.13475115" B3="1.54133408" C3="1104.0" />
+ *  </epsilon>
+ *  <mu type="relative" value="1" />
  * </object>
  * @endcode
  *
@@ -83,11 +83,11 @@
  * @code {.xml}
  * <structure type="spiral" arms="3">
  *  <object type="sphere">
- * 		<properties radius="300.0" />
- * 		<epsilon type="relative" value="13" />
- * 		<mu type="relative" value="1" />
- * 	</object>
- * 	<properties points="5" distance="700.0" />
+ *    <properties radius="300.0" />
+ *    <epsilon type="relative" value="13" />
+ *    <mu type="relative" value="1" />
+ *  </object>
+ *  <properties points="5" distance="700.0" />
  * </structure>
  * @endcode
  *
@@ -103,9 +103,9 @@
  *
  * @code{.xml}
  * <source type="planewave">
- *	<wavelength value="1460" />
- *	<propagation theta="90" phi="90" />
- *	<polarization Etheta.real="0.70710678118" Etheta.imag="0.0" Ephi.real="0.0" Ephi.imag="0.70710678118"/>
+ *  <wavelength value="1460" />
+ *  <propagation theta="90" phi="90" />
+ *  <polarization Etheta.real="0.70710678118" Etheta.imag="0.0" Ephi.real="0.0" Ephi.imag="0.70710678118"/>
  * </source>
  * @endcode
  *
@@ -135,9 +135,9 @@
  * @code{.xml}
  * <output type="field">
  *  <grid type="cartesian">
- *  	<x min="-1000.0" max="1000.0" steps="101" />
- *  	<y min="-1000.0" max="1000.0" steps="101" />
- *  	<z min="-1000.0" max="1000.0" steps="101" />
+ *    <x min="-1000.0" max="1000.0" steps="101" />
+ *    <y min="-1000.0" max="1000.0" steps="101" />
+ *    <z min="-1000.0" max="1000.0" steps="101" />
  *  </grid>
  * </output>
  * @endcode
@@ -155,9 +155,9 @@
  * @code{.xml}
  * <output type="field">
  *  <grid type="cartesian">
- *  	<x min="-1000.0" max="1000.0" steps="101" />
- *  	<y min="-1000.0" max="1000.0" steps="101" />
- *  	<z min="-1000.0" max="1000.0" steps="101" />
+ *    <x min="-1000.0" max="1000.0" steps="101" />
+ *    <y min="-1000.0" max="1000.0" steps="101" />
+ *    <z min="-1000.0" max="1000.0" steps="101" />
  *  </grid>
  *  <singlemode n="1" m="0" component="TM" />
  * </output>
@@ -170,9 +170,9 @@
  * @code{.xml}
  * <output type="field">
  *  <grid type="cartesian">
- *  	<x min="-1000.0" max="1000.0" steps="101" />
- *  	<y min="-1000.0" max="1000.0" steps="101" />
- *  	<z min="-1000.0" max="1000.0" steps="101" />
+ *    <x min="-1000.0" max="1000.0" steps="101" />
+ *    <y min="-1000.0" max="1000.0" steps="101" />
+ *    <z min="-1000.0" max="1000.0" steps="101" />
  *  </grid>
  *  <singlemode dominant="auto" />
  * </output>
@@ -187,9 +187,9 @@
  * 
  * @code{.xml}
  * <output type="response">
- * 	<scan type="A+E">
- * 		<wavelength initial="1400" final="2400" steps="101" />
- * 	</scan>
+ *  <scan type="A+E">
+ *    <wavelength initial="1400" final="2400" steps="101" />
+ *  </scan>
  * </output>
  * @endcode
  * 
@@ -202,9 +202,9 @@
  * 
  * @code{.xml}
  * <output type="response">
- * 	<scan type="A+E">
- * 		<radius initial="1000" final="2000" steps="101" />
- * 	</scan>
+ *  <scan type="A+E">
+ *    <radius initial="1000" final="2000" steps="101" />
+ *  </scan>
  * </output>
  * @endcode
  * 
@@ -214,10 +214,10 @@
  * 
  * @code{.xml}
  * <output type="response">
- * 	<scan type="A+E">
- * 		<wavelength initial="1400" final="2400" steps="101" />
- * 		<radius initial="1000" final="2000" steps="101" />
- * 	</scan>
+ *  <scan type="A+E">
+ *    <wavelength initial="1400" final="2400" steps="101" />
+ *    <radius initial="1000" final="2000" steps="101" />
+ *  </scan>
  * </output>
  * @endcode
  * 
