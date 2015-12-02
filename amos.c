@@ -219,7 +219,7 @@ L50:
 L70:
   *ierr = 1;
   return ret_val;
-}				/* dgamln_ */
+}       /* dgamln_ */
 
 doublereal
 z1abs_ (doublereal * zr, doublereal * zi)
@@ -269,7 +269,7 @@ L10:
 L20:
   ret_val = 0.;
   return ret_val;
-}				/* z1abs_ */
+}       /* z1abs_ */
 
 /* Subroutine */
 int
@@ -452,7 +452,7 @@ L80:
       *nz = -2;
     }
   return 0;
-}				/* zacai_ */
+}       /* zacai_ */
 
 /* Subroutine */
 int
@@ -758,7 +758,7 @@ L90:
       *nz = -2;
     }
   return 0;
-}				/* zacon_ */
+}       /* zacon_ */
 
 /* Subroutine */
 int
@@ -1355,7 +1355,7 @@ L260:
   *ierr = 4;
   *nz = 0;
   return 0;
-}				/* zairy_ */
+}       /* zairy_ */
 
 /* Subroutine */
 int
@@ -1623,7 +1623,7 @@ L100:
 L110:
   *nz = -2;
   return 0;
-}				/* zasyi_ */
+}       /* zasyi_ */
 
 /* funz2.f -- translated by f2c (version of 16 May 1991  13:06:06).
    You must link the resulting object file with the libraries:
@@ -2200,7 +2200,7 @@ L260:
   *nz = 0;
   *ierr = 4;
   return 0;
-}				/* zbesh_ */
+}       /* zbesh_ */
 
 /* Subroutine */
 int
@@ -2525,7 +2525,7 @@ L260:
   *nz = 0;
   *ierr = 4;
   return 0;
-}				/* zbesi_ */
+}       /* zbesi_ */
 
 /* Subroutine */
 int
@@ -2840,7 +2840,7 @@ L260:
   *nz = 0;
   *ierr = 4;
   return 0;
-}				/* zbesj_ */
+}       /* zbesj_ */
 
 /* Subroutine */
 int
@@ -3218,7 +3218,7 @@ L260:
   *nz = 0;
   *ierr = 4;
   return 0;
-}				/* zbesk_ */
+}       /* zbesk_ */
 
 /* Subroutine */
 int
@@ -3494,7 +3494,7 @@ L90:
 L170:
   *nz = 0;
   return 0;
-}				/* zbesy_ */
+}       /* zbesy_ */
 
 /* Subroutine */
 int
@@ -3726,7 +3726,7 @@ L130:
       *nz = -2;
     }
   return 0;
-}				/* zbinu_ */
+}       /* zbinu_ */
 
 /* funz3.f -- translated by f2c (version of 16 May 1991  13:06:06).
    You must link the resulting object file with the libraries:
@@ -4280,7 +4280,7 @@ L260:
   *ierr = 4;
   nz = 0;
   return 0;
-}				/* zbiry_ */
+}       /* zbiry_ */
 
 /* Subroutine */
 int
@@ -5121,7 +5121,7 @@ L300:
 L310:
   *nz = -2;
   return 0;
-}				/* zbknu_ */
+}       /* zbknu_ */
 
 /* Subroutine */
 int
@@ -5386,7 +5386,7 @@ L80:
 L90:
   *nlast = *n;
   return 0;
-}				/* zbuni_ */
+}       /* zbuni_ */
 
 /* Subroutine */
 int
@@ -5454,7 +5454,7 @@ L10:
   zunk2_ (zr, zi, fnu, kode, mr, n, &yr[1], &yi[1], nz, tol, elim, alim);
 L20:
   return 0;
-}				/* zbunk_ */
+}       /* zbunk_ */
 
 /* Subroutine */
 int
@@ -5479,7 +5479,7 @@ zdiv_ (doublereal * ar, doublereal * ai, doublereal * br,
   *cr = ca;
   *ci = cb;
   return 0;
-}				/* zdiv_ */
+}       /* zdiv_ */
 
 /* Subroutine */
 int
@@ -5504,7 +5504,7 @@ zexp_ (doublereal * ar, doublereal * ai, doublereal * br, doublereal * bi)
   *br = ca;
   *bi = cb;
   return 0;
-}				/* zexp_ */
+}       /* zexp_ */
 
 /* Subroutine */
 int
@@ -5703,7 +5703,7 @@ L45:
       /* L50: */
     }
   return 0;
-}				/* zkscl_ */
+}       /* zkscl_ */
 
 /* Subroutine */
 int
@@ -5786,7 +5786,7 @@ L50:
 L60:
   *ierr = 1;
   return 0;
-}				/* zlog_ */
+}       /* zlog_ */
 
 /* funz4.f -- translated by f2c (version of 16 May 1991  13:06:06).
    You must link the resulting object file with the libraries:
@@ -6099,7 +6099,7 @@ L90:
 L110:
   *nz = -2;
   return 0;
-}				/* zmlri_ */
+}       /* zmlri_ */
 
 /* Subroutine */
 int
@@ -6120,7 +6120,7 @@ zmlt_ (doublereal * ar, doublereal * ai, doublereal * br,
   *cr = ca;
   *ci = cb;
   return 0;
-}				/* zmlt_ */
+}       /* zmlt_ */
 
 /* Subroutine */
 int
@@ -6317,7 +6317,7 @@ L50:
       /* L60: */
     }
   return 0;
-}				/* zrati_ */
+}       /* zrati_ */
 
 /* Subroutine */
 int
@@ -6395,7 +6395,7 @@ L10:
   *nz = 1;
   *iuf = 0;
   return 0;
-}				/* zs1s2_ */
+}       /* zs1s2_ */
 
 /* Subroutine */
 int
@@ -6717,7 +6717,7 @@ L170:
 L190:
   *nz = -(*nz);
   return 0;
-}				/* zseri_ */
+}       /* zseri_ */
 
 /* Subroutine */
 int
@@ -6749,7 +6749,7 @@ zshch_ (doublereal * zr, doublereal * zi, doublereal * cshr,
   *cchr = ch * cn;
   *cchi = sh * sn;
   return 0;
-}				/* zshch_ */
+}       /* zshch_ */
 
 /* funz5.f -- translated by f2c (version of 16 May 1991  13:06:06).
    You must link the resulting object file with the libraries:
@@ -6850,7 +6850,7 @@ L70:
   *br = zm * drt;
   *bi = -zm * drt;
   return 0;
-}				/* zsqrt_ */
+}       /* zsqrt_ */
 
 /* Subroutine */
 int
@@ -6890,7 +6890,7 @@ zuchk_ (doublereal * yr, doublereal * yi, integer * nz,
       *nz = 1;
     }
   return 0;
-}				/* zuchk_ */
+}       /* zuchk_ */
 
 /* Subroutine */
 int
@@ -7659,7 +7659,7 @@ L220:
   sti = -(*bsumi) * rfn13;
   zdiv_ (&str, &sti, &rtztr, &rtzti, bsumr, bsumi);
   goto L120;
-}				/* zunhj_ */
+}       /* zunhj_ */
 
 /* Subroutine */
 int
@@ -7996,7 +7996,7 @@ L130:
       /* L140: */
     }
   return 0;
-}				/* zuni1_ */
+}       /* zuni1_ */
 
 /* Subroutine */
 int
@@ -8420,7 +8420,7 @@ L150:
       /* L160: */
     }
   return 0;
-}				/* zuni2_ */
+}       /* zuni2_ */
 
 /* funz.f -- translated by f2c (version of 16 May 1991  13:06:06).
    You must link the resulting object file with the libraries:
@@ -8678,7 +8678,7 @@ L60:
   *phir = cwrkr[16] * con[1];
   *phii = cwrki[16] * con[1];
   return 0;
-}				/* zunik_ */
+}       /* zunik_ */
 
 /* Subroutine */
 int
@@ -9364,7 +9364,7 @@ L290:
 L300:
   *nz = -1;
   return 0;
-}				/* zunk1_ */
+}       /* zunk1_ */
 
 /* Subroutine */
 int
@@ -10147,7 +10147,7 @@ L310:
 L320:
   *nz = -1;
   return 0;
-}				/* zunk2_ */
+}       /* zunk2_ */
 
 /* Subroutine */
 int
@@ -10488,7 +10488,7 @@ L200:
 L210:
   *nuf = -1;
   return 0;
-}				/* zuoik_ */
+}       /* zuoik_ */
 
 /* Subroutine */
 int
@@ -10641,4 +10641,4 @@ L50:
       *nz = -2;
     }
   return 0;
-}				/* zwrsk_ */
+}       /* zwrsk_ */
