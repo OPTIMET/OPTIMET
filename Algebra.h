@@ -12,67 +12,67 @@
 class Algebra
 {
 public:
-	/**
-	 * Default constructor for the Algebra class.
-	 */
-	Algebra();
+  /**
+   * Default constructor for the Algebra class.
+   */
+  Algebra();
 
-	/**
-	 * Default destructor for the Algebra class.
-	 */
-	virtual ~Algebra();
+  /**
+   * Default destructor for the Algebra class.
+   */
+  virtual ~Algebra();
 
-	/**
-	 * Implements the multiplication C = alpha*A*B+beta*C.
-	 * @param A the A matrix.
-	 * @param rows_A_ the number of rows of A.
-	 * @param cols_A_ the number of columns of A.
-	 * @param B the B matrix.
-	 * @param rows_B_ the number of rows of B.
-	 * @param cols_B_ the number of columns of B.
-	 * @param C the C matrix (return matrix).
-	 * @param alpha the scalar alpha.
-	 * @param beta the scalar beta.
-	 */
-	static void multiplyMatrixMatrix(std::complex<double> **A, int rows_A_,
-		int cols_A_, std::complex<double> **B,
-		int rows_B_, int cols_B_, std::complex<double> **C,
-		std::complex<double> alpha_, std::complex<double> beta_);
+  /**
+   * Implements the multiplication C = alpha*A*B+beta*C.
+   * @param A the A matrix.
+   * @param rows_A_ the number of rows of A.
+   * @param cols_A_ the number of columns of A.
+   * @param B the B matrix.
+   * @param rows_B_ the number of rows of B.
+   * @param cols_B_ the number of columns of B.
+   * @param C the C matrix (return matrix).
+   * @param alpha the scalar alpha.
+   * @param beta the scalar beta.
+   */
+  static void multiplyMatrixMatrix(std::complex<double> **A, int rows_A_,
+    int cols_A_, std::complex<double> **B,
+    int rows_B_, int cols_B_, std::complex<double> **C,
+    std::complex<double> alpha_, std::complex<double> beta_);
 
-	/**
-	 * Implements the multiplication Y = alpha*A*X + beta*Y
-	 * @param A the A matrix.
-	 * @param rows_A_ the number of rows of A.
-	 * @param cols_A_ the number of columns of A.
-	 * @param X the X vector.
-	 * @param Y the Y vector (return vector).
-	 * @param alpha_ the scalar alpha.
-	 * @param beta_ the scalar beta.
-	 */
-	static void multiplyVectorMatrix(std::complex<double> **A, int rows_A_,
-		int cols_A_, std::complex<double> *X,
-		std::complex<double> *Y, std::complex<double> alpha_,
-		std::complex<double> beta_);
+  /**
+   * Implements the multiplication Y = alpha*A*X + beta*Y
+   * @param A the A matrix.
+   * @param rows_A_ the number of rows of A.
+   * @param cols_A_ the number of columns of A.
+   * @param X the X vector.
+   * @param Y the Y vector (return vector).
+   * @param alpha_ the scalar alpha.
+   * @param beta_ the scalar beta.
+   */
+  static void multiplyVectorMatrix(std::complex<double> **A, int rows_A_,
+    int cols_A_, std::complex<double> *X,
+    std::complex<double> *Y, std::complex<double> alpha_,
+    std::complex<double> beta_);
 
-				/**
-	 * Convert a Matrix into a Vector.
-	 * @param rows_ the number of rows of the matrix.
-	 * @param columns_ the number of columns of the matrix.
-	 * @param T_ the matrix.
-	 * @param V_ the vector.
-	 */
-	static void matrixToVector(long rows_, long columns_,
-		std::complex<double> **T_, std::complex<double> *V_);
+        /**
+   * Convert a Matrix into a Vector.
+   * @param rows_ the number of rows of the matrix.
+   * @param columns_ the number of columns of the matrix.
+   * @param T_ the matrix.
+   * @param V_ the vector.
+   */
+  static void matrixToVector(long rows_, long columns_,
+    std::complex<double> **T_, std::complex<double> *V_);
 
-	/**
-	 * Convert a Vector into a Matrix.
-	 * @param rows_ the number of rows of the matrix.
-	 * @param columns_ the number of columns of the matrix.
-	 * @param V_ the vector.
-	 * @param T_ the matrix.
-	 */
-	static void vectorToMatrix(long rows_, long columns_,
-		std::complex<double> *V_, std::complex<double> **T_);
+  /**
+   * Convert a Vector into a Matrix.
+   * @param rows_ the number of rows of the matrix.
+   * @param columns_ the number of columns of the matrix.
+   * @param V_ the vector.
+   * @param T_ the matrix.
+   */
+  static void vectorToMatrix(long rows_, long columns_,
+    std::complex<double> *V_, std::complex<double> **T_);
 };
 
 #endif /* ALGEBRA_H_ */

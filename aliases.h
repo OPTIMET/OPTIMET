@@ -7,7 +7,7 @@
  * Alias groups:
  *  1 - solver methods
  *  8 - geometry types
- * 	9 - output grids
+ *  9 - output grids
  */
 
 /** @brief Cartesian Regular grid. */

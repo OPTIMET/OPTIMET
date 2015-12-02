@@ -9,45 +9,45 @@
 class Simulation
 {
 private:
-	char *caseFile; /**< Name of the case without extensions. */
-	bool initDone;	/**< Specifies initialization status. */
+  char *caseFile; /**< Name of the case without extensions. */
+  bool initDone;  /**< Specifies initialization status. */
 public:
-	/**
-	 * Default constructor for the Simulation class.
-	 * Does NOT initialize the object.
-	 */
-	Simulation();
+  /**
+   * Default constructor for the Simulation class.
+   * Does NOT initialize the object.
+   */
+  Simulation();
 
-	/**
-	 * Initialization constructor for the Simulation class.
-	 * @param caseFile the name of the case file (NO extension).
-	 */
-	Simulation(char *caseFile_);
+  /**
+   * Initialization constructor for the Simulation class.
+   * @param caseFile the name of the case file (NO extension).
+   */
+  Simulation(char *caseFile_);
 
-	/**
-	 * Default destructor for the Simulation class.
-	 */
-	virtual ~Simulation();
+  /**
+   * Default destructor for the Simulation class.
+   */
+  virtual ~Simulation();
 
-	/**
-	 * Initialization method for the Simulation class.
-	 * @param caseFile_ the name of the case file (NO extension).
-	 * @return 0 if successful, 1 otherwise.
-	 */
-	void init(char *caseFile_);
+  /**
+   * Initialization method for the Simulation class.
+   * @param caseFile_ the name of the case file (NO extension).
+   * @return 0 if successful, 1 otherwise.
+   */
+  void init(char *caseFile_);
 
-	/**
-	 * Starts a simulation.
-	 * @return 0 if successful, 1 otherwise.
-	 */
-	int run();
+  /**
+   * Starts a simulation.
+   * @return 0 if successful, 1 otherwise.
+   */
+  int run();
 
-	/**
-	 * Finishes a simulation.
-	 * Placeholder method. Not needed at the moment.
-	 * @return 0 if succesful, 1 otherwise.
-	 */
-	int done();
+  /**
+   * Finishes a simulation.
+   * Placeholder method. Not needed at the moment.
+   * @return 0 if succesful, 1 otherwise.
+   */
+  int done();
 };
 
 #endif /* SIMULATION_H_ */
