@@ -8,9 +8,6 @@
 #include <cmath>
 #include <iostream>
 
-using std::cerr;
-using std::abs;
-
 double Coupling::a_nm_p(double n, double m)
 {
   return -sqrt( ((n+m+1.)*(n-m+1.))/((2.*n+1.)*(2.*n+3.)) );
@@ -31,30 +28,30 @@ double Coupling::b_nm_m(double n, double m)
   return +sqrt( ((n-m)*(n-m-1.))/((2.*n+1.)*(2.*n-1.)) );
 }
 
-void Coupling::TransferCoefficients(Spherical<double> R, complex<double> waveK, int BHreg,
-      int n_max, complex<double> **dataApq, complex<double> **dataBpq)
+void Coupling::TransferCoefficients(Spherical<double> R, std::complex<double> waveK, int BHreg,
+      int n_max, std::complex<double> **dataApq, std::complex<double> **dataBpq)
 {
   // Translation coefficients calculation  -----------------------------------------
   // -------------------------------------------------------------------------------
   // temp variables
-  complex<double> c_temp(0., 0.);
+  std::complex<double> c_temp(0., 0.);
   // working variables
   int i(0), j(0);
   int ii(0), jj(0);
   int n(0), m(0), l(0), k(0);         // duale subscript variables
   double d_n(0.), d_m(0.), d_l(0.), d_k(0.);  // duale subscript variables
   // auxiliary variables
-  complex<double> AlBe2(0., 0.);        // auxiliary coefficients
-  complex<double> AlBe3(0., 0.);        // auxiliary coefficients
-  complex<double> AlBe4(0., 0.);        // auxiliary coefficients
+  std::complex<double> AlBe2(0., 0.);        // auxiliary coefficients
+  std::complex<double> AlBe3(0., 0.);        // auxiliary coefficients
+  std::complex<double> AlBe4(0., 0.);        // auxiliary coefficients
   double A1(0.), A2(0.), A3(0.);        // auxiliary coefficients
   double B1(0.), B2(0.), B3(0.);        // auxiliary coefficients
   int p=(0), q(0);              // compound like iterator
   CompoundIterator pl, ql;          // Create a compound iterator
 
   // Assign corresponding input values ---------------------------------------------
-  complex<double> wkRconj(0., 0.);
-  complex<double> exp_iwk_theji(0., 0.);    // function of m & theji
+  std::complex<double> wkRconj(0., 0.);
+  std::complex<double> exp_iwk_theji(0., 0.);    // function of m & theji
 
   // II - Global matrix - Alpha-Beta (n, m, l, k) - AlBe_nmlk ---------------------
   // prepare for computing transfer matrices ---------------------------------------
@@ -69,21 +66,21 @@ void Coupling::TransferCoefficients(Spherical<double> R, complex<double> waveK, 
   n_Matsize1 = (n_max+e)+1;         // up to and including (n_max+e)  : indexed from 1
   m_Matsize1 = 2*(n_max+e)+1;         // up to and including (n_max+e)  : indexed from 0 + 1 for m==0
   // scalar translation-addition theorem ------------------------------------------
-  complex<double> ****AlBe_nmlk;
+  std::complex<double> ****AlBe_nmlk;
   AlBe_nmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
   PeriodicCoupling::compute_AlBe_nmlk(R, waveK, BHreg, n_max, AlBe_nmlk);
 
   // III - Global matrix - Anmlk & Bnmlk (n, m, l, k) -----------------------------
   // vector wave translation-addition theorem -------------------------------------
-  complex<double> ****Anmlk, ****Bnmlk;
+  std::complex<double> ****Anmlk, ****Bnmlk;
   Anmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
   Bnmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
   for(i=0; i<n_Matsize1; i++){
     for(j=0; j<m_Matsize1; j++){
       for(ii=0; ii<n_Matsize1; ii++){
         for(jj=0; jj<m_Matsize1; jj++){
-          Anmlk[i][j][ii][jj]=complex<double>(0., 0.);
-          Bnmlk[i][j][ii][jj]=complex<double>(0., 0.);
+          Anmlk[i][j][ii][jj]=std::complex<double>(0., 0.);
+          Bnmlk[i][j][ii][jj]=std::complex<double>(0., 0.);
         }
       }
     }
@@ -95,7 +92,7 @@ void Coupling::TransferCoefficients(Spherical<double> R, complex<double> waveK, 
 
       d_n=double(n);  d_m=double(m);
 
-      if(abs(m)<=n){
+      if(std::abs(m)<=n){
 
       // for all m values -------------------------------------------------------
       if(1){
@@ -105,9 +102,9 @@ void Coupling::TransferCoefficients(Spherical<double> R, complex<double> waveK, 
 
             d_l=double(l);  d_k=double(k);
 
-            if(abs(k) > l){
-              Anmlk[i][j][ii][jj]=complex<double>(0., 0.);
-              Bnmlk[i][j][ii][jj]=complex<double>(0., 0.);
+            if(std::abs(k) > l){
+              Anmlk[i][j][ii][jj]=std::complex<double>(0., 0.);
+              Bnmlk[i][j][ii][jj]=std::complex<double>(0., 0.);
             }
 
             else{
@@ -130,7 +127,7 @@ void Coupling::TransferCoefficients(Spherical<double> R, complex<double> waveK, 
               Bnmlk[i][j][ii][jj] = 2.*d_m*sqrt((d_l-d_k)*(d_l+d_k))*AlBe_nmlk[i][j][ii-1][jj]
                           + B2*AlBe_nmlk[i][j+1][ii-1][jj+1]
                           - B3*AlBe_nmlk[i][j-1][ii-1][jj-1];
-              Bnmlk[i][j][ii][jj]*=complex<double>(0., -B1);
+              Bnmlk[i][j][ii][jj]*=std::complex<double>(0., -B1);
 
 
             }
@@ -151,7 +148,7 @@ void Coupling::TransferCoefficients(Spherical<double> R, complex<double> waveK, 
   for(i=1, n=1; i<n_Matsize1-e; i++, n++){              // start at n==1 up to and including n_max
     for(j=e, m=-n_max; j<m_Matsize1-e; j++, m++){         // increment by the padded e value
 
-      if(abs(m)<=n){
+      if(std::abs(m)<=n){
 
         // double check current n & m -----------------------------------------------
         pl.init(n,m);
@@ -164,7 +161,7 @@ void Coupling::TransferCoefficients(Spherical<double> R, complex<double> waveK, 
         for(ii=1, l=1; ii<n_Matsize1-e; ii++, l++){
           for(jj=e, k=-n_max; jj<m_Matsize1-e; jj++, k++){
 
-            if(abs(k)<=l){
+            if(std::abs(k)<=l){
               // double check current l & k -----------------------------------
               ql.init(l,k);
               q=ql;
@@ -214,7 +211,7 @@ Coupling::Coupling()
   initDone = false;
 }
 
-Coupling::Coupling(Spherical<double> relR_, complex<double> waveK_,
+Coupling::Coupling(Spherical<double> relR_, std::complex<double> waveK_,
     int regular_, long nMax_)
 {
   init(relR_, waveK_, regular_, nMax_);
@@ -234,7 +231,7 @@ Coupling::~Coupling()
   }
 }
 
-void Coupling::init(Spherical<double> relR_, complex<double> waveK_,
+void Coupling::init(Spherical<double> relR_, std::complex<double> waveK_,
     int regular_, long nMax_)
 {
   relR = relR_;
@@ -263,21 +260,21 @@ void Coupling::init(Spherical<double> relR_, complex<double> waveK_,
 
   if(!initDone)
   {
-    dataApq = new complex<double> *[Tools::iteratorMax(nMax)];
-    dataBpq = new complex<double> *[Tools::iteratorMax(nMax)];
+    dataApq = new std::complex<double> *[Tools::iteratorMax(nMax)];
+    dataBpq = new std::complex<double> *[Tools::iteratorMax(nMax)];
 
     for(int i=0; i<Tools::iteratorMax(nMax); i++)
     {
-      dataApq[i] = new complex<double>[Tools::iteratorMax(nMax)];
-      dataBpq[i] = new complex<double>[Tools::iteratorMax(nMax)];
+      dataApq[i] = new std::complex<double>[Tools::iteratorMax(nMax)];
+      dataBpq[i] = new std::complex<double>[Tools::iteratorMax(nMax)];
     }
   }
 
   for(int i=0; i<Tools::iteratorMax(nMax); i++)
     for(int j=0; i<Tools::iteratorMax(nMax); i++)
     {
-      dataApq[i][j] = complex<double>(0.0, 0.0);
-      dataBpq[i][j] = complex<double>(0.0, 0.0);
+      dataApq[i][j] = std::complex<double>(0.0, 0.0);
+      dataBpq[i][j] = std::complex<double>(0.0, 0.0);
     }
 
   initDone = true;
@@ -287,13 +284,13 @@ int Coupling::populate()
 {
   if(!initDone)
   {
-    cerr << "Coupling object not initialized.";
+    std::cerr << "Coupling object not initialized.";
     return 1;
   }
 
-  if(abs(relR.rrr) < errEpsilon) //Check for NO translation case
+  if(std::abs(relR.rrr) < errEpsilon) //Check for NO translation case
     for(int i=0; i<Tools::iteratorMax(nMax); i++)
-      dataApq[i][i] = complex<double>(1.0, 0.0);
+      dataApq[i][i] = std::complex<double>(1.0, 0.0);
   else
     TransferCoefficients(relR, waveK, regular, nMax, dataApq, dataBpq);
 

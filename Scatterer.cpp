@@ -14,7 +14,7 @@ Scatterer::Scatterer(Spherical<double> vR_, ElectroMagnetic elmag_, double radiu
 void Scatterer::init(int nMax_)
 {
   nMax = nMax_;
-  sourceCoef = new complex<double>[2*Tools::iteratorMax(nMax)];
+  sourceCoef = new std::complex<double>[2*Tools::iteratorMax(nMax)];
   initDone = true;
 }
 
@@ -30,6 +30,6 @@ void Scatterer::init(Spherical<double> vR_, ElectroMagnetic elmag_, double radiu
   elmag = elmag_;
   radius = radius_;
   nMax = nMax_;
-  sourceCoef = new complex<double>[2*Tools::iteratorMax(nMax)];
+  sourceCoef = new std::complex<double>[2*Tools::iteratorMax(nMax)];
   initDone = true;
 }

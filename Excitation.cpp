@@ -10,11 +10,6 @@
 #include <iostream>
 #include <cmath>
 
-using std::cerr;
-using std::pow;
-using std::conj;
-using std::exp;
-
 Excitation::Excitation()
 {
   initDone = false;
@@ -73,7 +68,7 @@ int Excitation::populate()
 {
   if(!initDone)
   {
-    cerr << "Excitation was not initialized!";
+    std::cerr << "Excitation was not initialized!";
     return 1;
   }
 
@@ -92,15 +87,15 @@ int Excitation::populate()
     SphericalP <std::complex<double> > C_local = coef.dataCp[p];
     SphericalP <std::complex<double> > B_local = coef.dataBp[p];
 
-    SphericalP<std::complex<double> > conjAux(conj(C_local.rrr),
-        conj(C_local.the), conj(C_local.phi)); //std::complex conjugate of C
-    dataIncAp[p] = 4*consPi * pow(-1.0, p.second) * pow(consCi, p.first)
-        * coef.dn[p.first] * (conjAux * Einc) * exp(consCmi * (double)p.second * vKInc.phi);
+    SphericalP<std::complex<double> > conjAux(std::conj(C_local.rrr),
+        std::conj(C_local.the), std::conj(C_local.phi)); //std::complex conjugate of C
+    dataIncAp[p] = 4*consPi * std::pow(-1.0, p.second) * std::pow(consCi, p.first)
+        * coef.dn[p.first] * (conjAux * Einc) * std::exp(consCmi * (double)p.second * vKInc.phi);
 
-    conjAux = SphericalP<std::complex<double> >(conj(B_local.rrr),
-            conj(B_local.the), conj(B_local.phi)); //std::complex conjugate of B
-    dataIncBp[p] = 4*consPi * pow(-1.0, p.second) * pow(consCi, p.first-1)
-            * coef.dn[p.first] * (conjAux * Einc) * exp(consCmi * (double)p.second * vKInc.phi);
+    conjAux = SphericalP<std::complex<double> >(std::conj(B_local.rrr),
+            std::conj(B_local.the), std::conj(B_local.phi)); //std::complex conjugate of B
+    dataIncBp[p] = 4*consPi * std::pow(-1.0, p.second) * std::pow(consCi, p.first-1)
+            * coef.dn[p.first] * (conjAux * Einc) * std::exp(consCmi * (double)p.second * vKInc.phi);
   }
 
   return 0;
@@ -111,7 +106,7 @@ int Excitation::getIncLocal(Spherical<double> point_,
 {
   if(!initDone)
   {
-    cerr << "Excitation was not initialized!";
+    std::cerr << "Excitation was not initialized!";
     return 1;
   }
 

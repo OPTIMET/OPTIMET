@@ -13,10 +13,6 @@
 #include <fstream>
 #include <cstdlib>
 
-using std::ofstream;
-using std::cout;
-using std::endl;
-
 int Simulation::run()
 {
 
@@ -58,7 +54,7 @@ int Simulation::run()
         CompoundIterator p;
         p = result.getDominant();
         result.setFieldsModal(oEGrid, oHGrid, run.projection, p, run.singleComponent);
-        cout << "Field output finished. Mode given is for n = " << p.first << " and m = " << p. second << "." << endl;
+        std::cout << "Field output finished. Mode given is for n = " << p.first << " and m = " << p. second << "." << std::endl;
       }
       else
       {
@@ -79,8 +75,8 @@ int Simulation::run()
   {
     Result result;
 
-    ofstream outASec(caseFile + "_AbsorptionCS.dat");
-    ofstream outESec(caseFile + "_ExtinctionCS.dat");
+    std::ofstream outASec(caseFile + "_AbsorptionCS.dat");
+    std::ofstream outESec(caseFile + "_ExtinctionCS.dat");
 
     //Now scan over the wavelengths given in params
     double lami = run.params[0];
@@ -96,7 +92,7 @@ int Simulation::run()
     {
       lam = lami + i * lams;
 
-      cout << "Solving for Lambda = " << lam << endl;
+      std::cout << "Solving for Lambda = " << lam << std::endl;
 
       run.excitation.updateWavelength(lam);
       run.geometry.update(&(run.excitation));
@@ -106,8 +102,8 @@ int Simulation::run()
       result.init(&(run.geometry), &(run.excitation), run.nMax);
       solver.solve(result.scatter_coef, result.internal_coef);
 
-      outASec << lam << "\t" << result.getAbsorptionCrossSection() << endl;
-      outESec << lam << "\t" << result.getExtinctionCrossSection() << endl;
+      outASec << lam << "\t" << result.getAbsorptionCrossSection() << std::endl;
+      outESec << lam << "\t" << result.getExtinctionCrossSection() << std::endl;
     }
 
     outASec.close();
@@ -118,8 +114,8 @@ int Simulation::run()
   {
     Result result;
 
-    ofstream outASec(caseFile + "_AbsorptionCS.dat");
-    ofstream outESec(caseFile + "_ExtinctionCS.dat");
+    std::ofstream outASec(caseFile + "_AbsorptionCS.dat");
+    std::ofstream outESec(caseFile + "_ExtinctionCS.dat");
 
     //Now scan over the wavelengths given in params
     double radi = run.params[3];
@@ -135,7 +131,7 @@ int Simulation::run()
     {
       rad = radi + i * rads;
 
-      cout << "Solving for R = " << rad << endl;
+      std::cout << "Solving for R = " << rad << std::endl;
 
       for(int k=0; k<run.geometry.noObjects; k++)
       {
@@ -159,8 +155,8 @@ int Simulation::run()
       result.init(&(run.geometry), &(run.excitation), run.nMax);
       solver.solve(result.scatter_coef, result.internal_coef);
 
-      outASec << rad << "\t" << result.getAbsorptionCrossSection() << endl;
-      outESec << rad << "\t" << result.getExtinctionCrossSection() << endl;
+      outASec << rad << "\t" << result.getAbsorptionCrossSection() << std::endl;
+      outESec << rad << "\t" << result.getExtinctionCrossSection() << std::endl;
     }
 
     outASec.close();
@@ -171,9 +167,9 @@ int Simulation::run()
   {
     Result result;
 
-    ofstream outASec(caseFile + "_AbsorptionCS.dat");
-    ofstream outESec(caseFile + "_ExtinctionCS.dat");
-    ofstream outParams(caseFile + "_RadiusLambda.dat");
+    std::ofstream outASec(caseFile + "_AbsorptionCS.dat");
+    std::ofstream outESec(caseFile + "_ExtinctionCS.dat");
+    std::ofstream outParams(caseFile + "_RadiusLambda.dat");
 
     //Now scan over the wavelengths given in params
     double lami = run.params[0];
@@ -197,7 +193,7 @@ int Simulation::run()
       {
         rad = radi + j * rads;
 
-        cout << "Solving for Lambda = " << lam << " and R =" << rad << endl;
+        std::cout << "Solving for Lambda = " << lam << " and R =" << rad << std::endl;
 
         run.excitation.updateWavelength(lam);
         run.geometry.update(&(run.excitation));
@@ -228,9 +224,9 @@ int Simulation::run()
         outParams << "(" << rad*1e9 << " , " << lam*1e9 << ")" << "\t";
       }
 
-      outASec << endl;
-      outESec << endl;
-      outParams << endl;
+      outASec << std::endl;
+      outESec << std::endl;
+      outParams << std::endl;
     }
 
     outASec.close();
@@ -241,8 +237,8 @@ int Simulation::run()
   if(run.outputType == 2)
   {
     //Scattering coefficients requests
-    ofstream outPCoef(caseFile + "_pCoefficients.dat");
-    ofstream outQCoef(caseFile + "_qCoefficients.dat");
+    std::ofstream outPCoef(caseFile + "_pCoefficients.dat");
+    std::ofstream outQCoef(caseFile + "_qCoefficients.dat");
 
     Result result;
     result.init(&(run.geometry), &(run.excitation), run.nMax);
@@ -252,8 +248,8 @@ int Simulation::run()
 
     for(p=0; p<p.max(run.nMax); p++)
     {
-      outPCoef << p.first << "\t" << p.second << "\t" << abs(result.scatter_coef[p]) << endl;
-      outQCoef << p.first << "\t" << p.second << "\t" << abs(result.scatter_coef[p.compound + p.max(run.nMax)]) << endl;
+      outPCoef << p.first << "\t" << p.second << "\t" << abs(result.scatter_coef[p]) << std::endl;
+      outQCoef << p.first << "\t" << p.second << "\t" << abs(result.scatter_coef[p.compound + p.max(run.nMax)]) << std::endl;
     }
 
     outPCoef.close();

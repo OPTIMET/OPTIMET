@@ -12,10 +12,6 @@
 #include <cmath>
 #include <vector>
 
-using std::cerr;
-using std::endl;
-using std::sqrt;
-
 Geometry::Geometry()
 {
   initDone = false;
@@ -67,13 +63,13 @@ int Geometry::pushObject(Scatterer object_)
 {
   if(!initDone)
   {
-    cerr << "Geometry was not initialized. Object push failed!" << endl;
+    std::cerr << "Geometry was not initialized. Object push failed!" << std::endl;
     return 1;
   }
 
   if(noObjects == capacity)
   {
-    cerr << "Object push would exceed declared capacity. Ignoring!" << endl;
+    std::cerr << "Object push would exceed declared capacity. Ignoring!" << std::endl;
     return 1;
   }
 
@@ -94,7 +90,7 @@ int Geometry::validate()
 {
   if(!initDone) //geometry not initalized
   {
-    cerr << "Geometry was not initialized. Nothing to validate!" << endl;
+    std::cerr << "Geometry was not initialized. Nothing to validate!" << std::endl;
     return 0;
   }
 
@@ -103,7 +99,7 @@ int Geometry::validate()
 
   if(noObjects <= 0)
   {
-    cerr << "No objects found in geometry!" << endl;
+    std::cerr << "No objects found in geometry!" << std::endl;
     return 0;
   }
 
@@ -116,7 +112,7 @@ int Geometry::validate()
     {
       if(Tools::findDistance(objects[j].vR, objects[i].vR) <= (objects[j].radius+objects[i].radius))
       {
-        cerr << "Objects " << i << " and " << j << " intersect. Cannot validate geometry!" << endl;
+        std::cerr << "Objects " << i << " and " << j << " intersect. Cannot validate geometry!" << std::endl;
         return 0;
       }
     }
@@ -126,38 +122,38 @@ int Geometry::validate()
   return 1;
 }
 
-int Geometry::getTLocal(double omega_, int objectIndex_, int nMax_, complex<double> ** T_local_)
+int Geometry::getTLocal(double omega_, int objectIndex_, int nMax_, std::complex<double> ** T_local_)
 {
   if(!initDone)
   {
-    cerr << "Geometry not initialized!";
+    std::cerr << "Geometry not initialized!";
     return 1;
   }
 
   if(!validDone)
   {
-    cerr << "Geometry not validated!";
+    std::cerr << "Geometry not validated!";
     return 1;
   }
 
   if(objectIndex_ >= noObjects)
   {
-    cerr << "Object index " << objectIndex_ << " is out of range. Only " << noObjects << " objects exist!";
+    std::cerr << "Object index " << objectIndex_ << " is out of range. Only " << noObjects << " objects exist!";
     return 1;
   }
 
-  complex<double> k_s = omega_ * sqrt(objects[objectIndex_].elmag.epsilon * objects[objectIndex_].elmag.mu);
-  complex<double> k_b = omega_ * sqrt(bground.epsilon * bground.mu);
+  std::complex<double> k_s = omega_ * std::sqrt(objects[objectIndex_].elmag.epsilon * objects[objectIndex_].elmag.mu);
+  std::complex<double> k_b = omega_ * std::sqrt(bground.epsilon * bground.mu);
 
-  complex<double> rho = k_s / k_b;
-  complex<double> r_0 = k_b * objects[objectIndex_].radius;
-  complex<double> mu_sob = objects[objectIndex_].elmag.mu / bground.mu;
+  std::complex<double> rho = k_s / k_b;
+  std::complex<double> r_0 = k_b * objects[objectIndex_].radius;
+  std::complex<double> mu_sob = objects[objectIndex_].elmag.mu / bground.mu;
 
-  complex<double> psi(0., 0.), ksi(0., 0.);
-  complex<double> dpsi(0., 0.), dksi(0., 0.);
+  std::complex<double> psi(0., 0.), ksi(0., 0.);
+  std::complex<double> dpsi(0., 0.), dksi(0., 0.);
 
-  complex<double> psirho(0., 0.), ksirho(0., 0.);
-  complex<double> dpsirho(0., 0.), dksirho(0., 0.);
+  std::complex<double> psirho(0., 0.), ksirho(0., 0.);
+  std::complex<double> dpsirho(0., 0.), dksirho(0., 0.);
   // AJ -----------------------------------------------------------------------------------------------------
 
   Bessel J_n;
@@ -168,27 +164,27 @@ int Geometry::getTLocal(double omega_, int objectIndex_, int nMax_, complex<doub
   J_n.init(r_0, 0, 0, nMax_);
   if(J_n.populate())
   {
-    cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!"<<endl;
+    std::cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!"<<std::endl;
     return 1;
   }
 
   Jrho_n.init(rho*r_0, 0, 0, nMax_);
   if(Jrho_n.populate())
   {
-    cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!"<<endl;
+    std::cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!"<<std::endl;
     return 1;
   }
 
   H_n.init(r_0, 1, 0, nMax_);
   if(H_n.populate())
   {
-    cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!"<<endl;
+    std::cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!"<<std::endl;
   }
 
   Hrho_n.init(rho*r_0, 1, 0, nMax_);
   if(Hrho_n.populate())
   {
-    cerr << "Error computing Hankel functions. Amos said: " << Hrho_n.ierr << "!"<<endl;
+    std::cerr << "Error computing Hankel functions. Amos said: " << Hrho_n.ierr << "!"<<std::endl;
   }
 
   CompoundIterator p;
@@ -228,40 +224,40 @@ int Geometry::getTLocal(double omega_, int objectIndex_, int nMax_, complex<doub
       }
       else
       {
-        T_local_[p][q] = complex<double>(0.0, 0.0);
-        T_local_[(int)p+pMax][(int)q+qMax] = complex<double>(0.0, 0.0);
+        T_local_[p][q] = std::complex<double>(0.0, 0.0);
+        T_local_[(int)p+pMax][(int)q+qMax] = std::complex<double>(0.0, 0.0);
       }
 
       //Set the rest of the matrix to (0.0, 0.0)
-      T_local_[(int)p+pMax][q] = complex<double>(0.0, 0.0);
-      T_local_[p][(int)q+qMax] = complex<double>(0.0, 0.0);
+      T_local_[(int)p+pMax][q] = std::complex<double>(0.0, 0.0);
+      T_local_[p][(int)q+qMax] = std::complex<double>(0.0, 0.0);
     }
 
   return 0;
 }
 
 // AJ -----------------------------------------------------------------------------------------------------
-int Geometry::getNLSources(double omega_, int objectIndex_, int nMax_, complex<double> *sourceU, complex<double> *sourceV)
+int Geometry::getNLSources(double omega_, int objectIndex_, int nMax_, std::complex<double> *sourceU, std::complex<double> *sourceV)
 {
   double R        = objects[objectIndex_].radius;
 
-  complex<double> mu_b    = bground.mu;
-  complex<double> eps_b   = bground.epsilon;
-  complex<double> mu_j2   = objects[objectIndex_].elmag.mu;   /* AJ - SH sphere eps - AJ */
-  complex<double> eps_j2  = objects[objectIndex_].elmag.epsilon;  /* AJ - SH sphere eps - AJ */
+  std::complex<double> mu_b    = bground.mu;
+  std::complex<double> eps_b   = bground.epsilon;
+  std::complex<double> mu_j2   = objects[objectIndex_].elmag.mu;   /* AJ - SH sphere eps - AJ */
+  std::complex<double> eps_j2  = objects[objectIndex_].elmag.epsilon;  /* AJ - SH sphere eps - AJ */
 
   // T_2w_ Auxiliary variables --------------------------------------------------------------------------------
-  complex<double> k_j2    = omega_ * sqrt(eps_j2 * mu_j2);
-  complex<double> k_b2    = omega_ * sqrt(eps_b * mu_b);
-  complex<double> x_j2    = k_j2 * R;
-  complex<double> x_b2    = k_b2 * R;
-  complex<double> zeta_b2     = sqrt(mu_b/eps_b);
-  complex<double> zeta_j2     = sqrt(mu_j2/eps_j2);
-  complex<double> zeta_boj2   = zeta_b2/zeta_j2;
+  std::complex<double> k_j2    = omega_ * std::sqrt(eps_j2 * mu_j2);
+  std::complex<double> k_b2    = omega_ * std::sqrt(eps_b * mu_b);
+  std::complex<double> x_j2    = k_j2 * R;
+  std::complex<double> x_b2    = k_b2 * R;
+  std::complex<double> zeta_b2     = std::sqrt(mu_b/eps_b);
+  std::complex<double> zeta_j2     = std::sqrt(mu_j2/eps_j2);
+  std::complex<double> zeta_boj2   = zeta_b2/zeta_j2;
 
   // Auxiliary Riccati-Bessel functions ---------------------------------------------------------------------
-  complex<double> psi2(0., 0.), xsi2(0., 0.);
-  complex<double> dpsi2(0., 0.), dxsi2(0., 0.);
+  std::complex<double> psi2(0., 0.), xsi2(0., 0.);
+  std::complex<double> dpsi2(0., 0.), dxsi2(0., 0.);
 
   Bessel J_n;
   Bessel H_n;
@@ -269,14 +265,14 @@ int Geometry::getNLSources(double omega_, int objectIndex_, int nMax_, complex<d
   J_n.init(x_j2, 0, 0, nMax_);
   if(J_n.populate())
   {
-    cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!"<<endl;
+    std::cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!"<<std::endl;
     return 1;
   }
 
   H_n.init(x_b2, 1, 0, nMax_);
   if(H_n.populate())
   {
-    cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!"<<endl;
+    std::cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!"<<std::endl;
   }
 
   CompoundIterator p;
@@ -300,28 +296,28 @@ int Geometry::getNLSources(double omega_, int objectIndex_, int nMax_, complex<d
 
     //SRC_2w_p - TM part
     sourceV[p] = x_b2 *  psi2 / (zeta_boj2*xsi2*dpsi2-psi2*dxsi2); //v'
-    sourceV[p+nMax_] = complex<double>(0., 0.); //v''
+    sourceV[p+nMax_] = std::complex<double>(0., 0.); //v''
   }
 
   return 0;
 }
 
-int Geometry::getIaux(double omega_, int objectIndex_, int nMax_, complex<double> *I_aux_){
+int Geometry::getIaux(double omega_, int objectIndex_, int nMax_, std::complex<double> *I_aux_){
 
-  complex<double> k_s = omega_ * sqrt(objects[objectIndex_].elmag.epsilon * objects[objectIndex_].elmag.mu);
-  complex<double> k_b = omega_ * sqrt(bground.epsilon * bground.mu);
+  std::complex<double> k_s = omega_ * std::sqrt(objects[objectIndex_].elmag.epsilon * objects[objectIndex_].elmag.mu);
+  std::complex<double> k_b = omega_ * std::sqrt(bground.epsilon * bground.mu);
 
-  complex<double> rho = k_s / k_b;
+  std::complex<double> rho = k_s / k_b;
 
-  complex<double> r_0 = k_b * objects[objectIndex_].radius;
+  std::complex<double> r_0 = k_b * objects[objectIndex_].radius;
 
-  complex<double> mu_j  = objects[objectIndex_].elmag.mu;
-  complex<double> mu_0  = bground.mu;
+  std::complex<double> mu_j  = objects[objectIndex_].elmag.mu;
+  std::complex<double> mu_0  = bground.mu;
 
-  complex<double> psi(0., 0.), ksi(0., 0.);
-  complex<double> dpsi(0., 0.), dksi(0., 0.);
-  complex<double> psirho(0., 0.);
-  complex<double> dpsirho(0., 0.);
+  std::complex<double> psi(0., 0.), ksi(0., 0.);
+  std::complex<double> dpsi(0., 0.), dksi(0., 0.);
+  std::complex<double> psirho(0., 0.);
+  std::complex<double> dpsirho(0., 0.);
 
 
   Bessel J_n;
@@ -330,14 +326,14 @@ int Geometry::getIaux(double omega_, int objectIndex_, int nMax_, complex<double
   J_n.init(r_0, 0, 0, nMax_);
   if(J_n.populate())
   {
-    cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!"<<endl;
+    std::cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!"<<std::endl;
     return 1;
   }
 
   Jrho_n.init(rho*r_0, 0, 0, nMax_);
   if(Jrho_n.populate())
   {
-    cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!"<<endl;
+    std::cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!"<<std::endl;
     return 1;
   }
 
@@ -346,7 +342,7 @@ int Geometry::getIaux(double omega_, int objectIndex_, int nMax_, complex<double
   H_n.init(r_0, 1, 0, nMax_);
   if(H_n.populate())
   {
-    cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!"<<endl;
+    std::cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!"<<std::endl;
   }
 
   CompoundIterator p;
@@ -364,11 +360,11 @@ int Geometry::getIaux(double omega_, int objectIndex_, int nMax_, complex<double
 
       //TE Part
       I_aux_[p]       = (mu_j*rho) / (mu_0*rho*dpsirho*psi - mu_j*psirho*dpsi);
-      I_aux_[p]        *= complex<double>(0., 1.);
+      I_aux_[p]        *= std::complex<double>(0., 1.);
 
       //TM part
       I_aux_[(int)p+pMax] = (mu_j*rho) / (mu_j*psi*dpsirho - mu_0*rho*psirho*dpsi);
-      I_aux_[(int)p+pMax]*= complex<double>(0., 1.);
+      I_aux_[(int)p+pMax]*= std::complex<double>(0., 1.);
   }
   return 0;
 }
@@ -376,21 +372,21 @@ int Geometry::getIaux(double omega_, int objectIndex_, int nMax_, complex<double
 
 int  Geometry::getCabsAux (double omega_, int objectIndex_, int nMax_, double *Cabs_aux_){
 
-  complex<double> temp1(0., 0.);  double temp2(0.);
-  complex<double> k_s = omega_ * sqrt(objects[objectIndex_].elmag.epsilon * objects[objectIndex_].elmag.mu);
-  complex<double> k_b = omega_ * sqrt(bground.epsilon * bground.mu);
+  std::complex<double> temp1(0., 0.);  double temp2(0.);
+  std::complex<double> k_s = omega_ * std::sqrt(objects[objectIndex_].elmag.epsilon * objects[objectIndex_].elmag.mu);
+  std::complex<double> k_b = omega_ * std::sqrt(bground.epsilon * bground.mu);
 
-  complex<double> rho = k_s / k_b;
+  std::complex<double> rho = k_s / k_b;
 
-  complex<double> r_0 = k_b * objects[objectIndex_].radius;
+  std::complex<double> r_0 = k_b * objects[objectIndex_].radius;
 
-  complex<double> mu_j  = objects[objectIndex_].elmag.mu;
-  complex<double> mu_0  = bground.mu;
+  std::complex<double> mu_j  = objects[objectIndex_].elmag.mu;
+  std::complex<double> mu_0  = bground.mu;
 
-  complex<double> psi(0., 0.), ksi(0., 0.);
-  complex<double> dpsi(0., 0.), dksi(0., 0.);
-  complex<double> psirho(0., 0.);
-  complex<double> dpsirho(0., 0.);
+  std::complex<double> psi(0., 0.), ksi(0., 0.);
+  std::complex<double> dpsi(0., 0.), dksi(0., 0.);
+  std::complex<double> psirho(0., 0.);
+  std::complex<double> dpsirho(0., 0.);
 
   Bessel J_n;
   Bessel Jrho_n;
@@ -398,14 +394,14 @@ int  Geometry::getCabsAux (double omega_, int objectIndex_, int nMax_, double *C
   J_n.init(r_0, 0, 0, nMax_);
   if(J_n.populate())
   {
-    cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!"<<endl;
+    std::cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!"<<std::endl;
     return 1;
   }
 
   Jrho_n.init(rho*r_0, 0, 0, nMax_);
   if(Jrho_n.populate())
   {
-    cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!"<<endl;
+    std::cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!"<<std::endl;
     return 1;
   }
 
@@ -414,7 +410,7 @@ int  Geometry::getCabsAux (double omega_, int objectIndex_, int nMax_, double *C
   H_n.init(r_0, 1, 0, nMax_);
   if(H_n.populate())
   {
-    cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!"<<endl;
+    std::cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!"<<std::endl;
   }
 
   CompoundIterator p;
@@ -432,13 +428,13 @@ int  Geometry::getCabsAux (double omega_, int objectIndex_, int nMax_, double *C
 
       // Stout 2002 - from scattered
       //TE Part
-      temp1 = complex<double>(0., 1.)*rho*mu_0*conj(mu_j)*conj(psirho)*dpsirho;
+      temp1 = std::complex<double>(0., 1.)*rho*mu_0*conj(mu_j)*conj(psirho)*dpsirho;
       temp2 = abs((mu_j*psirho*dpsi - mu_0*rho*dpsirho*psi));
       temp2*=temp2;
       Cabs_aux_[p]      = real(temp1)/temp2;
 
       //TM part
-      temp1 = complex<double>(0., 1.)*conj(rho)*mu_0*mu_j*conj(psirho)*dpsirho;
+      temp1 = std::complex<double>(0., 1.)*conj(rho)*mu_0*mu_j*conj(psirho)*dpsirho;
       temp2 = abs((mu_0*rho*psirho*dpsi - mu_j*dpsirho*psi));
       temp2*=temp2;
       Cabs_aux_[(int)p+pMax]  = real(temp1)/temp2;
@@ -470,13 +466,13 @@ int Geometry::checkInner(Spherical<double> R_)
   return -1;
 }
 
-int Geometry::setSourcesSingle(Excitation *incWave_, complex<double> *internalCoef_FF_, int nMax_)
+int Geometry::setSourcesSingle(Excitation *incWave_, std::complex<double> *internalCoef_FF_, int nMax_)
 {
   CompoundIterator p;
   int pMax = p.max(nMax_);
 
-  complex<double> *sourceU = new complex<double>[2*pMax];
-  complex<double> *sourceV = new complex<double>[2*pMax];
+  std::complex<double> *sourceU = new std::complex<double>[2*pMax];
+  std::complex<double> *sourceV = new std::complex<double>[2*pMax];
 
   for(int j=0; j<noObjects; j++)
   {
@@ -501,8 +497,8 @@ int Geometry::setSourcesSingle(Excitation *incWave_, complex<double> *internalCo
   return 0;
 }
 
-int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, complex<double> *, int nMax_,
-    complex<double> *Q_SH_local_)
+int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, std::complex<double> *, int nMax_,
+    std::complex<double> *Q_SH_local_)
 {
   CompoundIterator p;
   CompoundIterator q;
@@ -516,12 +512,12 @@ int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, complex<dou
   //Make sure Q_SH_local_ is zero
   for(p=0; p<pMax; p++)
   {
-    Q_SH_local_[p] = complex<double>(0.0, 0.0);
-    Q_SH_local_[p+pMax] = complex<double>(0.0, 0.0);
+    Q_SH_local_[p] = std::complex<double>(0.0, 0.0);
+    Q_SH_local_[p+pMax] = std::complex<double>(0.0, 0.0);
   }
 
-  complex<double> **T_AB = Tools::Get_2D_c_double(2*pMax, 2*qMax);
-  complex<double> *Q_interm = new complex<double>[pMax+qMax];
+  std::complex<double> **T_AB = Tools::Get_2D_c_double(2*pMax, 2*qMax);
+  std::complex<double> *Q_interm = new std::complex<double>[pMax+qMax];
 
   for(j=0; j<noObjects; j++)
   {

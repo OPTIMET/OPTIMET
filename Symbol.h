@@ -141,7 +141,7 @@ public:
    * @param cmn_1 internal expansion coefficient at the fundamental frequency.
    * @return the A^(0)_(m,n)
    */
-  static complex<double> A_0(int m, int n, double R, complex<double> waveK_i, complex<double> cmn_1);
+  static std::complex<double> A_0(int m, int n, double R, std::complex<double> waveK_i, std::complex<double> cmn_1);
 
   /**
    * Calculate A^(1)_mn number
@@ -152,7 +152,7 @@ public:
    * @param cmn_1 internal expansion coefficient at the fundamental frequency.
    * @return the A^(0)_(m,n)
    */
-  static complex<double> A_1(int m, int n, double R, complex<double> waveK_i, complex<double> dmn_1);
+  static std::complex<double> A_1(int m, int n, double R, std::complex<double> waveK_i, std::complex<double> dmn_1);
 
   /**
    * Calculate A^(m1)_mn number
@@ -163,7 +163,7 @@ public:
    * @param cmn_1 internal expansion coefficient at the fundamental frequency.
    * @return the A^(0)_(m,n)
    */
-  static complex<double> A_m1(int m, int n, double R, complex<double> waveK_i, complex<double> dmn_1);
+  static std::complex<double> A_m1(int m, int n, double R, std::complex<double> waveK_i, std::complex<double> dmn_1);
 
   /**
    * Calculate W^(L1, J1, M1, L2, J2, M2)_LM number
@@ -179,11 +179,11 @@ public:
    */
   static double W(int L1, int J1, int M1, int L2, int J2, int M2, int L, int M);
 
-  static complex<double> up_mn(int m, int n, int nMax_, complex<double> cmn_1,complex<double> dmn_1,  double omega_, Scatterer *object_, ElectroMagnetic bground_);
+  static std::complex<double> up_mn(int m, int n, int nMax_, std::complex<double> cmn_1,std::complex<double> dmn_1,  double omega_, Scatterer *object_, ElectroMagnetic bground_);
 
-  static complex<double> vp_mn(int m, int n, int nMax_, complex<double> cmn_1, complex<double> dmn_1, double omega_, Scatterer *object_, ElectroMagnetic bground_);
+  static std::complex<double> vp_mn(int m, int n, int nMax_, std::complex<double> cmn_1, std::complex<double> dmn_1, double omega_, Scatterer *object_, ElectroMagnetic bground_);
 
-  static complex<double> upp_mn(int m, int n, int nMax_, complex<double> cmn_1, complex<double> dmn_1, double omega_, Scatterer *object_, ElectroMagnetic bground_);
+  static std::complex<double> upp_mn(int m, int n, int nMax_, std::complex<double> cmn_1, std::complex<double> dmn_1, double omega_, Scatterer *object_, ElectroMagnetic bground_);
 
   // ---------------------------------------------------------------
 };

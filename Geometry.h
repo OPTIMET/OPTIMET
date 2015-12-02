@@ -111,13 +111,13 @@ public:
    * @param T_local_ the return value as the local T_j scattering matrix.
    * @return 0 if successful, 1 otherwise.
    */
-  int getTLocal(double omega_, int objectIndex_, int nMax_, complex<double> ** T_local_);
+  int getTLocal(double omega_, int objectIndex_, int nMax_, std::complex<double> ** T_local_);
 
-  int getIaux(double omega_, int objectIndex_, int nMax_, complex<double> *I_aux_);
+  int getIaux(double omega_, int objectIndex_, int nMax_, std::complex<double> *I_aux_);
 
   int getCabsAux (double omega_, int objectIndex_, int nMax_, double *Cabs_aux_);
 
-  int getNLSources(double omega_, int objectIndex_, int nMax_, complex<double> *sourceU, complex<double> *sourceV);
+  int getNLSources(double omega_, int objectIndex_, int nMax_, std::complex<double> *sourceU, std::complex<double> *sourceV);
 
   /**
    * Returns the relative vector R_lj between two objects.
@@ -143,9 +143,9 @@ public:
    * @param Q_SH_local_ the return value of the local SH source vector.
    * @return 0 if successful, 1 otherwise.
    */
-  int getSourceLocal(int objectIndex_, Excitation *incWave_, complex<double> *internalCoef_FF_, int nMax_, complex<double>* Q_SH_local_);
+  int getSourceLocal(int objectIndex_, Excitation *incWave_, std::complex<double> *internalCoef_FF_, int nMax_, std::complex<double>* Q_SH_local_);
 
-  int setSourcesSingle(Excitation *incWave_, complex<double> *internalCoef_FF_, int nMax_);
+  int setSourcesSingle(Excitation *incWave_, std::complex<double> *internalCoef_FF_, int nMax_);
 
   /**
    * Updates the Geometry object to a new Excitation.

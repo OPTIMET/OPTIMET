@@ -22,32 +22,32 @@
 
 double PeriodicCoupling::a_nm_p(double n, double m)
 {
-  return -sqrt( ((n+m+1.)*(n-m+1.))/((2.*n+1.)*(2.*n+3.)) );
+  return -std::sqrt( ((n+m+1.)*(n-m+1.))/((2.*n+1.)*(2.*n+3.)) );
 }
 
 double PeriodicCoupling::a_nm_m(double n, double m)
 {
-  return +sqrt( ((n+m)*(n-m))/((2.*n+1.)*(2.*n-1.)) );
+  return +std::sqrt( ((n+m)*(n-m))/((2.*n+1.)*(2.*n-1.)) );
 }
 
 double PeriodicCoupling::b_nm_p(double n, double m)
 {
-  return +sqrt( ((n+m+2.)*(n+m+1.))/((2.*n+1.)*(2.*n+3.)) );
+  return +std::sqrt( ((n+m+2.)*(n+m+1.))/((2.*n+1.)*(2.*n+3.)) );
 }
 
 double PeriodicCoupling::b_nm_m(double n, double m)
 {
-  return +sqrt( ((n-m)*(n-m-1.))/((2.*n+1.)*(2.*n-1.)) );
+  return +std::sqrt( ((n-m)*(n-m-1.))/((2.*n+1.)*(2.*n-1.)) );
 }
 
 //------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------
-void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R, complex<double> waveK, int BHreg, int n_max, complex<double> ****AlBe_nmlk){
+void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R, std::complex<double> waveK, int BHreg, int n_max, std::complex<double> ****AlBe_nmlk){
 
   // Translation coefficients calculation  -----------------------------------------
   // -------------------------------------------------------------------------------
   // temp variables
-  complex<double> c_temp(0., 0.);
+  std::complex<double> c_temp(0., 0.);
   double d_temp(0.), d_temp1(0.), d_temp2(0.);
   // working variables
   int i(0), j(0);
@@ -55,12 +55,12 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R, complex<double> wa
   int n(0), m(0), l(0), k(0);         // duale subscript variables
   double d_n(0.), d_m(0.), d_l(0.), d_k(0.);  // duale subscript variables
   // auxiliary variables
-  complex<double> AlBe2(0., 0.);        // auxiliary coefficients
-  complex<double> AlBe3(0., 0.);        // auxiliary coefficients
-  complex<double> AlBe4(0., 0.);        // auxiliary coefficients
-  complex<double> AlBe2conj(0., 0.);        // auxiliary coefficients
-  complex<double> AlBe3conj(0., 0.);        // auxiliary coefficients
-  complex<double> AlBe4conj(0., 0.);        // auxiliary coefficients
+  std::complex<double> AlBe2(0., 0.);        // auxiliary coefficients
+  std::complex<double> AlBe3(0., 0.);        // auxiliary coefficients
+  std::complex<double> AlBe4(0., 0.);        // auxiliary coefficients
+  std::complex<double> AlBe2conj(0., 0.);        // auxiliary coefficients
+  std::complex<double> AlBe3conj(0., 0.);        // auxiliary coefficients
+  std::complex<double> AlBe4conj(0., 0.);        // auxiliary coefficients
   double A1(0.), A2(0.), A3(0.), A4(0.);    // auxiliary coefficients
   double B1(0.), B2(0.), B3(0.);        // auxiliary coefficients
   int k_mirror(0), m_mirror(0);       // for calculating (negative)m
@@ -68,9 +68,9 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R, complex<double> wa
   CompoundIterator pl, ql;          // Create a compound iterator
 
   // Assign corresponding input values ---------------------------------------------
-  complex<double> wkR = R.rrr*waveK;
-  complex<double> wkRconj(0., 0.);
-  complex<double> exp_iwk_theji(0., 0.);    // function of m & theji
+  std::complex<double> wkR = R.rrr*waveK;
+  std::complex<double> wkRconj(0., 0.);
+  std::complex<double> exp_iwk_theji(0., 0.);    // function of m & theji
 
   // prepare for computing transfer matrices ---------------------------------------
   // Matrices sizes ----------------------------------------------------------------
@@ -87,8 +87,8 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R, complex<double> wa
 //  int p_max1 = (n_max+e)*(n_max+e)+2*(n_max+e); // progression relationship - for n, m
 
   // prepare for calculating translation coefficients -----------------------------
-  complex<double> *dataYp;
-  dataYp = new complex<double>[pl.max(n_max+e)+1];
+  std::complex<double> *dataYp;
+  dataYp = new std::complex<double>[pl.max(n_max+e)+1];
   compute_Yp(R, waveK, n_max+e, dataYp);
 
   // 1.2 Prepare for AlBe_nmlk[0][n_max+e][ii][jj] evaluation ---------------------
@@ -110,16 +110,16 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R, complex<double> wa
 
   // Building blocks --------------------------------------------------------------
   // I - fundamental building blocks - Ynm ----------------------------------------
-  complex<double> **Ynm;
+  std::complex<double> **Ynm;
   Ynm = Tools::Get_2D_c_double(n_Matsize1, m_Matsize1);
   for(i=0; i<n_Matsize1; i++){
     for(j=0; j<m_Matsize1; j++){
-      Ynm[i][j]=complex<double>(0., 0.);
+      Ynm[i][j]=std::complex<double>(0., 0.);
     }
   }
 
   // Obtain Y_nm(the, phi) --------------------------------------------------------
-  complex<double> ALegendre00(1., 0.);                // to be changed
+  std::complex<double> ALegendre00(1., 0.);                // to be changed
   for(i=0, n=0; i<n_Matsize1; i++, n++){                // start at n==0 up to and including n_max
     for(j=0, m=-(n_max+e); j<m_Matsize1; j++, m++){         // increment by the padded e value
 
@@ -131,9 +131,9 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R, complex<double> wa
         d_temp1 = gsl_sf_fact(n-m);               // source of a possible overflow!
         d_temp2 = gsl_sf_fact(n+m);               // source of a possible overflow!
         d_temp  = ((2.*d_n+1.)*d_temp1)/(4*consPi*d_temp2);
-        d_temp  = sqrt(d_temp);
+        d_temp  = std::sqrt(d_temp);
 
-        complex<double> exp_ik_phiji(cos(m*R.phi), sin(m*R.phi));
+        std::complex<double> exp_ik_phiji(cos(m*R.phi), sin(m*R.phi));
         Ynm[i][j]=d_temp*ALegendre00*exp_ik_phiji;        // eqn (A1)
 
       }
@@ -154,14 +154,14 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R, complex<double> wa
   // ------------------------------------------------------------------------------
 
   // II - Global matrix - Alpha-Beta (n, m, l, k) - AlBe_nmlk ---------------------
-  complex<double> ****AlBe_nmlkconj;
+  std::complex<double> ****AlBe_nmlkconj;
   AlBe_nmlkconj   = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
   for(i=0; i<n_Matsize1; i++){
     for(j=0; j<m_Matsize1; j++){
       for(ii=0; ii<n_Matsize1; ii++){
         for(jj=0; jj<m_Matsize1; jj++){
-          AlBe_nmlk[i][j][ii][jj]   = complex<double>(0., 0.);
-          AlBe_nmlkconj[i][j][ii][jj] = complex<double>(0., 0.);
+          AlBe_nmlk[i][j][ii][jj]   = std::complex<double>(0., 0.);
+          AlBe_nmlkconj[i][j][ii][jj] = std::complex<double>(0., 0.);
         }
       }
     }
@@ -181,7 +181,7 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R, complex<double> wa
       if(abs(k)<=l){
 
         // AlBe_00lk[ii][jj] : Bessel/Hankel - Legendre - exp(imthe)
-        d_temp=sqrt(4.*consPi)*pow(-1.,d_l+d_k);
+        d_temp=std::sqrt(4.*consPi)*pow(-1.,d_l+d_k);
         // wavek
         AlBe_nmlk[0][n_max+e][ii][jj]   = d_temp*Ynm[ii][k_mirror]*HB.data[l];    // eqn (C3)
         // waveconj
@@ -215,8 +215,8 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R, complex<double> wa
               B3 = b_nm_m(d_l + 1., d_k - 1.);
 
               if (((ii - 1) < 0) || ((jj - 1) < 0)){
-                AlBe2     = complex<double>(0., 0.);
-                AlBe2conj   = complex<double>(0., 0.);
+                AlBe2     = std::complex<double>(0., 0.);
+                AlBe2conj   = std::complex<double>(0., 0.);
               }
               else{
                 AlBe2     = AlBe_nmlk[i - 1][j - 1][ii - 1][jj - 1];
@@ -224,8 +224,8 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R, complex<double> wa
               }
               //
               if (((ii + 1) > n_Matsize1-1) || ((jj - 1) < 0)){
-                AlBe3     = complex<double>(0., 0.);
-                AlBe3conj   = complex<double>(0., 0.);
+                AlBe3     = std::complex<double>(0., 0.);
+                AlBe3conj   = std::complex<double>(0., 0.);
               }
               else{
                 AlBe3     = AlBe_nmlk[i - 1][j - 1][ii + 1][jj - 1];
@@ -277,8 +277,8 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R, complex<double> wa
 
                 // evaluate current term -----------------------------------
                 if (((i - 2) < 0)){
-                  AlBe2 = complex<double> (0., 0.);
-                  AlBe2conj = complex<double> (0., 0.);
+                  AlBe2 = std::complex<double> (0., 0.);
+                  AlBe2conj = std::complex<double> (0., 0.);
                 }
                 else{
                   AlBe2     = AlBe_nmlk[i - 2][j][ii][jj];
@@ -399,9 +399,9 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R, complex<double> wa
 
 // ---------------------------------------------------------------------------------------
 // compute Bnm function - obtained with the aid of Wigner 3j symboles
-complex<double> PeriodicCoupling::compute_Bnm(int n, int n1, int n2, int m, int m1, int m2){
+std::complex<double> PeriodicCoupling::compute_Bnm(int n, int n1, int n2, int m, int m1, int m2){
 
-  return sqrt( ((2*n+1) * (2*n1+1) * (2*n2+1)) / (4*consPi) )*
+  return std::sqrt( ((2*n+1) * (2*n1+1) * (2*n2+1)) / (4*consPi) )*
       Symbol::Wigner3j(n, n1, n2,  0,  0,  0)*
       Symbol::Wigner3j(n, n1, n2,  m,  m1, m2);
 
@@ -412,7 +412,7 @@ complex<double> PeriodicCoupling::compute_Bnm(int n, int n1, int n2, int m, int 
 // compute alpha_nm function - MODINOS 1987 eq (6a)
 double PeriodicCoupling::compute_alpha_nm(int n, int m){
 
-  return 0.5*sqrt(double((n-m)*(n+m+1)));
+  return 0.5*std::sqrt(double((n-m)*(n+m+1)));
 
 }
 // ---------------------------------------------------------------------------------------
@@ -421,7 +421,7 @@ double PeriodicCoupling::compute_alpha_nm(int n, int m){
 // compute beta_nm function - MODINOS 1987 eq (6b)
 double PeriodicCoupling::compute_beta_nm(int n, int m){
 
-  return 0.5*sqrt(double((n+m)*(n-m+1)));
+  return 0.5*std::sqrt(double((n+m)*(n-m+1)));
 
 }
 // ---------------------------------------------------------------------------------------
@@ -433,7 +433,7 @@ double PeriodicCoupling::compute_beta_nm(int n, int m){
 // a1 = x-axis unit size of the 2D lattice
 // a2 = y-axis unit size of the 2D lattice
 // Rmax is a truncation limit of on the reciprocal lattice - user defined for now
-int PeriodicCoupling::compute_Znmlk(double a1, double a2, complex<double> waveK, int Rmax, int n_max, complex<double> ****Z_nmlk){
+int PeriodicCoupling::compute_Znmlk(double a1, double a2, std::complex<double> waveK, int Rmax, int n_max, std::complex<double> ****Z_nmlk){
 
   int ll(0);
   int BHreg(1);       // indicates Hankel / non-regular
@@ -444,8 +444,8 @@ int PeriodicCoupling::compute_Znmlk(double a1, double a2, complex<double> waveK,
   Cartesian<double> Rn;
   Cartesian<double> waveKc; // conversion of vKinc into Cartesian coords wrt to the 2D lattice - make use of components that are parallel to the 2D lattice only
   double dotproduct2D(0.);
-  complex<double> exp_iKpRn_p(0., 0.);
-  complex<double> exp_iKpRn_n(0., 0.);
+  std::complex<double> exp_iKpRn_p(0., 0.);
+  std::complex<double> exp_iKpRn_n(0., 0.);
 
   // Obtain Cartesian values of spherical vKinc
   // start: AJ - this is temporary - AJ //
@@ -462,15 +462,15 @@ int PeriodicCoupling::compute_Znmlk(double a1, double a2, complex<double> waveK,
   int n_Matsize1(0), m_Matsize1(0);     // dependent on (n_max+e)
   n_Matsize1 = (n_max+e)+1;         // up to and including (n_max+e)  : indexed from 1
   m_Matsize1 = 2*(n_max+e)+1;         // up to and including (n_max+e)  : indexed from 0 + 1 for m==0
-  complex<double> ****Gp_nmlk, ****Gn_nmlk;   // positive Rn, negative Rn
+  std::complex<double> ****Gp_nmlk, ****Gn_nmlk;   // positive Rn, negative Rn
   Gp_nmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1); // positive Rn
   Gn_nmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1); // negative Rn
   for (i = 0; i < n_Matsize1; i++) {
     for (j = 0; j < m_Matsize1; j++) {
       for (ii = 0; ii < n_Matsize1; ii++) {
         for (jj = 0; jj < m_Matsize1; jj++) {
-            Gp_nmlk[i][j][ii][jj] =complex<double>(0., 0.);
-            Gn_nmlk[i][j][ii][jj] =complex<double>(0., 0.);
+            Gp_nmlk[i][j][ii][jj] =std::complex<double>(0., 0.);
+            Gn_nmlk[i][j][ii][jj] =std::complex<double>(0., 0.);
   } } } }
 
   // Determine reciprocal lattice constants -----------------------------------------------------
@@ -488,7 +488,7 @@ int PeriodicCoupling::compute_Znmlk(double a1, double a2, complex<double> waveK,
     Rn.z      = 0.;
 
 //    // get magnitude of Rn
-//    Rn_mag = sqrt( Rn.x*Rn.x + Rn.y*Rn.y + Rn.z*Rn.z );
+//    Rn_mag = std::sqrt( Rn.x*Rn.x + Rn.y*Rn.y + Rn.z*Rn.z );
 //    // Automatic check if truncation limit is reached - for later - ------------------------
 //    if(Rn_mag - Rmax <0.){
 
@@ -497,7 +497,7 @@ int PeriodicCoupling::compute_Znmlk(double a1, double a2, complex<double> waveK,
     Rn.y      = double(ll)*b2;
     Rn.z      = 0.;
     dotproduct2D  = waveKc.x*Rn.x + waveKc.y*Rn.y;
-    exp_iKpRn_p   = complex<double> ( cos(dotproduct2D), sin(dotproduct2D) );
+    exp_iKpRn_p   = std::complex<double> ( cos(dotproduct2D), sin(dotproduct2D) );
     // obtain corresponding Gnmlk(-Rn)==AlBe_nmlk(-Rn)
     // negate relative vector rn=r-Rn, r==Origin -> rn=-Rn
     Rn.x*=-1;   Rn.y*=-1;   Rn.z*=-1;
@@ -511,7 +511,7 @@ int PeriodicCoupling::compute_Znmlk(double a1, double a2, complex<double> waveK,
     Rn.y      = double(-ll)*b2;
     Rn.z      = 0.;
     dotproduct2D  = waveKc.x*Rn.x + waveKc.y*Rn.y;
-    exp_iKpRn_n   = complex<double> ( cos(dotproduct2D), sin(dotproduct2D) );
+    exp_iKpRn_n   = std::complex<double> ( cos(dotproduct2D), sin(dotproduct2D) );
     // obtain corresponding Gnmlk(-Rn)==AlBe_nmlk(-Rn)
     // negate relative vector rn=r-Rn, r==Origin -> rn=-Rn
     Rn.x*=-1;   Rn.y*=-1;   Rn.z*=-1;
@@ -576,7 +576,7 @@ int PeriodicCoupling::compute_Znmlk(double a1, double a2, complex<double> waveK,
 
 //// ---------------------------------------------------------------------------------------
 // compute Omega_nmlk function - this is identically the scalar addition-translation theorem
-int PeriodicCoupling::compute_OMEGAnmlk(complex<double> waveK, int n_max, complex<double> **dataOMEGA_1pq, complex<double> **dataOMEGA_2pq){
+int PeriodicCoupling::compute_OMEGAnmlk(std::complex<double> waveK, int n_max, std::complex<double> **dataOMEGA_1pq, std::complex<double> **dataOMEGA_2pq){
 
   // first of all increment n_max by 1 to allow for all required values of Z_nmlk
   n_max+=1;
@@ -584,8 +584,8 @@ int PeriodicCoupling::compute_OMEGAnmlk(complex<double> waveK, int n_max, comple
   // Other quantities
   double alpha_nm_I(0.), alpha_nm_II(0.);
   double beta_nm_I(0.), beta_nm_II(0.);
-  complex<double> B_nm_I(0., 0.), B_nm_II(0., 0.);
-  complex<double> c_temp_I(0., 0.), c_temp_II(0., 0.), c_temp_III(0., 0.);
+  std::complex<double> B_nm_I(0., 0.), B_nm_II(0., 0.);
+  std::complex<double> c_temp_I(0., 0.), c_temp_II(0., 0.), c_temp_III(0., 0.);
 
   // 1- compute Z_nmlk -------------------------------------------------------------------
   int i, j, n, m, ii, jj, l, k;
@@ -593,7 +593,7 @@ int PeriodicCoupling::compute_OMEGAnmlk(complex<double> waveK, int n_max, comple
   int n_Matsize1(0), m_Matsize1(0);     // dependent on (n_max+e)
   n_Matsize1 = (n_max+e)+1;         // up to and including (n_max+e)  : indexed from 1
   m_Matsize1 = 2*(n_max+e)+1;         // up to and including (n_max+e)  : indexed from 0 + 1 for m==0
-  complex<double> ****Z_nmlk, ****OMEGA_1_nmlk, ****OMEGA_2_nmlk;
+  std::complex<double> ****Z_nmlk, ****OMEGA_1_nmlk, ****OMEGA_2_nmlk;
   Z_nmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
   OMEGA_1_nmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
   OMEGA_2_nmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
@@ -601,9 +601,9 @@ int PeriodicCoupling::compute_OMEGAnmlk(complex<double> waveK, int n_max, comple
     for (j = 0; j < m_Matsize1; j++) {
       for (ii = 0; ii < n_Matsize1; ii++) {
         for (jj = 0; jj < m_Matsize1; jj++) {
-            Z_nmlk[i][j][ii][jj] = complex<double>(0., 0.);
-            OMEGA_1_nmlk[i][j][ii][jj] = complex<double>(0., 0.);
-            OMEGA_2_nmlk[i][j][ii][jj] = complex<double>(0., 0.);
+            Z_nmlk[i][j][ii][jj] = std::complex<double>(0., 0.);
+            OMEGA_1_nmlk[i][j][ii][jj] = std::complex<double>(0., 0.);
+            OMEGA_2_nmlk[i][j][ii][jj] = std::complex<double>(0., 0.);
   } } } }
 
   // 2- obtain Z_ nmlk -------------------------------------------------------------------
@@ -627,7 +627,7 @@ int PeriodicCoupling::compute_OMEGAnmlk(complex<double> waveK, int n_max, comple
               beta_nm_I = compute_alpha_nm(n, m);
               // check if any of the above are ZERO by default!
               if(Tools::equalDoubles(alpha_nm_I, 0.) || Tools::equalDoubles(beta_nm_I, 0.))
-                c_temp_I = complex<double>(0., 0.);
+                c_temp_I = std::complex<double>(0., 0.);
               else
                 c_temp_I = 2.*alpha_nm_I*beta_nm_I*Z_nmlk[i][j-1][ii][jj-1];
               // II- evaluate all other quantities
@@ -635,13 +635,13 @@ int PeriodicCoupling::compute_OMEGAnmlk(complex<double> waveK, int n_max, comple
               beta_nm_II = compute_alpha_nm(l, k+1);
               // check if any of the above are ZERO by default!
               if(Tools::equalDoubles(alpha_nm_II, 0.) || Tools::equalDoubles(beta_nm_II, 0.))
-                c_temp_II = complex<double>(0., 0.);
+                c_temp_II = std::complex<double>(0., 0.);
               else
                 c_temp_II = 2.*alpha_nm_II*beta_nm_II*Z_nmlk[i][j+1][ii][jj+1];
               // III- evaluate all other quantities
                 c_temp_III = double(m)*double(k)*Z_nmlk[i][j][ii][jj];
               // obtain OMEGA_1_nmlk --------------------------------------
-              OMEGA_1_nmlk[i][j][ii][jj] =  1./sqrt(double(n*(n+1)*l*(l+1)))
+              OMEGA_1_nmlk[i][j][ii][jj] =  1./std::sqrt(double(n*(n+1)*l*(l+1)))
                               *(c_temp_I + c_temp_II + c_temp_III);
               // ----------------------------------------------------------
 
@@ -651,21 +651,21 @@ int PeriodicCoupling::compute_OMEGAnmlk(complex<double> waveK, int n_max, comple
               B_nm_I = compute_Bnm(l-1, k+1, 1, -1, l, k);
               // check if any of the above are ZERO by default!
               if(Tools::equalDoubles(alpha_nm_I, 0.) || (Tools::equalDoubles(B_nm_I.real(), 0.) && (Tools::equalDoubles(B_nm_I.imag(), 0.))))
-                c_temp_I = complex<double>(0., 0.);
+                c_temp_I = std::complex<double>(0., 0.);
               else
-                c_temp_I = sqrt(8.*consPi/3.)*pow(-1.,k)*alpha_nm_I*B_nm_I*Z_nmlk[i][j+1][ii-1][jj+1];
+                c_temp_I = std::sqrt(8.*consPi/3.)*pow(-1.,k)*alpha_nm_I*B_nm_I*Z_nmlk[i][j+1][ii-1][jj+1];
               // II- evaluate all other quantities
               beta_nm_II = compute_alpha_nm(n, m);
               B_nm_I = compute_Bnm(l-1, k-1, 1, 1, l, k);
               // check if any of the above are ZERO by default!
               if(Tools::equalDoubles(beta_nm_II, 0.) || (Tools::equalDoubles(B_nm_II.real(), 0.) && (Tools::equalDoubles(B_nm_II.imag(), 0.))))
-                c_temp_II = complex<double>(0., 0.);
+                c_temp_II = std::complex<double>(0., 0.);
               else
-                c_temp_I =-sqrt(8.*consPi/3.)*pow(-1.,k)*beta_nm_I*B_nm_I*Z_nmlk[i][j-1][ii-1][jj-1];
+                c_temp_I =-std::sqrt(8.*consPi/3.)*pow(-1.,k)*beta_nm_I*B_nm_I*Z_nmlk[i][j-1][ii-1][jj-1];
               // III- evaluate all other quantities
-                c_temp_III = double(m)*Z_nmlk[i][j][ii-1][jj]*sqrt((l+k)*(l-k)/(2.*l-1)/(2.*l+1));
+                c_temp_III = double(m)*Z_nmlk[i][j][ii-1][jj]*std::sqrt((l+k)*(l-k)/(2.*l-1)/(2.*l+1));
               // obtain OMEGA_1_nmlk --------------------------------------
-              OMEGA_2_nmlk[i][j][ii][jj] =  1./sqrt(double(n*(n+1)*l*(l+1)))
+              OMEGA_2_nmlk[i][j][ii][jj] =  1./std::sqrt(double(n*(n+1)*l*(l+1)))
                               *(2.*l+1)/waveK
                               *(c_temp_I + c_temp_II + c_temp_III);
               // ----------------------------------------------------------
@@ -690,7 +690,7 @@ int PeriodicCoupling::compute_OMEGAnmlk(complex<double> waveK, int n_max, comple
         // double check current n & m -----------------------------------------------
         pl.init(n,m);
         p=pl;
-        n_check = int(sqrt(double(p)+1.));
+        n_check = int(std::sqrt(double(p)+1.));
         m_check = -(p+1)+n*(n+1);
         //q=0;
 
@@ -702,7 +702,7 @@ int PeriodicCoupling::compute_OMEGAnmlk(complex<double> waveK, int n_max, comple
               // double check current l & k -----------------------------------
               ql.init(l,k);
               q=ql;
-              l_check = int(sqrt(double(q)+1.));
+              l_check = int(std::sqrt(double(q)+1.));
               k_check = -(q+1)+l*(l+1);
               // map 4D matrix --> 2D matrix ----------------------------------
               dataOMEGA_1pq[p][q]=OMEGA_1_nmlk[i][j][ii][jj];
@@ -751,7 +751,7 @@ int PeriodicCoupling::compute_OMEGAnmlk(complex<double> waveK, int n_max, comple
 }
 // ---------------------------------------------------------------------------------------
 
-int PeriodicCoupling::compute_Ap_vkg(int n_max, Cartesian<double> vecKg, complex<double> waveK, double Ao, Cartesian<complex<double> > *dataAp_vkg){
+int PeriodicCoupling::compute_Ap_vkg(int n_max, Cartesian<double> vecKg, std::complex<double> waveK, double Ao, Cartesian<std::complex<double> > *dataAp_vkg){
 
   int n, m;
   CompoundIterator p, i, j;
@@ -759,11 +759,11 @@ int PeriodicCoupling::compute_Ap_vkg(int n_max, Cartesian<double> vecKg, complex
   // Other quantities
   Spherical<double> R;
   double alpha_nm(0.), beta_nm(0.);
-  complex<double> c_temp(0., 0.), c_temp_I(0., 0.), c_temp_II(0., 0.), c_temp_III(0., 0.);
+  std::complex<double> c_temp(0., 0.), c_temp_I(0., 0.), c_temp_II(0., 0.), c_temp_III(0., 0.);
 
   // compute spherical harmonics for n_max+1
-  complex<double> *dataYp_R;
-  dataYp_R = new complex<double> [p.max(n_max+1)+1];    // extra element for (n,m)=(0,0)
+  std::complex<double> *dataYp_R;
+  dataYp_R = new std::complex<double> [p.max(n_max+1)+1];    // extra element for (n,m)=(0,0)
 
   R = Tools::toSpherical(vecKg);              // AJ - to be double checked - AJ //
   compute_Yp(R, waveK, n_max+1, dataYp_R);
@@ -778,15 +778,15 @@ int PeriodicCoupling::compute_Ap_vkg(int n_max, Cartesian<double> vecKg, complex
     beta_nm   = compute_alpha_nm(n, m);
     i.init(n, m+1);
     j.init(n, m-1);
-    c_temp = 2.*consPi*pow(complex<double>(0, 1),-n)
-        /(waveK*Ao*vecKg.z*sqrt(n*(n+1)));
+    c_temp = 2.*consPi*pow(std::complex<double>(0, 1),-n)
+        /(waveK*Ao*vecKg.z*std::sqrt(n*(n+1)));
 
     // I --------------------------------------------
     c_temp_I    = alpha_nm*dataYp_R[i] + beta_nm*dataYp_R[j];
 
     // II -------------------------------------------
     c_temp_II     = alpha_nm*dataYp_R[i] - beta_nm*dataYp_R[j];
-    c_temp_II     *=complex<double>(0, -1);
+    c_temp_II     *=std::complex<double>(0, -1);
 
     // III ------------------------------------------
     c_temp_III    = double(p.second)*dataYp_R[p];
@@ -798,8 +798,8 @@ int PeriodicCoupling::compute_Ap_vkg(int n_max, Cartesian<double> vecKg, complex
   }
 
 
-//  return(   complex<double>(1,  0)*(compute_alpha_nm(n, m) + compute_beta_nm(n, m)),
-//        complex<double>(0, -1)*(compute_alpha_nm(n, m) - compute_beta_nm(n, m)),
-//        complex<double>(1,  0)*m);
+//  return(   std::complex<double>(1,  0)*(compute_alpha_nm(n, m) + compute_beta_nm(n, m)),
+//        std::complex<double>(0, -1)*(compute_alpha_nm(n, m) - compute_beta_nm(n, m)),
+//        std::complex<double>(1,  0)*m);
   return 0;
 }

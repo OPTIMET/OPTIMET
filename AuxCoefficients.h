@@ -6,8 +6,6 @@
 
 #include <complex>
 
-using std::complex;
-
 /**
  * The AuxCoefficients class implements the spherical functions M, N, B and C.
  * Also implements the dn symbol for incoming wave definition.
@@ -36,7 +34,7 @@ private:
    * @param Pn the vector to store Pn in.
    * @return 0 if succesful, 1 otherwise (deprecated).
    */
-  int compute_Pn(int nMax, double *Wigner, SphericalP<complex<double> > *Pn);
+  int compute_Pn(int nMax, double *Wigner, SphericalP<std::complex<double> > *Pn);
 
   /**
    * Compute the Cn functions
@@ -49,7 +47,7 @@ private:
    * @param Cn the vector to store Cn in.
    * @return 0 if succesful, 1 otherwise (deprecated).
    */
-  int compute_Cn(int nMax, int m_, Spherical<double> R, double *Wigner, double *dWigner, SphericalP<complex<double> > *Cn);
+  int compute_Cn(int nMax, int m_, Spherical<double> R, double *Wigner, double *dWigner, SphericalP<std::complex<double> > *Cn);
 
   /**
    * Compute the Bn functions
@@ -62,7 +60,7 @@ private:
    * @param Bn the vector to store Bn in.
    * @return 0 if succesful, 1 otherwise (deprecated).
    */
-  int compute_Bn(int nMax, int m_, Spherical<double> R, double *Wigner, double *dWigner, SphericalP<complex<double> > *Bn);
+  int compute_Bn(int nMax, int m_, Spherical<double> R, double *Wigner, double *dWigner, SphericalP<std::complex<double> > *Bn);
 
   /**
    * Compute the Mn functions.
@@ -74,7 +72,7 @@ private:
    * @param BHreg the type of Bessel functions (regular or not).
    * @return 0 if succesful, 1 otherwise (deprecated).
    */
-  int compute_Mn(int nMax, int m_, Spherical<double> R,  complex<double> waveK, double *dn, SphericalP<complex<double> > *Cnm, SphericalP<complex<double> > *Mn, int BHreg);
+  int compute_Mn(int nMax, int m_, Spherical<double> R,  std::complex<double> waveK, double *dn, SphericalP<std::complex<double> > *Cnm, SphericalP<std::complex<double> > *Mn, int BHreg);
 
   /**
    * Compute the Nn functions.
@@ -87,8 +85,8 @@ private:
    * @param BHreg the type of Bessel functions (regular or not).
    * @return 0 if successful, 1 otherwise(deprecated).
    */
-  int compute_Nn(int nMax, int m_, Spherical<double> R, complex<double> waveK, double *dn, SphericalP<complex<double> > *Pn,
-                                    SphericalP<complex<double> > *Bn, SphericalP<complex<double> > *Nn, int BHreg);
+  int compute_Nn(int nMax, int m_, Spherical<double> R, std::complex<double> waveK, double *dn, SphericalP<std::complex<double> > *Pn,
+                                    SphericalP<std::complex<double> > *Bn, SphericalP<std::complex<double> > *Nn, int BHreg);
 
   /**
    * Compute the M and N functions in compound iterator format.
@@ -100,7 +98,7 @@ private:
    * @param dataNp the dataNp vector.
    * @return
    */
-  int compute_MpNp(Spherical<double> R, complex<double> waveK, int BHreg, int nMax, SphericalP<complex<double> > *dataMp, SphericalP<complex<double> > *dataNp);
+  int compute_MpNp(Spherical<double> R, std::complex<double> waveK, int BHreg, int nMax, SphericalP<std::complex<double> > *dataMp, SphericalP<std::complex<double> > *dataNp);
 
 //  /**
 //   * Compute the Wigner functions and their derivatives.
@@ -116,17 +114,17 @@ private:
   bool initDone;  /**< Specifies if the object has been initialized. */
 public:
 
-  SphericalP<complex<double> > *dataMp; /**< The M functions in compound iterator format. */
-  SphericalP<complex<double> > *dataNp; /**< The N functions in compound iterator format. */
-  SphericalP<complex<double> > *dataBp; /**< The B functions in compound iterator format. */
-  SphericalP<complex<double> > *dataCp; /**< The C functions in compound iterator format. */
+  SphericalP<std::complex<double> > *dataMp; /**< The M functions in compound iterator format. */
+  SphericalP<std::complex<double> > *dataNp; /**< The N functions in compound iterator format. */
+  SphericalP<std::complex<double> > *dataBp; /**< The B functions in compound iterator format. */
+  SphericalP<std::complex<double> > *dataCp; /**< The C functions in compound iterator format. */
 
   double *dn;              /**< The dn symbols (required for the Excitation class). */
 
 
   Spherical<double> R;    /**< The Spherical vector. */
   int besselType;       /**< Specifies regular or non-regular functions. */
-  complex<double> waveK;    /**< The complex wave number. */
+  std::complex<double> waveK;    /**< The complex wave number. */
   int nMax;         /**< The maximum value of the n iterator. */
 
   /**
@@ -142,7 +140,7 @@ public:
    * @param regular_ the type of coefficients (regular or not).
    * @param nMax_ the maximum value of the n iterator.
    */
-  AuxCoefficients(Spherical<double> R_, complex<double> waveK_, int regular_, int nMax_);
+  AuxCoefficients(Spherical<double> R_, std::complex<double> waveK_, int regular_, int nMax_);
 
   /**
    * Default destructor for the AuxCoefficients class.
@@ -156,7 +154,7 @@ public:
    * @param regular_ the type of coefficients (regular or not).
    * @param nMax_ the maximum value of the n iterator.
    */
-  void init(Spherical<double> R_, complex<double> waveK_, int regular_, int nMax_);
+  void init(Spherical<double> R_, std::complex<double> waveK_, int regular_, int nMax_);
 
   /**
    * Populate the M and N vectors.
@@ -172,7 +170,7 @@ public:
    * @param dataPp the Pp vector.
    * @return 0 if successful, 1 otherwise.
    */
-  int compute_Pp(Spherical<double> R, int nMax, SphericalP<complex<double> > *dataPp);
+  int compute_Pp(Spherical<double> R, int nMax, SphericalP<std::complex<double> > *dataPp);
 
   // AJ -----------------------------------------------------------------------------
   // temporary call for checking addition-translation coefficients evaluations

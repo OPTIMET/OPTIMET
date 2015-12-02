@@ -10,14 +10,6 @@
 #include <complex>
 #include <cstdlib>
 
-using std::ofstream;
-
-using std::cerr;
-using std::cout;
-using std::endl;
-using std::real;
-using std::conj;
-
 Result::Result()
 {
   initDone = false;
@@ -49,7 +41,7 @@ void Result::init(Geometry *geometry_, Excitation *excitation_, int nMax_)
 {
   if(initDone)
   {
-    cerr << "Result object initialized previously! Use update()!";
+    std::cerr << "Result object initialized previously! Use update()!";
     exit(1);
   }
 
@@ -60,9 +52,9 @@ void Result::init(Geometry *geometry_, Excitation *excitation_, int nMax_)
   flagSH = false;
   result_FF = NULL;
 
-  scatter_coef = new complex<double>[2*Tools::iteratorMax(nMax)*geometry->noObjects];
-  internal_coef = new complex<double>[2*Tools::iteratorMax(nMax)*geometry->noObjects];
-  c_scatter_coef = new complex<double>[2*Tools::iteratorMax(nMax)];
+  scatter_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)*geometry->noObjects];
+  internal_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)*geometry->noObjects];
+  c_scatter_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)];
 
   initDone = true;
 }
@@ -86,24 +78,24 @@ void Result::init(Geometry *geometry_, Excitation *excitation_, Result *result_F
 
   if(!initDone)
   {
-    scatter_coef = new complex<double>[2*Tools::iteratorMax(nMax)*geometry->noObjects];
-    internal_coef = new complex<double>[2*Tools::iteratorMax(nMax)*geometry->noObjects];
-    c_scatter_coef = new complex<double>[2*Tools::iteratorMax(nMax)];
+    scatter_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)*geometry->noObjects];
+    internal_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)*geometry->noObjects];
+    c_scatter_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)];
   }
 
   initDone = true;
 }
 
-void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<complex<double> > &EField_, SphericalP<complex<double> > &HField_, int projection_, CompoundIterator p_, int singleComponent_)
+void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<double> > &EField_, SphericalP<std::complex<double> > &HField_, int projection_, CompoundIterator p_, int singleComponent_)
 {
-  SphericalP<complex<double> > Efield = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
-  SphericalP<complex<double> > Einc = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
-  SphericalP<complex<double> > Hfield = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
-  SphericalP<complex<double> > Hinc = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double> > Efield = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double> > Einc = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double> > Hfield = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double> > Hinc = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
 
   Spherical<double> Rrel;
 
-  complex<double> iZ = (consCmi / sqrt(geometry->bground.mu/geometry->bground.epsilon));
+  std::complex<double> iZ = (consCmi / sqrt(geometry->bground.mu/geometry->bground.epsilon));
 
   int intInd = geometry->checkInner(R_);
 
@@ -151,7 +143,7 @@ void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<complex<double> >
     //Scattered field
     for(int j=0; j<geometry->noObjects; j++)
     {
-      SphericalP<complex<double> > Efield_local = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
+      SphericalP<std::complex<double> > Efield_local = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
 
       Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
       AuxCoefficients aCoef;
@@ -184,7 +176,7 @@ void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<complex<double> >
     aCoef.init(Rrel, waveK * sqrt(geometry->objects[intInd].elmag.epsilon_r * geometry->objects[intInd].elmag.mu_r), 1, nMax);
     aCoef.populate();
 
-    complex<double> iZ_object = (consCmi / sqrt(geometry->objects[intInd].elmag.mu / geometry->objects[intInd].elmag.epsilon));
+    std::complex<double> iZ_object = (consCmi / sqrt(geometry->objects[intInd].elmag.mu / geometry->objects[intInd].elmag.epsilon));
 
     if(singleComponent_ == 1) //TE Part Only
     {
@@ -207,8 +199,8 @@ void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<complex<double> >
 
   if(projection_)
   {
-    SphericalP<complex<double> > SphEField;
-    SphericalP<complex<double> > SphHField;
+    SphericalP<std::complex<double> > SphEField;
+    SphericalP<std::complex<double> > SphHField;
     Rrel = Tools::toPoint(R_, geometry->objects[0].vR);
 
     SphEField = Tools::fromProjection(Rrel, Einc+Efield);
@@ -224,16 +216,16 @@ void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<complex<double> >
   }
 }
 
-void Result::getEHFields(Spherical<double> R_, SphericalP<complex<double> > &EField_, SphericalP<complex<double> > &HField_, int projection_)
+void Result::getEHFields(Spherical<double> R_, SphericalP<std::complex<double> > &EField_, SphericalP<std::complex<double> > &HField_, int projection_)
 {
-  SphericalP<complex<double> > Efield = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
-  SphericalP<complex<double> > Einc = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
-  SphericalP<complex<double> > Hfield = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
-  SphericalP<complex<double> > Hinc = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double> > Efield = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double> > Einc = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double> > Hfield = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double> > Hinc = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
 
   Spherical<double> Rrel;
 
-  complex<double> iZ = (consCmi / sqrt(geometry->bground.mu/geometry->bground.epsilon));
+  std::complex<double> iZ = (consCmi / sqrt(geometry->bground.mu/geometry->bground.epsilon));
 
   int pMax = Tools::iteratorMax(nMax);
 
@@ -276,7 +268,7 @@ void Result::getEHFields(Spherical<double> R_, SphericalP<complex<double> > &EFi
     //Scattered field
     for(int j=0; j<geometry->noObjects; j++)
     {
-      SphericalP<complex<double> > Efield_local = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
+      SphericalP<std::complex<double> > Efield_local = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
 
       Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
       AuxCoefficients aCoef;
@@ -297,7 +289,7 @@ void Result::getEHFields(Spherical<double> R_, SphericalP<complex<double> > &EFi
     aCoef.init(Rrel, waveK * sqrt(geometry->objects[intInd].elmag.epsilon_r * geometry->objects[intInd].elmag.mu_r), 1, nMax);
     aCoef.populate();
 
-    complex<double> iZ_object = (consCmi / sqrt(geometry->objects[intInd].elmag.mu / geometry->objects[intInd].elmag.epsilon));
+    std::complex<double> iZ_object = (consCmi / sqrt(geometry->objects[intInd].elmag.mu / geometry->objects[intInd].elmag.epsilon));
 
     for(p=0; p<p.max(nMax); p++)
     {
@@ -308,8 +300,8 @@ void Result::getEHFields(Spherical<double> R_, SphericalP<complex<double> > &EFi
 
   if(projection_)
   {
-    SphericalP<complex<double> > SphEField;
-    SphericalP<complex<double> > SphHField;
+    SphericalP<std::complex<double> > SphEField;
+    SphericalP<std::complex<double> > SphHField;
     Rrel = Tools::toPoint(R_, geometry->objects[0].vR);
 
     SphEField = Tools::fromProjection(Rrel, Einc+Efield);
@@ -325,12 +317,12 @@ void Result::getEHFields(Spherical<double> R_, SphericalP<complex<double> > &EFi
   }
 }
 
-SphericalP<complex<double> > Result::getEFieldC(Spherical<double> R_, int projection)
+SphericalP<std::complex<double> > Result::getEFieldC(Spherical<double> R_, int projection)
 {
   /* TEST FUNCTION. NOT USED IN PRODUCTION CODE! */
 
-  SphericalP<complex<double> > Efield = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
-  SphericalP<complex<double> > Einc = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double> > Efield = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double> > Einc = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
   Spherical<double> Rrel;
 
   int pMax = Tools::iteratorMax(nMax);
@@ -422,21 +414,21 @@ double Result::getExtinctionCrossSection()
   int pMax = Tools::iteratorMax(nMax);
 
   double Cext(0.);
-  complex<double> *Q_local = new complex<double>[2*pMax];
+  std::complex<double> *Q_local = new std::complex<double>[2*pMax];
 
   for(int j=0; j<geometry->noObjects; j++)
   {
     excitation->getIncLocal(geometry->objects[j].vR, Q_local, nMax);
     for(p=0; p<pMax; p++)
     {
-      Cext += real( conj(Q_local[p]) * scatter_coef[j*2*pMax+p.compound]
-             +  conj(Q_local[p.compound + pMax]) * scatter_coef[pMax+j*2*pMax+p.compound]);
+      Cext += std::real(  std::conj(Q_local[p]) * scatter_coef[j*2*pMax+p.compound]
+             +  std::conj(Q_local[p.compound + pMax]) * scatter_coef[pMax+j*2*pMax+p.compound]);
     }
 
   }
 
   delete [] Q_local;
-  return (-1. / (real(waveK) * real(waveK)))*Cext;
+  return (-1. / (std::real(waveK) * std::real(waveK)))*Cext;
 }
 
 double Result::getAbsorptionCrossSection()
@@ -464,14 +456,14 @@ double Result::getAbsorptionCrossSection()
     }
   }
   delete [] Cabs_aux;
-  return ( 1 / (real(waveK) * real(waveK))) * Cabs;
+  return ( 1 / (std::real(waveK) * std::real(waveK))) * Cabs;
 }
 
 int Result::setFields(OutputGrid oEGrid_, OutputGrid oHGrid_, int projection_)
 {
   if(!initDone)
   {
-    cerr << "Result object not initialized!";
+    std::cerr << "Result object not initialized!";
     return -1;
   }
 
@@ -484,10 +476,10 @@ int Result::setFields(OutputGrid oEGrid_, OutputGrid oHGrid_, int projection_)
   {
     Rloc = oEGrid_.getPoint();
     oHGrid_.getPoint();
-    cout << "Calculating fields for point " << oEGrid_.iterator+1 << " out of " << oEGrid_.gridPoints << endl;
+    std::cout << "Calculating fields for point " << oEGrid_.iterator+1 << " out of " << oEGrid_.gridPoints << std::endl;
 
-    SphericalP<complex<double> > EField;
-    SphericalP<complex<double> > HField;
+    SphericalP<std::complex<double> > EField;
+    SphericalP<std::complex<double> > HField;
 
     getEHFields(Rloc, EField, HField, projection_);
 
@@ -503,7 +495,7 @@ int Result::setFieldsModal(OutputGrid oEGrid_, OutputGrid oHGrid_, int projectio
 {
   if(!initDone)
   {
-    cerr << "Result object not initialized!";
+    std::cerr << "Result object not initialized!";
     return -1;
   }
 
@@ -514,10 +506,10 @@ int Result::setFieldsModal(OutputGrid oEGrid_, OutputGrid oHGrid_, int projectio
   {
     Rloc = oEGrid_.getPoint();
     oHGrid_.getPoint();
-    cout << "Calculating fields for point " << oEGrid_.iterator+1 << " out of " << oEGrid_.gridPoints << endl;
+    std::cout << "Calculating fields for point " << oEGrid_.iterator+1 << " out of " << oEGrid_.gridPoints << std::endl;
 
-    SphericalP<complex<double> > EField;
-    SphericalP<complex<double> > HField;
+    SphericalP<std::complex<double> > EField;
+    SphericalP<std::complex<double> > HField;
 
     getEHFieldsModal(Rloc, EField, HField, projection_, p_, singleComponent_);
 
@@ -536,16 +528,16 @@ void Result::centerScattering()
 
   for(p=0; p<2*p.max(nMax); p++)
   {
-    c_scatter_coef[p] = complex<double>(0.0, 0.0);
+    c_scatter_coef[p] = std::complex<double>(0.0, 0.0);
   }
 
-  complex<double> **T_AB = new complex<double>*[2*(p.max(nMax))];
-  complex<double> *scatter_aux = new complex<double>[2*p.max(nMax)];
-  complex<double> *scatter_fin = new complex<double>[2*p.max(nMax)];
+  std::complex<double> **T_AB = new std::complex<double>*[2*(p.max(nMax))];
+  std::complex<double> *scatter_aux = new std::complex<double>[2*p.max(nMax)];
+  std::complex<double> *scatter_fin = new std::complex<double>[2*p.max(nMax)];
 
   for(p=0; p<(int)(2*p.max(nMax)); p++)
   {
-    T_AB[p] = new complex<double>[2*p.max(nMax)];
+    T_AB[p] = new std::complex<double>[2*p.max(nMax)];
   }
 
 
@@ -596,8 +588,8 @@ CompoundIterator Result::getDominant()
 
   q = 0;
 
-  complex<double> TEMax = scatter_coef[0];
-  complex<double> TMMax = scatter_coef[p.max(nMax)];
+  std::complex<double> TEMax = scatter_coef[0];
+  std::complex<double> TMMax = scatter_coef[p.max(nMax)];
 
   for(p=0; p<p.max(nMax); p++)
   {
@@ -613,16 +605,16 @@ CompoundIterator Result::getDominant()
   return q;
 }
 
-void Result::getEHFieldsContCheck(Spherical<double> R_, SphericalP<complex<double> > &EField_, SphericalP<complex<double> > &HField_, int projection_, int inside_)
+void Result::getEHFieldsContCheck(Spherical<double> R_, SphericalP<std::complex<double> > &EField_, SphericalP<std::complex<double> > &HField_, int projection_, int inside_)
 {
-  SphericalP<complex<double> > Efield = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
-  SphericalP<complex<double> > Einc = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
-  SphericalP<complex<double> > Hfield = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
-  SphericalP<complex<double> > Hinc = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double> > Efield = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double> > Einc = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double> > Hfield = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double> > Hinc = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
 
   Spherical<double> Rrel;
 
-  complex<double> iZ = (consCmi / sqrt(geometry->bground.mu/geometry->bground.epsilon));
+  std::complex<double> iZ = (consCmi / sqrt(geometry->bground.mu/geometry->bground.epsilon));
 
   int pMax = Tools::iteratorMax(nMax);
 
@@ -666,7 +658,7 @@ void Result::getEHFieldsContCheck(Spherical<double> R_, SphericalP<complex<doubl
     //Scattered field
     for(int j=0; j<geometry->noObjects; j++)
     {
-      SphericalP<complex<double> > Efield_local = SphericalP<complex<double> >(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
+      SphericalP<std::complex<double> > Efield_local = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
 
       Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
       AuxCoefficients aCoef;
@@ -687,7 +679,7 @@ void Result::getEHFieldsContCheck(Spherical<double> R_, SphericalP<complex<doubl
     aCoef.init(Rrel, waveK * sqrt(geometry->objects[intInd].elmag.epsilon_r * geometry->objects[intInd].elmag.mu_r), 1, nMax);
     aCoef.populate();
 
-    complex<double> iZ_object = (consCmi / sqrt(geometry->objects[intInd].elmag.mu / geometry->objects[intInd].elmag.epsilon));
+    std::complex<double> iZ_object = (consCmi / sqrt(geometry->objects[intInd].elmag.mu / geometry->objects[intInd].elmag.epsilon));
 
     for(p=0; p<p.max(nMax); p++)
     {
@@ -698,8 +690,8 @@ void Result::getEHFieldsContCheck(Spherical<double> R_, SphericalP<complex<doubl
 
   if(projection_)
   {
-    SphericalP<complex<double> > SphEField;
-    SphericalP<complex<double> > SphHField;
+    SphericalP<std::complex<double> > SphEField;
+    SphericalP<std::complex<double> > SphHField;
     Rrel = Tools::toPoint(R_, geometry->objects[0].vR);
 
     SphEField = Tools::fromProjection(Rrel, Einc+Efield);
@@ -717,23 +709,23 @@ void Result::getEHFieldsContCheck(Spherical<double> R_, SphericalP<complex<doubl
 
 void Result::writeContinuityCheck(int objectIndex_)
 {
-    SphericalP<complex<double> > AnEField_in, AnEField_out;
-    SphericalP<complex<double> > AnHField_in, AnHField_out;
+    SphericalP<std::complex<double> > AnEField_in, AnEField_out;
+    SphericalP<std::complex<double> > AnHField_in, AnHField_out;
     Spherical<double> APoint(0.0, 0.0, 0.0);
     int projection = 1;     //Spherical projection - True - projection is internally set to be evaluated w.r.t. object[0]
     int outside = -1;     //Forces result to be outside an object
     int inside = 0;       //Forces result to be inside an object
     double radius       = geometry->objects[objectIndex_].radius;;
-    complex<double> eps_r = geometry->objects[objectIndex_].elmag.epsilon_r;
-    complex<double> mu_r  = geometry->objects[objectIndex_].elmag.mu_r;
+    std::complex<double> eps_r = geometry->objects[objectIndex_].elmag.epsilon_r;
+    std::complex<double> mu_r  = geometry->objects[objectIndex_].elmag.mu_r;
 
     // the-phi - 2D plot ----------------------------------------------------------------------------------------------------------------
-    ofstream E1_err_mag("E1_err_mag");
-    ofstream E2_err_mag("E2_err_mag");
-    ofstream E3_err_mag("E3_err_mag");
-    ofstream H1_err_mag("H1_err_mag");
-    ofstream H2_err_mag("H2_err_mag");
-    ofstream H3_err_mag("H3_err_mag");
+    std::ofstream E1_err_mag("E1_err_mag");
+    std::ofstream E2_err_mag("E2_err_mag");
+    std::ofstream E3_err_mag("E3_err_mag");
+    std::ofstream H1_err_mag("H1_err_mag");
+    std::ofstream H2_err_mag("H2_err_mag");
+    std::ofstream H3_err_mag("H3_err_mag");
     int max_ii = 180;         // theta observation range (increment by 1 degree) - [1, max_ii-1]
     int max_jj = 180;         // phi   observation range (increment by 1 degree) - [1, max_jj-1]
     for(int ii=1; ii<=max_ii-1; ii++){
@@ -743,7 +735,7 @@ void Result::writeContinuityCheck(int objectIndex_)
         getEHFieldsContCheck(APoint, AnEField_out, AnHField_out, projection, outside);
         getEHFieldsContCheck(APoint, AnEField_in, AnHField_in, projection, inside);
         // op -------------------------------------------------------------------
-        cout<<"Continuity check : computed "<<jj+((ii-1)*(max_ii-1))<<" out of a total of "<<(max_ii-1)*(max_jj-1)<<endl;
+        std::cout<<"Continuity check : computed "<<jj+((ii-1)*(max_ii-1))<<" out of a total of "<<(max_ii-1)*(max_jj-1)<<std::endl;
         // EF
         E1_err_mag<<(abs(AnEField_out.rrr)-abs(AnEField_in.rrr*eps_r))/abs(AnEField_in.rrr*eps_r)<<" ";
         E2_err_mag<<(abs(AnEField_out.the)-abs(AnEField_in.the))/abs(AnEField_in.the)<<" ";
@@ -753,8 +745,8 @@ void Result::writeContinuityCheck(int objectIndex_)
         H2_err_mag<<(abs(AnHField_out.the)-abs(AnHField_in.the))/abs(AnHField_in.the)<<" ";
         H3_err_mag<<(abs(AnHField_out.phi)-abs(AnHField_in.phi))/abs(AnHField_in.phi)<<" ";
       }
-      E1_err_mag<<endl; E2_err_mag<<endl; E3_err_mag<<endl;
-      H1_err_mag<<endl; H2_err_mag<<endl; H3_err_mag<<endl;
+      E1_err_mag<<std::endl;  E2_err_mag<<std::endl;  E3_err_mag<<std::endl;
+      H1_err_mag<<std::endl;  H2_err_mag<<std::endl;  H3_err_mag<<std::endl;
     }
     E1_err_mag.flush(); E2_err_mag.flush(); E3_err_mag.flush();
     H1_err_mag.flush(); H2_err_mag.flush(); H3_err_mag.flush();

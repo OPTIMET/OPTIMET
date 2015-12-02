@@ -4,10 +4,6 @@
 #include <iostream>
 #include <cmath>
 
-using std::cerr;
-using std::abs;
-using std::sqrt;
-
 extern "C"
 {
   int zbesj_(double *, double *, double *, long int *, long int *, double *, double *, long int *, long int *);
@@ -19,18 +15,18 @@ Bessel::Bessel() {
   ierr = 19;
 }
 
-Bessel::Bessel(complex<double> argument_, int besselType_, int scale_, int maxOrder_)
+Bessel::Bessel(std::complex<double> argument_, int besselType_, int scale_, int maxOrder_)
 {
   init(argument_, besselType_, scale_, maxOrder_);
 }
 
-int Bessel::init(complex<double> argument_, int besselType_, int scale_, int maxOrder_)
+int Bessel::init(std::complex<double> argument_, int besselType_, int scale_, int maxOrder_)
 {
   argument = argument_;
   besselType = besselType_;
   if((besselType < 0) || (besselType > 2))
   {
-    cerr << "Wrong besselType:" << besselType <<"!";
+    std::cerr << "Wrong besselType:" << besselType <<"!";
     ierr = 11;
     return ierr;
   }
@@ -38,13 +34,13 @@ int Bessel::init(complex<double> argument_, int besselType_, int scale_, int max
   maxOrder = maxOrder_;
   if(maxOrder < 1)
   {
-    cerr << "Maximum order required for Bessel smaller than 1!";
+    std::cerr << "Maximum order required for Bessel smaller than 1!";
     ierr = 11;
     return ierr;
   }
 
-  data = new complex<double>[maxOrder+1];
-  ddata = new complex<double>[maxOrder+1];
+  data = new std::complex<double>[maxOrder+1];
+  ddata = new std::complex<double>[maxOrder+1];
 
   initDone = true;
   ierr = 0;
@@ -56,7 +52,7 @@ int Bessel::populate(void)
   if (!initDone) //Parameters were not initialized
   {
     ierr = 10;
-    cerr << "Bessel engine was not initialized!";
+    std::cerr << "Bessel engine was not initialized!";
     return ierr;
   }
 
@@ -81,14 +77,14 @@ int Bessel::populate(void)
   //Assemble the direct functions
   for(int i=0; i<=maxOrder; i++)
   {
-    if(abs(argument) <= errEpsilon)
-      data[i] = complex<double>(0.0, 0.0);
+    if(std::abs(argument) <= errEpsilon)
+      data[i] = std::complex<double>(0.0, 0.0);
     else
-      data[i] = sqrt(consPi / (2.0*argument)) * complex<double>(cyr[i], cyi[i]);
+      data[i] = std::sqrt(consPi / (2.0*argument)) * std::complex<double>(cyr[i], cyi[i]);
   }
 
   //The last derivative
-  ddata[maxOrder] = consCm1 * sqrt(consPi / (2.0*argument)) * complex<double>(cyr[maxOrder+1], cyi[maxOrder+1]) + ((double)maxOrder/argument) * data[maxOrder];
+  ddata[maxOrder] = consCm1 * std::sqrt(consPi / (2.0*argument)) * std::complex<double>(cyr[maxOrder+1], cyi[maxOrder+1]) + ((double)maxOrder/argument) * data[maxOrder];
 
   for(int i=0; i<maxOrder; i++)
   {

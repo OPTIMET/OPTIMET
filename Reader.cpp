@@ -10,10 +10,6 @@
 #include <cstring>
 #include <vector>
 
-using std::cerr;
-using std::endl;
-using std::strcmp;
-
 using namespace pugi;
 
 Reader::Reader()
@@ -35,7 +31,7 @@ int Reader::readGeometry()
   geo_node = inputFile.child("simulation");
   if (!geo_node)
   {
-    cerr << "Simulation parameters not defined!" << endl;
+    std::cerr << "Simulation parameters not defined!" << std::endl;
     return 1;
   }
 
@@ -45,7 +41,7 @@ int Reader::readGeometry()
   geo_node = inputFile.child("geometry");
   if (!geo_node)
   {
-    cerr << "Geometry not defined!" << endl;
+    std::cerr << "Geometry not defined!" << std::endl;
     return 1;
   }
 
@@ -73,7 +69,7 @@ int Reader::readGeometry()
 
     //Choose object type (since comparing strings, elif is better)
 
-    if (!strcmp(node.attribute("type").value(), "sphere")) //Sphere object
+    if (!std::strcmp(node.attribute("type").value(), "sphere")) //Sphere object
     {
       //Assign coordinates to the Scatterer work_object
       if(node.child("cartesian")) //Cartesian coordinates
@@ -106,16 +102,16 @@ int Reader::readGeometry()
       //Assign electromagnetic properties to the Scatterer
       if(node.child("epsilon") || node.child("mu"))
       {
-        complex<double> aux_epsilon = complex<double>(1.0, 0.);
-        complex<double> aux_mu = complex<double>(1.0, 0.);
+        std::complex<double> aux_epsilon = std::complex<double>(1.0, 0.);
+        std::complex<double> aux_mu = std::complex<double>(1.0, 0.);
         // Drude model
-        complex<double> plasma_freq = complex<double>(1.0, 0.);
-        complex<double> damping_freq = complex<double>(1.0, 0.);
+        std::complex<double> plasma_freq = std::complex<double>(1.0, 0.);
+        std::complex<double> damping_freq = std::complex<double>(1.0, 0.);
 //        double input_frequency = 1.0; //consC/wavelength;
 
 
         //Read mu first
-        if(!strcmp(node.child("mu").attribute("type").value(), "relative"))
+        if(!std::strcmp(node.child("mu").attribute("type").value(), "relative"))
         {
           aux_mu.real(node.child("mu").attribute("value.real").as_double());
           aux_mu.imag(node.child("mu").attribute("value.imag").as_double());
@@ -123,7 +119,7 @@ int Reader::readGeometry()
 
         //Now the two epsilon models
 
-        if(!strcmp(node.child("epsilon").attribute("type").value(), "relative"))
+        if(!std::strcmp(node.child("epsilon").attribute("type").value(), "relative"))
         {
           // Static values
           aux_epsilon.real(node.child("epsilon").attribute("value.real").as_double());
@@ -131,20 +127,20 @@ int Reader::readGeometry()
           work_object.elmag.init_r(aux_epsilon, aux_mu);
         }
 
-        if(!strcmp(node.child("epsilon").attribute("type").value(), "DrudeModel"))
+        if(!std::strcmp(node.child("epsilon").attribute("type").value(), "DrudeModel"))
         {
           //Drude model
 //          input_frequency = node.child("epsilon").child("parameters").attribute("input_frequency").as_double();
           plasma_freq.real(node.child("epsilon").child("parameters").attribute("plasma_frequency").as_double());
           damping_freq.real(node.child("epsilon").child("parameters").attribute("damping_frequency").as_double());
-          damping_freq*=complex<double>(0., 1.);
+          damping_freq*=std::complex<double>(0., 1.);
   //        aux_epsilon = 1. - ( (plasma_freq*plasma_freq) / (input_freq*(input_freq+damping_freq)) );
     //      work_object.elmag.init_r(aux_epsilon, aux_mu);
           work_object.elmag.initDrudeModel_r(plasma_freq, damping_freq, aux_mu);
 
         }
 
-        if(!strcmp(node.child("epsilon").attribute("type").value(), "sellmeier"))
+        if(!std::strcmp(node.child("epsilon").attribute("type").value(), "sellmeier"))
         {
           //Sellmeier model
           double B1(0.), C1(0.), B2(0.), C2(0.), B3(0.), C3(0.), B4(0.), C4(0.), B5(0.), C5(0.);
@@ -180,21 +176,21 @@ int Reader::readGeometry()
   //Add the background properties
   if(geo_node.child("background"))
     {
-//        if(strcmp(geo_node.child("background").attribute("type").value(), "absolute"))
+//        if(std::strcmp(geo_node.child("background").attribute("type").value(), "absolute"))
   //      {
     //        run->geometry.bground.init(geo_node.child("background").child("epsilon").attribute("value").as_double(), geo_node.child("background").child("mu").attribute("value").as_double());
       // }
-    if(strcmp(geo_node.child("background").attribute("type").value(), "relative"))
+    if(std::strcmp(geo_node.child("background").attribute("type").value(), "relative"))
         {
-      complex<double> aux_epsilon = complex<double>(1.0, 0.);
-      complex<double> aux_mu = complex<double>(1.0, 0.);
+      std::complex<double> aux_epsilon(1.0, 0.);
+      std::complex<double> aux_mu(1.0, 0.);
             aux_epsilon.real(geo_node.child("background").child("epsilon").attribute("value.real").as_double());
       aux_epsilon.imag(geo_node.child("background").child("epsilon").attribute("value.imag").as_double());
       aux_mu.real(geo_node.child("background").child("mu").attribute("value.real").as_double());
       aux_mu.imag(geo_node.child("background").child("mu").attribute("value.imag").as_double());
       run->geometry.bground.init_r(aux_epsilon, aux_mu);
        }
-//        else if(strcmp(geo_node.child("background").attribute("type").value(), "relative"))
+//        else if(std::strcmp(geo_node.child("background").attribute("type").value(), "relative"))
   //      {
   //  run->geometry.bground.init_r(geo_node.child("background").child("epsilon").attribute("value").as_double(), geo_node.child("background").child("mu").attribute("value").as_double());
     //}
@@ -213,17 +209,17 @@ int Reader::readExcitation()
     ext_node = inputFile.child("source");
     if(!ext_node)
     {
-        cerr << "Source not defined!" << endl;
+        std::cerr << "Source not defined!" << std::endl;
         return 1;
     }
 
     int source_type;
     double wavelength;
-    SphericalP<complex<double> > Einc(complex<double>(0.0, 0.0), complex<double>(0.0, 0.0), complex<double>(0.0, 0.0));
+    SphericalP<std::complex<double> > Einc(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
     Spherical<double> vKinc(0.0, 0.0, 0.0);
 
     //Determine source type
-    if(!strcmp(ext_node.attribute("type").value(), "planewave"))
+    if(!std::strcmp(ext_node.attribute("type").value(), "planewave"))
         source_type = 0;
     else //Default is always planewave
         source_type = 0;
@@ -236,12 +232,12 @@ int Reader::readExcitation()
     vKinc = Spherical<double>(2*consPi/wavelength, ext_node.child("propagation").attribute("theta").as_double() * consPi/180.0, ext_node.child("propagation").attribute("phi").as_double() * consPi/180.0);
 
     //Determine polarisation (initial field values)
-    SphericalP<complex<double> > Eaux;
+    SphericalP<std::complex<double> > Eaux;
     Spherical<double> vAux = Spherical<double>(0.0, vKinc.the, vKinc.phi);
-    Eaux = SphericalP<complex<double> >(complex<double>(0.0, 0.0),
-                      complex<double>(ext_node.child("polarization").attribute("Etheta.real").as_double(),
+    Eaux = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0),
+                      std::complex<double>(ext_node.child("polarization").attribute("Etheta.real").as_double(),
                           ext_node.child("polarization").attribute("Etheta.imag").as_double()),
-                      complex<double>(ext_node.child("polarization").attribute("Ephi.real").as_double(),
+                      std::complex<double>(ext_node.child("polarization").attribute("Ephi.real").as_double(),
                           ext_node.child("polarization").attribute("Ephi.imag").as_double()));
     Einc = Tools::toProjection(vAux, Eaux);
 
@@ -261,7 +257,7 @@ int Reader::readStructure(xml_node geo_node_)
 
   run->geometry.structureType = 1; //set the spiral structure flag
 
-  if(!strcmp(struct_node.attribute("type").value(), "spiral"))
+  if(!std::strcmp(struct_node.attribute("type").value(), "spiral"))
   {
     //Build a spiral
     double R, d; //radius (length) and distance between spheres
@@ -273,7 +269,7 @@ int Reader::readStructure(xml_node geo_node_)
 
     int arms = struct_node.attribute("arms").as_int();
 
-    if(!strcmp(struct_node.child("properties").attribute("length").value(), ""))
+    if(!std::strcmp(struct_node.child("properties").attribute("length").value(), ""))
     {
       //Distance based simulation;
       d = 2.0 * struct_node.child("properties").attribute("distance").as_double() * consFrnmTom;
@@ -309,20 +305,20 @@ int Reader::readStructure(xml_node geo_node_)
       double aux_mu = 1.0;
 
       //Read mu first
-      if(!strcmp(struct_node.child("object").child("mu").attribute("type").value(), "relative"))
+      if(!std::strcmp(struct_node.child("object").child("mu").attribute("type").value(), "relative"))
       {
         aux_mu = struct_node.child("object").child("mu").attribute("value").as_double();
       }
 
       //Now the two epsilon models
 
-      if(!strcmp(struct_node.child("object").child("epsilon").attribute("type").value(), "relative"))
+      if(!std::strcmp(struct_node.child("object").child("epsilon").attribute("type").value(), "relative"))
       {
         aux_epsilon = struct_node.child("object").child("epsilon").attribute("value").as_double();
-        work_object.elmag.init_r(complex<double>(aux_epsilon, 0.0), complex<double>(aux_mu, 0.0));
+        work_object.elmag.init_r(std::complex<double>(aux_epsilon, 0.0), std::complex<double>(aux_mu, 0.0));
       }
 
-      if(!strcmp(struct_node.child("object").child("epsilon").attribute("type").value(), "sellmeier"))
+      if(!std::strcmp(struct_node.child("object").child("epsilon").attribute("type").value(), "sellmeier"))
       {
         //Sellmeier model
           double B1(0.), C1(0.), B2(0.), C2(0.), B3(0.), C3(0.), B4(0.), C4(0.), B5(0.), C5(0.);
@@ -404,7 +400,7 @@ int Reader::readStructure(xml_node geo_node_)
 
     for(int i=0; i<No-1; i++)
     {
-      if(!strcmp(struct_node.child("properties").attribute("normal").value(), "x"))
+      if(!std::strcmp(struct_node.child("properties").attribute("normal").value(), "x"))
       {
         //x is normal (conversion is x(pol) -> y; y(pol) -> z
         auxCar.x = 0.0;
@@ -414,7 +410,7 @@ int Reader::readStructure(xml_node geo_node_)
         run->geometry.normalToSpiral = 0;
       }
 
-      if(!strcmp(struct_node.child("properties").attribute("normal").value(), "y"))
+      if(!std::strcmp(struct_node.child("properties").attribute("normal").value(), "y"))
       {
         //y is normal (conversion is x(pol) -> z; y(pol) -> x
         auxCar.x = Y[i];
@@ -424,7 +420,7 @@ int Reader::readStructure(xml_node geo_node_)
         run->geometry.normalToSpiral = 1;
       }
 
-      if(!strcmp(struct_node.child("properties").attribute("normal").value(), "z"))
+      if(!std::strcmp(struct_node.child("properties").attribute("normal").value(), "z"))
       {
         //z is normal (conversion is x(pol) -> x; y(pol) -> x
         auxCar.x = X[i];
@@ -451,17 +447,17 @@ int Reader::readOutput()
     out_node = inputFile.child("output");
     if(!out_node)
     {
-        cerr << "Output not defined!" << endl;
+        std::cerr << "Output not defined!" << std::endl;
         return 1;
     }
 
     //Determine type
-    if(!strcmp(out_node.attribute("type").value(), "coefficients"))
+    if(!std::strcmp(out_node.attribute("type").value(), "coefficients"))
     {
       run->outputType = 2;
     }
 
-    if(!strcmp(out_node.attribute("type").value(), "field"))
+    if(!std::strcmp(out_node.attribute("type").value(), "field"))
     {
       run->outputType = 0;  //Field output requested
       run->singleComponent = 0; //Set this to zero as default
@@ -476,7 +472,7 @@ int Reader::readOutput()
       run->params[7] = out_node.child("grid").child("z").attribute("max").as_double()* 1e-9;
       run->params[8] = out_node.child("grid").child("z").attribute("steps").as_double();
 
-      if(!strcmp(out_node.child("projection").attribute("spherical").value(), "true"))
+      if(!std::strcmp(out_node.child("projection").attribute("spherical").value(), "true"))
       {
         run->projection = 1;
       }
@@ -494,7 +490,7 @@ int Reader::readOutput()
         run->singleMode = false;
       }
 
-      if(!strcmp(out_node.child("singlemode").attribute("dominant").value(), "auto"))
+      if(!std::strcmp(out_node.child("singlemode").attribute("dominant").value(), "auto"))
       {
         run->dominantAuto = true;
       }
@@ -503,18 +499,18 @@ int Reader::readOutput()
         run->dominantAuto = false;
         run->singleModeIndex.init(out_node.child("singlemode").attribute("n").as_int(),
             out_node.child("singlemode").attribute("m").as_int());
-        if(!strcmp(out_node.child("singlemode").attribute("component").value(), "TE"))
+        if(!std::strcmp(out_node.child("singlemode").attribute("component").value(), "TE"))
         {
           run->singleComponent = 1;
         }
-        if(!strcmp(out_node.child("singlemode").attribute("component").value(), "TM"))
+        if(!std::strcmp(out_node.child("singlemode").attribute("component").value(), "TM"))
         {
           run->singleComponent = 2;
         }
       }
     }
 
-    if(!strcmp(out_node.attribute("type").value(), "response"))
+    if(!std::strcmp(out_node.attribute("type").value(), "response"))
     {
       if(out_node.child("scan").child("wavelength"))
       {
@@ -568,28 +564,28 @@ int Reader::readSimulation(std::string const & fileName_)
 
   if(!fileResult)
   {
-    cerr << "Error reading or parsing input file " << fileName_ << "!" << endl;
+    std::cerr << "Error reading or parsing input file " << fileName_ << "!" << std::endl;
     return 1;
   }
 
   //Read the Geometry
   if(!readGeometry())
   {
-    cerr << "Geometry not valid!";
+    std::cerr << "Geometry not valid!";
     return 1;
   }
 
     //Read Excitation
     if(readExcitation())
     {
-        cerr << "Source not valid!";
+        std::cerr << "Source not valid!";
         return 1;
     }
 
     //Read Excitation
     if(readOutput())
     {
-        cerr << "Output not valid!";
+        std::cerr << "Output not valid!";
         return 1;
     }
 
