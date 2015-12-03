@@ -7,8 +7,6 @@
 #include "Result.h"
 #include <complex>
 
-using std::complex;
-
 /**
  * The Solver class builds and solves the scattering matrix equation.
  */
@@ -24,8 +22,8 @@ private:
   Result *result_FF;    /**< The fundamental frequency results. */
   int solverMethod;   /**< Solver method: Direct = Mischenko1996, Indirect = Stout2002 */
 public:
-  complex<double> **S;  /**< The scattering matrix S = I - T*AB. */
-  complex<double> *Q;   /**< The local field matrix Q = T*AB*a. */
+  std::complex<double> **S;  /**< The scattering matrix S = I - T*AB. */
+  std::complex<double> *Q;   /**< The local field matrix Q = T*AB*a. */
 
   /**
    * Default constructor for the Solver class.
@@ -91,21 +89,21 @@ public:
    * @param X_int_ the return vector for the internal coefficients.
    * @return 0 if successful, 1 otherwise.
    */
-  int solve(complex<double> *X_sca_, complex<double> *X_int_);
+  int solve(std::complex<double> *X_sca_, std::complex<double> *X_int_);
 
   /**
    * Solve the S*X=Q equation using the Direct (Mischenko1996) method.
    * @param X_sca_ the return vector for the scattered coefficients.
    * @return 0 if successful, 1 otherwise.
    */
-  int solveScatteredDirect(complex<double> *X_sca_);
+  int solveScatteredDirect(std::complex<double> *X_sca_);
 
   /**
    * Solve the S*X=Q equation using the Indirect (Stout2002) method.
    * @param X_sca_ the return vector for the scattered coefficients.
    * @return 0 if successful, 1 otherwise.
    */
-  int solveScatteredIndirect(complex<double> *X_sca_);
+  int solveScatteredIndirect(std::complex<double> *X_sca_);
 
   /**
    * Solve the internal coefficients.
@@ -114,7 +112,7 @@ public:
    * @param X_int_ the return vector for the internal coefficients.
    * @return 0 if successful, 1 otherwise.
    */
-  int solveInternal(complex<double> *X_sca_, complex<double> *X_int_);
+  int solveInternal(std::complex<double> *X_sca_, std::complex<double> *X_int_);
 
   /**
    * Update method for the Solver class.

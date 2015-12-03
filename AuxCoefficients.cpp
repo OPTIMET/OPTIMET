@@ -13,9 +13,6 @@
 #include "gsl/gsl_sf_gamma.h"
 
 
-using std::abs;
-using std::sqrt;
-
 int AuxCoefficients::compute_dn(int nMax, double *dn)
 {
 
@@ -25,7 +22,7 @@ int AuxCoefficients::compute_dn(int nMax, double *dn)
   for(int i=1; i<=nMax; i++)
   {
     d_n=double(i);
-    dn[i] = sqrt((2.*d_n+1.) / (4*consPi*d_n*(d_n+1.)));
+    dn[i] = std::sqrt((2.*d_n+1.) / (4*consPi*d_n*(d_n+1.)));
   }
 
   return 0;
@@ -34,7 +31,7 @@ int AuxCoefficients::compute_dn(int nMax, double *dn)
 
 
 // ----------------------------------------------------------------------------------
-int AuxCoefficients::compute_Pn(int nMax, double *Wigner, SphericalP<complex<double> > *Pn){
+int AuxCoefficients::compute_Pn(int nMax, double *Wigner, SphericalP<std::complex<double> > *Pn){
   /*-------------------------------------------------------------------------------*/
   /* PURPOSE: Evaluate P_nm function from vig_d  and d_vig_d --------------------- */
   /*-------------------------------------------------------------------------------*/
@@ -49,7 +46,7 @@ int AuxCoefficients::compute_Pn(int nMax, double *Wigner, SphericalP<complex<dou
 } // end P_func ---------------------------------------------------------------------
 /*
 // ----------------------------------------------------------------------------------
-int AuxCoefficients::compute_Pp(Spherical<double> R, int nMax, SphericalP<complex<double> > *dataPp){
+int AuxCoefficients::compute_Pp(Spherical<double> R, int nMax, SphericalP<std::complex<double> > *dataPp){
 
   double *dn;
   dn = new double[nMax + 1];
@@ -60,8 +57,8 @@ int AuxCoefficients::compute_Pp(Spherical<double> R, int nMax, SphericalP<comple
   dWigner = new double[nMax + 1];
 
   // Vector spherical functions ---------------------------------------------------
-  SphericalP<complex<double> > *Pn; // P function arrays
-  Pn = new SphericalP<complex<double> > [nMax + 1];
+  SphericalP<std::complex<double> > *Pn; // P function arrays
+  Pn = new SphericalP<std::complex<double> > [nMax + 1];
 
   CompoundIterator p;
   CompoundIterator q;
@@ -83,9 +80,9 @@ int AuxCoefficients::compute_Pp(Spherical<double> R, int nMax, SphericalP<comple
         d_n=double(n);
 
         double dm = pow(-1., double(q.second));         // Legendre to Wigner function
-        complex<double> exp_imphi = exp(consCi * (double)q.second * R.phi);
+        std::complex<double> exp_imphi = exp(consCi * (double)q.second * R.phi);
 
-        d_temp  = dm * dn[n] * sqrt(d_n*(d_n+1.));
+        d_temp  = dm * dn[n] * std::sqrt(d_n*(d_n+1.));
 
         p.init(n, q.second);
 
@@ -104,7 +101,7 @@ int AuxCoefficients::compute_Pp(Spherical<double> R, int nMax, SphericalP<comple
 }
 */
 // ----------------------------------------------------------------------------------
-int AuxCoefficients::compute_Cn(int nMax, int m_, Spherical<double> R, double *Wigner, double *dWigner, SphericalP<complex<double> > *Cn){
+int AuxCoefficients::compute_Cn(int nMax, int m_, Spherical<double> R, double *Wigner, double *dWigner, SphericalP<std::complex<double> > *Cn){
   /*-------------------------------------------------------------------------------*/
   /* PURPOSE: Evaluate P_nm function from vig_d  and d_vig_d --------------------- */
   /*-------------------------------------------------------------------------------*/
@@ -116,15 +113,15 @@ int AuxCoefficients::compute_Cn(int nMax, int m_, Spherical<double> R, double *W
     if(m_ == 0)
       A = 0.0;
     else
-      if( abs(R.the) < 1e-10 || (abs(R.the)-consPi+1e-10) > 0.0 )
+      if( std::abs(R.the) < 1e-10 || (std::abs(R.the)-consPi+1e-10) > 0.0 )
         A = double(m_) / cos(R.the) * dWigner[i];
       else
         A = double(m_) / sin(R.the) * Wigner[i];
 
     B = dWigner[i];
-    Cn[i].rrr = complex<double>(0., 0);
-    Cn[i].the = complex<double>(0., A);
-    Cn[i].phi = complex<double>(-B, 0.);
+    Cn[i].rrr = std::complex<double>(0., 0);
+    Cn[i].the = std::complex<double>(0., A);
+    Cn[i].phi = std::complex<double>(-B, 0.);
   }
 
   return 0;
@@ -132,7 +129,7 @@ int AuxCoefficients::compute_Cn(int nMax, int m_, Spherical<double> R, double *W
 
 
 // ----------------------------------------------------------------------------------
-int AuxCoefficients::compute_Bn(int nMax, int m_, Spherical<double> R, double *Wigner, double *dWigner, SphericalP<complex<double> > *Bn){
+int AuxCoefficients::compute_Bn(int nMax, int m_, Spherical<double> R, double *Wigner, double *dWigner, SphericalP<std::complex<double> > *Bn){
   /*-------------------------------------------------------------------------------*/
   /* PURPOSE: Evaluate P_nm function from vig_d  and d_vig_d --------------------- */
   /*-------------------------------------------------------------------------------*/
@@ -145,16 +142,16 @@ int AuxCoefficients::compute_Bn(int nMax, int m_, Spherical<double> R, double *W
     if(m_ == 0)
       A = 0.0;
     else
-      if( abs(R.the) < 1e-10 || (abs(R.the)-consPi + 1e-10) > 0.0 )
+      if( std::abs(R.the) < 1e-10 || (std::abs(R.the)-consPi + 1e-10) > 0.0 )
         A = double(m_) / cos(R.the) * dWigner[i];
       else
         A = double(m_) / sin(R.the) * Wigner[i];
 
     B = dWigner[i];
 
-    Bn[i].rrr = complex<double>(0., 0);
-    Bn[i].the = complex<double>(B,  0.);
-    Bn[i].phi = complex<double>(0., A);
+    Bn[i].rrr = std::complex<double>(0., 0);
+    Bn[i].the = std::complex<double>(B,  0.);
+    Bn[i].phi = std::complex<double>(0., A);
   }
 
   return 0;
@@ -162,7 +159,7 @@ int AuxCoefficients::compute_Bn(int nMax, int m_, Spherical<double> R, double *W
 
 
 // ----------------------------------------------------------------------------------
-int AuxCoefficients::compute_Mn(int nMax, int m_, Spherical<double> R, complex<double> waveK, double *dn, SphericalP<complex<double> > *Cn, SphericalP<complex<double> > *Mn, int BHreg){
+int AuxCoefficients::compute_Mn(int nMax, int m_, Spherical<double> R, std::complex<double> waveK, double *dn, SphericalP<std::complex<double> > *Cn, SphericalP<std::complex<double> > *Mn, int BHreg){
   /*-------------------------------------------------------------------------------*/
   /* PURPOSE: Evaluate M_nm function from c_sph C_nm[] and bh functions ---------- */
   /* bh_indx == 1 -> use bessj --------------------------------------------------- */
@@ -173,14 +170,14 @@ int AuxCoefficients::compute_Mn(int nMax, int m_, Spherical<double> R, complex<d
   /*-------------------------------------------------------------------------------*/
 
   int i(0);
-  complex<double> c_temp(0.0, 0.0);
+  std::complex<double> c_temp(0.0, 0.0);
 
   Bessel besselH;
   besselH.init(R.rrr*waveK, BHreg , 0, nMax);
   besselH.populate();
 
   double dm = pow(-1., double(m_));         // Legendre to Wigner function
-  complex<double> exp_imphi(cos(double(m_) * R.phi), sin(double(m_) * R.phi));
+  std::complex<double> exp_imphi(cos(double(m_) * R.phi), sin(double(m_) * R.phi));
 
   for (i = 0; i <= nMax; i++) {
 
@@ -195,8 +192,8 @@ int AuxCoefficients::compute_Mn(int nMax, int m_, Spherical<double> R, complex<d
 } // end P_func ---------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------------
-int AuxCoefficients::compute_Nn(int nMax, int m_, Spherical<double> R, complex<double> waveK, double *dn, SphericalP<complex<double> > *Pn,
-                                    SphericalP<complex<double> > *Bn, SphericalP<complex<double> > *Nn, int BHreg){
+int AuxCoefficients::compute_Nn(int nMax, int m_, Spherical<double> R, std::complex<double> waveK, double *dn, SphericalP<std::complex<double> > *Pn,
+                                    SphericalP<std::complex<double> > *Bn, SphericalP<std::complex<double> > *Nn, int BHreg){
   /*-------------------------------------------------------------------------------*/
   /* PURPOSE: Evaluate N_nm function from P_nm & B_nm[] and bh functions --------- */
   /* bh_indx == 1 -> use bessj --------------------------------------------------- */
@@ -210,19 +207,19 @@ int AuxCoefficients::compute_Nn(int nMax, int m_, Spherical<double> R, complex<d
   int i(0);
   double d_n(0.);
 
-  complex<double> Kr = waveK * R.rrr;
-  complex<double> c_temp(0., 0.);
+  std::complex<double> Kr = waveK * R.rrr;
+  std::complex<double> c_temp(0., 0.);
 
   Bessel besselH;
   besselH.init(R.rrr*waveK, BHreg , 0, nMax);
   besselH.populate();
 
   double dm = pow(-1., double(m_));         // Legendre to Wigner function
-  complex<double> exp_imphi(cos(double(m_) * R.phi), sin(double(m_) * R.phi));
+  std::complex<double> exp_imphi(cos(double(m_) * R.phi), sin(double(m_) * R.phi));
 
-  Nn[0].rrr = complex<double>(0., 0.);
-  Nn[0].the = complex<double>(0., 0.);
-  Nn[0].phi = complex<double>(0., 0.);
+  Nn[0].rrr = std::complex<double>(0., 0.);
+  Nn[0].the = std::complex<double>(0., 0.);
+  Nn[0].phi = std::complex<double>(0., 0.);
 
   for (i = 1; i <= nMax; i++) {
     d_n = double(i);
@@ -235,7 +232,7 @@ int AuxCoefficients::compute_Nn(int nMax, int m_, Spherical<double> R, complex<d
 
 
 // ----------------------------------------------------------------------------------
-int AuxCoefficients::compute_MpNp(Spherical<double> R, complex<double> waveK, int BHreg, int nMax, SphericalP<complex<double> > *dataMp, SphericalP<complex<double> > *dataNp){
+int AuxCoefficients::compute_MpNp(Spherical<double> R, std::complex<double> waveK, int BHreg, int nMax, SphericalP<std::complex<double> > *dataMp, SphericalP<std::complex<double> > *dataNp){
 
 //  double d_temp=0.;
 
@@ -245,18 +242,18 @@ int AuxCoefficients::compute_MpNp(Spherical<double> R, complex<double> waveK, in
   dWigner = new double[nMax + 1];
 
   // Vector spherical functions ----------------------------------------------------------
-  SphericalP<complex<double> > *Pn; // P function arrays
-  SphericalP<complex<double> > *Cn; // C function arrays
-  SphericalP<complex<double> > *Bn; // B function arrays
-  Pn = new SphericalP<complex<double> > [nMax + 1];
-  Cn = new SphericalP<complex<double> > [nMax + 1];
-  Bn = new SphericalP<complex<double> > [nMax + 1];
+  SphericalP<std::complex<double> > *Pn; // P function arrays
+  SphericalP<std::complex<double> > *Cn; // C function arrays
+  SphericalP<std::complex<double> > *Bn; // B function arrays
+  Pn = new SphericalP<std::complex<double> > [nMax + 1];
+  Cn = new SphericalP<std::complex<double> > [nMax + 1];
+  Bn = new SphericalP<std::complex<double> > [nMax + 1];
 
   // Vector spherical Waves --------------------------------------------------------------
-  SphericalP<complex<double> > *Mn; // M function arrays
-  SphericalP<complex<double> > *Nn; // N function arrays
-  Mn = new SphericalP<complex<double> > [nMax + 1];
-  Nn = new SphericalP<complex<double> > [nMax + 1];
+  SphericalP<std::complex<double> > *Mn; // M function arrays
+  SphericalP<std::complex<double> > *Nn; // N function arrays
+  Mn = new SphericalP<std::complex<double> > [nMax + 1];
+  Nn = new SphericalP<std::complex<double> > [nMax + 1];
   // -------------------------------------------------------------------------------------
 
   CompoundIterator p;
@@ -276,7 +273,7 @@ int AuxCoefficients::compute_MpNp(Spherical<double> R, complex<double> waveK, in
     compute_Mn(nMax, q.second, R, waveK, dn, Cn, Mn, BHreg);
     compute_Nn(nMax, q.second, R, waveK, dn, Pn, Bn, Nn, BHreg);
 
-    for (int n = abs(q.second); n <= nMax; n++) {
+    for (int n = std::abs(q.second); n <= nMax; n++) {
       if (n != 0) {
 
         p.init(n, q.second);
@@ -336,8 +333,8 @@ int AuxCoefficients::VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wign
                         dWigner[i]=0.;
                 }
                 // prepare for vig_d evaluation --------------------------------------------------
-                l_abs = abs(l);
-                m_abs = abs(m_);
+                l_abs = std::abs(l);
+                m_abs = std::abs(m_);
                 // -------------------------------------------------------------------------------
 
                 // -------------------------------------------------------------------------------
@@ -356,7 +353,7 @@ int AuxCoefficients::VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wign
         //              vig_the = vig_the;                                              // keep as it is
                 if(m_<0){                                                                       // solve using symmetry relation eq(B.7)
                         vig_the = consPi - vig_the;                             // modify value of vig_x   : eq(B.7)
-                        m_=abs(m_);                                                             // obtain solution for |m| : eq(B.7)
+                        m_=std::abs(m_);                                                             // obtain solution for |m| : eq(B.7)
                         check_m_negative=1;                                             // check m<0 : to use in IV below
                 }
                 vig_x = cos(vig_the);                                           // calculate in radians
@@ -370,12 +367,12 @@ int AuxCoefficients::VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wign
                 // B - evaluate all other terms in d_n_min = eqn(B.24) -----------------------
                 d_temp1 = pow(2., -n_min);
                 //
-                d_temp2 = sqrt(double(gsl_sf_fact(2*n_min)));
-                d_temp3 = sqrt(double(gsl_sf_fact(abs(l-m_))));
-                d_temp4 = sqrt(double(gsl_sf_fact(abs(l+m_))));
+                d_temp2 = std::sqrt(double(gsl_sf_fact(2*n_min)));
+                d_temp3 = std::sqrt(double(gsl_sf_fact(std::abs(l-m_))));
+                d_temp4 = std::sqrt(double(gsl_sf_fact(std::abs(l+m_))));
                 //
-                d_temp5 = pow(1. - vig_x, abs(double(l-m_))/2.);
-                d_temp6 = pow(1. + vig_x, abs(double(l+m_))/2.);
+                d_temp5 = pow(1. - vig_x, std::abs(double(l-m_))/2.);
+                d_temp6 = pow(1. + vig_x, std::abs(double(l+m_))/2.);
 
                 // C - evaluate vig_d_n_min --------------------------------------------------
                 // vig_d_n_min = vig_exy_lm*d_temp1*(d_temp2/d_temp3/d_temp4)*d_temp5*d_temp6;
@@ -405,8 +402,8 @@ int AuxCoefficients::VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wign
                         Wigner[n_min+1] = vig_x;
                         // d_vig_d for the previous from current : d_VIG_d[i] = 0.*VIG_d[i-1] + 0.*VIG_d[i] + ...*VIG_d[i+1]    - eqn(B.26)
                         ii=n_min;
-                        d_temp1 = sqrt((double(ii)+1.)*(double(ii)+1.) - double(l*l));
-                        d_temp2 = sqrt((double(ii)+1.)*(double(ii)+1.) - double(m_*m_));
+                        d_temp1 = std::sqrt((double(ii)+1.)*(double(ii)+1.) - double(l*l));
+                        d_temp2 = std::sqrt((double(ii)+1.)*(double(ii)+1.) - double(m_*m_));
                         d_temp3 = (2.*double(ii)+1.);
                         d_temp4 = (double(ii)+1.);
                         dWigner[ii] = double(ii)*d_temp1*d_temp2/(d_temp3*d_temp4)*Wigner[ii+1];
@@ -414,12 +411,12 @@ int AuxCoefficients::VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wign
                         // obtain all successive terms in eq(B.22) - directrly
                         for(i=n_min+2; i<=nMax+1; i++){                 // for loop
                                 ii=i-1;
-                                d_temp1 = sqrt((double(ii)+1.)*(double(ii)+1.) - double(l*l));
-                                d_temp2 = sqrt((double(ii)+1.)*(double(ii)+1.) - double(m_*m_));
+                                d_temp1 = std::sqrt((double(ii)+1.)*(double(ii)+1.) - double(l*l));
+                                d_temp2 = std::sqrt((double(ii)+1.)*(double(ii)+1.) - double(m_*m_));
                                 d_temp3 = (2.*double(ii)+1.)*( ii*(ii+1.)*vig_x - l*m_ );
                                 d_temp4 = (double(ii)+1.);
-                                d_temp5 = sqrt(double(ii*ii) - double(l*l));
-                                d_temp6 = sqrt(double(ii*ii) - double(m_*m_));
+                                d_temp5 = std::sqrt(double(ii*ii) - double(l*l));
+                                d_temp6 = std::sqrt(double(ii*ii) - double(m_*m_));
                                 // evaluate from above
                                 // vig_d        : VIG_d[i] = ...*VIG_d[i-1] + ...*VIG_d[i-2]                                            - eqn(B.22)
                                 d_temp  = (1./double(ii)/d_temp1/d_temp2)*( (d_temp3)*Wigner[i-1]
@@ -446,8 +443,8 @@ int AuxCoefficients::VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wign
                         Wigner[n_min] = vig_d_n_min;                            // by definition
                         // d_vig_d for the previous from current : d_VIG_d[i] = 0.*VIG_d[i-1] + 0.*VIG_d[i] + ...*VIG_d[i+1]    - eqn(B.26)
                         ii=n_min-1;
-                        d_temp1 = sqrt((double(ii)+1.)*(double(ii)+1.) - double(l*l));
-                        d_temp2 = sqrt((double(ii)+1.)*(double(ii)+1.) - double(m_*m_));
+                        d_temp1 = std::sqrt((double(ii)+1.)*(double(ii)+1.) - double(l*l));
+                        d_temp2 = std::sqrt((double(ii)+1.)*(double(ii)+1.) - double(m_*m_));
                         d_temp3 = (2.*double(ii)+1.);
                         d_temp4 = (double(ii)+1.);
                         dWigner[ii] = double(ii)*d_temp1*d_temp2/(d_temp3*d_temp4)*Wigner[n_min];
@@ -456,12 +453,12 @@ int AuxCoefficients::VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wign
                         //   - Based on 'n_min' value and 'n' value; total recursive steps == n - n_min
                         for(i=n_min+1; i<=nMax+1; i++){                 // for loop
                                 ii=i-1;
-                                d_temp1 = sqrt((double(ii)+1.)*(double(ii)+1.) - double(l*l));
-                                d_temp2 = sqrt((double(ii)+1.)*(double(ii)+1.) - double(m_*m_));
+                                d_temp1 = std::sqrt((double(ii)+1.)*(double(ii)+1.) - double(l*l));
+                                d_temp2 = std::sqrt((double(ii)+1.)*(double(ii)+1.) - double(m_*m_));
                                 d_temp3 = (2.*double(ii)+1.)*( ii*(ii+1.)*vig_x - l*m_ );
                                 d_temp4 = (double(ii)+1.);
-                                d_temp5 = sqrt(double(ii*ii) - double(l*l));
-                                d_temp6 = sqrt(double(ii*ii) - double(m_*m_));
+                                d_temp5 = std::sqrt(double(ii*ii) - double(l*l));
+                                d_temp6 = std::sqrt(double(ii*ii) - double(m_*m_));
                                 // evaluate from terms above
                                 d_temp  = (1./double(ii)/d_temp1/d_temp2)*( (d_temp3)*Wigner[i-1]
                                                 - (d_temp4*d_temp5*d_temp6)*Wigner[i-2] );
@@ -497,7 +494,7 @@ AuxCoefficients::AuxCoefficients()
   initDone = false;
 }
 
-AuxCoefficients::AuxCoefficients(Spherical<double> R_, complex<double> waveK_,
+AuxCoefficients::AuxCoefficients(Spherical<double> R_, std::complex<double> waveK_,
     int regular_, int nMax_)
 {
   init(R_, waveK_, regular_, nMax_);
@@ -515,7 +512,7 @@ AuxCoefficients::~AuxCoefficients()
   }
 }
 
-void AuxCoefficients::init(Spherical<double> R_, complex<double> waveK_,
+void AuxCoefficients::init(Spherical<double> R_, std::complex<double> waveK_,
     int regular_, int nMax_)
 {
   R = R_;
@@ -530,10 +527,10 @@ void AuxCoefficients::init(Spherical<double> R_, complex<double> waveK_,
 
   if(!initDone)
   {
-    dataMp = new SphericalP<complex<double> >[Tools::iteratorMax(nMax)];
-    dataNp = new SphericalP<complex<double> >[Tools::iteratorMax(nMax)];
-    dataBp = new SphericalP<complex<double> >[Tools::iteratorMax(nMax)];
-    dataCp = new SphericalP<complex<double> >[Tools::iteratorMax(nMax)];
+    dataMp = new SphericalP<std::complex<double> >[Tools::iteratorMax(nMax)];
+    dataNp = new SphericalP<std::complex<double> >[Tools::iteratorMax(nMax)];
+    dataBp = new SphericalP<std::complex<double> >[Tools::iteratorMax(nMax)];
+    dataCp = new SphericalP<std::complex<double> >[Tools::iteratorMax(nMax)];
 
     dn = new double[nMax+1];
   }

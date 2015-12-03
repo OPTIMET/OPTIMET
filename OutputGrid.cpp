@@ -5,8 +5,6 @@
 #include "Tools.h"
 #include <cmath>
 
-using std::abs;
-
 OutputGrid::OutputGrid()
 {
   iterator = 0;
@@ -44,9 +42,9 @@ void OutputGrid::init(int type_, double *parameters_, hid_t groupID_)
     cursor[2] = 0;
 
     //Step sizes (X, Y, Z)
-    aux[0] = abs(gridParameters[1] - gridParameters[0]) / (gridParameters[2] - 1);
-    aux[1] = abs(gridParameters[4] - gridParameters[3]) / (gridParameters[5] - 1);
-    aux[2] = abs(gridParameters[7] - gridParameters[6]) / (gridParameters[8] - 1);
+    aux[0] = std::abs(gridParameters[1] - gridParameters[0]) / (gridParameters[2] - 1);
+    aux[1] = std::abs(gridParameters[4] - gridParameters[3]) / (gridParameters[5] - 1);
+    aux[2] = std::abs(gridParameters[7] - gridParameters[6]) / (gridParameters[8] - 1);
 
     //Create the HDF5 SubGroups
      vecGroupId[0] = H5Gcreate(groupID, "X", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
@@ -128,7 +126,7 @@ Spherical<double> OutputGrid::getPoint()
   return Spherical<double>(0.0, 0.0, 0.0);
 }
 
-void OutputGrid::pushData(SphericalP<complex<double> > data_)
+void OutputGrid::pushData(SphericalP<std::complex<double> > data_)
 {
   if(type == O3DCartesianRegular) //Cartesian Regular grid
   {
@@ -176,7 +174,7 @@ void OutputGrid::pushData(SphericalP<complex<double> > data_)
   }
 }
 
-void OutputGrid::pushDataNext(SphericalP<complex<double> > data_)
+void OutputGrid::pushDataNext(SphericalP<std::complex<double> > data_)
 {
   pushData(data_);
   gotoNext();

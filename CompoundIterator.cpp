@@ -2,8 +2,6 @@
 
 #include <cmath>
 
-using std::sqrt;
-
 CompoundIterator::CompoundIterator()
 {
   first = 0;
@@ -31,7 +29,7 @@ void CompoundIterator::forwardMap()
 
 void CompoundIterator::backwardMap()
 {
-  first = (int) sqrt(compound + 1.0);
+  first = (int) std::sqrt(compound + 1.0);
   second = -(compound+1)+first*(first+1);
 }
 

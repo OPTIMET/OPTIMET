@@ -7,10 +7,6 @@
 #include <iostream>
 #include <cmath>
 
-using std::cerr;
-using std::pow;
-using std::abs;
-
 Legendre::Legendre()
 {
   initDone = false;
@@ -43,7 +39,7 @@ int Legendre::populate()
 {
   if(!initDone)
   {
-    cerr << "Legendre engine was not initialized!";
+    std::cerr << "Legendre engine was not initialized!";
     return 1;
   }
 
@@ -79,7 +75,7 @@ int Legendre::populate()
       {
         q.init(n,-m);
 
-        double neg_factor = pow(-1.0, m) *
+        double neg_factor = std::pow(-1.0, m) *
             (gsl_sf_fact(n-m) /
              gsl_sf_fact(n+m));
 

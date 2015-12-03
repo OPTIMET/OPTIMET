@@ -5,12 +5,6 @@
 #include "SphericalP.h"
 #include <cmath>
 
-using std::sqrt;
-using std::sin;
-using std::cos;
-using std::acos;
-using std::atan2;
-
 /**
  * The Spherical class implements spherical coordinates.
  * This is a template class so any standard type may be used to create
@@ -27,9 +21,9 @@ private:
    */
   Cartesian<sphType> toCartesian()
   {
-    return Cartesian<sphType>(rrr * sin(the) * cos(phi),
-        rrr * sin(the) * sin(phi),
-        rrr * cos(the));
+    return Cartesian<sphType>(rrr * std::sin(the) * std::cos(phi),
+        rrr * std::sin(the) * std::sin(phi),
+        rrr * std::cos(the));
   }
 
   /**
@@ -38,9 +32,9 @@ private:
    */
   SphericalP<sphType> toSphericalP()
   {
-    return SphericalP<sphType>(rrr * sin(the) * cos(phi),
-        rrr * sin(the) * sin(phi),
-        rrr * cos(the));
+    return SphericalP<sphType>(rrr * std::sin(the) * std::cos(phi),
+        rrr * std::sin(the) * std::sin(phi),
+        rrr * std::cos(the));
   }
 
   /**
@@ -50,12 +44,12 @@ private:
    */
   Spherical<sphType> toSpherical(Cartesian <sphType> point)
   {
-    double r_l = sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
+    double r_l = std::sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
     if(r_l > 0.0)
     {
       return Spherical<double>(r_l,
-          acos(point.z / r_l),
-          atan2(point.y, point.x));
+          std::acos(point.z / r_l),
+          std::atan2(point.y, point.x));
     }
 
     return Spherical<double>(0.0, 0.0, 0.0);

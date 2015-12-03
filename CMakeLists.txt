@@ -16,6 +16,12 @@ file(GLOB SRC ${CMAKE_SOURCE_DIR}/*.c* ${CMAKE_SOURCE_DIR}/pugi/*.c*)
 add_executable(Optimet3D ${SRC})
 target_link_libraries(Optimet3D ${GSL_LIBRARIES} ${HDF5_LIBRARIES} ${ARMADILLO_LIBRARIES} ${F2C_LIBRARIES})
 
+set_target_properties(Optimet3D PROPERTIES CXX_STANDARD 11)
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+  # CXX_STANDARD does not work with intel compiler yet
+  list(APPEND CMAKE_CXX_FLAGS -std=c++11)
+endif()
+
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doxygen.config

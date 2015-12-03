@@ -10,8 +10,6 @@
 
 #include <complex>
 
-using std::complex;
-
 /**
  * The Result class is used to provide post simulation
  * output functions including field profiles, absorbption
@@ -25,14 +23,14 @@ private:
   int nMax;       /**< Maximum number of harmonics. */
   Geometry *geometry;   /**< Pointer to the Geometry. */
   Excitation *excitation; /**< Pointer to the Excitation. */
-  complex<double> waveK;  /**< The complex wave number. */
+  std::complex<double> waveK;  /**< The std::complex wave number. */
   bool initDone;      /**< Specifies if object was initialized. */
   bool flagSH;      /**< Specifies if handling Second Harmonic results. */
   Result *result_FF;    /**< The Fundamental Frequency results vector. */
 public:
-  complex<double> *scatter_coef;    /**< The scattering coefficients. */
-  complex<double> *internal_coef;   /**< The internal coefficients. */
-  complex<double> *c_scatter_coef;  /**< The cluster centered scattering coefficients. */
+  std::complex<double> *scatter_coef;    /**< The scattering coefficients. */
+  std::complex<double> *internal_coef;   /**< The internal coefficients. */
+  std::complex<double> *c_scatter_coef;  /**< The cluster centered scattering coefficients. */
 
   /**
    * Default constructor for the Result class.
@@ -98,7 +96,7 @@ public:
    * @param projection_ defines spherical (1) or cartezian (0) projection.
    * @return the value of the E field
    */
-  SphericalP<complex<double> > getEFieldC(Spherical<double> R_, int projection_);
+  SphericalP<std::complex<double> > getEFieldC(Spherical<double> R_, int projection_);
 
   /**
    * Returns the E and H fields at a given point.
@@ -107,7 +105,7 @@ public:
    * @param HField_ SphericalP vector that will store the H field.
    * @param projection_ defines spherical (1) or cartezian (0) projection.
    */
-  void getEHFields(Spherical<double> R_, SphericalP<complex<double> > &EField_, SphericalP<complex<double> > &HField_, int projection_);
+  void getEHFields(Spherical<double> R_, SphericalP<std::complex<double> > &EField_, SphericalP<std::complex<double> > &HField_, int projection_);
 
   /**
    * Returns the E and H fields for a single harmonic and/or TE/TM component.
@@ -118,7 +116,7 @@ public:
    * @param p_ the harmonic to be used.
    * @param singleComponent_ return TE+TM (0), TE(1) or TM(2).
    */
-  void getEHFieldsModal(Spherical<double> R_, SphericalP<complex<double> > &EField_, SphericalP<complex<double> > &HField_, int projection_, CompoundIterator p_, int singleComponent_);
+  void getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<double> > &EField_, SphericalP<std::complex<double> > &HField_, int projection_, CompoundIterator p_, int singleComponent_);
 
   /**
    * Center the scattering coefficients.
@@ -173,7 +171,7 @@ public:
    * @param projection_ defines spherical (1) or cartezian (0) projection.
    * @param inside_ uses the internal (1) or external (0) field calculations.
    */
-  void getEHFieldsContCheck(Spherical<double> R_, SphericalP<complex<double> > &EField_, SphericalP<complex<double> > &HField_, int projection_, int inside_);
+  void getEHFieldsContCheck(Spherical<double> R_, SphericalP<std::complex<double> > &EField_, SphericalP<std::complex<double> > &HField_, int projection_, int inside_);
 
   /**
    * Writes a set of files that check the field continuity around a particular object.

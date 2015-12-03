@@ -5,7 +5,7 @@ Output::Output()
   initDone = false;
 }
 
-Output::Output(char* outputFileName_)
+Output::Output(std::string const& outputFileName_)
 {
   init(outputFileName_);
 }
@@ -15,9 +15,9 @@ Output::~Output()
 //
 }
 
-hid_t Output::init(char* outputFileName_)
+hid_t Output::init(std::string const& outputFileName_)
 {
-  outputFile = H5Fcreate(outputFileName_, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  outputFile = H5Fcreate(outputFileName_.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   initDone = true;
 
   //Create base GroupIds and Description Attribute
@@ -100,7 +100,7 @@ hid_t Output::init(char* outputFileName_)
   return outputFile;
 }
 
-hid_t Output::getHandle(string code_)
+hid_t Output::getHandle(std::string code_)
 {
   if(initDone)
     return H5Gopen(outputFile, code_.c_str(), H5P_DEFAULT);

@@ -53,7 +53,7 @@ public:
   /**
    * @warning The sourceCoef array needs to be initialized by the populating function in order to work!
    */
-  complex<double> *sourceCoef;  /**< The source coefficients needed for SH work.*/
+  std::complex<double> *sourceCoef;  /**< The source coefficients needed for SH work.*/
 
   /**
    * Initializes a sphere scatterer.

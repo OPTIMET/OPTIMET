@@ -9,10 +9,6 @@
 #include <iostream>
 #include <cstdlib>
 
-using std::cerr;
-using std::cout;
-using std::endl;
-
 Solver::Solver()
 {
   initDone = false;
@@ -46,7 +42,7 @@ void Solver::init(Geometry* geometry_, Excitation* incWave_, int method_, long n
 {
   if(initDone)
   {
-    cerr << "Solver object initialized previously! Use update()!";
+    std::cerr << "Solver object initialized previously! Use update()!";
     exit(1);
   }
 
@@ -60,13 +56,13 @@ void Solver::init(Geometry* geometry_, Excitation* incWave_, int method_, long n
 
   CompoundIterator p;
 
-  S = new complex<double>* [2 * p.max(nMax) * geometry->noObjects];
+  S = new std::complex<double>* [2 * p.max(nMax) * geometry->noObjects];
   for(p=0; p<(int)(2*p.max(nMax)* geometry->noObjects); p++)
   {
-    S[p] = new complex<double>[2 * p.max(nMax) * geometry->noObjects];
+    S[p] = new std::complex<double>[2 * p.max(nMax) * geometry->noObjects];
   }
 
-  Q = new complex<double>[2 * p.max(nMax) * geometry->noObjects];
+  Q = new std::complex<double>[2 * p.max(nMax) * geometry->noObjects];
 
   result_FF = NULL;
 
@@ -77,7 +73,7 @@ int Solver::populate()
 {
   if(!initDone)
   {
-    cerr << "Solver not initialized!";
+    std::cerr << "Solver not initialized!";
     return 1;
   }
 
@@ -96,7 +92,7 @@ int Solver::populateDirect()
 {
   if(!initDone)
   {
-    cerr << "Solver not initialized!";
+    std::cerr << "Solver not initialized!";
     return 1;
   }
 
@@ -106,17 +102,17 @@ int Solver::populateDirect()
   //Local matrices for storing T, T_fin = -T*A and T_AB = AB to be multiplied by BLAS.
   //Also local matrix Q_local to be added to S.
 
-  complex<double> **T = new complex<double>*[2*p.max(nMax)];
-  complex<double> **Ti = new complex<double>*[2*p.max(nMax)];
-  complex<double> **T_fin = new complex<double>*[2*p.max(nMax)];
-  complex<double> **T_AB = new complex<double>*[2*(p.max(nMax))];
+  std::complex<double> **T = new std::complex<double>*[2*p.max(nMax)];
+  std::complex<double> **Ti = new std::complex<double>*[2*p.max(nMax)];
+  std::complex<double> **T_fin = new std::complex<double>*[2*p.max(nMax)];
+  std::complex<double> **T_AB = new std::complex<double>*[2*(p.max(nMax))];
 
   for(p=0; p<(int)(2*p.max(nMax)); p++)
   {
-    T[p] = new complex<double>[2*p.max(nMax)];
-    Ti[p] = new complex<double>[2*p.max(nMax)];
-    T_fin[p] = new complex<double>[2*p.max(nMax)];
-    T_AB[p] = new complex<double>[2*p.max(nMax)];
+    T[p] = new std::complex<double>[2*p.max(nMax)];
+    Ti[p] = new std::complex<double>[2*p.max(nMax)];
+    T_fin[p] = new std::complex<double>[2*p.max(nMax)];
+    T_AB[p] = new std::complex<double>[2*p.max(nMax)];
   }
 
   if(flagSH) //if SH simulation, set the local source first
@@ -130,7 +126,7 @@ int Solver::populateDirect()
     int pMax = p.max(nMax);
     int qMax = q.max(nMax);
 
-    complex<double> *Q_local = new complex<double>[2*pMax];
+    std::complex<double> *Q_local = new std::complex<double>[2*pMax];
 
     //Get the T and IncLocal matrices first
     geometry->getTLocal(incWave->omega, i, nMax, T);
@@ -144,7 +140,7 @@ int Solver::populateDirect()
     }
 
     //Allocate space for a "result" matrix C, multiply T [A] with Q_local and push to Q.
-    complex<double> *C = new complex<double>[2*pMax];
+    std::complex<double> *C = new std::complex<double>[2*pMax];
     Algebra::multiplyVectorMatrix(T, 2*pMax, 2*pMax, Q_local, C, consC1, consC0);
 
     for(j=0; j<2*pMax; j++)
@@ -206,7 +202,7 @@ int Solver::populateDirect()
   return 0;
 }
 
-int Solver::solve(complex<double> *X_sca_, complex<double> *X_int_)
+int Solver::solve(std::complex<double> *X_sca_, std::complex<double> *X_int_)
 {
   if(solverMethod == O3DSolverDirect)
     solveScatteredDirect(X_sca_);
@@ -221,11 +217,11 @@ int Solver::solve(complex<double> *X_sca_, complex<double> *X_int_)
   return 0;
 }
 
-int Solver::solveScatteredDirect(complex<double>* X_sca_)
+int Solver::solveScatteredDirect(std::complex<double>* X_sca_)
 {
   if(!initDone)
   {
-    cerr << "Solver object not initialized!";
+    std::cerr << "Solver object not initialized!";
     return 1;
   }
 
@@ -235,24 +231,24 @@ int Solver::solveScatteredDirect(complex<double>* X_sca_)
   return 0;
 }
 
-int Solver::solveScatteredIndirect(complex<double>* X_sca_)
+int Solver::solveScatteredIndirect(std::complex<double>* X_sca_)
 {
   if(!initDone)
   {
-    cerr << "Solver object not initialized!";
+    std::cerr << "Solver object not initialized!";
     return 1;
   }
 
   CompoundIterator p;
 
-  complex<double> *X_sca_local = new complex<double>[2*p.max(nMax)*geometry->noObjects];
-  complex<double> *X_sca_part = new complex<double>[2*p.max(nMax)*geometry->noObjects];
-  complex<double> *X_sca_part_fin = new complex<double>[2*p.max(nMax)*geometry->noObjects];
-  complex<double> **T = new complex<double>*[2*p.max(nMax)];
+  std::complex<double> *X_sca_local = new std::complex<double>[2*p.max(nMax)*geometry->noObjects];
+  std::complex<double> *X_sca_part = new std::complex<double>[2*p.max(nMax)*geometry->noObjects];
+  std::complex<double> *X_sca_part_fin = new std::complex<double>[2*p.max(nMax)*geometry->noObjects];
+  std::complex<double> **T = new std::complex<double>*[2*p.max(nMax)];
 
   for(p=0; p<(int)(2*p.max(nMax)); p++)
   {
-    T[p] = new complex<double>[2*p.max(nMax)];
+    T[p] = new std::complex<double>[2*p.max(nMax)];
   }
 
   //Solve the equation, here Q and S correspond to Eq. 10 in (Stout2002). Store result in X_sca_local
@@ -298,7 +294,7 @@ int Solver::switchSH(Excitation* incWave_, Result* result_FF_, long nMax_)
 {
   if(!initDone)
   {
-    cerr << "Solver object was not created and initialized in the FF case!";
+    std::cerr << "Solver object was not created and initialized in the FF case!";
     return 1;
   }
 
@@ -312,17 +308,17 @@ int Solver::switchSH(Excitation* incWave_, Result* result_FF_, long nMax_)
   return 0;
 }
 
-int Solver::solveInternal(complex<double>* X_sca_, complex<double> *X_int_)
+int Solver::solveInternal(std::complex<double>* X_sca_, std::complex<double> *X_int_)
 {
   if(!initDone)
   {
-    cerr << "Solver object not initialized!";
+    std::cerr << "Solver object not initialized!";
     return 1;
   }
 
   CompoundIterator p,q;
 
-  complex<double> *Iaux = new complex<double>[2*Tools::iteratorMax(nMax)];
+  std::complex<double> *Iaux = new std::complex<double>[2*Tools::iteratorMax(nMax)];
 
 
   for(int j=0; j<geometry->noObjects; j++)
@@ -347,7 +343,7 @@ int Solver::populateIndirect()
 {
   if(!initDone)
   {
-    cerr << "Geometry not initialized!";
+    std::cerr << "Geometry not initialized!";
     return 1;
   }
 
@@ -357,17 +353,17 @@ int Solver::populateIndirect()
   //Local matrices for storing T, T_fin = -T*A and T_AB = AB to be multiplied by BLAS.
   //Also local matrix Q_local to be added to S.
 
-  complex<double> **T = new complex<double>*[2*p.max(nMax)];
-  complex<double> **Ti = new complex<double>*[2*p.max(nMax)];
-  complex<double> **T_fin = new complex<double>*[2*p.max(nMax)];
-  complex<double> **T_AB = new complex<double>*[2*(p.max(nMax))];
+  std::complex<double> **T = new std::complex<double>*[2*p.max(nMax)];
+  std::complex<double> **Ti = new std::complex<double>*[2*p.max(nMax)];
+  std::complex<double> **T_fin = new std::complex<double>*[2*p.max(nMax)];
+  std::complex<double> **T_AB = new std::complex<double>*[2*(p.max(nMax))];
 
   for(p=0; p<(int)(2*p.max(nMax)); p++)
   {
-    T[p] = new complex<double>[2*p.max(nMax)];
-    Ti[p] = new complex<double>[2*p.max(nMax)];
-    T_fin[p] = new complex<double>[2*p.max(nMax)];
-    T_AB[p] = new complex<double>[2*p.max(nMax)];
+    T[p] = new std::complex<double>[2*p.max(nMax)];
+    Ti[p] = new std::complex<double>[2*p.max(nMax)];
+    T_fin[p] = new std::complex<double>[2*p.max(nMax)];
+    T_AB[p] = new std::complex<double>[2*p.max(nMax)];
   }
 
   if(flagSH) //if SH simulation, set the local source first
@@ -381,7 +377,7 @@ int Solver::populateIndirect()
     int pMax = p.max(nMax);
     int qMax = q.max(nMax);
 
-    complex<double> *Q_local = new complex<double>[2*pMax];
+    std::complex<double> *Q_local = new std::complex<double>[2*pMax];
 
     //Get the IncLocal matrices
     //These correspond directly to the Beta*a in Stout2002 Eq. 10 as
