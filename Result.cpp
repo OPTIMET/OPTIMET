@@ -459,7 +459,7 @@ double Result::getAbsorptionCrossSection()
   return ( 1 / (std::real(waveK) * std::real(waveK))) * Cabs;
 }
 
-int Result::setFields(OutputGrid oEGrid_, OutputGrid oHGrid_, int projection_)
+int Result::setFields(OutputGrid & oEGrid_, OutputGrid & oHGrid_, int projection_)
 {
   if(!initDone)
   {
@@ -491,7 +491,7 @@ int Result::setFields(OutputGrid oEGrid_, OutputGrid oHGrid_, int projection_)
   return 0;
 }
 
-int Result::setFieldsModal(OutputGrid oEGrid_, OutputGrid oHGrid_, int projection_, CompoundIterator p_, int singleComponent_)
+int Result::setFieldsModal(OutputGrid & oEGrid_, OutputGrid & oHGrid_, int projection_, CompoundIterator p_, int singleComponent_)
 {
   if(!initDone)
   {

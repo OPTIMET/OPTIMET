@@ -143,7 +143,7 @@ public:
   * @param projection_ defines spherical (1) or cartezian (0) projection.
   * @return 0 if succesful, 1 otherwise.
   */
-  int setFields(OutputGrid oEGrid_, OutputGrid oHGrid_, int projection_);
+  int setFields(OutputGrid & oEGrid_, OutputGrid & oHGrid_, int projection_);
 
   /**
   * Populate a grid with E and H fields for a single harmonic and/or TE/TM component.
@@ -154,7 +154,7 @@ public:
   * @param singleComponent_ return TE+TM (0), TE(1) or TM(2).
   * @return 0 if succesful, 1 otherwise.
   */
-  int setFieldsModal(OutputGrid oEGrid_, OutputGrid oHGrid_, int projection_, CompoundIterator p_, int singleComponent_);
+  int setFieldsModal(OutputGrid & oEGrid_, OutputGrid & oHGrid_, int projection_, CompoundIterator p_, int singleComponent_);
 
   /**
    * Return the dominant harmonic.
