@@ -36,3 +36,5 @@ add_test(NAME SpiralStructure
   -Doutput_test=${CMAKE_BINARY_DIR}/examples/SpiralStructure.h5
   -P ${CMAKE_SOURCE_DIR}/cmake/run_test.cmake
 )
+
+configure_file(examples/2TouchingSpheres.xml examples/2TouchingSpheres.xml COPYONLY)
