@@ -163,10 +163,10 @@ int Reader::readGeometry()
                             C5,
                             aux_mu.real());
         }
-    }
+      }
 
-    //Push the object into the geometry
-    run->geometry.pushObject(work_object);
+      //Push the object into the geometry
+      run->geometry.pushObject(work_object);
     }
   }
 
