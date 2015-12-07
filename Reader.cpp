@@ -59,13 +59,10 @@ int Reader::readGeometry()
     no_objects++;
   }
 
-  run->geometry.init(no_objects); //initialize the geometry
-
   //Find all objects again and add them NOTE: the parsing is really fast so this is not a problem
   for(xml_node node = geo_node.child("object"); node; node = node.next_sibling("object"))
   {
-    Scatterer work_object;    //a work object used to push into the Geometry (not initialized)
-    work_object.nMax = run->nMax;
+    Scatterer work_object(run->nMax);    //a work object used to push into the Geometry (not initialized)
 
     //Choose object type (since comparing strings, elif is better)
 
@@ -285,11 +282,8 @@ int Reader::readStructure(xml_node geo_node_)
 
     No = (Np-1)*arms + 1; //Number of objects
 
-    run->geometry.init(No);
-
     //Instantiate a work object and push the central sphere
-    Scatterer work_object;    //a work object used to push into the Geometry (not initialized)
-    work_object.nMax = run->nMax;
+    Scatterer work_object(run->nMax);    //a work object used to push into the Geometry (not initialized)
 
     //Assign properties to the Scatterer work_object
     if(struct_node.child("object").child("properties").attribute("radius"))

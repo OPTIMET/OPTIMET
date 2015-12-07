@@ -23,7 +23,7 @@ Solver::~Solver()
   {
     CompoundIterator p;
 
-    for(p=0; p<(int)(2*p.max(nMax)* geometry->noObjects); p++)
+    for(p=0; p<(int)(2*p.max(nMax)* geometry->objects.size()); p++)
     {
       if(S[p])
         delete [] S[p];
@@ -53,13 +53,13 @@ void Solver::init(Geometry* geometry_, Excitation* incWave_, int method_, long n
 
   CompoundIterator p;
 
-  S = new std::complex<double>* [2 * p.max(nMax) * geometry->noObjects];
-  for(p=0; p<(int)(2*p.max(nMax)* geometry->noObjects); p++)
+  S = new std::complex<double>* [2 * p.max(nMax) * geometry->objects.size()];
+  for(p=0; p<(int)(2*p.max(nMax)* geometry->objects.size()); p++)
   {
-    S[p] = new std::complex<double>[2 * p.max(nMax) * geometry->noObjects];
+    S[p] = new std::complex<double>[2 * p.max(nMax) * geometry->objects.size()];
   }
 
-  Q = new std::complex<double>[2 * p.max(nMax) * geometry->noObjects];
+  Q = new std::complex<double>[2 * p.max(nMax) * geometry->objects.size()];
 
   result_FF = NULL;
 
@@ -117,8 +117,7 @@ int Solver::populateDirect()
     geometry->setSourcesSingle(incWave, result_FF->internal_coef, nMax);
   }
 
-  int i, j;
-  for(i=0; i<geometry->noObjects; i++)
+  for(size_t i=0; i<geometry->objects.size(); i++)
   {
     int pMax = p.max(nMax);
     int qMax = q.max(nMax);
@@ -140,7 +139,7 @@ int Solver::populateDirect()
     std::complex<double> *C = new std::complex<double>[2*pMax];
     Algebra::multiplyVectorMatrix(T, 2*pMax, 2*pMax, Q_local, C, consC1, consC0);
 
-    for(j=0; j<2*pMax; j++)
+    for(size_t j=0; j< static_cast<size_t>(2*pMax); j++)
     {
       Q[j+i*2*pMax] = C[j];
     }
@@ -149,7 +148,7 @@ int Solver::populateDirect()
     delete [] C;
 
 
-    for(j=0; j<geometry->noObjects; j++)
+    for(size_t j=0; j<geometry->objects.size(); j++)
     {
       if(i == j)
       {
@@ -222,7 +221,7 @@ int Solver::solveScatteredDirect(std::complex<double>* X_sca_)
     return 1;
   }
 
-  AlgebraS::solveMatrixVector(S, 2*Tools::iteratorMax(nMax)*geometry->noObjects, 2*Tools::iteratorMax(nMax)*geometry->noObjects,
+  AlgebraS::solveMatrixVector(S, 2*Tools::iteratorMax(nMax)*geometry->objects.size(), 2*Tools::iteratorMax(nMax)*geometry->objects.size(),
         Q, X_sca_);
 
   return 0;
@@ -238,9 +237,9 @@ int Solver::solveScatteredIndirect(std::complex<double>* X_sca_)
 
   CompoundIterator p;
 
-  std::complex<double> *X_sca_local = new std::complex<double>[2*p.max(nMax)*geometry->noObjects];
-  std::complex<double> *X_sca_part = new std::complex<double>[2*p.max(nMax)*geometry->noObjects];
-  std::complex<double> *X_sca_part_fin = new std::complex<double>[2*p.max(nMax)*geometry->noObjects];
+  std::complex<double> *X_sca_local = new std::complex<double>[2*p.max(nMax)*geometry->objects.size()];
+  std::complex<double> *X_sca_part = new std::complex<double>[2*p.max(nMax)*geometry->objects.size()];
+  std::complex<double> *X_sca_part_fin = new std::complex<double>[2*p.max(nMax)*geometry->objects.size()];
   std::complex<double> **T = new std::complex<double>*[2*p.max(nMax)];
 
   for(p=0; p<(int)(2*p.max(nMax)); p++)
@@ -249,10 +248,10 @@ int Solver::solveScatteredIndirect(std::complex<double>* X_sca_)
   }
 
   //Solve the equation, here Q and S correspond to Eq. 10 in (Stout2002). Store result in X_sca_local
-  AlgebraS::solveMatrixVector(S, 2*Tools::iteratorMax(nMax)*geometry->noObjects, 2*Tools::iteratorMax(nMax)*geometry->noObjects,
+  AlgebraS::solveMatrixVector(S, 2*Tools::iteratorMax(nMax)*geometry->objects.size(), 2*Tools::iteratorMax(nMax)*geometry->objects.size(),
         Q, X_sca_local);
 
-  for(int i=0; i<geometry->noObjects; i++)
+  for(size_t i=0; i<geometry->objects.size(); i++)
   {
     //Get the local scattering matrix for object i
     geometry->getTLocal(incWave->omega, i, nMax, T);
@@ -318,7 +317,7 @@ int Solver::solveInternal(std::complex<double>* X_sca_, std::complex<double> *X_
   std::complex<double> *Iaux = new std::complex<double>[2*Tools::iteratorMax(nMax)];
 
 
-  for(int j=0; j<geometry->noObjects; j++)
+  for(size_t j=0; j<geometry->objects.size(); j++)
   {
     int pMax = p.max(nMax);
     geometry->getIaux(incWave->omega, j, nMax, Iaux);
@@ -368,8 +367,7 @@ int Solver::populateIndirect()
     geometry->setSourcesSingle(incWave, result_FF->internal_coef, nMax);
   }
 
-  int i, j;
-  for(i=0; i<geometry->noObjects; i++)
+  for(size_t i=0; i<geometry->objects.size(); i++)
   {
     int pMax = p.max(nMax);
     int qMax = q.max(nMax);
@@ -389,14 +387,14 @@ int Solver::populateIndirect()
     }
 
     //Push Q_local into Q (direct equivalence) (NOTE: j is unused at this point)
-    for(j=0; j<2*pMax; j++)
+    for(size_t j=0; j<static_cast<size_t>(2*pMax); j++)
     {
       Q[j+i*2*pMax] = Q_local[j];
     }
 
     delete [] Q_local;
 
-    for(j=0; j<geometry->noObjects; j++)
+    for(size_t j=0; j<geometry->objects.size(); j++)
     {
       if(i == j)
       {

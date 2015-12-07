@@ -48,8 +48,8 @@ void Result::init(Geometry *geometry_, Excitation *excitation_, int nMax_)
   flagSH = false;
   result_FF = NULL;
 
-  scatter_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)*geometry->noObjects];
-  internal_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)*geometry->noObjects];
+  scatter_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)*geometry->objects.size()];
+  internal_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)*geometry->objects.size()];
   c_scatter_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)];
 
   initDone = true;
@@ -74,8 +74,8 @@ void Result::init(Geometry *geometry_, Excitation *excitation_, Result *result_F
 
   if(!initDone)
   {
-    scatter_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)*geometry->noObjects];
-    internal_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)*geometry->noObjects];
+    scatter_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)*geometry->objects.size()];
+    internal_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)*geometry->objects.size()];
     c_scatter_coef = new std::complex<double>[2*Tools::iteratorMax(nMax)];
   }
 
@@ -125,19 +125,21 @@ void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<doub
     else //this a second harmonic frequency result - calculate the source fields (save it in Einc for convenience)
     {
       //Source fields
-      for(int j=0; j<geometry->noObjects; j++)
+      for(size_t j=0; j<geometry->objects.size(); j++)
       {
         Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
         AuxCoefficients aCoef;
         aCoef.init(Rrel, waveK, 0, nMax);
         aCoef.populate();
 
-        Einc = Einc + (aCoef.dataMp[p_] * geometry->objects[j].sourceCoef[p_] + aCoef.dataNp[p_] * geometry->objects[j].sourceCoef[p_ + p_.max(nMax)]);
+        Einc = Einc
+          + aCoef.dataMp[p_] * geometry->objects[j].sourceCoef[static_cast<int>(p_)]
+          + aCoef.dataNp[p_] * geometry->objects[j].sourceCoef[static_cast<int>(p_) + p_.max(nMax)];
       }
     }
 
     //Scattered field
-    for(int j=0; j<geometry->noObjects; j++)
+    for(size_t j=0; j<geometry->objects.size(); j++)
     {
       SphericalP<std::complex<double> > Efield_local = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
 
@@ -247,7 +249,7 @@ void Result::getEHFields(Spherical<double> R_, SphericalP<std::complex<double> >
     else //this a second harmonic frequency result - calculate the source fields (save it in Einc for convenience)
     {
       //Source fields
-      for(int j=0; j<geometry->noObjects; j++)
+      for(size_t j=0; j<geometry->objects.size(); j++)
       {
         Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
         AuxCoefficients aCoef;
@@ -256,13 +258,15 @@ void Result::getEHFields(Spherical<double> R_, SphericalP<std::complex<double> >
 
         for(p=0; p<pMax; p++)
         {
-          Einc = Einc + (aCoef.dataMp[p] * geometry->objects[j].sourceCoef[p] + aCoef.dataNp[p] * geometry->objects[j].sourceCoef[p + pMax]);
+          Einc = Einc
+            + aCoef.dataMp[p] * geometry->objects[j].sourceCoef[static_cast<int>(p)]
+            + aCoef.dataNp[p] * geometry->objects[j].sourceCoef[static_cast<int>(p) + pMax];
         }
       }
     }
 
     //Scattered field
-    for(int j=0; j<geometry->noObjects; j++)
+    for(size_t j=0; j<geometry->objects.size(); j++)
     {
       SphericalP<std::complex<double> > Efield_local = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
 
@@ -349,7 +353,7 @@ SphericalP<std::complex<double> > Result::getEFieldC(Spherical<double> R_, int p
     else //this a second harmonic frequency result - calculate the source fields (save it in Einc for convenience)
     {
       //Source fields
-      for(int j=0; j<geometry->noObjects; j++)
+      for(size_t j=0; j<geometry->objects.size(); j++)
       {
         Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
         AuxCoefficients aCoef;
@@ -358,7 +362,9 @@ SphericalP<std::complex<double> > Result::getEFieldC(Spherical<double> R_, int p
 
         for(p=0; p<pMax; p++)
         {
-          Einc = Einc + (aCoef.dataMp[p] * geometry->objects[j].sourceCoef[p] + aCoef.dataNp[p] * geometry->objects[j].sourceCoef[p + pMax]);
+          Einc = Einc
+            + aCoef.dataMp[p] * geometry->objects[j].sourceCoef[static_cast<int>(p)]
+            + aCoef.dataNp[p] * geometry->objects[j].sourceCoef[static_cast<int>(p) + pMax];
         }
       }
 
@@ -412,7 +418,7 @@ double Result::getExtinctionCrossSection()
   double Cext(0.);
   std::complex<double> *Q_local = new std::complex<double>[2*pMax];
 
-  for(int j=0; j<geometry->noObjects; j++)
+  for(size_t j=0; j<geometry->objects.size(); j++)
   {
     excitation->getIncLocal(geometry->objects[j].vR, Q_local, nMax);
     for(p=0; p<pMax; p++)
@@ -436,7 +442,7 @@ double Result::getAbsorptionCrossSection()
   double temp1(0.), temp2(0.);
   double *Cabs_aux = new double[2*pMax];
 
-  for(int j=0; j<geometry->noObjects; j++)
+  for(size_t j=0; j<geometry->objects.size(); j++)
   {
 
     geometry->getCabsAux(excitation->omega, j, nMax, Cabs_aux);
@@ -537,7 +543,7 @@ void Result::centerScattering()
   }
 
 
-  for(int i=0; i<geometry->noObjects; i++)
+  for(size_t i=0; i<geometry->objects.size(); i++)
   {
     Spherical<double> Rrel = Tools::toPoint(Spherical<double>(0.0, 0.0, 0.0), geometry->objects[i].vR);
 
@@ -556,7 +562,7 @@ void Result::centerScattering()
 
     for(p=0; p<2*p.max(nMax); p++)
     {
-      scatter_aux[p] += scatter_coef[p.compound + i*2*pMax*geometry->noObjects];
+      scatter_aux[p] += scatter_coef[p.compound + i*2*pMax*geometry->objects.size()];
     }
 
     Algebra::multiplyVectorMatrix(T_AB, 2*pMax, 2*pMax, scatter_aux, scatter_fin, consC1, consC0);
@@ -637,7 +643,7 @@ void Result::getEHFieldsContCheck(Spherical<double> R_, SphericalP<std::complex<
     else //this a second harmonic frequency result - calculate the source fields (save it in Einc for convenience)
     {
       //Source fields
-      for(int j=0; j<geometry->noObjects; j++)
+      for(size_t j=0; j<geometry->objects.size(); j++)
       {
         Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
         AuxCoefficients aCoef;
@@ -646,13 +652,15 @@ void Result::getEHFieldsContCheck(Spherical<double> R_, SphericalP<std::complex<
 
         for(p=0; p<pMax; p++)
         {
-          Einc = Einc + (aCoef.dataMp[p] * geometry->objects[j].sourceCoef[p] + aCoef.dataNp[p] * geometry->objects[j].sourceCoef[p + pMax]);
+          Einc = Einc
+            + aCoef.dataMp[p] * geometry->objects[j].sourceCoef[static_cast<int>(p)]
+            + aCoef.dataNp[p] * geometry->objects[j].sourceCoef[static_cast<int>(p) + pMax];
         }
       }
     }
 
     //Scattered field
-    for(int j=0; j<geometry->noObjects; j++)
+    for(size_t j=0; j<geometry->objects.size(); j++)
     {
       SphericalP<std::complex<double> > Efield_local = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
 

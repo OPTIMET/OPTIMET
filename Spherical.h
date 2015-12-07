@@ -78,7 +78,7 @@ public:
    */
   Spherical(void)
   {
-    //
+    init(0, 0, 0);
   }
 
   /**

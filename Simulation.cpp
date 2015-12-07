@@ -138,7 +138,7 @@ void Simulation::radius_scan(Run & run, Solver &solver)
 
     std::cout << "Solving for R = " << rad << std::endl;
 
-    for(int k=0; k<run.geometry.noObjects; k++)
+    for(size_t k=0; k<run.geometry.objects.size(); k++)
     {
       run.geometry.updateRadius(rad, k);
     }
@@ -202,7 +202,7 @@ void Simulation::radius_and_wavelength_scan(Run & run, Solver &solver)
 
       run.excitation.updateWavelength(lam);
       run.geometry.update(&(run.excitation));
-      for(int k=0; k<run.geometry.noObjects; k++)
+      for(size_t k=0; k<run.geometry.objects.size(); k++)
       {
         run.geometry.updateRadius(rad, k);
       }
