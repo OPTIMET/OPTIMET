@@ -47,36 +47,36 @@ void OutputGrid::init(int type_, double *parameters_, hid_t groupID_)
     aux[2] = std::abs(gridParameters[7] - gridParameters[6]) / (gridParameters[8] - 1);
 
     //Create the HDF5 SubGroups
-     vecGroupId[0] = H5Gcreate(groupID, "X", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-     vecGroupId[1] = H5Gcreate(groupID, "Y", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-     vecGroupId[2] = H5Gcreate(groupID, "Z", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    vecGroupId[0] = H5Gcreate(groupID, "X", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    vecGroupId[1] = H5Gcreate(groupID, "Y", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    vecGroupId[2] = H5Gcreate(groupID, "Z", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
-     //Create the associated datasets and dataspaces
-     hsize_t dims[3];
+    //Create the associated datasets and dataspaces
+    hsize_t dims[3];
 
-     dims[0] = gridParameters[2];
-     dims[1] = gridParameters[5];
-     dims[2] = gridParameters[8];
+    dims[0] = gridParameters[2];
+    dims[1] = gridParameters[5];
+    dims[2] = gridParameters[8];
 
-     //Create the dataspaces for real and imag
-     for(int i=0; i<6; i++)
-     {
-       vecDSpaceId[i] = H5Screate_simple(3, dims, NULL);
-     }
+    //Create the dataspaces for real and imag
+    for(int i=0; i<6; i++)
+    {
+      vecDSpaceId[i] = H5Screate_simple(3, dims, NULL);
+    }
 
-     //Create the associated datasets
-     vecDataId[0] = H5Dcreate(vecGroupId[0], "real", H5T_NATIVE_DOUBLE, vecDSpaceId[0],
-         H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-     vecDataId[1] = H5Dcreate(vecGroupId[0], "imag", H5T_NATIVE_DOUBLE, vecDSpaceId[1],
-         H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-     vecDataId[2] = H5Dcreate(vecGroupId[1], "real", H5T_NATIVE_DOUBLE, vecDSpaceId[2],
-         H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-     vecDataId[3] = H5Dcreate(vecGroupId[1], "imag", H5T_NATIVE_DOUBLE, vecDSpaceId[3],
-         H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-     vecDataId[4] = H5Dcreate(vecGroupId[2], "real", H5T_NATIVE_DOUBLE, vecDSpaceId[4],
-         H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-     vecDataId[5] = H5Dcreate(vecGroupId[2], "imag", H5T_NATIVE_DOUBLE, vecDSpaceId[5],
-         H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    //Create the associated datasets
+    vecDataId[0] = H5Dcreate(vecGroupId[0], "real", H5T_NATIVE_DOUBLE, vecDSpaceId[0],
+        H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    vecDataId[1] = H5Dcreate(vecGroupId[0], "imag", H5T_NATIVE_DOUBLE, vecDSpaceId[1],
+        H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    vecDataId[2] = H5Dcreate(vecGroupId[1], "real", H5T_NATIVE_DOUBLE, vecDSpaceId[2],
+        H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    vecDataId[3] = H5Dcreate(vecGroupId[1], "imag", H5T_NATIVE_DOUBLE, vecDSpaceId[3],
+        H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    vecDataId[4] = H5Dcreate(vecGroupId[2], "real", H5T_NATIVE_DOUBLE, vecDSpaceId[4],
+        H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    vecDataId[5] = H5Dcreate(vecGroupId[2], "imag", H5T_NATIVE_DOUBLE, vecDSpaceId[5],
+        H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   }
 
   gridDone = false;
