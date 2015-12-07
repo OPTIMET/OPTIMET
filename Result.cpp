@@ -10,14 +10,10 @@
 #include <complex>
 #include <cstdlib>
 
-Result::Result()
-{
-  initDone = false;
-  flagSH = false;
-  result_FF = NULL;
-}
+Result::Result() : initDone(false), flagSH(false), result_FF(NULL) {}
 
 Result::Result(Geometry *geometry_, Excitation *excitation_, int nMax_)
+  : Result()
 {
   init(geometry_, excitation_, nMax_);
 }
