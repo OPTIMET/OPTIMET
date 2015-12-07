@@ -9,13 +9,10 @@
 #include <iostream>
 #include <cstdlib>
 
-Solver::Solver()
-{
-  initDone = false;
-  flagSH = false;
-}
+Solver::Solver() : initDone(false), flagSH(false) {}
 
 Solver::Solver(Geometry* geometry_, Excitation* incWave_, int method_, long nMax_)
+  : initDone(false), flagSH(false)
 {
   init(geometry_, incWave_, method_, nMax_);
 }
