@@ -35,8 +35,7 @@ int Simulation::run()
   if(run.outputType == 0) //Field simulation
   {
 
-    Output oFile;
-    oFile.init((caseFile + ".h5").c_str());
+    Output oFile(caseFile + ".h5");
 
     Result result;
     result.init(&(run.geometry), &(run.excitation), run.nMax);
