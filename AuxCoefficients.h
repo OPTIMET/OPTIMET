@@ -17,13 +17,6 @@ using std::complex;
 class AuxCoefficients
 {
 private:
-//  /**
-//   * Compute the d_n symbol.
-//   * @param nMax the maximum value of n iterator.
-//   * @param dn the vector to store dn in.
-//   * @return 0 if succesful, 1 otherwise (deprecated).
-//   */
-//  int compute_dn(int nMax, double *dn);
 
   /**
    * Compute the Pn functions
@@ -102,16 +95,6 @@ private:
    */
   int compute_MpNp(Spherical<double> R, complex<double> waveK, int BHreg, int nMax, SphericalP<complex<double> > *dataMp, SphericalP<complex<double> > *dataNp);
 
-//  /**
-//   * Compute the Wigner functions and their derivatives.
-//   * @param nMax the maximum value of the n iterator.
-//   * @param m_ the value of the m iterator.
-//   * @param R the Spherical vector.
-//   * @param Wigner the Wigner vector.
-//   * @param dWigner the derivative Wigner vector.
-//   * @return 0 if succesful, 1 otherwise.
-//   */
-//  int VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wigner, double *dWigner);
 
   bool initDone;  /**< Specifies if the object has been initialized. */
 public:

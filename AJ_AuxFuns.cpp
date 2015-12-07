@@ -4,7 +4,6 @@
 #include "AuxCoefficients.h"
 #include "Bessel.h"
 #include "CompoundIterator.h"
-// #include "Scatterer.h"
 #include "Spherical.h"
 #include "constants.h"
 
@@ -12,7 +11,6 @@
 #include <iostream>
 #include <cstdlib>
 
-//#define PI 3.14159265358979323846
 
 // -----------------------------------------------------------------------
 // computes all corresponding Spherical Harmonics values given (nMax, m)
@@ -180,104 +178,3 @@ int compute_Yp(Spherical<double> R, std::complex<double> waveK, int nMax, std::c
   delete [] Yn_m;
   return 0;
 }
-/*
-// T local
-int getTLocal(double omega_, Scatterer particle, int nMax_, std::complex<double> ** T_local_)
-{
-
-  std::cout<<"So far so good";
-
-  std::complex<double> k_s = omega_ * sqrt(particle.elmag.epsilon * particle.elmag.mu);
-  std::complex<double> k_b = omega_ * sqrt(consEpsilon0 * consMu0);
-
-  std::complex<double> rho = k_s / k_b;
-  std::complex<double> r_0 = k_b * particle.radius;
-  std::complex<double> mu_sob = particle.elmag.mu /consMu0;
-
-  std::complex<double> psi(0., 0.), ksi(0., 0.);
-  std::complex<double> dpsi(0., 0.), dksi(0., 0.);
-
-  std::complex<double> psirho(0., 0.), ksirho(0., 0.);
-  std::complex<double> dpsirho(0., 0.), dksirho(0., 0.);
-  // AJ -----------------------------------------------------------------------------------------------------
-
-  Bessel J_n;
-  Bessel Jrho_n;
-  Bessel H_n;
-  Bessel Hrho_n;
-
-  J_n.init(r_0, 0, 0, nMax_);
-  if(J_n.populate())
-  {
-    std::cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr << "!";
-    return 1;
-  }
-
-  Jrho_n.init(rho*r_0, 0, 0, nMax_);
-  if(Jrho_n.populate())
-  {
-    std::cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr << "!";
-    return 1;
-  }
-
-  H_n.init(r_0, 1, 0, nMax_);
-  if(H_n.populate())
-  {
-    std::cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr << "!";
-  }
-
-  Hrho_n.init(rho*r_0, 1, 0, nMax_);
-  if(Hrho_n.populate())
-  {
-    std::cerr << "Error computing Hankel functions. Amos said: " << Hrho_n.ierr << "!";
-  }
-
-  CompoundIterator p;
-  CompoundIterator q;
-
-  int pMax = p.max(nMax_); //Recalculating these would be pointless.
-  int qMax = q.max(nMax_);
-
-  for(p=0; (int)p<pMax; p++)
-    for(q=0; (int)q<qMax; q++)
-    {
-      if((p.first == q.first) && (p.second == q.second)) //Kronicker symbols
-      {
-
-        // AJ ------------------------------------------------------------
-        // obtain aux functions
-        psi = r_0*J_n.data[p.first];
-        dpsi= r_0*J_n.ddata[p.first] + J_n.data[p.first];
-
-        ksi = r_0*H_n.data[p.first];
-        dksi= r_0*H_n.ddata[p.first] + H_n.data[p.first];
-
-        psirho = r_0*rho*Jrho_n.data[p.first];
-        dpsirho= r_0*rho*Jrho_n.ddata[p.first] + Jrho_n.data[p.first];
-
-        ksirho = r_0*rho*Hrho_n.data[p.first];
-        dksirho= r_0*rho*Hrho_n.ddata[p.first] + Hrho_n.data[p.first];
-
-        //TE Part
-        T_local_[p][q] = (psi/ksi)    * (mu_sob*dpsi/psi - rho*dpsirho/psirho)
-                        / (rho*dpsirho/psirho - mu_sob*dksi/ksi);
-
-        //TM part
-        T_local_[(int)p+pMax][(int)q+qMax] = (psi/ksi)  * (mu_sob*dpsirho/psirho - rho*dpsi/psi)
-                                / (rho*dksi/ksi - mu_sob*dpsirho/psirho);
-        // AJ ------------------------------------------------------------
-      }
-      else
-      {
-        T_local_[p][q] = std::complex<double>(0.0, 0.0);
-        T_local_[(int)p+pMax][(int)q+qMax] == std::complex<double>(0.0, 0.0);
-      }
-
-      //Set the rest of the matrix to (0.0, 0.0)
-      T_local_[(int)p+pMax][q] = std::complex<double>(0.0, 0.0);
-      T_local_[p][(int)q+qMax] = std::complex<double>(0.0, 0.0);
-    }
-
-  return 0;
-}
-*/

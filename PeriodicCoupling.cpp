@@ -78,13 +78,11 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R, complex<double> wa
   int n_Matsize, m_Matsize;         // dependent on (n_max)
   n_Matsize = (n_max)+1;            // up to and including n_max    : indexed from 1
   m_Matsize = 2*(n_max)+1;          // up to and including m_max    : indexed from 0 + 1 for m==0
-//  int p_max = n_max*n_max + 2*n_max;      // progression relationship - for n, m
   // based on n_max+e             // (e) is required from recurrence relations
   int e=7;                  // required for extra values in 'AlBe_00lk'
   int n_Matsize1(0), m_Matsize1(0);     // dependent on (n_max+e)
   n_Matsize1 = (n_max+e)+1;         // up to and including (n_max+e)  : indexed from 1
   m_Matsize1 = 2*(n_max+e)+1;         // up to and including (n_max+e)  : indexed from 0 + 1 for m==0
-//  int p_max1 = (n_max+e)*(n_max+e)+2*(n_max+e); // progression relationship - for n, m
 
   // prepare for calculating translation coefficients -----------------------------
   complex<double> *dataYp;
@@ -439,7 +437,6 @@ int PeriodicCoupling::compute_Znmlk(double a1, double a2, complex<double> waveK,
   int BHreg(1);       // indicates Hankel / non-regular
 
   double b1(0.), b2(0.);
-//  double Rn_mag(0.);
   Spherical<double> Rs;
   Cartesian<double> Rn;
   Cartesian<double> waveKc; // conversion of vKinc into Cartesian coords wrt to the 2D lattice - make use of components that are parallel to the 2D lattice only
@@ -486,11 +483,6 @@ int PeriodicCoupling::compute_Znmlk(double a1, double a2, complex<double> waveK,
     Rn.x      = double(ll)*b1;
     Rn.y      = double(ll)*b2;
     Rn.z      = 0.;
-
-//    // get magnitude of Rn
-//    Rn_mag = sqrt( Rn.x*Rn.x + Rn.y*Rn.y + Rn.z*Rn.z );
-//    // Automatic check if truncation limit is reached - for later - ------------------------
-//    if(Rn_mag - Rmax <0.){
 
     // positive lattice members of Rn(+l) --------------------------------------------------
     Rn.x      = double(ll)*b1;
@@ -539,12 +531,6 @@ int PeriodicCoupling::compute_Znmlk(double a1, double a2, complex<double> waveK,
       } // j
     } // i
     // --------------------------------------------------------------------------------------
-//    }
-//    // otherwise, exit routine --------------------------------------
-//    else{
-//      break;
-//    }
-
   }
 
   // delete all other matrices ----------------------------------------
@@ -798,8 +784,5 @@ int PeriodicCoupling::compute_Ap_vkg(int n_max, Cartesian<double> vecKg, complex
   }
 
 
-//  return(   complex<double>(1,  0)*(compute_alpha_nm(n, m) + compute_beta_nm(n, m)),
-//        complex<double>(0, -1)*(compute_alpha_nm(n, m) - compute_beta_nm(n, m)),
-//        complex<double>(1,  0)*m);
   return 0;
 }

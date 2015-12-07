@@ -27,7 +27,6 @@ double Symbol::Wigner9j(int j11, int j12, int j13, int j21, int j22, int j23,
 
 double Symbol::CleGor(int j, int m, int j1, int m1, int j2, int m2)
 {
-//  double wig = Wigner3j(j1, j2, j, m1, m2, -m);
   return pow(-1.0, m+j1-j2) * sqrt(2.0 * j + 1.0) * Wigner3j(j1, j2, j, m1, m2, -m);
 }
 

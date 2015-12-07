@@ -111,7 +111,6 @@ int Reader::readGeometry()
         // Drude model
         complex<double> plasma_freq = complex<double>(1.0, 0.);
         complex<double> damping_freq = complex<double>(1.0, 0.);
-//        double input_frequency = 1.0; //consC/wavelength;
 
 
         //Read mu first
@@ -134,7 +133,6 @@ int Reader::readGeometry()
         if(!strcmp(node.child("epsilon").attribute("type").value(), "DrudeModel"))
         {
           //Drude model
-//          input_frequency = node.child("epsilon").child("parameters").attribute("input_frequency").as_double();
           plasma_freq.real(node.child("epsilon").child("parameters").attribute("plasma_frequency").as_double());
           damping_freq.real(node.child("epsilon").child("parameters").attribute("damping_frequency").as_double());
           damping_freq*=complex<double>(0., 1.);
@@ -180,7 +178,6 @@ int Reader::readGeometry()
   //Add the background properties
   if(geo_node.child("background"))
     {
-//        if(strcmp(geo_node.child("background").attribute("type").value(), "absolute"))
   //      {
     //        run->geometry.bground.init(geo_node.child("background").child("epsilon").attribute("value").as_double(), geo_node.child("background").child("mu").attribute("value").as_double());
       // }
@@ -194,7 +191,6 @@ int Reader::readGeometry()
       aux_mu.imag(geo_node.child("background").child("mu").attribute("value.imag").as_double());
       run->geometry.bground.init_r(aux_epsilon, aux_mu);
        }
-//        else if(strcmp(geo_node.child("background").attribute("type").value(), "relative"))
   //      {
   //  run->geometry.bground.init_r(geo_node.child("background").child("epsilon").attribute("value").as_double(), geo_node.child("background").child("mu").attribute("value").as_double());
     //}
@@ -349,7 +345,6 @@ int Reader::readStructure(xml_node geo_node_)
                             aux_mu);
 
         //Sellmeier model
-//        work_object.elmag.initSellmeier_r(struct_node.child("object").child("epsilon").child("parameters").attribute("B1").as_double(),
   //          struct_node.child("object").child("epsilon").child("parameters").attribute("C1").as_double(),
     //        struct_node.child("object").child("epsilon").child("parameters").attribute("B2").as_double(),
       //      struct_node.child("object").child("epsilon").child("parameters").attribute("C2").as_double(),
@@ -530,7 +525,6 @@ int Reader::readOutput()
       // claculate no of steps
       steps = int(lam_final - lam_start) / stepsize;
             run->params[2] = steps+1;
-//      run->params[2] = out_node.child("scan").child("wavelength").attribute("steps").as_double();
             run->outputType = 11;
       }
 

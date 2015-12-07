@@ -39,7 +39,6 @@ int AuxCoefficients::compute_Pn(int nMax, double *Wigner, SphericalP<complex<dou
   /* PURPOSE: Evaluate P_nm function from vig_d  and d_vig_d --------------------- */
   /*-------------------------------------------------------------------------------*/
   for (int i = 0; i <= nMax; i++) {
-//    Pn[i].rrr = exp_imphi * Wigner[i];
     Pn[i].rrr = Wigner[i];
     Pn[i].the = 0.;
     Pn[i].phi = 0.;
@@ -47,62 +46,7 @@ int AuxCoefficients::compute_Pn(int nMax, double *Wigner, SphericalP<complex<dou
 
     return 0;
 } // end P_func ---------------------------------------------------------------------
-/*
-// ----------------------------------------------------------------------------------
-int AuxCoefficients::compute_Pp(Spherical<double> R, int nMax, SphericalP<complex<double> > *dataPp){
 
-  double *dn;
-  dn = new double[nMax + 1];
-
-  // Wigner d function test -------------------------------------------------------
-  double *Wigner, *dWigner;
-  Wigner = new double[nMax + 1];
-  dWigner = new double[nMax + 1];
-
-  // Vector spherical functions ---------------------------------------------------
-  SphericalP<complex<double> > *Pn; // P function arrays
-  Pn = new SphericalP<complex<double> > [nMax + 1];
-
-  CompoundIterator p;
-  CompoundIterator q;
-
-  double d_n(0.0);
-  double d_temp(0.0);
-
-  for (q = CompoundIterator(nMax, nMax); q < q.max(nMax); q++) {
-
-    // prepare for spherical functions calculation ------------------------------
-    VIGdVIG(nMax, q.second, R, Wigner, dWigner);
-    compute_dn(nMax, dn);
-
-    // call vector spherical functions ------------------------------------------
-    compute_Pn(nMax, Wigner, Pn);
-
-    for (int n = abs(q.second); n <= nMax; n++) {
-      if (n != 0) {
-        d_n=double(n);
-
-        double dm = pow(-1., double(q.second));         // Legendre to Wigner function
-        complex<double> exp_imphi = exp(consCi * (double)q.second * R.phi);
-
-        d_temp  = dm * dn[n] * sqrt(d_n*(d_n+1.));
-
-        p.init(n, q.second);
-
-        //dataPp[p] = Tools::toProjection(R, Pn[n] * (exp_imphi * d_temp));
-        dataPp[p] = Pn[n] * (exp_imphi * d_temp);
-      }
-    }
-  }
-
-  delete [] Pn;
-  delete [] Wigner;
-  delete [] dWigner;
-  delete [] dn;
-
-  return 0;
-}
-*/
 // ----------------------------------------------------------------------------------
 int AuxCoefficients::compute_Cn(int nMax, int m_, Spherical<double> R, double *Wigner, double *dWigner, SphericalP<complex<double> > *Cn){
   /*-------------------------------------------------------------------------------*/
@@ -236,8 +180,6 @@ int AuxCoefficients::compute_Nn(int nMax, int m_, Spherical<double> R, complex<d
 
 // ----------------------------------------------------------------------------------
 int AuxCoefficients::compute_MpNp(Spherical<double> R, complex<double> waveK, int BHreg, int nMax, SphericalP<complex<double> > *dataMp, SphericalP<complex<double> > *dataNp){
-
-//  double d_temp=0.;
 
   // Wigner d function test --------------------------------------------------------------
   double *Wigner, *dWigner;

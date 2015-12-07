@@ -1,10 +1,6 @@
 #include "ElectroMagnetic.h"
 #include "constants.h"
 
-//#include "Reader.h"
-//using std::cout;
-//using std::endl;
-
 ElectroMagnetic::ElectroMagnetic()
 {
   init_r(complex<double>(1.0, 0.0), complex<double>(1.0, 0.0));

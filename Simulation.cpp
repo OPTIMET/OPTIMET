@@ -59,10 +59,8 @@ int Simulation::run()
   solver.populate();
 
   // AJ
-//  cout<<"bground.epsilon = "<<run.geometry.bground.epsilon<<endl;
   //cout<<"bground.mu = "<<run.geometry.bground.mu<<endl;
 
-//  cout<<"bground.epsilon_r = "<<run.geometry.bground.epsilon_r<<endl;
   //cout<<"bground.mu_r = "<<run.geometry.bground.mu_r<<endl;
 
   //Determine the simulation type and proceed accordingly
@@ -105,7 +103,6 @@ int Simulation::run()
     oHGrid.close();
     oFile.close();
 
-//    result.writeContinuityCheck(0);
   }
 
   if(run.outputType == 11) //Wavelength scan
