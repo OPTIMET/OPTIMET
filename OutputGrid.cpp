@@ -5,13 +5,7 @@
 #include "Tools.h"
 #include <cmath>
 
-OutputGrid::OutputGrid()
-{
-  iterator = 0;
-  gridPoints = 0;
-  gridDone = false;
-  initDone = false;
-}
+OutputGrid::OutputGrid() : initDone(false), gridDone(false), iterator(0), gridPoints(0)  {}
 
 OutputGrid::~OutputGrid()
 {
@@ -19,6 +13,7 @@ OutputGrid::~OutputGrid()
 }
 
 OutputGrid::OutputGrid(int type_, double *parameters_, hid_t groupID_)
+  : OutputGrid()
 {
   init(type_, parameters_, groupID_);
 }
