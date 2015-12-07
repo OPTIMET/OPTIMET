@@ -35,17 +35,14 @@ int Simulation::run()
   if(run.outputType == 0) //Field simulation
   {
 
-    Output oFile;
-    oFile.init((caseFile + ".h5").c_str());
+    Output oFile(caseFile + ".h5");
 
     Result result;
     result.init(&(run.geometry), &(run.excitation), run.nMax);
     solver.solve(result.scatter_coef, result.internal_coef);
 
-    OutputGrid oEGrid;
-    OutputGrid oHGrid;
-    oEGrid.init(O3DCartesianRegular, run.params, oFile.getHandle("Field_E"));
-    oHGrid.init(O3DCartesianRegular, run.params, oFile.getHandle("Field_H"));
+    OutputGrid oEGrid(O3DCartesianRegular, run.params, oFile.getHandle("Field_E"));
+    OutputGrid oHGrid(O3DCartesianRegular, run.params, oFile.getHandle("Field_H"));
 
     if(run.singleMode)
     {

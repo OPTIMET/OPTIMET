@@ -15,6 +15,14 @@ if( NOT output_test )
   message( FATAL_ERROR "Variable output_test not defined" )
 endif( NOT output_test )
 
+# Sometimes HDF5 fails to manipulate a previously written file
+# Might be because OPTIMET, might be because HDF5
+foreach(output ${output_test})
+  if(EXISTS "${output}")
+    file(REMOVE "${output}")
+  endif()
+endforeach()
+
 execute_process(
   COMMAND ${test_cmd}
   RESULT_VARIABLE test_not_successful
@@ -50,7 +58,7 @@ else( diff_cmd )
       OUTPUT_QUIET
       ERROR_QUIET
     )
-endforeach()
+  endforeach()
 endif( diff_cmd )
 
 if( test_not_successful )
