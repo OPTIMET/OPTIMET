@@ -6,9 +6,11 @@
 #include "Cartesian.h"
 #include "constants.h"
 #include "Tools.h"
+
 #include <iostream>
 #include <cstring>
 #include <vector>
+#include <stdexcept>
 
 using namespace pugi;
 
@@ -25,7 +27,6 @@ Reader::~Reader()
 int Reader::readGeometry()
 {
   xml_node geo_node;      //the main work node
-  unsigned long no_objects=0; //the number of declared objects
 
   //Find the simulation node
   geo_node = inputFile.child("simulation");
@@ -53,135 +54,15 @@ int Reader::readGeometry()
 
   run->geometry.structureType = 0;
 
-  //Find all objects and count them
+  // Find all scattering objects
   for(xml_node node = geo_node.child("object"); node; node = node.next_sibling("object"))
-  {
-    no_objects++;
-  }
-
-  run->geometry.init(no_objects); //initialize the geometry
-
-  //Find all objects again and add them NOTE: the parsing is really fast so this is not a problem
-  for(xml_node node = geo_node.child("object"); node; node = node.next_sibling("object"))
-  {
-    Scatterer work_object;    //a work object used to push into the Geometry (not initialized)
-    work_object.nMax = run->nMax;
-
-    //Choose object type (since comparing strings, elif is better)
-
-    if (!std::strcmp(node.attribute("type").value(), "sphere")) //Sphere object
-    {
-      //Assign coordinates to the Scatterer work_object
-      if(node.child("cartesian")) //Cartesian coordinates
-      {
-        double aux_x, aux_y, aux_z;
-
-        aux_x = node.child("cartesian").attribute("x").as_double() * consFrnmTom;
-        aux_y = node.child("cartesian").attribute("y").as_double() * consFrnmTom;
-        aux_z = node.child("cartesian").attribute("z").as_double() * consFrnmTom;
-
-        work_object.vR = Tools::toSpherical(Cartesian<double> (aux_x, aux_y, aux_z));
-      }
-      else if(node.child("spherical")) //Spherical coordinates
-      {
-        double aux_r, aux_t, aux_p;
-
-        aux_r = node.child("spherical").attribute("rrr").as_double() * consFrnmTom;
-        aux_t = node.child("spherical").attribute("the").as_double();
-        aux_p = node.child("spherical").attribute("phi").as_double();
-
-        work_object.vR = Spherical<double>(aux_r, aux_t, aux_p);
-      }
-
-      //Assign properties to the Scatterer work_object
-      if(node.child("properties").attribute("radius"))
-      {
-        work_object.radius = node.child("properties").attribute("radius").as_double() * consFrnmTom;
-      }
-
-      //Assign electromagnetic properties to the Scatterer
-      if(node.child("epsilon") || node.child("mu"))
-      {
-        std::complex<double> aux_epsilon = std::complex<double>(1.0, 0.);
-        std::complex<double> aux_mu = std::complex<double>(1.0, 0.);
-        // Drude model
-        std::complex<double> plasma_freq = std::complex<double>(1.0, 0.);
-        std::complex<double> damping_freq = std::complex<double>(1.0, 0.);
-//        double input_frequency = 1.0; //consC/wavelength;
-
-
-        //Read mu first
-        if(!std::strcmp(node.child("mu").attribute("type").value(), "relative"))
-        {
-          aux_mu.real(node.child("mu").attribute("value.real").as_double());
-          aux_mu.imag(node.child("mu").attribute("value.imag").as_double());
-        }
-
-        //Now the two epsilon models
-
-        if(!std::strcmp(node.child("epsilon").attribute("type").value(), "relative"))
-        {
-          // Static values
-          aux_epsilon.real(node.child("epsilon").attribute("value.real").as_double());
-          aux_epsilon.imag(node.child("epsilon").attribute("value.imag").as_double());
-          work_object.elmag.init_r(aux_epsilon, aux_mu);
-        }
-
-        if(!std::strcmp(node.child("epsilon").attribute("type").value(), "DrudeModel"))
-        {
-          //Drude model
-//          input_frequency = node.child("epsilon").child("parameters").attribute("input_frequency").as_double();
-          plasma_freq.real(node.child("epsilon").child("parameters").attribute("plasma_frequency").as_double());
-          damping_freq.real(node.child("epsilon").child("parameters").attribute("damping_frequency").as_double());
-          damping_freq*=std::complex<double>(0., 1.);
-  //        aux_epsilon = 1. - ( (plasma_freq*plasma_freq) / (input_freq*(input_freq+damping_freq)) );
-    //      work_object.elmag.init_r(aux_epsilon, aux_mu);
-          work_object.elmag.initDrudeModel_r(plasma_freq, damping_freq, aux_mu);
-
-        }
-
-        if(!std::strcmp(node.child("epsilon").attribute("type").value(), "sellmeier"))
-        {
-          //Sellmeier model
-          double B1(0.), C1(0.), B2(0.), C2(0.), B3(0.), C3(0.), B4(0.), C4(0.), B5(0.), C5(0.);
-          B1=node.child("epsilon").child("parameters").attribute("B1").as_double();
-          C1=node.child("epsilon").child("parameters").attribute("C1").as_double();
-          B2=node.child("epsilon").child("parameters").attribute("B2").as_double();
-          C2=node.child("epsilon").child("parameters").attribute("C2").as_double();
-          B3=node.child("epsilon").child("parameters").attribute("B3").as_double();
-          C3=node.child("epsilon").child("parameters").attribute("C3").as_double();
-          B4=node.child("epsilon").child("parameters").attribute("B4").as_double();
-          C4=node.child("epsilon").child("parameters").attribute("C4").as_double();
-          B5=node.child("epsilon").child("parameters").attribute("B5").as_double();
-          C5=node.child("epsilon").child("parameters").attribute("C5").as_double();
-          work_object.elmag.initSellmeier_r(  B1,
-                            C1,
-                            B2,
-                            C2,
-                            B3,
-                            C3,
-                            B4,
-                            C4,
-                            B5,
-                            C5,
-                            aux_mu.real());
-        }
-    }
-
-    //Push the object into the geometry
-    run->geometry.pushObject(work_object);
-    }
-  }
+    run->geometry.objects.emplace_back(readSphericalScatterer(node));
 
   //Add the background properties
   if(geo_node.child("background"))
-    {
-//        if(std::strcmp(geo_node.child("background").attribute("type").value(), "absolute"))
-  //      {
-    //        run->geometry.bground.init(geo_node.child("background").child("epsilon").attribute("value").as_double(), geo_node.child("background").child("mu").attribute("value").as_double());
-      // }
+  {
     if(std::strcmp(geo_node.child("background").attribute("type").value(), "relative"))
-        {
+    {
       std::complex<double> aux_epsilon(1.0, 0.);
       std::complex<double> aux_mu(1.0, 0.);
             aux_epsilon.real(geo_node.child("background").child("epsilon").attribute("value.real").as_double());
@@ -189,12 +70,8 @@ int Reader::readGeometry()
       aux_mu.real(geo_node.child("background").child("mu").attribute("value.real").as_double());
       aux_mu.imag(geo_node.child("background").child("mu").attribute("value.imag").as_double());
       run->geometry.bground.init_r(aux_epsilon, aux_mu);
-       }
-//        else if(std::strcmp(geo_node.child("background").attribute("type").value(), "relative"))
-  //      {
-  //  run->geometry.bground.init_r(geo_node.child("background").child("epsilon").attribute("value").as_double(), geo_node.child("background").child("mu").attribute("value").as_double());
-    //}
     }
+  }
 
   //Validate the geometry in the return
 
@@ -285,83 +162,13 @@ int Reader::readStructure(xml_node geo_node_)
 
     No = (Np-1)*arms + 1; //Number of objects
 
-    run->geometry.init(No);
-
-    //Instantiate a work object and push the central sphere
-    Scatterer work_object;    //a work object used to push into the Geometry (not initialized)
-    work_object.nMax = run->nMax;
-
     //Assign properties to the Scatterer work_object
     if(struct_node.child("object").child("properties").attribute("radius"))
     {
-      work_object.radius = struct_node.child("object").child("properties").attribute("radius").as_double() * consFrnmTom;
-      run->geometry.spiralSeparation = (d/2) - 2 * work_object.radius;
+      auto const radius
+        = struct_node.child("object").child("properties").attribute("radius").as_double();
+      run->geometry.spiralSeparation = (d/2) - 2 * radius * consFrnmTom;
     }
-
-    //Assign electromagnetic properties to the Scatterer
-    if(struct_node.child("object").child("epsilon") || struct_node.child("object").child("mu"))
-    {
-      double aux_epsilon = 1.0;
-      double aux_mu = 1.0;
-
-      //Read mu first
-      if(!std::strcmp(struct_node.child("object").child("mu").attribute("type").value(), "relative"))
-      {
-        aux_mu = struct_node.child("object").child("mu").attribute("value").as_double();
-      }
-
-      //Now the two epsilon models
-
-      if(!std::strcmp(struct_node.child("object").child("epsilon").attribute("type").value(), "relative"))
-      {
-        aux_epsilon = struct_node.child("object").child("epsilon").attribute("value").as_double();
-        work_object.elmag.init_r(std::complex<double>(aux_epsilon, 0.0), std::complex<double>(aux_mu, 0.0));
-      }
-
-      if(!std::strcmp(struct_node.child("object").child("epsilon").attribute("type").value(), "sellmeier"))
-      {
-        //Sellmeier model
-          double B1(0.), C1(0.), B2(0.), C2(0.), B3(0.), C3(0.), B4(0.), C4(0.), B5(0.), C5(0.);
-          B1=struct_node.child("epsilon").child("parameters").attribute("B1").as_double();
-          C1=struct_node.child("epsilon").child("parameters").attribute("C1").as_double();
-          B2=struct_node.child("epsilon").child("parameters").attribute("B2").as_double();
-          C2=struct_node.child("epsilon").child("parameters").attribute("C2").as_double();
-          B3=struct_node.child("epsilon").child("parameters").attribute("B3").as_double();
-          C3=struct_node.child("epsilon").child("parameters").attribute("C3").as_double();
-          B4=struct_node.child("epsilon").child("parameters").attribute("B4").as_double();
-          C4=struct_node.child("epsilon").child("parameters").attribute("C4").as_double();
-          B5=struct_node.child("epsilon").child("parameters").attribute("B5").as_double();
-          C5=struct_node.child("epsilon").child("parameters").attribute("C5").as_double();
-          work_object.elmag.initSellmeier_r(  B1,
-                            C1,
-                            B2,
-                            C2,
-                            B3,
-                            C3,
-                            B4,
-                            C4,
-                            B5,
-                            C5,
-                            aux_mu);
-
-        //Sellmeier model
-//        work_object.elmag.initSellmeier_r(struct_node.child("object").child("epsilon").child("parameters").attribute("B1").as_double(),
-  //          struct_node.child("object").child("epsilon").child("parameters").attribute("C1").as_double(),
-    //        struct_node.child("object").child("epsilon").child("parameters").attribute("B2").as_double(),
-      //      struct_node.child("object").child("epsilon").child("parameters").attribute("C2").as_double(),
-      //      struct_node.child("object").child("epsilon").child("parameters").attribute("B3").as_double(),
-      //      struct_node.child("object").child("epsilon").child("parameters").attribute("C3").as_double(),
-      //      aux_mu);
-      }
-    }
-
-    //Center the sphere and push it
-
-    work_object.vR.rrr = 0.0;
-    work_object.vR.the = 0.0;
-    work_object.vR.phi = 0.0;
-
-    run->geometry.pushObject(work_object);
 
     //Create vectors for r, theta, x and y, X and Y
     std::vector<double> X(No-1);      // to store x-axis location of particles for all arm
@@ -395,44 +202,31 @@ int Reader::readStructure(xml_node geo_node_)
 
     //Determine normal, convert to a spherical object and push
 
-    Cartesian<double> auxCar(0.0, 0.0, 0.0);
-    Spherical<double> auxSph(0.0, 0.0, 0.0);
-
+    auto const scatterer = readSphericalScatterer(struct_node.child("object"));
     for(int i=0; i<No-1; i++)
     {
-      if(!std::strcmp(struct_node.child("properties").attribute("normal").value(), "x"))
+      run->geometry.objects.push_back(scatterer);
+      std::string const normal = struct_node.child("properties").attribute("normal").value() ;
+      if(normal == "x")
       {
         //x is normal (conversion is x(pol) -> y; y(pol) -> z
-        auxCar.x = 0.0;
-        auxCar.y = X[i];
-        auxCar.z = Y[i];
-
         run->geometry.normalToSpiral = 0;
+        run->geometry.objects.back().vR = Tools::toSpherical({0.0, X[i], Y[i]});
       }
-
-      if(!std::strcmp(struct_node.child("properties").attribute("normal").value(), "y"))
+      else if(normal == "y")
       {
         //y is normal (conversion is x(pol) -> z; y(pol) -> x
-        auxCar.x = Y[i];
-        auxCar.y = 0.0;
-        auxCar.z = X[i];
-
         run->geometry.normalToSpiral = 1;
+        run->geometry.objects.back().vR = Tools::toSpherical({Y[i], 0, X[i]});
       }
-
-      if(!std::strcmp(struct_node.child("properties").attribute("normal").value(), "z"))
+      else if(normal == "z")
       {
         //z is normal (conversion is x(pol) -> x; y(pol) -> x
-        auxCar.x = X[i];
-        auxCar.y = Y[i];
-        auxCar.z = 0.0;
-
         run->geometry.normalToSpiral = 2;
+        run->geometry.objects.back().vR = Tools::toSpherical({X[i], Y[i], 0});
       }
-
-      auxSph = Tools::toSpherical(auxCar);
-      work_object.vR = auxSph;
-      run->geometry.pushObject(work_object);
+      else
+        throw std::runtime_error("Unknown normal " + normal);
     }
   }
 
@@ -592,3 +386,82 @@ int Reader::readSimulation(std::string const & fileName_)
 
   return 0;
 }
+
+Scatterer Reader::readSphericalScatterer(pugi::xml_node const &node)
+{
+  if(node.attribute("type").value() != std::string("sphere"))
+    std::runtime_error("Expecting a spherical scatterer");
+  Scatterer result(run->nMax);
+  //Assign coordinates to the Scatterer work_object
+  if(node.child("cartesian")) //Cartesian coordinates
+    result.vR = Tools::toSpherical(Cartesian<double>{
+      node.child("cartesian").attribute("x").as_double() * consFrnmTom,
+      node.child("cartesian").attribute("y").as_double() * consFrnmTom,
+      node.child("cartesian").attribute("z").as_double() * consFrnmTom
+    });
+  else if(node.child("spherical")) //Spherical coordinates
+    result.vR = {
+      node.child("spherical").attribute("rrr").as_double() * consFrnmTom,
+      node.child("spherical").attribute("the").as_double(),
+      node.child("spherical").attribute("phi").as_double()
+    };
+  else
+    result.vR = {0, 0, 0};
+
+  //Assign properties to the Scatterer work_object
+  if(node.child("properties").attribute("radius"))
+    result.radius = node.child("properties").attribute("radius").as_double() * consFrnmTom;
+
+  //Assign electromagnetic properties to the Scatterer
+  if(node.child("epsilon") || node.child("mu"))
+  {
+    // only one way to specify mu, AFAIK
+    if(node.child("mu").attribute("type").value() != std::string("relative"))
+      throw std::runtime_error("The type for mu must be \"relative\"");
+
+    std::complex<double> const aux_mu(
+      node.child("mu").attribute("value.real").as_double(),
+      node.child("mu").attribute("value.imag").as_double()
+    );
+
+    //Now the two epsilon models
+    if(node.child("epsilon").attribute("type").value() == std::string("relative"))
+    {
+      // Static values
+      std::complex<double> epsilon(
+        node.child("epsilon").attribute("value.real").as_double(),
+        node.child("epsilon").attribute("value.imag").as_double()
+      );
+      result.elmag.init_r(epsilon, aux_mu);
+    }
+    else if(node.child("epsilon").attribute("type").value() == std::string("DrudeModel"))
+    {
+      //Drude model
+      auto const plasma_freq
+        = node.child("epsilon").child("parameters").attribute("plasma_frequency").as_double();
+      std::complex<double> const damping_freq(
+          0, node.child("epsilon").child("parameters").attribute("damping_frequency").as_double());
+      result.elmag.init_r(0, aux_mu);
+      result.elmag.initDrudeModel_r(plasma_freq, damping_freq, aux_mu);
+    }
+    else if(node.child("epsilon").attribute("type").value() == std::string("sellmeier"))
+    {
+      //Sellmeier model
+      double B1(0.), C1(0.), B2(0.), C2(0.), B3(0.), C3(0.), B4(0.), C4(0.), B5(0.), C5(0.);
+      B1=node.child("epsilon").child("parameters").attribute("B1").as_double();
+      C1=node.child("epsilon").child("parameters").attribute("C1").as_double();
+      B2=node.child("epsilon").child("parameters").attribute("B2").as_double();
+      C2=node.child("epsilon").child("parameters").attribute("C2").as_double();
+      B3=node.child("epsilon").child("parameters").attribute("B3").as_double();
+      C3=node.child("epsilon").child("parameters").attribute("C3").as_double();
+      B4=node.child("epsilon").child("parameters").attribute("B4").as_double();
+      C4=node.child("epsilon").child("parameters").attribute("C4").as_double();
+      B5=node.child("epsilon").child("parameters").attribute("B5").as_double();
+      C5=node.child("epsilon").child("parameters").attribute("C5").as_double();
+      result.elmag.initSellmeier_r(B1, C1, B2, C2, B3, C3, B4, C4, B5, C5, aux_mu.real());
+    }
+    else
+      throw std::runtime_error("Unknown type for epsilon");
+  }
+  return result;
+};

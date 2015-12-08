@@ -2,6 +2,9 @@
 #define SIMULATION_H_
 
 #include <string>
+
+class Run;
+class Solver;
 /**
  * The Simulation class implements a full simulation.
  * A Simulation object will create a set of Cases and Requests based
@@ -35,6 +38,13 @@ public:
    * @return 0 if succesful, 1 otherwise.
    */
   int done();
+
+protected:
+  void scan_wavelengths(Run & run, Solver &solver);
+  void field_simulation(Run & run, Solver &solver);
+  void radius_scan(Run & run, Solver &solver);
+  void radius_and_wavelength_scan(Run & run, Solver &solver);
+  void coefficients(Run & run, Solver &solver);
 };
 
 #endif /* SIMULATION_H_ */

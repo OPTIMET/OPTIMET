@@ -1,6 +1,7 @@
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_
 
+#include <vector>
 #include "Scatterer.h"
 #include "Excitation.h"
 
@@ -17,14 +18,11 @@ class Geometry
 private:
   //
 public:
-  int noObjects;  /**< The number of scatterers. */
-  Scatterer* objects;     /**< The list of scatterers. */
+  std::vector<Scatterer> objects;     /**< The list of scatterers. */
 
   ElectroMagnetic bground;  /**< The properties of the background. */
 
-  bool initDone;        /**< Specifies if the geometry has been initialized. */
   bool validDone;       /**< Specifies if the geometry has been validated. */
-  int capacity;       /**< Declared capacity of the geometry. */
 
   int structureType;      /**< The type of structure used: 0 - non-structured, 1 - spiral . */
 
@@ -37,47 +35,19 @@ public:
   Geometry();
 
   /**
-   * Initializing constructor for the Geometry class.
-   * @param capacity_ the declared capacity.
-   * @see init()
-   * @see pushObject()
-   */
-  Geometry(int capacity_);
-
-  /**
    * Alternative constructor for the Geometry class.
    * Can initialize with a list of Scatterer type objects.
-   * @param capacity_ the declared capacity
    * @param objects_ the list of Scatterer objects
    * @see init()
    * @warning Try to use the pushObject method for best results.
    * @see pushObject()
    */
-  Geometry(int capacity_, Scatterer* objects_);
+  // Geometry(int capacity_, Scatterer* objects_);
 
   /**
    * Default destructor for the Geometry class.
    */
   virtual ~Geometry();
-
-  /**
-   * Initialize a Geometry object by declaring its capacity.
-   * @param capacity_ the declared capacity
-   * @see Geometry()
-   * @see pushObject()
-   */
-  void init(int capacity_);
-
-  /**
-   * Alternative initialize method for the Geometry class.
-   * Can initialize with a list of Scatterer type objects.
-   * @param capacity_ the declared capacity
-   * @param objects_ the list of Scatterer objects
-   * @see init()
-   * @warning Try to use the pushObject method for best results.
-   * @see pushObject()
-   */
-  void init(int capacity_, Scatterer* objects_);
 
   /**
    * Initialize the background. Default is vacuum.

@@ -66,6 +66,9 @@ public:
    * @return 0 if valid, 1 otherwise.
    */
   int readOutput();
+
+  protected:
+    Scatterer readSphericalScatterer(pugi::xml_node const &node);
 };
 
 #endif /* READER_H_ */

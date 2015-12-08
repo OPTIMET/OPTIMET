@@ -12,70 +12,12 @@
 #include <cmath>
 #include <vector>
 
-Geometry::Geometry()
-{
-  initDone = false;
-  validDone = false;
-}
-
-Geometry::Geometry(int capacity_)
-{
-  init(capacity_);
-}
-
-Geometry::Geometry(int capacity_, Scatterer* objects_)
-{
-  init(capacity_, objects_);
-}
-
-Geometry::~Geometry()
-{
-  if(initDone)
-  {
-    delete [] objects;
-  }
-}
-
-void Geometry::init(int capacity_)
-{
-  validDone = false;
-  noObjects = 0;
-  capacity = capacity_;
-
-  if (initDone) //Check to see if this wasn't called before
-    delete [] objects; //if yes, delete the objects array
-
-  objects = new Scatterer[capacity];
-  initDone = true;
-
-}
-
-void Geometry::init(int capacity_, Scatterer* objects_)
-{
-  initDone = true;
-  validDone = false;
-  objects = objects_;
-  capacity = capacity_;
-  noObjects = capacity;
-}
+Geometry::~Geometry() {}
+Geometry::Geometry() : validDone(false) {}
 
 int Geometry::pushObject(Scatterer object_)
 {
-  if(!initDone)
-  {
-    std::cerr << "Geometry was not initialized. Object push failed!" << std::endl;
-    return 1;
-  }
-
-  if(noObjects == capacity)
-  {
-    std::cerr << "Object push would exceed declared capacity. Ignoring!" << std::endl;
-    return 1;
-  }
-
-  objects[noObjects] = object_;   //add a new object
-  objects[noObjects].init(object_.nMax); //and initialize it
-  noObjects++;  //increase the iterator
+  objects.emplace_back(object_);
   validDone = false;  //new object added implies geometry can be invalid
 
   return 0;
@@ -88,27 +30,18 @@ void Geometry::initBground(ElectroMagnetic bground_)
 
 int Geometry::validate()
 {
-  if(!initDone) //geometry not initalized
-  {
-    std::cerr << "Geometry was not initialized. Nothing to validate!" << std::endl;
-    return 0;
-  }
-
   if(validDone) //geometry already valid
     return 1; //skip
 
-  if(noObjects <= 0)
+  if(objects.size() == 0)
   {
     std::cerr << "No objects found in geometry!" << std::endl;
     return 0;
   }
 
-  int i;
-  int j;
-
-  for(i=0; i<noObjects; i++)
+  for(size_t i=0; i<objects.size(); i++)
   {
-    for(j=i+1; j<noObjects; j++)
+    for(size_t j=i+1; j<objects.size(); j++)
     {
       if(Tools::findDistance(objects[j].vR, objects[i].vR) <= (objects[j].radius+objects[i].radius))
       {
@@ -124,21 +57,15 @@ int Geometry::validate()
 
 int Geometry::getTLocal(double omega_, int objectIndex_, int nMax_, std::complex<double> ** T_local_)
 {
-  if(!initDone)
-  {
-    std::cerr << "Geometry not initialized!";
-    return 1;
-  }
-
   if(!validDone)
   {
     std::cerr << "Geometry not validated!";
     return 1;
   }
 
-  if(objectIndex_ >= noObjects)
+  if(objectIndex_ >= static_cast<int>(objects.size()))
   {
-    std::cerr << "Object index " << objectIndex_ << " is out of range. Only " << noObjects << " objects exist!";
+    std::cerr << "Object index " << objectIndex_ << " is out of range. Only " << objects.size() << " objects exist!";
     return 1;
   }
 
@@ -453,7 +380,7 @@ int Geometry::checkInner(Spherical<double> R_)
 {
   Spherical<double> Rrel;
 
-  for(int j=0; j<noObjects; j++)
+  for(size_t j=0; j< objects.size(); j++)
   {
     //Translate to object j
     Rrel = Tools::toPoint(R_, objects[j].vR);
@@ -474,18 +401,18 @@ int Geometry::setSourcesSingle(Excitation *incWave_, std::complex<double> *inter
   std::complex<double> *sourceU = new std::complex<double>[2*pMax];
   std::complex<double> *sourceV = new std::complex<double>[2*pMax];
 
-  for(int j=0; j<noObjects; j++)
+  for(size_t j=0; j< objects.size(); j++)
   {
     getNLSources(incWave_->omega, j, nMax_, sourceU, sourceV);
 
     for(p=0; p<pMax; p++)
     {
-      objects[j].sourceCoef[p] = sourceU[p] * Symbol::up_mn(p.second, p.first, nMax_, internalCoef_FF_[j*2*pMax+p.compound],
+      objects[j].sourceCoef[static_cast<int>(p)] = sourceU[p] * Symbol::up_mn(p.second, p.first, nMax_, internalCoef_FF_[j*2*pMax+p.compound],
           internalCoef_FF_[pMax+j*2*pMax+p.compound], incWave_->omega, &objects[j], bground) +
           sourceV[p] * Symbol::vp_mn(p.second, p.first, nMax_, internalCoef_FF_[j*2*pMax+p.compound],
           internalCoef_FF_[pMax+j*2*pMax+p.compound], incWave_->omega, &objects[j], bground);
 
-      objects[j].sourceCoef[p+pMax] = sourceU[p+pMax] * Symbol::upp_mn(p.second, p.first, nMax_, internalCoef_FF_[j*2*pMax+p.compound],
+      objects[j].sourceCoef[static_cast<int>(p)+pMax] = sourceU[p+pMax] * Symbol::upp_mn(p.second, p.first, nMax_, internalCoef_FF_[j*2*pMax+p.compound],
           internalCoef_FF_[pMax+j*2*pMax+p.compound], incWave_->omega, &objects[j], bground) +
           sourceV[p+pMax]; //<- this last bit is zero for the moment
     }
@@ -502,7 +429,6 @@ int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, std::comple
 {
   CompoundIterator p;
   CompoundIterator q;
-  int j;
 
   Coupling AB;
 
@@ -519,9 +445,9 @@ int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, std::comple
   std::complex<double> **T_AB = Tools::Get_2D_c_double(2*pMax, 2*qMax);
   std::complex<double> *Q_interm = new std::complex<double>[pMax+qMax];
 
-  for(j=0; j<noObjects; j++)
+  for(size_t j=0; j< objects.size(); j++)
   {
-    if(j == objectIndex_)
+    if(static_cast<int>(j) == objectIndex_)
       continue;
 
     //Build the T_AB matrix
@@ -541,7 +467,7 @@ int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, std::comple
 
 
     //Multiply T_AB with the single local sources
-    Algebra::multiplyVectorMatrix(T_AB, 2*pMax, 2*qMax, objects[j].sourceCoef, Q_interm, consC1, consC1);
+    Algebra::multiplyVectorMatrix(T_AB, 2*pMax, 2*qMax, objects[j].sourceCoef.data(), Q_interm, consC1, consC1);
 
     //Finally, add Q_interm to Q_SH_local
     for(p=0; p<pMax; p++)
@@ -564,9 +490,9 @@ int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, std::comple
 void Geometry::update(Excitation* incWave_)
 {
   //Update the ElectroMagnetic properties of each object
-  for(int i=0; i<noObjects; i++)
+  for(auto &object: objects)
   {
-    objects[i].elmag.update(incWave_->lambda);
+    object.elmag.update(incWave_->lambda);
   }
 
 }
@@ -585,14 +511,14 @@ void Geometry::rebuildStructure()
     int Np, No;
     double Theta;
 
-    Np = ((noObjects-1) / 4) + 1;
+    Np = (( objects.size()-1) / 4) + 1;
 
     Theta = consPi/(Np-1); //Calculate the separation angle
 
     d = 2 * (spiralSeparation + 2 * objects[0].radius);
     R = d / (4 * sin(Theta/2.0));
 
-    No = noObjects;
+    No =  objects.size();
 
     //Create vectors for r, theta, x and y, X and Y
     std::vector<double> X(No-1);

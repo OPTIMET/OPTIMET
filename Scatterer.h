@@ -1,6 +1,7 @@
 #ifndef SCATTERER_H_
 #define SCATTERER_H_
 
+#include <vector>
 #include "Spherical.h"
 #include "ElectroMagnetic.h"
 
@@ -13,14 +14,12 @@
  */
 class Scatterer
 {
-private:
-  bool initDone;    /**< Specifies if the object has been initialized. */
 public:
   /**
    * Default Scatterer constructor.
    * Does NOT initialize the object.
    */
-  Scatterer();
+  Scatterer(int nMax_);
 
   /**
    * Initialization constructor for Scatterer.
@@ -35,12 +34,6 @@ public:
   Scatterer(Spherical<double> vR_, ElectroMagnetic elmag_, double radius_, int nMax_);
 
   /**
-   * Initialization function for Scatterer.
-   * @param nMax_ the maximum value of the n iterator.
-   */
-  void init(int nMax_);
-
-  /**
    * Default scatterer destructor.
    */
   virtual ~Scatterer();
@@ -50,20 +43,7 @@ public:
   int nMax;       /**< Maximum value of the n iterator. */
   double radius;      /**< The radius of a sphere encompassing the scatterer.*/
 
-  /**
-   * @warning The sourceCoef array needs to be initialized by the populating function in order to work!
-   */
-  std::complex<double> *sourceCoef;  /**< The source coefficients needed for SH work.*/
-
-  /**
-   * Initializes a sphere scatterer.
-   * @param vR_ the coordinates of the center of the scatterer.
-   * @param elmag_ the electromagnetic properties of the scatterer.
-   * @param radius_ the radius of the virtual sphere.
-   * @param nMax_ the maximum value of the n iterator.
-   * @see Scatterer()
-   */
-  void init(Spherical<double> vR_, ElectroMagnetic elmag_, double radius_, int nMax_);
+  std::vector<std::complex<double>> sourceCoef;  /**< The source coefficients needed for SH work.*/
 };
 
 #endif /* SCATTERER_H_ */
