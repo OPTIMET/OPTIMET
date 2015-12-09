@@ -16,8 +16,14 @@ extern "C"
 
 namespace optimet {
 
+enum BESSEL_TYPE {
+  Bessel = 0,
+  Hankel1 = 1,
+  Hankel2 = 2
+};
+
 /*!
- * The Bessel function implements the Spherical Bessel and Hankel functions
+ * The bessel function implements the Spherical Bessel and Hankel functions
  * and their derivatives, calculated from the zeroth order up to the maximum
  * order.
  *
@@ -28,66 +34,65 @@ namespace optimet {
  * \tparam ScalingType  the scaling type:
  *                        \c 0 - unscaled,
  *                        \c 1 - scaled
- * \tparam MaxOrder     the maximum order of functions to calculate
  *
- * \param [in] z  the argument for the Bessel function
+ * \param [in] z          the argument for the Bessel function
+ * \param [in] max_order  the maximum order of functions to calculate
  *
  * \return a tuple containing the values of the spherical bessel and hankel
  *           functions in the first element, and their derivatives in the second
  *
  * \warning The zeroth order derivative (never used) is not accurate!
  */
-template <long int BesselType, long int ScalingType, long int MaxOrder>
+template <BESSEL_TYPE BesselType, bool ScalingType>
 std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
-bessel(const std::complex<double> & z) {
-
-  static_assert(BesselType >= 0 && BesselType <= 2, "Wrong besselType");
-  static_assert(MaxOrder >= 1, "Maximum order required for Bessel smaller than "
-                               "1!");
-
-  const double zr = z.real();
-  const double zi = z.imag();
-  const double order = 0.5;
-
-  // Return vectors for real and imaginary parts
-  // (+1 for zeroth order, +1 for derivative)
-  std::vector<double> cyr(MaxOrder + 2);
-  std::vector<double> cyi(MaxOrder + 2);
-
-  long int zeroUnderflow, ierr;
-
-  if (besselType == 0)
-    // Calculate the Bessel function of the first kind
-    zbesj_(&zr, &zi, &order, &scaling_type, &cyr.size(),
-           cyr.data(), cyi.data(), &zeroUnderflow, &ierr);
-  else
-    // Calculate the Hankel function of the first or second kind
-    zbesh_(&zr, &zi, &order, &scaling_type, &bessel_type, &cyr.size(),
-           cyr.data(), cyi.data(), &zeroUnderflow, &ierr);
-
-  if (ierr != 0)
-    throw std::range_error("Error computing Bessel/Hankel functions");
+bessel(const std::complex<double> & z, long int max_order) {
+  static constexpr double order = 0.5;
+  static constexpr long int scaling_type = ScalingType + 1;
 
   std::vector<std::complex<double>> data(max_order + 1);
   std::vector<std::complex<double>> ddata(max_order + 1);
 
-  // Assemble the direct functions
-  for(int i = 0; i <= MaxOrder; i++) {
-    if (std::abs(z) <= errEpsilon)
-      data[i] = std::complex<double>(0.0, 0.0);
-    else
-      data[i] = std::sqrt(consPi / (2.0 * z)) *
-                std::complex<double>(cyr[i], cyi[i]);
+  if (std::abs(z) <= errEpsilon) {
+    for (int i = 0; i <= max_order; i++)
+        data[i] = ddata[i] = std::complex<double>(0.0, 0.0);
   }
+  else {
+    const double zr = z.real();
+    const double zi = z.imag();
 
-  //The last derivative
-  ddata[maxOrder] = consCm1 * std::sqrt(consPi / (2.0 * z)) *
-                    std::complex<double>(cyr[MaxOrder + 1],
-                                         cyi[MaxOrder + 1]) +
-                    ((double)MaxOrder / z) * data[MaxOrder];
+    // Return vectors for real and imaginary parts
+    // (+1 for zeroth order, +1 for derivative)
+    std::vector<double> cyr(max_order + 2);
+    std::vector<double> cyi(max_order + 2);
 
-  for (int i = 0; i < MaxOrder; i++)
-    ddata[i] = consCm1 * data[i + 1] + ((double)i / z) * data[i];
+    long int zeroUnderflow, ierr;
+
+    if (BesselType == Bessel)
+      // Calculate the Bessel function of the first kind
+      zbesj_(&zr, &zi, &order, &scaling_type, &cyr.size(),
+             cyr.data(), cyi.data(), &zeroUnderflow, &ierr);
+    else
+      // Calculate the Hankel function of the first or second kind
+      zbesh_(&zr, &zi, &order, &scaling_type, &bessel_type, &cyr.size(),
+             cyr.data(), cyi.data(), &zeroUnderflow, &ierr);
+
+    if (ierr != 0)
+      throw std::range_error("Error computing Bessel/Hankel functions");
+
+    // Assemble the direct functions
+    const double r = std::sqrt(consPi / (2.0 * z));
+    for (int i = 0; i <= max_order; i++)
+      data[i] = r * std::complex<double>(cyr[i], cyi[i]);
+
+    // Assemble the derivative functions
+    for (int i = 0; i < max_order; i++)
+      ddata[i] = consCm1 * data[i + 1] + ((double)i / z) * data[i];
+
+    // The last derivative
+    ddata[maxOrder] = consCm1 * r * std::complex<double>(cyr[max_order + 1],
+                                                         cyi[max_order + 1]) +
+                      ((double)max_order / z) * data[max_order];
+  }
 
   return std::make_tuple(data, ddata);
 }
