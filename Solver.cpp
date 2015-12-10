@@ -221,8 +221,11 @@ int Solver::solveScatteredDirect(std::complex<double>* X_sca_)
     return 1;
   }
 
-  AlgebraS::solveMatrixVector(S, 2*Tools::iteratorMax(nMax)*geometry->objects.size(), 2*Tools::iteratorMax(nMax)*geometry->objects.size(),
-        Q, X_sca_);
+  optimet::algebra::solveMatrixVector(
+      S, 2*Tools::iteratorMax(nMax)*geometry->objects.size(),
+      2*Tools::iteratorMax(nMax)*geometry->objects.size(),
+      Q, X_sca_
+  );
 
   return 0;
 }
@@ -248,8 +251,11 @@ int Solver::solveScatteredIndirect(std::complex<double>* X_sca_)
   }
 
   //Solve the equation, here Q and S correspond to Eq. 10 in (Stout2002). Store result in X_sca_local
-  AlgebraS::solveMatrixVector(S, 2*Tools::iteratorMax(nMax)*geometry->objects.size(), 2*Tools::iteratorMax(nMax)*geometry->objects.size(),
-        Q, X_sca_local);
+  optimet::algebra::solveMatrixVector(
+      S, 2*Tools::iteratorMax(nMax)*geometry->objects.size(),
+      2*Tools::iteratorMax(nMax)*geometry->objects.size(),
+      Q, X_sca_local
+  );
 
   for(size_t i=0; i<geometry->objects.size(); i++)
   {
