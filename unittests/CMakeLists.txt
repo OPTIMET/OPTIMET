@@ -1,0 +1,1 @@
+add_catch_test(single_particle LIBRARIES optilib)
