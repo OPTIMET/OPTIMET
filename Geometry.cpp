@@ -428,8 +428,6 @@ int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, std::comple
   CompoundIterator p;
   CompoundIterator q;
 
-  optimet::Coupling AB;
-
   int pMax = p.max(nMax_);
   int qMax = q.max(nMax_);
 
@@ -449,7 +447,7 @@ int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, std::comple
       continue;
 
     //Build the T_AB matrix
-    AB.init(objects[objectIndex_].vR - objects[j].vR, incWave_->waveK, 0, nMax_);
+    optimet::Coupling AB(objects[objectIndex_].vR - objects[j].vR, incWave_->waveK, 0, nMax_);
     AB.populate();
 
     for(p=0; p<pMax; p++)

@@ -16,7 +16,6 @@ class Solver
 private:
   Geometry *geometry;   /**< Pointer to the geometry. */
   Excitation *incWave;  /**< Pointer to the incoming excitation. */
-  optimet::Coupling AB;      /**< The coupling coefficients. */
   bool initDone;      /**< Specifies initialization status. */
   bool flagSH;      /**< Specifies if we have switched to the SH case. */
   long nMax;        /**< The maximum n order. */

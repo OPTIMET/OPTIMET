@@ -110,10 +110,8 @@ int Excitation::getIncLocal(Spherical<double> point_,
     return 1;
   }
 
-  optimet::Coupling coupling;
-
   Spherical<double> Rrel = point_ - Spherical<double>(0.0, 0.0, 0.0);
-  coupling.init(Rrel, waveK, 1, nMax_);
+  optimet::Coupling coupling(Rrel, waveK, 1, nMax_);
   coupling.populate();
 
   CompoundIterator p,q;

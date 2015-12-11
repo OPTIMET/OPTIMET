@@ -547,8 +547,7 @@ void Result::centerScattering()
   {
     Spherical<double> Rrel = Tools::toPoint(Spherical<double>(0.0, 0.0, 0.0), geometry->objects[i].vR);
 
-    optimet::Coupling coupling;
-    coupling.init(Rrel, excitation->waveK, 0, nMax);
+    optimet::Coupling coupling(Rrel, excitation->waveK, 0, nMax);
     coupling.populate();
 
     for(p=0; p<pMax; p++)

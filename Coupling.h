@@ -36,12 +36,6 @@ public:
   int regular;          /**< Specifies if we should be using the regular (J) functions. 1-yes, 0-no. */
 
   /**
-   * Default constructor for the Coupling class.
-   * Does NOT initialize the object.
-   */
-  Coupling();
-
-  /**
    * Initialization constructor for the Coupling class.
    * @param relR_ the relative spherical vector between two spheres.
    * @param waveK_ the complex wave number.

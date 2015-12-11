@@ -137,7 +137,7 @@ int Solver::populateDirect()
       else
       {
         //Build the T_AB matrix
-        AB.init(geometry->objects[i].vR - geometry->objects[j].vR, incWave->waveK, 0, nMax);
+        Coupling AB(geometry->objects[i].vR - geometry->objects[j].vR, incWave->waveK, 0, nMax);
         AB.populate();
 
         for(p=0; p<pMax; p++)
@@ -375,7 +375,7 @@ int Solver::populateIndirect()
       else
       {
         //Build the T_AB matrix (non-regular corresponding to alpha(i,j))
-        AB.init(geometry->objects[i].vR - geometry->objects[j].vR, incWave->waveK, 0, nMax);
+        Coupling AB(geometry->objects[i].vR - geometry->objects[j].vR, incWave->waveK, 0, nMax);
         AB.populate();
 
         for(p=0; p<pMax; p++)

@@ -187,11 +187,6 @@ void Coupling::TransferCoefficients(Spherical<double> R, std::complex<double> wa
   delete[] Anmlk;   delete[] Bnmlk;
 }
 
-Coupling::Coupling()
-{
-  initDone = false;
-}
-
 Coupling::Coupling(Spherical<double> relR_, std::complex<double> waveK_,
     int regular_, long nMax_)
 {
