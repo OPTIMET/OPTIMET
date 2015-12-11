@@ -17,24 +17,6 @@ Solver::Solver(Geometry* geometry_, Excitation* incWave_, int method_, long nMax
   init(geometry_, incWave_, method_, nMax_);
 }
 
-Solver::~Solver()
-{
-  if(initDone)
-  {
-    CompoundIterator p;
-
-    for(p=0; p<(int)(2*p.max(nMax)* geometry->objects.size()); p++)
-    {
-      if(S[p])
-        delete [] S[p];
-    }
-
-    delete [] S;
-
-    delete [] Q;
-  }
-}
-
 void Solver::init(Geometry* geometry_, Excitation* incWave_, int method_, long nMax_)
 {
   if(initDone)
@@ -53,13 +35,8 @@ void Solver::init(Geometry* geometry_, Excitation* incWave_, int method_, long n
 
   CompoundIterator p;
 
-  S = new std::complex<double>* [2 * p.max(nMax) * geometry->objects.size()];
-  for(p=0; p<(int)(2*p.max(nMax)* geometry->objects.size()); p++)
-  {
-    S[p] = new std::complex<double>[2 * p.max(nMax) * geometry->objects.size()];
-  }
-
-  Q = new std::complex<double>[2 * p.max(nMax) * geometry->objects.size()];
+  S.resize(2 * p.max(nMax) * geometry->objects.size(), 2 * p.max(nMax) * geometry->objects.size());
+  Q.resize(2 * p.max(nMax) * geometry->objects.size());
 
   result_FF = NULL;
 
@@ -87,6 +64,7 @@ int Solver::populate()
 
 int Solver::populateDirect()
 {
+  using namespace optimet;
   if(!initDone)
   {
     std::cerr << "Solver not initialized!";
@@ -141,7 +119,7 @@ int Solver::populateDirect()
 
     for(size_t j=0; j< static_cast<size_t>(2*pMax); j++)
     {
-      Q[j+i*2*pMax] = C[j];
+      Q(j+i*2*pMax) = C[j];
     }
 
     delete [] Q_local;
@@ -154,7 +132,7 @@ int Solver::populateDirect()
       {
         //Build and push an I matrix
         Tools::makeUnitMatrix(2*pMax, Ti);
-        Tools::pushToMatrix(Ti, 2*pMax, 2*pMax, S, i*2*pMax, i*2*pMax);
+        pushToMatrix(Ti, 2*pMax, 2*pMax, S, i*2*pMax, i*2*pMax);
       }
       else
       {
@@ -175,7 +153,7 @@ int Solver::populateDirect()
         Algebra::multiplyMatrixMatrix(T, 2*pMax, 2*pMax, T_AB, 2*pMax, 2*pMax, T_fin, consCm1, consC0);
 
           //Push T into the S matrix
-        Tools::pushToMatrix(T_fin, 2*pMax, 2*pMax, S, i*2*pMax, j*2*pMax);
+        pushToMatrix(T_fin, 2*pMax, 2*pMax, S, i*2*pMax, j*2*pMax);
       }
     }
   }
@@ -215,23 +193,21 @@ int Solver::solve(std::complex<double> *X_sca_, std::complex<double> *X_int_)
 
 int Solver::solveScatteredDirect(std::complex<double>* X_sca_)
 {
+  using namespace optimet;
   if(!initDone)
   {
     std::cerr << "Solver object not initialized!";
     return 1;
   }
 
-  optimet::algebra::solveMatrixVector(
-      S, 2*Tools::iteratorMax(nMax)*geometry->objects.size(),
-      2*Tools::iteratorMax(nMax)*geometry->objects.size(),
-      Q, X_sca_
-  );
+  optimet::algebra::solveMatrixVector(S, Q, X_sca_);
 
   return 0;
 }
 
 int Solver::solveScatteredIndirect(std::complex<double>* X_sca_)
 {
+  using namespace optimet;
   if(!initDone)
   {
     std::cerr << "Solver object not initialized!";
@@ -251,11 +227,7 @@ int Solver::solveScatteredIndirect(std::complex<double>* X_sca_)
   }
 
   //Solve the equation, here Q and S correspond to Eq. 10 in (Stout2002). Store result in X_sca_local
-  optimet::algebra::solveMatrixVector(
-      S, 2*Tools::iteratorMax(nMax)*geometry->objects.size(),
-      2*Tools::iteratorMax(nMax)*geometry->objects.size(),
-      Q, X_sca_local
-  );
+  optimet::algebra::solveMatrixVector(S, Q, X_sca_local);
 
   for(size_t i=0; i<geometry->objects.size(); i++)
   {
@@ -343,6 +315,7 @@ int Solver::solveInternal(std::complex<double>* X_sca_, std::complex<double> *X_
 
 int Solver::populateIndirect()
 {
+  using namespace optimet;
   if(!initDone)
   {
     std::cerr << "Geometry not initialized!";
@@ -395,7 +368,7 @@ int Solver::populateIndirect()
     //Push Q_local into Q (direct equivalence) (NOTE: j is unused at this point)
     for(size_t j=0; j<static_cast<size_t>(2*pMax); j++)
     {
-      Q[j+i*2*pMax] = Q_local[j];
+      Q(j+i*2*pMax) = Q_local[j];
     }
 
     delete [] Q_local;
@@ -406,7 +379,7 @@ int Solver::populateIndirect()
       {
         //Build and push an I matrix
         Tools::makeUnitMatrix(2*pMax, Ti);
-        Tools::pushToMatrix(Ti, 2*pMax, 2*pMax, S, i*2*pMax, i*2*pMax);
+        pushToMatrix(Ti, 2*pMax, 2*pMax, S, i*2*pMax, i*2*pMax);
       }
       else
       {
@@ -430,7 +403,7 @@ int Solver::populateIndirect()
         Algebra::multiplyMatrixMatrix(T_AB, 2*pMax, 2*pMax, T, 2*pMax, 2*pMax, T_fin, consCm1, consC0);
 
         //Push T_fin into the S matrix
-        Tools::pushToMatrix(T_fin, 2*pMax, 2*pMax, S, i*2*pMax, j*2*pMax);
+        pushToMatrix(T_fin, 2*pMax, 2*pMax, S, i*2*pMax, j*2*pMax);
       }
     }
   }
