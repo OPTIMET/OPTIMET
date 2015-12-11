@@ -43,7 +43,9 @@ void CompoundIterator::init(int first_, int second_) {
   forwardMap();
 }
 
-int CompoundIterator::max(int first_) { return first_ * first_ + 2 * first_; }
+static int CompoundIterator::max(int first_) {
+  return first_ * first_ + 2 * first_;
+}
 
 void CompoundIterator::operator++() {
   compound++;
@@ -102,6 +104,6 @@ bool CompoundIterator::operator==(int compound_) {
   return compound == compound_;
 }
 
-CompoundIterator::operator int() { return compound; }
+CompoundIterator::operator int() const { return compound; }
 
-CompoundIterator::operator long() { return compound; }
+CompoundIterator::operator long() const { return compound; }
