@@ -428,7 +428,7 @@ int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, std::comple
   CompoundIterator p;
   CompoundIterator q;
 
-  Coupling AB;
+  optimet::Coupling AB;
 
   int pMax = p.max(nMax_);
   int qMax = q.max(nMax_);

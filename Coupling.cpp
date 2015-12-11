@@ -8,26 +8,7 @@
 #include <cmath>
 #include <iostream>
 
-double Coupling::a_nm_p(double n, double m)
-{
-  return -sqrt( ((n+m+1.)*(n-m+1.))/((2.*n+1.)*(2.*n+3.)) );
-}
-
-double Coupling::a_nm_m(double n, double m)
-{
-  return +sqrt( ((n+m)*(n-m))/((2.*n+1.)*(2.*n-1.)) );
-}
-
-double Coupling::b_nm_p(double n, double m)
-{
-  return +sqrt( ((n+m+2.)*(n+m+1.))/((2.*n+1.)*(2.*n+3.)) );
-}
-
-double Coupling::b_nm_m(double n, double m)
-{
-  return +sqrt( ((n-m)*(n-m-1.))/((2.*n+1.)*(2.*n-1.)) );
-}
-
+namespace optimet {
 void Coupling::TransferCoefficients(Spherical<double> R, std::complex<double> waveK, int BHreg,
       int n_max, std::complex<double> **dataApq, std::complex<double> **dataBpq)
 {
@@ -296,3 +277,4 @@ int Coupling::populate()
 
   return 0;
 }
+} // namespace optimet

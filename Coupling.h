@@ -2,9 +2,9 @@
 #define COUPLING_H_
 
 #include "Spherical.h"
+#include "types.h"
 
-#include <complex>
-
+namespace optimet {
 /**
  * The Coupling class implements the calculation of the A and B coupling coefficients.
  * @warning Do not use without initialization!
@@ -12,38 +12,6 @@
 class Coupling
 {
 private:
-  /**
-   * Return the a_nm_p symbol.
-   * @param n the value of n.
-   * @param m the value of m.
-   * @return a_nm_p.
-   */
-  double a_nm_p(double n, double m);
-
-  /**
-   * Return the a_nm_m symbol.
-   * @param n the value of n.
-   * @param m the value of m.
-   * @return a_nm_m.
-   */
-  double a_nm_m(double n, double m);
-
-  /**
-   * Return the b_nm_p symbol.
-   * @param n the value of n.
-   * @param m the value of m.
-   * @return b_nm_p.
-   */
-  double b_nm_p(double n, double m);
-
-  /**
-   * Return the b_nm_m symbol.
-   * @param n the value of n.
-   * @param m the value of m.
-   * @return b_nm_m.
-   */
-  double b_nm_m(double n, double m);
-
   /**
    * Calculates the coupling coefficients for a relative vector R.
    * @param R the relative Spherical vector.
@@ -60,7 +28,7 @@ private:
 public:
   long nMax;            /**< The maximum value of the n iterator. */
   Spherical<double> relR;     /**< Relative spherical vector between two spheres. */
-  std::complex<double> waveK;      /**< The complex wave number. */
+  t_complex waveK;      /**< The complex wave number. */
 
   std::complex<double> **dataApq;    /**< The A_nmkl coefficients. */
   std::complex<double> **dataBpq;    /**< The B_nmkl coefficients. */
@@ -103,5 +71,6 @@ public:
   int populate();
 
 };
+}
 
 #endif /* COUPLING_H_ */
