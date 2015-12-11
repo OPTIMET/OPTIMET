@@ -40,8 +40,8 @@ public:
 
   Spherical<double> vR;   /**< The coordinates of the center of the scatterer.*/
   ElectroMagnetic elmag;  /**< The electromagnetic properties of the scatterer.*/
-  int nMax;       /**< Maximum value of the n iterator. */
   double radius;      /**< The radius of a sphere encompassing the scatterer.*/
+  int nMax;       /**< Maximum value of the n iterator. */
 
   std::vector<std::complex<double>> sourceCoef;  /**< The source coefficients needed for SH work.*/
 };

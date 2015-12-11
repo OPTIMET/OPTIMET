@@ -148,7 +148,7 @@ void Simulation::radius_scan(Run & run, Solver &solver)
       run.geometry.rebuildStructure();
     }
 
-    if(!run.geometry.validate())
+    if(!run.geometry.is_valid())
     {
       std::cerr << "Geometry no longer valid!";
       exit(1);
@@ -212,7 +212,7 @@ void Simulation::radius_and_wavelength_scan(Run & run, Solver &solver)
         run.geometry.rebuildStructure();
       }
 
-      if(!run.geometry.validate())
+      if(!run.geometry.is_valid())
       {
         std::cerr << "Geometry no longer valid!";
         exit(1);
