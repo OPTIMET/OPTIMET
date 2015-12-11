@@ -66,7 +66,7 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R,
   double A1(0.), A2(0.), A3(0.), A4(0.);  // auxiliary coefficients
   double B1(0.), B2(0.), B3(0.);          // auxiliary coefficients
   int k_mirror(0), m_mirror(0);           // for calculating (negative)m
-  int p = (0); // q(0);              // compound like iterator
+  int p = (0);             // q(0);              // compound like iterator
   CompoundIterator pl, ql; // Create a compound iterator
 
   // Assign corresponding input values
@@ -873,12 +873,9 @@ int PeriodicCoupling::compute_Ap_vkg(
       c_temp_III(0., 0.);
 
   // compute spherical harmonics for n_max+1
-  std::complex<double> *dataYp_R;
-  dataYp_R = new std::complex<double>[p.max(n_max + 1) +
-                                      1]; // extra element for (n,m)=(0,0)
 
   R = Tools::toSpherical(vecKg); // AJ - to be double checked - AJ //
-  compute_Yp(R, waveK, n_max + 1, dataYp_R);
+  std::complex<double> dataYp_R = compute_Yp(R, n_max + 1);
 
   // obtain dataAp_vKg
   // --------------------------------------------------------------
