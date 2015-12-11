@@ -187,63 +187,17 @@ void Coupling::TransferCoefficients(Spherical<double> R, std::complex<double> wa
   delete[] Anmlk;   delete[] Bnmlk;
 }
 
-Coupling::Coupling(Spherical<double> relR_, std::complex<double> waveK_,
-    int regular_, long nMax_)
+Coupling::Coupling(Spherical<double> relR_, std::complex<double> waveK_, bool regular_, long nMax_)
+  // yep, regular is not regular because optimet
+  : nMax(nMax_), relR(relR_), waveK(waveK_), regular(not regular_)
 {
-  init(relR_, waveK_, regular_, nMax_);
-}
+  dataApq = new std::complex<double> *[Tools::iteratorMax(nMax)];
+  dataBpq = new std::complex<double> *[Tools::iteratorMax(nMax)];
 
-Coupling::~Coupling()
-{
-  if(initDone)
+  for(int i=0; i<Tools::iteratorMax(nMax); i++)
   {
-    for(int i=0; i<Tools::iteratorMax(nMax); i++)
-    {
-      delete [] dataApq[i];
-      delete [] dataBpq[i];
-    }
-    delete [] dataApq;
-    delete [] dataBpq;
-  }
-}
-
-void Coupling::init(Spherical<double> relR_, std::complex<double> waveK_,
-    int regular_, long nMax_)
-{
-  relR = relR_;
-  waveK = waveK_;
-  nMax = nMax_;
-
-  regular = regular_;
-
-  if(regular_ == 0)
-    regular = 1;
-  else
-    regular = 0;
-
-  if(initDone)
-  {
-    for(int i=0; i<Tools::iteratorMax(nMax); i++)
-    {
-      delete [] dataApq[i];
-      delete [] dataBpq[i];
-    }
-    delete [] dataApq;
-    delete [] dataBpq;
-
-    initDone = false;
-  }
-
-  if(!initDone)
-  {
-    dataApq = new std::complex<double> *[Tools::iteratorMax(nMax)];
-    dataBpq = new std::complex<double> *[Tools::iteratorMax(nMax)];
-
-    for(int i=0; i<Tools::iteratorMax(nMax); i++)
-    {
-      dataApq[i] = new std::complex<double>[Tools::iteratorMax(nMax)];
-      dataBpq[i] = new std::complex<double>[Tools::iteratorMax(nMax)];
-    }
+    dataApq[i] = new std::complex<double>[Tools::iteratorMax(nMax)];
+    dataBpq[i] = new std::complex<double>[Tools::iteratorMax(nMax)];
   }
 
   for(int i=0; i<Tools::iteratorMax(nMax); i++)
@@ -252,18 +206,21 @@ void Coupling::init(Spherical<double> relR_, std::complex<double> waveK_,
       dataApq[i][j] = std::complex<double>(0.0, 0.0);
       dataBpq[i][j] = std::complex<double>(0.0, 0.0);
     }
+}
 
-  initDone = true;
+Coupling::~Coupling()
+{
+  for(int i=0; i<Tools::iteratorMax(nMax); i++)
+  {
+    delete [] dataApq[i];
+    delete [] dataBpq[i];
+  }
+  delete [] dataApq;
+  delete [] dataBpq;
 }
 
 int Coupling::populate()
 {
-  if(!initDone)
-  {
-    std::cerr << "Coupling object not initialized.";
-    return 1;
-  }
-
   if(std::abs(relR.rrr) < errEpsilon) //Check for NO translation case
     for(int i=0; i<Tools::iteratorMax(nMax); i++)
       dataApq[i][i] = std::complex<double>(1.0, 0.0);
