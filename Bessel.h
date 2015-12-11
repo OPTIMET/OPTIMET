@@ -8,10 +8,11 @@
 #include "constants.h"
 
 extern "C" {
-int zbesj_(double *, double *, double *, long int *, long int *, double *,
-           double *, long int *, long int *);
-int zbesh_(double *, double *, double *, long int *, long int *, long int *,
-           double *, double *, long int *, long int *);
+int zbesj_(const double *, const double *, const double *, const long int *,
+           const long int *, double *, double *, long int *, long int *);
+int zbesh_(const double *, const double *, const double *, const long int *,
+           const long int *, const long int *, double *, double *, long int *,
+           long int *);
 }
 
 namespace optimet {
