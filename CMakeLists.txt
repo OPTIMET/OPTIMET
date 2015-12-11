@@ -17,8 +17,7 @@ include(dependencies)
 # adds flags for compiling with c++11
 include(AddCPP11Flags)
 
-include_directories(
-  ${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${ARMADILLO_INCLUDE_DIRS} ${F2C_INCLUDE_DIRS})
+include_directories(${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${F2C_INCLUDE_DIRS})
 if(EIGEN3_INCLUDE_DIR)
   include_directories(${EIGEN3_INCLUDE_DIR})
 endif()
@@ -29,12 +28,12 @@ list(REMOVE_ITEM SRC main.cpp)
 
 # add a library that can be linked against in unittests as well
 add_library(optilib STATIC ${SRC})
-add_dependencies(Optimet3D lookup_dependencies)
+add_dependencies(optilib lookup_dependencies)
+set(library_dependencies ${GSL_LIBRARIES} ${HDF5_LIBRARIES} ${F2C_LIBRARIES})
 
 # main executable
 add_executable(Optimet3D main.cpp)
-target_link_libraries(Optimet3D
-  optilib ${GSL_LIBRARIES} ${HDF5_LIBRARIES} ${ARMADILLO_LIBRARIES} ${F2C_LIBRARIES})
+target_link_libraries(Optimet3D optilib ${library_dependencies})
 
 # all testing stuff below
 if(dotesting)
