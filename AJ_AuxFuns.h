@@ -3,6 +3,7 @@
 
 #include "Spherical.h"
 
+#include <vector>
 #include <complex>
 
 namespace optimet {
