@@ -348,39 +348,30 @@ int Solver::populateIndirect()
 
   for(size_t i=0; i<geometry->objects.size(); i++)
   {
-    int pMax = p.max(nMax);
-    int qMax = q.max(nMax);
+    int const pMax = p.max(nMax);
+    int const qMax = q.max(nMax);
 
-    std::complex<double> *Q_local = new std::complex<double>[2*pMax];
+    Vector<t_complex> Q_local(2*pMax);
 
     //Get the IncLocal matrices
     //These correspond directly to the Beta*a in Stout2002 Eq. 10 as
     // they are already translated.
     if(flagSH) //we are in the SH case -> get the local sources from the geometry
     {
-      geometry->getSourceLocal(i, incWave, result_FF->internal_coef, nMax, Q_local);
+      geometry->getSourceLocal(i, incWave, result_FF->internal_coef, nMax, Q_local.data());
     }
     else //we are in the FF case -> get the incoming excitation from the geometry
     {
-      incWave->getIncLocal(geometry->objects[i].vR, Q_local, nMax);
+      incWave->getIncLocal(geometry->objects[i].vR, Q_local.data(), nMax);
     }
 
     //Push Q_local into Q (direct equivalence) (NOTE: j is unused at this point)
-    for(size_t j=0; j<static_cast<size_t>(2*pMax); j++)
-    {
-      Q(j+i*2*pMax) = Q_local[j];
-    }
-
-    delete [] Q_local;
+    Q.segment(i * 2 * pMax, 2 * pMax) = Q_local;
 
     for(size_t j=0; j<geometry->objects.size(); j++)
     {
       if(i == j)
-      {
-        //Build and push an I matrix
-        Tools::makeUnitMatrix(2*pMax, Ti);
-        pushToMatrix(Ti, 2*pMax, 2*pMax, S, i*2*pMax, i*2*pMax);
-      }
+        S.block(i * 2*pMax, i * 2*pMax, 2*pMax, 2*pMax) = Matrix<>::Identity(2*pMax, 2*pMax);
       else
       {
         //Build the T_AB matrix (non-regular corresponding to alpha(i,j))
