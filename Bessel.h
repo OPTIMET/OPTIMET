@@ -80,7 +80,7 @@ bessel(const std::complex<double> &z, long int max_order) {
       throw std::range_error("Error computing Bessel/Hankel functions");
 
     // Assemble the direct functions
-    const double r = std::sqrt(consPi / (2.0 * z));
+    const std::complex<double> r = std::sqrt(consPi / (2.0 * z));
     for (int i = 0; i <= max_order; i++)
       data[i] = r * std::complex<double>(cyr[i], cyi[i]);
 
