@@ -3,8 +3,21 @@
 
 #include "Spherical.h"
 #include "Cartesian.h"
+#include "types.h"
 #include <complex>
 
+namespace optimet {
+  //! This should be done with eigen blocks...
+  template<class SCALAR, class T>
+  void pushToMatrix(
+      SCALAR **T_small_, t_uint rows_, t_uint columns_,
+      Eigen::MatrixBase<T> &T_large_,  t_uint row_index_, t_uint column_index_) {
+    typedef typename T::Scalar Scalar;
+    for(t_uint i=0; i < rows_; i++)
+      for(t_uint j=0; j < columns_; j++)
+        T_large_(i + row_index_, j + column_index_) = static_cast<Scalar>(T_small_[i][j]);
+  }
+}
 /**
  * The Tools class implements several static tools for common use.
  */

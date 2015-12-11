@@ -5,6 +5,7 @@
 #include "Excitation.h"
 #include "Coupling.h"
 #include "Result.h"
+#include "Types.h"
 #include <complex>
 
 /**
@@ -22,8 +23,10 @@ private:
   int solverMethod;    /**< Solver method: Direct = Mischenko1996, Indirect =
                           Stout2002 */
 public:
-  std::complex<double> **S; /**< The scattering matrix S = I - T*AB. */
-  std::complex<double> *Q;  /**< The local field matrix Q = T*AB*a. */
+  optimet::Matrix<optimet::t_complex>
+      S; /**< The scattering matrix S = I - T*AB. */
+  optimet::Vector<optimet::t_complex>
+      Q; /**< The local field matrix Q = T*AB*a. */
 
   /**
    * Default constructor for the Solver class.
@@ -43,7 +46,7 @@ public:
   /**
    * Default destructor for the Solver class.
    */
-  virtual ~Solver();
+  virtual ~Solver(){};
 
   /**
    * Initialization method for the Solver class.

@@ -5,11 +5,9 @@
 
 namespace optimet {
 namespace algebra {
-
 //! Adapter for eigen solve
-void solveMatrixVector(t_complex **A, t_uint rows_A_, t_uint cols_A_,
-                       t_complex *b, t_complex *x);
+void solveMatrixVector(Matrix<t_complex> const &A, Vector<t_complex> const &b,
+                       t_complex *x);
 }
 }
-
 #endif /* ALGEBRA__H_ */

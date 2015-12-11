@@ -21,8 +21,6 @@ public:
 
   ElectroMagnetic bground; /**< The properties of the background. */
 
-  bool validDone; /**< Specifies if the geometry has been validated. */
-
   int structureType; /**< The type of structure used: 0 - non-structured, 1 -
                         spiral . */
 
@@ -58,21 +56,17 @@ public:
 
   /**
    * Add an object to the Geometry.
-   * Will discard any objects pushed beyond the declared capacity.
    * @param object_ the Scatterer type object to be added.
    * @return 0 if add successful, 1 otherwise
    * @see init()
    * @see noObjects
    * @see capacity
    */
-  int pushObject(Scatterer object_);
+  void pushObject(Scatterer const &object_);
 
-  /**
-   * Validate the geometry.
-   * @return 1 if geometry is valid, 0 otherwise.
-   */
-  int validate();
-
+  //! \brief Validate geometry
+  //! \details Fails if no objects, or if two objects overlap.
+  bool is_valid() const;
   /**
    * Returns the single object local scattering matrix T_j.
    * Currently implements the scattering matrix for spherical objects.
@@ -144,6 +138,10 @@ public:
    * Rebuilds a structure based on the new updated Radius.
    */
   void rebuildStructure();
+
+protected:
+  //! Validate last added sphere
+  bool no_overlap(Scatterer const &object);
 };
 
 #endif /* GEOMETRY_H_ */

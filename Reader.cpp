@@ -48,7 +48,7 @@ int Reader::readGeometry() {
   // Find all scattering objects
   for (xml_node node = geo_node.child("object"); node;
        node = node.next_sibling("object"))
-    run->geometry.objects.emplace_back(readSphericalScatterer(node));
+    run->geometry.pushObject(readSphericalScatterer(node));
 
   // Add the background properties
   if (geo_node.child("background")) {
@@ -77,8 +77,9 @@ int Reader::readGeometry() {
   }
 
   // Validate the geometry in the return
-
-  return run->geometry.validate();
+  if (run->geometry.objects.size() == 0)
+    throw std::runtime_error("No scatterers defined in input");
+  return 1;
 }
 
 int Reader::readExcitation() {
@@ -147,7 +148,7 @@ int Reader::readStructure(xml_node geo_node_) {
   if (!std::strcmp(struct_node.attribute("type").value(), "spiral")) {
     // Build a spiral
     double R, d; // radius (length) and distance between spheres
-    int Np, No; // number of points/objects
+    int Np, No;  // number of points/objects
     double Theta;
 
     Np = struct_node.child("properties").attribute("points").as_int();
@@ -226,7 +227,7 @@ int Reader::readStructure(xml_node geo_node_) {
 
     auto const scatterer = readSphericalScatterer(struct_node.child("object"));
     for (int i = 0; i < No - 1; i++) {
-      run->geometry.objects.push_back(scatterer);
+      run->geometry.pushObject(scatterer);
       std::string const normal =
           struct_node.child("properties").attribute("normal").value();
       if (normal == "x") {
@@ -246,7 +247,9 @@ int Reader::readStructure(xml_node geo_node_) {
     }
   }
 
-  return run->geometry.validate();
+  if (run->geometry.objects.size() == 0)
+    throw std::runtime_error("No scatterers defined in input");
+  return 1;
 }
 
 int Reader::readOutput() {
@@ -265,7 +268,7 @@ int Reader::readOutput() {
   }
 
   if (!std::strcmp(out_node.attribute("type").value(), "field")) {
-    run->outputType = 0; // Field output requested
+    run->outputType = 0;      // Field output requested
     run->singleComponent = 0; // Set this to zero as default
 
     run->params[0] =

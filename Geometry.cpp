@@ -7,54 +7,55 @@
 #include "Symbol.h"
 #include "Algebra.h"
 #include "constants.h"
+#include "types.h"
 
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <stdexcept>
+#include <sstream>
 
 Geometry::~Geometry() {}
-Geometry::Geometry() : validDone(false) {}
+Geometry::Geometry() {}
 
-int Geometry::pushObject(Scatterer object_) {
+void Geometry::pushObject(Scatterer const &object_) {
+  if (not no_overlap(object_)) {
+    std::ostringstream sstr;
+    sstr << "The sphere at (" << object_.vR.rrr << ", " << object_.vR.the
+         << ", " << object_.vR.phi << " overlap";
+    throw std::runtime_error(sstr.str());
+  }
   objects.emplace_back(object_);
-  validDone = false; // new object added implies geometry can be invalid
+}
 
-  return 0;
+bool Geometry::is_valid() const {
+  using namespace optimet;
+  if (objects.size() == 0)
+    return false;
+  for (t_uint i(0); i < objects.size(); ++i)
+    for (t_uint j(0); j < objects.size(); ++j)
+      if (Tools::findDistance(objects[i].vR, objects[j].vR) <=
+          objects[i].radius + objects[j].radius)
+        return false;
+  return true;
 }
 
 void Geometry::initBground(ElectroMagnetic bground_) { bground = bground_; }
 
-int Geometry::validate() {
-  if (validDone) // geometry already valid
-    return 1; // skip
+bool Geometry::no_overlap(Scatterer const &object_) {
+  if (objects.size() < 1)
+    return true;
 
-  if (objects.size() == 0) {
-    std::cerr << "No objects found in geometry!" << std::endl;
-    return 0;
-  }
+  for (auto const &obj : objects)
+    if (Tools::findDistance(obj.vR, object_.vR) <=
+        (object_.radius + obj.radius))
+      return false;
 
-  for (size_t i = 0; i < objects.size(); i++) {
-    for (size_t j = i + 1; j < objects.size(); j++) {
-      if (Tools::findDistance(objects[j].vR, objects[i].vR) <=
-          (objects[j].radius + objects[i].radius)) {
-        std::cerr << "Objects " << i << " and " << j
-                  << " intersect. Cannot validate geometry!" << std::endl;
-        return 0;
-      }
-    }
-  }
-
-  validDone = true;
-  return 1;
+  return true;
 }
 
 int Geometry::getTLocal(double omega_, int objectIndex_, int nMax_,
                         std::complex<double> **T_local_) {
-  if (!validDone) {
-    std::cerr << "Geometry not validated!";
-    return 1;
-  }
-
   if (objectIndex_ >= static_cast<int>(objects.size())) {
     std::cerr << "Object index " << objectIndex_ << " is out of range. Only "
               << objects.size() << " objects exist!";
@@ -223,7 +224,7 @@ int Geometry::getNLSources(double omega_, int objectIndex_, int nMax_,
 
     // SRC_2w_p - TM part
     sourceV[p] = x_b2 * psi2 / (zeta_boj2 * xsi2 * dpsi2 - psi2 * dxsi2); // v'
-    sourceV[p + nMax_] = std::complex<double>(0., 0.); // v''
+    sourceV[p + nMax_] = std::complex<double>(0., 0.);                    // v''
   }
 
   return 0;
