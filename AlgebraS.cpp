@@ -1,6 +1,6 @@
 #include "AlgebraS.h"
 #include "types.h"
-#include <Eigen/LU>
+#include <Eigen/Dense>
 
 namespace optimet {
 namespace algebra {
@@ -13,10 +13,9 @@ void solveMatrixVector(t_complex **A, t_uint rows_A_, t_uint cols_A_,
     for (t_uint j = 0; j < cols_A_; j++)
       A_(i, j) = A[i][j];
 
-  // Solve the A*x = b
-  // x_arma = solve(A_arma, b_arma, true);
+  // Solve A*x = b
   Vector<t_complex>::Map(x, cols_A_) =
-      A_.inverse() * Vector<t_complex>::Map(b, cols_A_);
+      A_.colPivHouseholderQr().solve(Vector<t_complex>::Map(b, cols_A_));
 }
 
 } // namespace algebra
