@@ -553,10 +553,10 @@ void Result::centerScattering()
     for(p=0; p<pMax; p++)
       for(q=0; q<qMax; q++)
       {
-        T_AB[p][q] = coupling.dataApq[p][q];
-        T_AB[p+pMax][q+qMax] = coupling.dataApq[p][q];
-        T_AB[p+pMax][q] = coupling.dataBpq[p][q];
-        T_AB[p][q+qMax] = coupling.dataBpq[p][q];
+        T_AB[p][q] = coupling.dataApq(p, q);
+        T_AB[p+pMax][q+qMax] = coupling.dataApq(p, q);
+        T_AB[p+pMax][q] = coupling.dataBpq(p, q);
+        T_AB[p][q+qMax] = coupling.dataBpq(p, q);
       }
 
     for(p=0; p<2*p.max(nMax); p++)

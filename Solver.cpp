@@ -143,10 +143,10 @@ int Solver::populateDirect()
         for(p=0; p<pMax; p++)
           for(q=0; q<qMax; q++)
           {
-            T_AB[p][q] = AB.dataApq[q][p];
-            T_AB[p+pMax][q+qMax] = AB.dataApq[q][p];
-            T_AB[p+pMax][q] = AB.dataBpq[q][p];
-            T_AB[p][q+qMax] = AB.dataBpq[q][p];
+            T_AB[p][q] = AB.dataApq(q, p);
+            T_AB[p+pMax][q+qMax] = AB.dataApq(q, p);
+            T_AB[p+pMax][q] = AB.dataBpq(q, p);
+            T_AB[p][q+qMax] = AB.dataBpq(q, p);
           }
 
         //Multiply T and T_AB to get T_fin = -T*T_AB
@@ -381,10 +381,10 @@ int Solver::populateIndirect()
         for(p=0; p<pMax; p++)
           for(q=0; q<qMax; q++)
           {
-            T_AB[p][q] = AB.dataApq[q][p];
-            T_AB[p+pMax][q+qMax] = AB.dataApq[q][p];
-            T_AB[p+pMax][q] = AB.dataBpq[q][p];
-            T_AB[p][q+qMax] = AB.dataBpq[q][p];
+            T_AB[p][q] = AB.dataApq(q, p);
+            T_AB[p+pMax][q+qMax] = AB.dataApq(q, p);
+            T_AB[p+pMax][q] = AB.dataBpq(q, p);
+            T_AB[p][q+qMax] = AB.dataBpq(q, p);
           }
 
         //In this case, T needs to correspond to the SECOND object; so get it here

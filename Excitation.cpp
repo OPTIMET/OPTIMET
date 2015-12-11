@@ -136,10 +136,10 @@ int Excitation::getIncLocal(Spherical<double> point_,
   {
     for(q=0; q<qMax; q++)
     {
-      T_AB[p][q] = coupling.dataApq[q][p];
-      T_AB[p+pMax][q+qMax] = coupling.dataApq[q][p];
-      T_AB[p+pMax][q] = coupling.dataBpq[q][p];
-      T_AB[p][q+qMax] = coupling.dataBpq[q][p];
+      T_AB[p][q] = coupling.dataApq(q, p);
+      T_AB[p+pMax][q+qMax] = coupling.dataApq(q, p);
+      T_AB[p+pMax][q] = coupling.dataBpq(q, p);
+      T_AB[p][q+qMax] = coupling.dataBpq(q, p);
     }
   }
 

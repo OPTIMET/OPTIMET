@@ -454,10 +454,10 @@ int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, std::comple
     {
       for(q=0; q<qMax; q++)
       {
-        T_AB[p][q] = AB.dataApq[p][q];
-        T_AB[p+pMax][q+qMax] = AB.dataApq[p][q];
-        T_AB[p+pMax][q] = AB.dataBpq[p][q];
-        T_AB[p][q+qMax] = AB.dataBpq[p][q];
+        T_AB[p][q] = AB.dataApq(p, q);
+        T_AB[p+pMax][q+qMax] = AB.dataApq(p, q);
+        T_AB[p+pMax][q] = AB.dataBpq(p, q);
+        T_AB[p][q+qMax] = AB.dataBpq(p, q);
       }
     }
 
