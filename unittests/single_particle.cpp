@@ -1,3 +1,4 @@
+#include <iostream>
 #include "catch.hpp"
 
 #include "types.h"
@@ -5,6 +6,8 @@
 #include "Scatterer.h"
 #include "constants.h"
 #include "Tools.h"
+#include "Solver.h"
+#include "Aliases.h"
 
 using namespace optimet;
 
@@ -41,5 +44,54 @@ TEST_CASE("Add scatterers to geometry") {
     }
     SECTION("Overlap -- touching")
       CHECK_THROWS_AS(geometry.pushObject({{2, 0, 0}, {1.1e0, 1.2e0}, 0.5, 2}), std::runtime_error);
+  }
+}
+
+TEST_CASE("Two spheres") {
+  Geometry geometry;
+  // spherical coords, ε, μ, radius, nmax
+  auto const nHarmonics = 5;
+  geometry.pushObject({{0, 0, 0}, {1.0e0, 1.0e0}, 0.5, nHarmonics});
+  geometry.pushObject({{1.5, 0, 0}, {1.0e0, 1.0e0}, 0.5, nHarmonics});
+  CHECK(geometry.objects.size() == 2);
+
+  // Create excitation
+  auto const wavelength = 14960e-9;
+  Spherical<t_real> const vKinc{2*consPi/wavelength, 90 * consPi/180.0, 90 * consPi/180.0};
+  SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
+  Excitation excitation{0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics};
+  excitation.populate();
+  geometry.update(&excitation);
+
+  Solver solver(&geometry, &excitation, O3DSolverIndirect, nHarmonics);
+
+  auto const nb = 2 * nHarmonics * (nHarmonics + 2);
+  CHECK(solver.S.rows() == solver.S.cols());
+  CHECK(solver.S.rows() == nb * geometry.objects.size());
+  CHECK(solver.Q.size() == solver.S.cols());
+
+  SECTION("Check transparent <==> identity") {
+    solver.populate();
+    CHECK(solver.S.isApprox(Matrix<>::Identity(solver.S.rows(), solver.S.cols())));
+  }
+  SECTION("Check structure for only one transparent sphere") {
+    geometry.objects.front() = {{0, 0, 0}, {10.0e0, 1.0e0}, 0.5, nHarmonics};
+    geometry.update(&excitation);
+    solver.populate();
+    CHECK(solver.S.topLeftCorner(nb, nb).isIdentity());
+    CHECK(solver.S.bottomRightCorner(nb, nb).isIdentity());
+    CHECK(solver.S.topRightCorner(nb, nb).isZero());
+    CHECK(not solver.S.bottomLeftCorner(nb, nb).isZero());
+  }
+  SECTION("Check structure for two identical spheres") {
+    geometry.objects.front() = {{-1, 0, 0}, {10.0e0, 1.0e0}, 0.5, nHarmonics};
+    geometry.objects.back() = {{1, 0, 0}, {10.0e0, 1.0e0}, 0.5, nHarmonics};
+    geometry.update(&excitation);
+    solver.populate();
+    CHECK(solver.S.topLeftCorner(nb, nb).isIdentity());
+    CHECK(solver.S.bottomRightCorner(nb, nb).isIdentity());
+    auto const AB = solver.S.topRightCorner(nb, nb);
+    auto const BA = solver.S.bottomLeftCorner(nb, nb);
+    CHECK(AB.diagonal().isApprox(BA.diagonal()));
   }
 }
