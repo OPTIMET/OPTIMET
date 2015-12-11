@@ -28,7 +28,7 @@ if(HDF5_DIFF_EXECUTABLE)
     -P ${CMAKE_SOURCE_DIR}/cmake/run_test.cmake
   )
 
-  # configure_file(examples/SpiralStructure.xml examples/SpiralStructure.xml COPYONLY)
+  configure_file(examples/SpiralStructure.xml examples/SpiralStructure.xml COPYONLY)
   # add_test(NAME SpiralStructure
   #   COMMAND ${CMAKE_COMMAND}
   #   -Dtest_cmd=${CMAKE_BINARY_DIR}/Optimet3D\;${CMAKE_BINARY_DIR}/examples/SpiralStructure
