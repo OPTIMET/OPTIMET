@@ -4,23 +4,19 @@
 #include <vector>
 #include <tuple>
 #include <complex>
-#include <cmath>
 
 #include "constants.h"
 
-extern "C"
-{
-  int zbesj_(double *, double *, double *, long int *, long int *, double *, double *, long int *, long int *);
-  int zbesh_(double *, double *, double *, long int *, long int *, long int *, double *, double *, long int *, long int *);
+extern "C" {
+int zbesj_(double *, double *, double *, long int *, long int *, double *,
+           double *, long int *, long int *);
+int zbesh_(double *, double *, double *, long int *, long int *, long int *,
+           double *, double *, long int *, long int *);
 }
 
 namespace optimet {
 
-enum BESSEL_TYPE {
-  Bessel = 0,
-  Hankel1 = 1,
-  Hankel2 = 2
-};
+enum BESSEL_TYPE { Bessel = 0, Hankel1 = 1, Hankel2 = 2 };
 
 /*!
  * The bessel function implements the Spherical Bessel and Hankel functions
@@ -45,7 +41,7 @@ enum BESSEL_TYPE {
  */
 template <BESSEL_TYPE BesselType, bool ScalingType>
 std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
-bessel(const std::complex<double> & z, long int max_order) {
+bessel(const std::complex<double> &z, long int max_order) {
   static constexpr double order = 0.5;
   static constexpr long int scaling_type = ScalingType + 1;
 
@@ -54,9 +50,8 @@ bessel(const std::complex<double> & z, long int max_order) {
 
   if (std::abs(z) <= errEpsilon) {
     for (int i = 0; i <= max_order; i++)
-        data[i] = ddata[i] = std::complex<double>(0.0, 0.0);
-  }
-  else {
+      data[i] = ddata[i] = std::complex<double>(0.0, 0.0);
+  } else {
     const double zr = z.real();
     const double zi = z.imag();
 
@@ -69,8 +64,8 @@ bessel(const std::complex<double> & z, long int max_order) {
 
     if (BesselType == Bessel)
       // Calculate the Bessel function of the first kind
-      zbesj_(&zr, &zi, &order, &scaling_type, &cyr.size(),
-             cyr.data(), cyi.data(), &zeroUnderflow, &ierr);
+      zbesj_(&zr, &zi, &order, &scaling_type, &cyr.size(), cyr.data(),
+             cyi.data(), &zeroUnderflow, &ierr);
     else
       // Calculate the Hankel function of the first or second kind
       zbesh_(&zr, &zi, &order, &scaling_type, &bessel_type, &cyr.size(),

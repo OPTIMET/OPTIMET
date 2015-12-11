@@ -38,21 +38,21 @@ long i1mach_(long *i)
   switch (*i)
     {
     case 1:
-      return 5;	/* standard input */
+      return 5; /* standard input */
     case 2:
-      return 6;	/* standard output */
+      return 6; /* standard output */
     case 3:
-      return 7;	/* standard punch */
+      return 7; /* standard punch */
     case 4:
-      return 0;	/* standard error */
+      return 0; /* standard error */
     case 5:
-      return 32;	/* bits per integer */
+      return 32;  /* bits per integer */
     case 6:
-      return 1;	/* Fortran 77 value */
+      return 1; /* Fortran 77 value */
     case 7:
-      return 2;	/* base for integers */
+      return 2; /* base for integers */
     case 8:
-      return 31;	/* digits of integer base */
+      return 31;  /* digits of integer base */
     case 9:
       return LONG_MAX;
     case 10:

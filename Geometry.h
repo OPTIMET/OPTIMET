@@ -1,6 +1,7 @@
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_
 
+#include <vector>
 #include "Scatterer.h"
 #include "Excitation.h"
 
@@ -12,24 +13,22 @@
  * of objects are properly stored and objects do not intersect.
  * @warning Never use this class without initializing and validating.
  */
-class Geometry
-{
+class Geometry {
 private:
   //
 public:
-  int noObjects;  /**< The number of scatterers. */
-  Scatterer* objects;     /**< The list of scatterers. */
+  std::vector<Scatterer> objects; /**< The list of scatterers. */
 
-  ElectroMagnetic bground;  /**< The properties of the background. */
+  ElectroMagnetic bground; /**< The properties of the background. */
 
-  bool initDone;        /**< Specifies if the geometry has been initialized. */
-  bool validDone;       /**< Specifies if the geometry has been validated. */
-  int capacity;       /**< Declared capacity of the geometry. */
+  bool validDone; /**< Specifies if the geometry has been validated. */
 
-  int structureType;      /**< The type of structure used: 0 - non-structured, 1 - spiral . */
+  int structureType; /**< The type of structure used: 0 - non-structured, 1 -
+                        spiral . */
 
-  double spiralSeparation;  /**< Spiral separation (NOT distance between centers but between surfaces. */
-  int normalToSpiral;     /**< Spiral normal plane (0 - x, 1 - y, 2 - z). */
+  double spiralSeparation; /**< Spiral separation (NOT distance between centers
+                              but between surfaces. */
+  int normalToSpiral;      /**< Spiral normal plane (0 - x, 1 - y, 2 - z). */
 
   /**
    * Default constructor for the Geometry class. Does not initialize.
@@ -37,47 +36,19 @@ public:
   Geometry();
 
   /**
-   * Initializing constructor for the Geometry class.
-   * @param capacity_ the declared capacity.
-   * @see init()
-   * @see pushObject()
-   */
-  Geometry(int capacity_);
-
-  /**
    * Alternative constructor for the Geometry class.
    * Can initialize with a list of Scatterer type objects.
-   * @param capacity_ the declared capacity
    * @param objects_ the list of Scatterer objects
    * @see init()
    * @warning Try to use the pushObject method for best results.
    * @see pushObject()
    */
-  Geometry(int capacity_, Scatterer* objects_);
+  // Geometry(int capacity_, Scatterer* objects_);
 
   /**
    * Default destructor for the Geometry class.
    */
   virtual ~Geometry();
-
-  /**
-   * Initialize a Geometry object by declaring its capacity.
-   * @param capacity_ the declared capacity
-   * @see Geometry()
-   * @see pushObject()
-   */
-  void init(int capacity_);
-
-  /**
-   * Alternative initialize method for the Geometry class.
-   * Can initialize with a list of Scatterer type objects.
-   * @param capacity_ the declared capacity
-   * @param objects_ the list of Scatterer objects
-   * @see init()
-   * @warning Try to use the pushObject method for best results.
-   * @see pushObject()
-   */
-  void init(int capacity_, Scatterer* objects_);
 
   /**
    * Initialize the background. Default is vacuum.
@@ -111,13 +82,17 @@ public:
    * @param T_local_ the return value as the local T_j scattering matrix.
    * @return 0 if successful, 1 otherwise.
    */
-  int getTLocal(double omega_, int objectIndex_, int nMax_, complex<double> ** T_local_);
+  int getTLocal(double omega_, int objectIndex_, int nMax_,
+                std::complex<double> **T_local_);
 
-  int getIaux(double omega_, int objectIndex_, int nMax_, complex<double> *I_aux_);
+  int getIaux(double omega_, int objectIndex_, int nMax_,
+              std::complex<double> *I_aux_);
 
-  int getCabsAux (double omega_, int objectIndex_, int nMax_, double *Cabs_aux_);
+  int getCabsAux(double omega_, int objectIndex_, int nMax_, double *Cabs_aux_);
 
-  int getNLSources(double omega_, int objectIndex_, int nMax_, complex<double> *sourceU, complex<double> *sourceV);
+  int getNLSources(double omega_, int objectIndex_, int nMax_,
+                   std::complex<double> *sourceU,
+                   std::complex<double> *sourceV);
 
   /**
    * Returns the relative vector R_lj between two objects.
@@ -138,14 +113,18 @@ public:
    * Calculates the local second harmonic sources.
    * @param objectIndex_ the index of the object.
    * @param incWave_ pointer to the incoming excitation.
-   * @param scatterCoef_ pointer to the ENTIRE scattering coefficients for the FF case
+   * @param scatterCoef_ pointer to the ENTIRE scattering coefficients for the
+   * FF case
    * @param nMax_ the maximum value of the n iterator.
    * @param Q_SH_local_ the return value of the local SH source vector.
    * @return 0 if successful, 1 otherwise.
    */
-  int getSourceLocal(int objectIndex_, Excitation *incWave_, complex<double> *internalCoef_FF_, int nMax_, complex<double>* Q_SH_local_);
+  int getSourceLocal(int objectIndex_, Excitation *incWave_,
+                     std::complex<double> *internalCoef_FF_, int nMax_,
+                     std::complex<double> *Q_SH_local_);
 
-  int setSourcesSingle(Excitation *incWave_, complex<double> *internalCoef_FF_, int nMax_);
+  int setSourcesSingle(Excitation *incWave_,
+                       std::complex<double> *internalCoef_FF_, int nMax_);
 
   /**
    * Updates the Geometry object to a new Excitation.

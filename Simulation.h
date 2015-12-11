@@ -1,16 +1,18 @@
 #ifndef SIMULATION_H_
 #define SIMULATION_H_
 
+#include <string>
+
+class Run;
+class Solver;
 /**
  * The Simulation class implements a full simulation.
  * A Simulation object will create a set of Cases and Requests based
  * on the input file.
  */
-class Simulation
-{
+class Simulation {
 private:
-  char *caseFile; /**< Name of the case without extensions. */
-  bool initDone;  /**< Specifies initialization status. */
+  std::string caseFile; /**< Name of the case without extensions. */
 public:
   /**
    * Default constructor for the Simulation class.
@@ -48,6 +50,13 @@ public:
    * @return 0 if succesful, 1 otherwise.
    */
   int done();
+
+protected:
+  void scan_wavelengths(Run &run, Solver &solver);
+  void field_simulation(Run &run, Solver &solver);
+  void radius_scan(Run &run, Solver &solver);
+  void radius_and_wavelength_scan(Run &run, Solver &solver);
+  void coefficients(Run &run, Solver &solver);
 };
 
 #endif /* SIMULATION_H_ */

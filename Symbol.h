@@ -28,22 +28,21 @@ namespace symbol {
 double Wigner3j(int j1, int j2, int j3, int m1, int m2, int m3);
 
 std::complex<double> up_mn(int m, int n, int nMax,
-                           const std::complex<double> & cmn_1,
-                           const std::complex<double> & dmn_1, double omega,
-                           const Scatterer & object,
-                           const ElectroMagnetic & bground);
+                           const std::complex<double> &cmn_1,
+                           const std::complex<double> &dmn_1, double omega,
+                           const Scatterer &object,
+                           const ElectroMagnetic &bground);
 
 std::complex<double> vp_mn(int m, int n, int nMax,
-                           const std::complex<double> & cmn_1,
-                           const std::complex<double> & dmn_1, double omega,
-                           const Scatterer & object,
-                           const ElectroMagnetic & bground);
+                           const std::complex<double> &cmn_1,
+                           const std::complex<double> &dmn_1, double omega,
+                           const Scatterer &object,
+                           const ElectroMagnetic &bground);
 
 std::complex<double> upp_mn(int m, int n, int nMax,
-                            const std::complex<double> & cmn_1,
-                            const std::complex<double> & dmn_1, double omega,
-                            const Scatterer & object);
-
+                            const std::complex<double> &cmn_1,
+                            const std::complex<double> &dmn_1, double omega,
+                            const Scatterer &object);
 };
 
 } // namespace symbol

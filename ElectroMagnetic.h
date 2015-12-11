@@ -3,8 +3,6 @@
 
 #include <complex>
 
-using std::complex;
-
 /**
  * @brief The ElectroMagnetic class implements EM properties for scatterers.
  * The ElectroMagnetic class can be used to create a collection of related
@@ -29,14 +27,15 @@ public:
    * @param mu_r_ the complex relative value for permeability.
    * @see init_r()
    */
-  ElectroMagnetic(complex<double> epsilon_r_, complex<double> mu_r_);
+  ElectroMagnetic(std::complex<double> epsilon_r_, std::complex<double> mu_r_);
 
   /**
    * Default destructor for ElectroMagnetic.
    */
   virtual ~ElectroMagnetic();
-  //Model variables
-  int modelType;  /**< Mode being used. Currently supports 0 - fixed, 1 - Sellmeier, 2 - Drude. */
+  // Model variables
+  int modelType; /**< Mode being used. Currently supports 0 - fixed, 1 -
+                    Sellmeier, 2 - Drude. */
   double B1;
   double C1;
   double B2;
@@ -48,23 +47,27 @@ public:
   double B5;
   double C5;
   double lambda;
-  complex<double> plasma_freq;
-  complex<double> damping_freq;
+  std::complex<double> plasma_freq;
+  std::complex<double> damping_freq;
 
-  //Fundamental Frequency variables
-  complex<double> epsilon;  /**< The absolute electric permittivity. */
-  complex<double> mu;     /**< The absolute magnetic permeability. */
-  complex<double> epsilon_r;  /**< The relative electric permittivity. */
-  complex<double> mu_r;     /**< The relative magnetic permeability. */
+  // Fundamental Frequency variables
+  std::complex<double> epsilon;   /**< The absolute electric permittivity. */
+  std::complex<double> mu;        /**< The absolute magnetic permeability. */
+  std::complex<double> epsilon_r; /**< The relative electric permittivity. */
+  std::complex<double> mu_r;      /**< The relative magnetic permeability. */
 
-  //Second Harmonic variables
-  complex<double> a_SH;     /**< The a Non-Linear coefficient (cfn13arx). */
-  complex<double> b_SH;     /**< The b Non-Linear coefficient (cfn13arx). */
-  complex<double> d_SH;     /**< The d Non-Linear coefficient (cfn13arx). */
-  complex<double> epsilon_SH;   /**< The absolute second harmonic electric permittivity. */
-  complex<double> mu_SH;      /**< The absolute second harmonic magnetic permeability. */
-  complex<double> epsilon_r_SH; /**< The relative second harmonic electric permittivity. */
-  complex<double>mu_r_SH;     /**< The relative second harmonic magnetic permeability. */
+  // Second Harmonic variables
+  std::complex<double> a_SH; /**< The a Non-Linear coefficient (cfn13arx). */
+  std::complex<double> b_SH; /**< The b Non-Linear coefficient (cfn13arx). */
+  std::complex<double> d_SH; /**< The d Non-Linear coefficient (cfn13arx). */
+  std::complex<double>
+      epsilon_SH; /**< The absolute second harmonic electric permittivity. */
+  std::complex<double>
+      mu_SH; /**< The absolute second harmonic magnetic permeability. */
+  std::complex<double>
+      epsilon_r_SH; /**< The relative second harmonic electric permittivity. */
+  std::complex<double>
+      mu_r_SH; /**< The relative second harmonic magnetic permeability. */
 
   /**
    * Initialization function for ElectroMagnetic.
@@ -75,7 +78,7 @@ public:
    * @see ElectroMagnetic()
    * @see init_r()
    */
-  void init(complex<double> epsilon_, complex<double> mu_);
+  void init(std::complex<double> epsilon_, std::complex<double> mu_);
 
   /**
    * Initialization function for ElectroMagnetic.
@@ -86,7 +89,7 @@ public:
    * @see ElectroMagnetic()
    * @see init()
    */
-  void init_r(complex<double> epsilon_r_, complex<double> mu_r_);
+  void init_r(std::complex<double> epsilon_r_, std::complex<double> mu_r_);
 
   /**
    * Initialization function for Electromagnetic using the Sellmeier equation.
@@ -100,9 +103,13 @@ public:
    * @param mu_r_ the magnetic permeabilitty (relative).
    * @param lambda_ the simulation wavelength.
    */
-  void initSellmeier_r(double B1_, double C1_, double B2_, double C2_, double B3_, double C3_, double B4_, double C4_, double B5_, double C5_, complex<double> mu_r_);
+  void initSellmeier_r(double B1_, double C1_, double B2_, double C2_,
+                       double B3_, double C3_, double B4_, double C4_,
+                       double B5_, double C5_, std::complex<double> mu_r_);
 
-  void initDrudeModel_r(complex<double> plasma_frequency_, complex<double> damping_frequency_, complex<double> mu_r_);
+  void initDrudeModel_r(std::complex<double> plasma_frequency_,
+                        std::complex<double> damping_frequency_,
+                        std::complex<double> mu_r_);
 
   /**
    * Populates the Sellmeier coefficients.

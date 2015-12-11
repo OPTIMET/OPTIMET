@@ -5,13 +5,10 @@
 #include "Cartesian.h"
 #include <complex>
 
-using std::complex;
-
 /**
  * The Tools class implements several static tools for common use.
  */
-class Tools
-{
+class Tools {
 public:
   /**
    * Default constructor for the Tools class.
@@ -29,7 +26,8 @@ public:
    * @param point2 the coordinates of point2 in Spherical<double>.
    * @return the distance between the two points.
    */
-  static double findDistance(Spherical<double> point1, Spherical<double> point2);
+  static double findDistance(Spherical<double> point1,
+                             Spherical<double> point2);
 
   /**
    * Calculates the distance between two points in cartesian coordinates.
@@ -37,7 +35,8 @@ public:
    * @param point2 the coordinates of point2 in Cartesian<double>.
    * @return the distance between the two points.
    */
-  static double findDistance(Cartesian<double> point1, Cartesian<double> point2);
+  static double findDistance(Cartesian<double> point1,
+                             Cartesian<double> point2);
 
   /**
    * Projects a spherical point onto a SphericalP vector (cartesian projection).
@@ -45,7 +44,9 @@ public:
    * @param vector the vector to be used as basis for projection.
    * @return the projected vector in SphericalP.
    */
-  static SphericalP<complex<double> > toProjection(Spherical<double> point, SphericalP<complex <double> > vector);
+  static SphericalP<std::complex<double>>
+  toProjection(Spherical<double> point,
+               SphericalP<std::complex<double>> vector);
 
   /**
    * Projects a spherical point onto a SphericalP vector (spherical projection).
@@ -53,14 +54,18 @@ public:
    * @param vector the vector to be used as basis for projection.
    * @return the projected vector in SphericalP.
    */
-  static SphericalP<complex<double> > fromProjection(Spherical<double> point, SphericalP<complex <double> > vector);
+  static SphericalP<std::complex<double>>
+  fromProjection(Spherical<double> point,
+                 SphericalP<std::complex<double>> vector);
 
   /**
    * Converts a point from spherical to SphericalP coordinates.
-   * @param point - the coordinates of the point in Spherical<complex<double> >.
-   * @return the coordinates of the point in SphericalP<complex<double> >.
+   * @param point - the coordinates of the point in
+   * Spherical<std::complex<double> >.
+   * @return the coordinates of the point in SphericalP<std::complex<double> >.
    */
-  static SphericalP<complex<double> > toSphericalP(Spherical<complex <double> > point);
+  static SphericalP<std::complex<double>>
+  toSphericalP(Spherical<std::complex<double>> point);
 
   /**
    * Converts a point from spherical to SphericalP coordinates.
@@ -128,7 +133,7 @@ public:
    * @param size_ the size of the matrix (rows or columns).
    * @param I_ the unit matrix.
    */
-  static void makeUnitMatrix(long size_, complex<double> **I_);
+  static void makeUnitMatrix(long size_, std::complex<double> **I_);
 
   /**
    * Push the T_small_ matrix into the T_large_ matrix.
@@ -139,7 +144,9 @@ public:
    * @param row_index_ the row index to push in.
    * @param column_index_ the column index to push in.
    */
-  static void pushToMatrix(complex<double> **T_small_, long rows_, long columns_, complex<double> **T_large_, long row_index_, long column_index_);
+  static void pushToMatrix(std::complex<double> **T_small_, long rows_,
+                           long columns_, std::complex<double> **T_large_,
+                           long row_index_, long column_index_);
 
   /**
    * Returns the value of an Associated Legendre function \f$P_n^m(x)\f$.
@@ -157,7 +164,7 @@ public:
    * @param i_y the 2nd size of the matrix.
    * @return pointer to the allocated matrix.
    */
-  static complex<double> **Get_2D_c_double(int i_x, int i_y);
+  static std::complex<double> **Get_2D_c_double(int i_x, int i_y);
 
   /**
    * Allocate space for a 4D matrix.
@@ -167,7 +174,7 @@ public:
    * @param z the 4th size of the matrix.
    * @return pointer to the allocated matrix.
    */
-  static complex<double> ****Get_4D_c_double(int t,  int x, int y, int z);
+  static std::complex<double> ****Get_4D_c_double(int t, int x, int y, int z);
 
   /**
    * Translate from one coordinate system to another.
