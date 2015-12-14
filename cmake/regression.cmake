@@ -23,11 +23,10 @@ if(HDF5_DIFF_EXECUTABLE)
     LABELS "slow"
   )
   add_regression_test(SpiralStructure
-    DISABLED
     BLESSED ${CMAKE_SOURCE_DIR}/test-data/SpiralStructure.h5
     OUTPUTS ${CMAKE_BINARY_DIR}/examples/SpiralStructure.h5
     DIFF_CMD ${HDF5_DIFF_EXECUTABLE}
-    LABELS "slow"
+    LABELS "medium"
   )
 else()
   message(WARNING "The hdf5 diff executable was not found: some regression tests will not br run.")
