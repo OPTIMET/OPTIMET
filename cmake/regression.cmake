@@ -28,6 +28,25 @@ if(HDF5_DIFF_EXECUTABLE)
     DIFF_CMD ${HDF5_DIFF_EXECUTABLE}
     LABELS "medium"
   )
+
+  add_regression_test(FastOneParticle
+    BLESSED ${CMAKE_SOURCE_DIR}/test-data/FastOneParticle.h5
+    OUTPUTS ${CMAKE_BINARY_DIR}/examples/FastOneParticle.h5
+    DIFF_CMD ${HDF5_DIFF_EXECUTABLE} -d1.8e-12
+    LABELS "fast"
+  )
+  add_regression_test(FastThreeParticles
+    BLESSED ${CMAKE_SOURCE_DIR}/test-data/FastThreeParticles.h5
+    OUTPUTS ${CMAKE_BINARY_DIR}/examples/FastThreeParticles.h5
+    DIFF_CMD ${HDF5_DIFF_EXECUTABLE} -d6.4e-9
+    LABELS "fast"
+  )
+  add_regression_test(FastSpiralStructure
+    BLESSED ${CMAKE_SOURCE_DIR}/test-data/FastSpiralStructure.h5
+    OUTPUTS ${CMAKE_BINARY_DIR}/examples/FastSpiralStructure.h5
+    DIFF_CMD ${HDF5_DIFF_EXECUTABLE}
+    LABELS "fast"
+  )
 else()
   message(WARNING "The hdf5 diff executable was not found: some regression tests will not br run.")
 endif()
