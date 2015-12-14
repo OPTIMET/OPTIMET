@@ -36,7 +36,7 @@ function(add_regression_test testname)
   if(NOT regr_DISABLE)
     add_test(
       NAME ${testname}
-      COMMAND ${CMAKE_COMMAND} -P ${PROJECT_SOURCE_DIR}/regression.in.cmake
+      COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/regressions/${testname}.cmake
       WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     )
     list(APPEND regr_LABELS "regression")
