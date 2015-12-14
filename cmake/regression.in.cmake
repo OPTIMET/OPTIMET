@@ -31,12 +31,11 @@ foreach(index RANGE ${len2})
   list(GET test_outputs ${index} test)
   execute_process(
     COMMAND ${diff_cmd};${blessed};${test}
-    RESULT_VARIABLE test_not_successful
-    OUTPUT_QUIET
-    ERROR_QUIET
+    OUTPUT_VARIABLE test_output
+    OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 
-  if( test_not_successful )
-    message( SEND_ERROR "${test} does not match ${blessed}!")
-  endif( test_not_successful )
+  if(NOT test_output STREQUAL "")
+    message(SEND_ERROR "${test} does not match ${blessed}! ${test_output} !")
+  endif()
 endforeach()
