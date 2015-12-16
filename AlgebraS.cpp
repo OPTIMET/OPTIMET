@@ -1,5 +1,5 @@
 #include "AlgebraS.h"
-#include "types.h"
+#include "Types.h"
 #include <Eigen/Dense>
 
 namespace optimet {

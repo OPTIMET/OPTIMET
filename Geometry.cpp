@@ -7,7 +7,7 @@
 #include "Symbol.h"
 #include "Algebra.h"
 #include "constants.h"
-#include "types.h"
+#include "Types.h"
 
 #include <iostream>
 #include <cmath>
