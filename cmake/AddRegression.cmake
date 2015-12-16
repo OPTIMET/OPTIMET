@@ -1,6 +1,7 @@
 include(CMakeParseArguments)
 function(add_regression_test testname)
-  cmake_parse_arguments(regr "DISABLE" "INPUTFILE" "DIFF_CMD;BLESSED;OUTPUTS;LABELS" ${ARGN})
+  cmake_parse_arguments(regr
+    "DISABLE" "INPUTFILE;HDF5_PRECISION" "DIFF_CMD;BLESSED;OUTPUTS;LABELS" ${ARGN})
   if(NOT regr_BLESSED)
     message(FATAL_ERROR "No blessed outputs given for test ${testname}")
   endif()

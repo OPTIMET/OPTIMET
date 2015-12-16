@@ -4,9 +4,9 @@
 set(output_blessed @regr_BLESSED@)
 set(test_outputs @regr_OUTPUTS@)
 set(diff_cmd @regr_DIFF_CMD@)
-
-if("${diff_cmd}" STREQUAL "")
-  set(diff_cmd ${CMAKE_COMMAND} -E compare_files)
+unset(hdf5_args)
+if(NOT "@regr_HDF5_PRECISION@" STREQUAL "")
+  set(hdf5_args -d@regr_HDF5_PRECISION@)
 endif()
 
 foreach(output ${test_blessed})
@@ -29,13 +29,25 @@ math(EXPR len2 "${len1} - 1")
 foreach(index RANGE ${len2})
   list(GET output_blessed ${index} blessed)
   list(GET test_outputs ${index} test)
+  get_filename_component(extension "${output_blessed}" EXT)
+  if(diff_cmd)
+    set(cmd ${diff_cmd} ${blessed} ${test})
+  elseif(extension STREQUAL ".h5")
+    set(cmd @HDF5_DIFF_EXECUTABLE@ -v ${hdf5_args} ${blessed} ${test})
+  else()
+    set(cmd ${CMAKE_COMMAND};-E;compare_files;${blessed};${test})
+  endif()
   execute_process(
-    COMMAND ${diff_cmd};${blessed};${test}
+    COMMAND ${cmd}
+    ERROR_VARIABLE test_error
     OUTPUT_VARIABLE test_output
+    RESULT_VARIABLE test_result
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 
-  if(NOT test_output STREQUAL "")
-    message(SEND_ERROR "${test} does not match ${blessed}! ${test_output} !")
+  if(NOT test_result EQUAL 0)
+    message(STATUS "${test_output}")
+    message(STATUS "${test_error}")
+    message(SEND_ERROR "${test} does not match ${blessed}!")
   endif()
 endforeach()
