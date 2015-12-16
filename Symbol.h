@@ -43,7 +43,6 @@ std::complex<double> upp_mn(int m, int n, int nMax,
                             const std::complex<double> &cmn_1,
                             const std::complex<double> &dmn_1, double omega,
                             const Scatterer &object);
-};
 
 } // namespace symbol
 } // namespace optimet
