@@ -79,35 +79,23 @@ int Geometry::getTLocal(double omega_, int objectIndex_, int nMax_,
   // AJ
   // -----------------------------------------------------------------------------------------------------
 
-  Bessel J_n;
-  Bessel Jrho_n;
-  Bessel H_n;
-  Bessel Hrho_n;
+  std::vector<std::complex<double>> J_n_data, J_n_ddata;
+  std::vector<std::complex<double>> Jrho_n_data, Jrho_n_ddata;
+  std::vector<std::complex<double>> H_n_data, H_n_ddata;
+  std::vector<std::complex<double>> Hrho_n_data, Hrho_n_ddata;
 
-  J_n.init(r_0, 0, 0, nMax_);
-  if (J_n.populate()) {
-    std::cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr
-              << "!" << std::endl;
+  try {
+    std::tie(J_n_data, J_n_ddata) =
+        optimet::bessel<optimet::Bessel>(r_0, nMax_);
+    std::tie(Jrho_n_data, Jrho_n_ddata) =
+        optimet::bessel<optimet::Bessel>(rho * r_0, nMax_);
+    std::tie(H_n_data, H_n_ddata) =
+        optimet::bessel<optimet::Hankel1>(r_0, nMax_);
+    std::tie(Hrho_n_data, Hrho_n_ddata) =
+        optimet::bessel<optimet::Hankel1>(rho * r_0, nMax_);
+  } catch (std::range_error &e) {
+    std::cerr << e.what() << std::endl;
     return 1;
-  }
-
-  Jrho_n.init(rho * r_0, 0, 0, nMax_);
-  if (Jrho_n.populate()) {
-    std::cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr
-              << "!" << std::endl;
-    return 1;
-  }
-
-  H_n.init(r_0, 1, 0, nMax_);
-  if (H_n.populate()) {
-    std::cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr
-              << "!" << std::endl;
-  }
-
-  Hrho_n.init(rho * r_0, 1, 0, nMax_);
-  if (Hrho_n.populate()) {
-    std::cerr << "Error computing Hankel functions. Amos said: " << Hrho_n.ierr
-              << "!" << std::endl;
   }
 
   CompoundIterator p;
@@ -123,17 +111,17 @@ int Geometry::getTLocal(double omega_, int objectIndex_, int nMax_,
 
         // AJ ------------------------------------------------------------
         // obtain aux functions
-        psi = r_0 * J_n.data[p.first];
-        dpsi = r_0 * J_n.ddata[p.first] + J_n.data[p.first];
+        psi = r_0 * J_n_data[p.first];
+        dpsi = r_0 * J_n_ddata[p.first] + J_n_data[p.first];
 
-        ksi = r_0 * H_n.data[p.first];
-        dksi = r_0 * H_n.ddata[p.first] + H_n.data[p.first];
+        ksi = r_0 * H_n_data[p.first];
+        dksi = r_0 * H_n_ddata[p.first] + H_n_data[p.first];
 
-        psirho = r_0 * rho * Jrho_n.data[p.first];
-        dpsirho = r_0 * rho * Jrho_n.ddata[p.first] + Jrho_n.data[p.first];
+        psirho = r_0 * rho * Jrho_n_data[p.first];
+        dpsirho = r_0 * rho * Jrho_n_ddata[p.first] + Jrho_n_data[p.first];
 
-        ksirho = r_0 * rho * Hrho_n.data[p.first];
-        dksirho = r_0 * rho * Hrho_n.ddata[p.first] + Hrho_n.data[p.first];
+        ksirho = r_0 * rho * Hrho_n_data[p.first];
+        dksirho = r_0 * rho * Hrho_n_ddata[p.first] + Hrho_n_data[p.first];
 
         // TE Part
         T_local_[p][q] = (psi / ksi) *
@@ -187,20 +175,17 @@ int Geometry::getNLSources(double omega_, int objectIndex_, int nMax_,
   std::complex<double> psi2(0., 0.), xsi2(0., 0.);
   std::complex<double> dpsi2(0., 0.), dxsi2(0., 0.);
 
-  Bessel J_n;
-  Bessel H_n;
+  std::vector<std::complex<double>> J_n_data, J_n_ddata;
+  std::vector<std::complex<double>> H_n_data, H_n_ddata;
 
-  J_n.init(x_j2, 0, 0, nMax_);
-  if (J_n.populate()) {
-    std::cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr
-              << "!" << std::endl;
+  try {
+    std::tie(J_n_data, J_n_ddata) =
+        optimet::bessel<optimet::Bessel>(x_j2, nMax_);
+    std::tie(H_n_data, H_n_ddata) =
+        optimet::bessel<optimet::Hankel1>(x_b2, nMax_);
+  } catch (std::range_error &e) {
+    std::cerr << e.what() << std::endl;
     return 1;
-  }
-
-  H_n.init(x_b2, 1, 0, nMax_);
-  if (H_n.populate()) {
-    std::cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr
-              << "!" << std::endl;
   }
 
   CompoundIterator p;
@@ -210,11 +195,11 @@ int Geometry::getNLSources(double omega_, int objectIndex_, int nMax_,
   for (p = 0; (int)p < pMax; p++) {
     // obtain aux Riccati-Bessel functions ---------------------------
     // psi
-    psi2 = x_j2 * J_n.data[p.first];
-    dpsi2 = x_j2 * J_n.ddata[p.first] + J_n.data[p.first];
+    psi2 = x_j2 * J_n_data[p.first];
+    dpsi2 = x_j2 * J_n_ddata[p.first] + J_n_data[p.first];
     // ksi
-    xsi2 = x_b2 * H_n.data[p.first];
-    dxsi2 = x_b2 * H_n.ddata[p.first] + H_n.data[p.first];
+    xsi2 = x_b2 * H_n_data[p.first];
+    dxsi2 = x_b2 * H_n_ddata[p.first] + H_n_data[p.first];
 
     // obtain diagonal source matrices --------------------------------
     // SRC_2w_p - TE Part
@@ -250,29 +235,17 @@ int Geometry::getIaux(double omega_, int objectIndex_, int nMax_,
   std::complex<double> psirho(0., 0.);
   std::complex<double> dpsirho(0., 0.);
 
-  Bessel J_n;
-  Bessel Jrho_n;
+  std::vector<std::complex<double>> J_n_data, J_n_ddata;
+  std::vector<std::complex<double>> Jrho_n_data, Jrho_n_ddata;
 
-  J_n.init(r_0, 0, 0, nMax_);
-  if (J_n.populate()) {
-    std::cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr
-              << "!" << std::endl;
+  try {
+    std::tie(J_n_data, J_n_ddata) =
+        optimet::bessel<optimet::Bessel>(r_0, nMax_);
+    std::tie(Jrho_n_data, Jrho_n_ddata) =
+        optimet::bessel<optimet::Bessel>(rho * r_0, nMax_);
+  } catch (std::range_error &e) {
+    std::cerr << e.what() << std::endl;
     return 1;
-  }
-
-  Jrho_n.init(rho * r_0, 0, 0, nMax_);
-  if (Jrho_n.populate()) {
-    std::cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr
-              << "!" << std::endl;
-    return 1;
-  }
-
-  // AJ - direct
-  Bessel H_n;
-  H_n.init(r_0, 1, 0, nMax_);
-  if (H_n.populate()) {
-    std::cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr
-              << "!" << std::endl;
   }
 
   CompoundIterator p;
@@ -281,11 +254,11 @@ int Geometry::getIaux(double omega_, int objectIndex_, int nMax_,
 
   for (p = 0; (int)p < pMax; p++) {
     // obtain Riccati-Bessel functions
-    psi = r_0 * J_n.data[p.first];
-    dpsi = r_0 * J_n.ddata[p.first] + J_n.data[p.first];
+    psi = r_0 * J_n_data[p.first];
+    dpsi = r_0 * J_n_ddata[p.first] + J_n_data[p.first];
 
-    psirho = r_0 * rho * Jrho_n.data[p.first];
-    dpsirho = r_0 * rho * Jrho_n.ddata[p.first] + Jrho_n.data[p.first];
+    psirho = r_0 * rho * Jrho_n_data[p.first];
+    dpsirho = r_0 * rho * Jrho_n_ddata[p.first] + Jrho_n_data[p.first];
 
     // TE Part
     I_aux_[p] =
@@ -322,29 +295,17 @@ int Geometry::getCabsAux(double omega_, int objectIndex_, int nMax_,
   std::complex<double> psirho(0., 0.);
   std::complex<double> dpsirho(0., 0.);
 
-  Bessel J_n;
-  Bessel Jrho_n;
+  std::vector<std::complex<double>> J_n_data, J_n_ddata;
+  std::vector<std::complex<double>> Jrho_n_data, Jrho_n_ddata;
 
-  J_n.init(r_0, 0, 0, nMax_);
-  if (J_n.populate()) {
-    std::cerr << "Error computing Bessel functions. Amos said: " << J_n.ierr
-              << "!" << std::endl;
+  try {
+    std::tie(J_n_data, J_n_ddata) =
+        optimet::bessel<optimet::Bessel>(r_0, nMax_);
+    std::tie(Jrho_n_data, Jrho_n_ddata) =
+        optimet::bessel<optimet::Bessel>(rho * r_0, nMax_);
+  } catch (std::range_error &e) {
+    std::cerr << e.what() << std::endl;
     return 1;
-  }
-
-  Jrho_n.init(rho * r_0, 0, 0, nMax_);
-  if (Jrho_n.populate()) {
-    std::cerr << "Error computing Bessel functions. Amos said: " << Jrho_n.ierr
-              << "!" << std::endl;
-    return 1;
-  }
-
-  // AJ - direct
-  Bessel H_n;
-  H_n.init(r_0, 1, 0, nMax_);
-  if (H_n.populate()) {
-    std::cerr << "Error computing Hankel functions. Amos said: " << H_n.ierr
-              << "!" << std::endl;
   }
 
   CompoundIterator p;
@@ -353,11 +314,11 @@ int Geometry::getCabsAux(double omega_, int objectIndex_, int nMax_,
 
   for (p = 0; (int)p < pMax; p++) {
     // obtain Riccati-Bessel functions
-    psi = r_0 * J_n.data[p.first];
-    dpsi = r_0 * J_n.ddata[p.first] + J_n.data[p.first];
+    psi = r_0 * J_n_data[p.first];
+    dpsi = r_0 * J_n_ddata[p.first] + J_n_data[p.first];
 
-    psirho = r_0 * rho * Jrho_n.data[p.first];
-    dpsirho = r_0 * rho * Jrho_n.ddata[p.first] + Jrho_n.data[p.first];
+    psirho = r_0 * rho * Jrho_n_data[p.first];
+    dpsirho = r_0 * rho * Jrho_n_ddata[p.first] + Jrho_n_data[p.first];
 
     // Stout 2002 - from scattered
     // TE Part
@@ -411,23 +372,24 @@ int Geometry::setSourcesSingle(Excitation *incWave_,
 
     for (p = 0; p < pMax; p++) {
       objects[j].sourceCoef[static_cast<int>(p)] =
-          sourceU[p] *
-              Symbol::up_mn(p.second, p.first, nMax_,
-                            internalCoef_FF_[j * 2 * pMax + p.compound],
-                            internalCoef_FF_[pMax + j * 2 * pMax + p.compound],
-                            incWave_->omega, &objects[j], bground) +
-          sourceV[p] *
-              Symbol::vp_mn(p.second, p.first, nMax_,
-                            internalCoef_FF_[j * 2 * pMax + p.compound],
-                            internalCoef_FF_[pMax + j * 2 * pMax + p.compound],
-                            incWave_->omega, &objects[j], bground);
+          sourceU[p] * optimet::symbol::up_mn(
+                           p.second, p.first, nMax_,
+                           internalCoef_FF_[j * 2 * pMax + p.compound],
+                           internalCoef_FF_[pMax + j * 2 * pMax + p.compound],
+                           incWave_->omega, objects[j], bground) +
+          sourceV[p] * optimet::symbol::vp_mn(
+                           p.second, p.first, nMax_,
+                           internalCoef_FF_[j * 2 * pMax + p.compound],
+                           internalCoef_FF_[pMax + j * 2 * pMax + p.compound],
+                           incWave_->omega, objects[j], bground);
 
       objects[j].sourceCoef[static_cast<int>(p) + pMax] =
           sourceU[p + pMax] *
-              Symbol::upp_mn(p.second, p.first, nMax_,
-                             internalCoef_FF_[j * 2 * pMax + p.compound],
-                             internalCoef_FF_[pMax + j * 2 * pMax + p.compound],
-                             incWave_->omega, &objects[j], bground) +
+              optimet::symbol::upp_mn(
+                  p.second, p.first, nMax_,
+                  internalCoef_FF_[j * 2 * pMax + p.compound],
+                  internalCoef_FF_[pMax + j * 2 * pMax + p.compound],
+                  incWave_->omega, objects[j]) +
           sourceV[p + pMax]; //<- this last bit is zero for the moment
     }
   }

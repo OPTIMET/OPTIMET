@@ -122,7 +122,7 @@ double C_11m1(int J1, int M1, int J2, int M2, int J, int M) {
 std::complex<double> A_0(int n, double R, const std::complex<double> &waveK_i,
                          const std::complex<double> &cmn_1) {
   std::vector<std::complex<double>> data, ddata;
-  std::tie(data, ddata) = bessel<Henkel1, false>(R * waveK_i, n);
+  std::tie(data, ddata) = bessel<Hankel1, false>(R * waveK_i, n);
 
   return data[n] * cmn_1;
 }
@@ -130,7 +130,7 @@ std::complex<double> A_0(int n, double R, const std::complex<double> &waveK_i,
 std::complex<double> A_1(int n, double R, const std::complex<double> &waveK_i,
                          const std::complex<double> &dmn_1) {
   std::vector<std::complex<double>> data, ddata;
-  std::tie(data, ddata) = bessel<Henkel1, false>(R * waveK_i, n);
+  std::tie(data, ddata) = bessel<Hankel1, false>(R * waveK_i, n);
   // to be double checked - d/dr(J(kr))
   return std::complex<double>(0.0, 1.0) * (1.0 / waveK_i) *
          (waveK_i * ddata[n] + data[n] / R) * dmn_1;
@@ -139,7 +139,7 @@ std::complex<double> A_1(int n, double R, const std::complex<double> &waveK_i,
 std::complex<double> A_m1(int n, double R, const std::complex<double> &waveK_i,
                           const std::complex<double> &dmn_1) {
   std::vector<std::complex<double>> data, ddata;
-  std::tie(data, ddata) = bessel<Henkel1, false>(R * waveK_i, n);
+  std::tie(data, ddata) = bessel<Hankel1, false>(R * waveK_i, n);
 
   return std::complex<double>(0.0, 1.0) * std::sqrt(n * (n + 1.0)) *
          (1.0 / waveK_i / R) * data[n] * dmn_1;
