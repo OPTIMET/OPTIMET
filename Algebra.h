@@ -9,8 +9,7 @@
  * BLAS implementations. Algebra is released under the GSL. To view a copy
  * of the licence, look in the documentation.
  */
-class Algebra
-{
+class Algebra {
 public:
   /**
    * Default constructor for the Algebra class.
@@ -35,9 +34,11 @@ public:
    * @param beta the scalar beta.
    */
   static void multiplyMatrixMatrix(std::complex<double> **A, int rows_A_,
-    int cols_A_, std::complex<double> **B,
-    int rows_B_, int cols_B_, std::complex<double> **C,
-    std::complex<double> alpha_, std::complex<double> beta_);
+                                   int cols_A_, std::complex<double> **B,
+                                   int rows_B_, int cols_B_,
+                                   std::complex<double> **C,
+                                   std::complex<double> alpha_,
+                                   std::complex<double> beta_);
 
   /**
    * Implements the multiplication Y = alpha*A*X + beta*Y
@@ -50,19 +51,21 @@ public:
    * @param beta_ the scalar beta.
    */
   static void multiplyVectorMatrix(std::complex<double> **A, int rows_A_,
-    int cols_A_, std::complex<double> *X,
-    std::complex<double> *Y, std::complex<double> alpha_,
-    std::complex<double> beta_);
+                                   int cols_A_, std::complex<double> *X,
+                                   std::complex<double> *Y,
+                                   std::complex<double> alpha_,
+                                   std::complex<double> beta_);
 
-        /**
-   * Convert a Matrix into a Vector.
-   * @param rows_ the number of rows of the matrix.
-   * @param columns_ the number of columns of the matrix.
-   * @param T_ the matrix.
-   * @param V_ the vector.
-   */
+  /**
+* Convert a Matrix into a Vector.
+* @param rows_ the number of rows of the matrix.
+* @param columns_ the number of columns of the matrix.
+* @param T_ the matrix.
+* @param V_ the vector.
+*/
   static void matrixToVector(long rows_, long columns_,
-    std::complex<double> **T_, std::complex<double> *V_);
+                             std::complex<double> **T_,
+                             std::complex<double> *V_);
 
   /**
    * Convert a Vector into a Matrix.
@@ -72,7 +75,8 @@ public:
    * @param T_ the matrix.
    */
   static void vectorToMatrix(long rows_, long columns_,
-    std::complex<double> *V_, std::complex<double> **T_);
+                             std::complex<double> *V_,
+                             std::complex<double> **T_);
 };
 
 #endif /* ALGEBRA_H_ */

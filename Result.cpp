@@ -835,8 +835,8 @@ void Result::writeContinuityCheck(int objectIndex_) {
   Spherical<double> APoint(0.0, 0.0, 0.0);
   int projection = 1; // Spherical projection - True - projection is internally
                       // set to be evaluated w.r.t. object[0]
-  int outside = -1; // Forces result to be outside an object
-  int inside = 0; // Forces result to be inside an object
+  int outside = -1;   // Forces result to be outside an object
+  int inside = 0;     // Forces result to be inside an object
   double radius = geometry->objects[objectIndex_].radius;
   ;
   std::complex<double> eps_r = geometry->objects[objectIndex_].elmag.epsilon_r;

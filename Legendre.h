@@ -1,7 +1,6 @@
 #ifndef LEGENDRE_H_
 #define LEGENDRE_H_
 
-
 /**
  * The Legendre class implements associated Legendre polynomials using gsl.
  * The Legendre object is initialized and returns an array of Legendre
@@ -16,16 +15,15 @@
  * of the licence, look in the documentation.
  */
 
-class Legendre
-{
+class Legendre {
 private:
-  bool initDone;        /**< Verifies initialization. */
+  bool initDone; /**< Verifies initialization. */
 public:
-  double *data;       /**< Associated Legendre polynomials. */
-  double *ddata;        /**< Derivatives of Associated Legendre polynomials. */
+  double *data;  /**< Associated Legendre polynomials. */
+  double *ddata; /**< Derivatives of Associated Legendre polynomials. */
 
-  double argument;      /**< Legendre argument. */
-  int nMax;         /**< Maximum order of n iterator. */
+  double argument; /**< Legendre argument. */
+  int nMax;        /**< Maximum order of n iterator. */
 
   /**
    * Default constructor for the Legendre class.
