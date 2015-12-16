@@ -1,7 +1,7 @@
 #ifndef ALGEBRAS_H_
 #define ALGEBRAS_H_
 
-#include "types.h"
+#include "Types.h"
 
 namespace optimet { namespace algebra {
   //! Adapter for eigen solve
