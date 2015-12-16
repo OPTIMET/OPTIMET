@@ -84,10 +84,10 @@ void ElectroMagnetic::populateSellmeier()
   double lambda_aux = lambda * 1e6;
 
   epsilon_r = ((( (B1 * lambda_aux * lambda_aux) / (lambda_aux * lambda_aux - C1*C1) )
-         +( (B2 * lambda_aux * lambda_aux) / (lambda_aux * lambda_aux - C2*C2) )
-         +( (B3 * lambda_aux * lambda_aux) / (lambda_aux * lambda_aux - C3*C3) )
-         +( (B4 * lambda_aux * lambda_aux) / (lambda_aux * lambda_aux - C4*C4) )
-         +( (B5 * lambda_aux * lambda_aux) / (lambda_aux * lambda_aux - C5*C5) )) + 1);
+        +( (B2 * lambda_aux * lambda_aux) / (lambda_aux * lambda_aux - C2*C2) )
+        +( (B3 * lambda_aux * lambda_aux) / (lambda_aux * lambda_aux - C3*C3) )
+        +( (B4 * lambda_aux * lambda_aux) / (lambda_aux * lambda_aux - C4*C4) )
+        +( (B5 * lambda_aux * lambda_aux) / (lambda_aux * lambda_aux - C5*C5) )) + 1);
 
   epsilon = epsilon_r * consEpsilon0;
 }

@@ -76,8 +76,8 @@ int Legendre::populate()
         q.init(n,-m);
 
         double neg_factor = std::pow(-1.0, m) *
-            (gsl_sf_fact(n-m) /
-             gsl_sf_fact(n+m));
+          (gsl_sf_fact(n-m) /
+           gsl_sf_fact(n+m));
 
         data[q] = neg_factor * data_l[i];
         ddata[q] = neg_factor * ddata_l[i];

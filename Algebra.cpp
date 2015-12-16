@@ -14,9 +14,9 @@ Algebra::~Algebra()
 }
 
 void Algebra::multiplyMatrixMatrix(std::complex<double>** A, int rows_A_,
-  int cols_A_, std::complex<double>** B, int rows_B_, int cols_B_,
-  std::complex<double>** C, std::complex<double> alpha_,
-  std::complex<double> beta_)
+    int cols_A_, std::complex<double>** B, int rows_B_, int cols_B_,
+    std::complex<double>** C, std::complex<double> alpha_,
+    std::complex<double> beta_)
 {
 
   //GNU Scientific Library CBLas implementation
@@ -50,7 +50,7 @@ void Algebra::multiplyVectorMatrix(std::complex<double>** A, int rows_A_,
 }
 
 void Algebra::matrixToVector(long rows_, long columns_,
-  std::complex<double>** T_, std::complex<double>* V_)
+    std::complex<double>** T_, std::complex<double>* V_)
 {
   int i,j;
 
@@ -62,7 +62,7 @@ void Algebra::matrixToVector(long rows_, long columns_,
 }
 
 void Algebra::vectorToMatrix(long rows_, long columns_,
-  std::complex<double>* V_, std::complex<double>** T_)
+    std::complex<double>* V_, std::complex<double>** T_)
 {
   int i,j;
   for(i=0; i<rows_; i++)

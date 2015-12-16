@@ -12,7 +12,7 @@ Output::Output(std::string const& outputFileName_)
 
 Output::~Output()
 {
-//
+  //
 }
 
 hid_t Output::init(std::string const& outputFileName_)

@@ -52,20 +52,20 @@ bool Tools::equalDoubles(double A, double B)
   int maxUlps = 2;
 
   // Make sure maxUlps is non-negative and small enough that the
-    // default NAN won't compare as equal to anything.
-    assert(maxUlps > 0 && maxUlps < 4 * 1024 * 1024);
-    int aInt = *(int*)&A;
-    // Make aInt lexicographically ordered as a twos-complement int
-    if (aInt < 0)
-      aInt = 0x80000000 - aInt;
-    // Make bInt lexicographically ordered as a twos-complement int
-    int bInt = *(int*)&B;
-    if (bInt < 0)
-      bInt = 0x80000000 - bInt;
-    int intDiff = std::abs(aInt - bInt);
-    if (intDiff <= maxUlps)
-      return true;
-    return false;
+  // default NAN won't compare as equal to anything.
+  assert(maxUlps > 0 && maxUlps < 4 * 1024 * 1024);
+  int aInt = *(int*)&A;
+  // Make aInt lexicographically ordered as a twos-complement int
+  if (aInt < 0)
+    aInt = 0x80000000 - aInt;
+  // Make bInt lexicographically ordered as a twos-complement int
+  int bInt = *(int*)&B;
+  if (bInt < 0)
+    bInt = 0x80000000 - bInt;
+  int intDiff = std::abs(aInt - bInt);
+  if (intDiff <= maxUlps)
+    return true;
+  return false;
 }
 
 long Tools::toCompound(long n, long m)
@@ -134,23 +134,23 @@ std::complex<double> **Tools::Get_2D_c_double(int i_x, int i_y)
 
 std::complex<double> ****Tools::Get_4D_c_double(int t,  int x, int y, int z)
 {
-        int i,j,k;
-        std::complex<double> ****b;
-        b=new std::complex<double>***[t];
-        for(i=0;i<t;i++) {
-            b[i]=new std::complex<double>**[x];
-        }
-        for(i=0;i<t;i++) {           // rows
-            for(j=0;j<x;j++) {      // then coulmns
-                b[i][j]=new std::complex<double>*[y];
-        }   }
-        for(i=0;i<t;i++) {
-            for(j=0;j<x;j++) {
-                for(k=0;k<y;k++) {
-                    b[i][j][k]=new std::complex<double>[z];
-        }   }   }
-        return b;
- }
+  int i,j,k;
+  std::complex<double> ****b;
+  b=new std::complex<double>***[t];
+  for(i=0;i<t;i++) {
+    b[i]=new std::complex<double>**[x];
+  }
+  for(i=0;i<t;i++) {           // rows
+    for(j=0;j<x;j++) {      // then coulmns
+      b[i][j]=new std::complex<double>*[y];
+    }   }
+  for(i=0;i<t;i++) {
+    for(j=0;j<x;j++) {
+      for(k=0;k<y;k++) {
+        b[i][j][k]=new std::complex<double>[z];
+      }   }   }
+  return b;
+}
 
 SphericalP<double> Tools::toSphericalP(Spherical<double> point)
 {

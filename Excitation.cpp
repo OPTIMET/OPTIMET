@@ -90,12 +90,12 @@ int Excitation::populate()
     SphericalP<std::complex<double> > conjAux(std::conj(C_local.rrr),
         std::conj(C_local.the), std::conj(C_local.phi)); //std::complex conjugate of C
     dataIncAp[p] = 4*consPi * std::pow(-1.0, p.second) * std::pow(consCi, p.first)
-        * coef.dn[p.first] * (conjAux * Einc) * std::exp(consCmi * (double)p.second * vKInc.phi);
+      * coef.dn[p.first] * (conjAux * Einc) * std::exp(consCmi * (double)p.second * vKInc.phi);
 
     conjAux = SphericalP<std::complex<double> >(std::conj(B_local.rrr),
-            std::conj(B_local.the), std::conj(B_local.phi)); //std::complex conjugate of B
+        std::conj(B_local.the), std::conj(B_local.phi)); //std::complex conjugate of B
     dataIncBp[p] = 4*consPi * std::pow(-1.0, p.second) * std::pow(consCi, p.first-1)
-            * coef.dn[p.first] * (conjAux * Einc) * std::exp(consCmi * (double)p.second * vKInc.phi);
+      * coef.dn[p.first] * (conjAux * Einc) * std::exp(consCmi * (double)p.second * vKInc.phi);
   }
 
   return 0;

@@ -12,8 +12,8 @@ OutputGrid::~OutputGrid()
   //Destructor does nothing. Close
 }
 
-OutputGrid::OutputGrid(int type_, double *parameters_, hid_t groupID_)
-  : OutputGrid()
+  OutputGrid::OutputGrid(int type_, double *parameters_, hid_t groupID_)
+: OutputGrid()
 {
   init(type_, parameters_, groupID_);
 }

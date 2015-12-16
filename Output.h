@@ -25,46 +25,46 @@
  */
 class Output
 {
-private:
-  bool initDone;
-public:
+  private:
+    bool initDone;
+  public:
 
-  hid_t outputFile;   /**< Handle to the HDF5 output file. */
+    hid_t outputFile;   /**< Handle to the HDF5 output file. */
 
-  /**
-   * Default constructor for the Output class.
-   * Does NOT initialize the Output object.
-   */
-  Output();
+    /**
+     * Default constructor for the Output class.
+     * Does NOT initialize the Output object.
+     */
+    Output();
 
-  /**
-   * Initialization constructor for the Output class.
-   * Sets the iterator to the starting position.
-   * @param outputFileName_ the name of the hdf5 output file.
-   */
-  Output(std::string const& outputFileName_);
+    /**
+     * Initialization constructor for the Output class.
+     * Sets the iterator to the starting position.
+     * @param outputFileName_ the name of the hdf5 output file.
+     */
+    Output(std::string const& outputFileName_);
 
-  /**
-   * Default destructor for the Output class.
-   * Closes the HDF5 file if it was opened.
-   */
-  virtual ~Output();
+    /**
+     * Default destructor for the Output class.
+     * Closes the HDF5 file if it was opened.
+     */
+    virtual ~Output();
 
-  /**
-   * Initialization method for the Output class.
-   * @param outputFileName_ the name of the hdf5 output file.
-   * @return the handle to the HDF5 file.
-   */
-  hid_t init(std::string const& outputFileName_);
+    /**
+     * Initialization method for the Output class.
+     * @param outputFileName_ the name of the hdf5 output file.
+     * @return the handle to the HDF5 file.
+     */
+    hid_t init(std::string const& outputFileName_);
 
-  /**
-   * Returns the handle to the base GroupID.
-   * @param code_ the GroupID code (see class documentation).
-   * @return the handle to the the base GroupID.
-   */
-  hid_t getHandle(std::string code_);
+    /**
+     * Returns the handle to the base GroupID.
+     * @param code_ the GroupID code (see class documentation).
+     * @return the handle to the the base GroupID.
+     */
+    hid_t getHandle(std::string code_);
 
-  void close();
+    void close();
 };
 
 #endif /* OUTPUT_H_ */

@@ -35,8 +35,8 @@ int Simulation::run()
     case 112: radius_and_wavelength_scan(run, solver); break;
     case 2: coefficients(run, solver); break;
     default:
-      std::cerr << "Nothing to do?\n";
-      return 1;
+            std::cerr << "Nothing to do?\n";
+            return 1;
   }
   return 0;
 }

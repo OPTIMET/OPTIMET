@@ -12,8 +12,8 @@
 
 Result::Result() : initDone(false), flagSH(false), result_FF(NULL) {}
 
-Result::Result(Geometry *geometry_, Excitation *excitation_, int nMax_)
-  : Result()
+  Result::Result(Geometry *geometry_, Excitation *excitation_, int nMax_)
+: Result()
 {
   init(geometry_, excitation_, nMax_);
 }
@@ -424,7 +424,7 @@ double Result::getExtinctionCrossSection()
     for(p=0; p<pMax; p++)
     {
       Cext += std::real(  std::conj(Q_local[p]) * scatter_coef[j*2*pMax+p.compound]
-             +  std::conj(Q_local[p.compound + pMax]) * scatter_coef[pMax+j*2*pMax+p.compound]);
+          +  std::conj(Q_local[p.compound + pMax]) * scatter_coef[pMax+j*2*pMax+p.compound]);
     }
 
   }
@@ -454,7 +454,7 @@ double Result::getAbsorptionCrossSection()
       temp2 = abs(scatter_coef[pMax+j*2*pMax+p.compound]);
       temp2*=temp2;
       Cabs +=   temp1 * Cabs_aux[p.compound]
-          +   temp2 * Cabs_aux[pMax+p.compound];
+        +   temp2 * Cabs_aux[pMax+p.compound];
     }
   }
   delete [] Cabs_aux;
@@ -712,47 +712,47 @@ void Result::getEHFieldsContCheck(Spherical<double> R_, SphericalP<std::complex<
 
 void Result::writeContinuityCheck(int objectIndex_)
 {
-    SphericalP<std::complex<double> > AnEField_in, AnEField_out;
-    SphericalP<std::complex<double> > AnHField_in, AnHField_out;
-    Spherical<double> APoint(0.0, 0.0, 0.0);
-    int projection = 1;     //Spherical projection - True - projection is internally set to be evaluated w.r.t. object[0]
-    int outside = -1;     //Forces result to be outside an object
-    int inside = 0;       //Forces result to be inside an object
-    double radius       = geometry->objects[objectIndex_].radius;;
-    std::complex<double> eps_r = geometry->objects[objectIndex_].elmag.epsilon_r;
-    std::complex<double> mu_r  = geometry->objects[objectIndex_].elmag.mu_r;
+  SphericalP<std::complex<double> > AnEField_in, AnEField_out;
+  SphericalP<std::complex<double> > AnHField_in, AnHField_out;
+  Spherical<double> APoint(0.0, 0.0, 0.0);
+  int projection = 1;     //Spherical projection - True - projection is internally set to be evaluated w.r.t. object[0]
+  int outside = -1;     //Forces result to be outside an object
+  int inside = 0;       //Forces result to be inside an object
+  double radius       = geometry->objects[objectIndex_].radius;;
+  std::complex<double> eps_r = geometry->objects[objectIndex_].elmag.epsilon_r;
+  std::complex<double> mu_r  = geometry->objects[objectIndex_].elmag.mu_r;
 
-    // the-phi - 2D plot ----------------------------------------------------------------------------------------------------------------
-    std::ofstream E1_err_mag("E1_err_mag");
-    std::ofstream E2_err_mag("E2_err_mag");
-    std::ofstream E3_err_mag("E3_err_mag");
-    std::ofstream H1_err_mag("H1_err_mag");
-    std::ofstream H2_err_mag("H2_err_mag");
-    std::ofstream H3_err_mag("H3_err_mag");
-    int max_ii = 180;         // theta observation range (increment by 1 degree) - [1, max_ii-1]
-    int max_jj = 180;         // phi   observation range (increment by 1 degree) - [1, max_jj-1]
-    for(int ii=1; ii<=max_ii-1; ii++){
-      for(int jj=1; jj<=max_jj-1; jj++){
+  // the-phi - 2D plot ----------------------------------------------------------------------------------------------------------------
+  std::ofstream E1_err_mag("E1_err_mag");
+  std::ofstream E2_err_mag("E2_err_mag");
+  std::ofstream E3_err_mag("E3_err_mag");
+  std::ofstream H1_err_mag("H1_err_mag");
+  std::ofstream H2_err_mag("H2_err_mag");
+  std::ofstream H3_err_mag("H3_err_mag");
+  int max_ii = 180;         // theta observation range (increment by 1 degree) - [1, max_ii-1]
+  int max_jj = 180;         // phi   observation range (increment by 1 degree) - [1, max_jj-1]
+  for(int ii=1; ii<=max_ii-1; ii++){
+    for(int jj=1; jj<=max_jj-1; jj++){
 
-        APoint=Spherical<double>(radius, consPi*(double(ii)/180.), consPi*(double(jj)/180.));
-        getEHFieldsContCheck(APoint, AnEField_out, AnHField_out, projection, outside);
-        getEHFieldsContCheck(APoint, AnEField_in, AnHField_in, projection, inside);
-        // op -------------------------------------------------------------------
-        std::cout<<"Continuity check : computed "<<jj+((ii-1)*(max_ii-1))<<" out of a total of "<<(max_ii-1)*(max_jj-1)<<std::endl;
-        // EF
-        E1_err_mag<<(abs(AnEField_out.rrr)-abs(AnEField_in.rrr*eps_r))/abs(AnEField_in.rrr*eps_r)<<" ";
-        E2_err_mag<<(abs(AnEField_out.the)-abs(AnEField_in.the))/abs(AnEField_in.the)<<" ";
-        E3_err_mag<<(abs(AnEField_out.phi)-abs(AnEField_in.phi))/abs(AnEField_in.phi)<<" ";
-        // EF
-        H1_err_mag<<(abs(AnHField_out.rrr)-abs(AnHField_in.rrr*mu_r))/abs(AnHField_in.rrr*mu_r)<<" ";
-        H2_err_mag<<(abs(AnHField_out.the)-abs(AnHField_in.the))/abs(AnHField_in.the)<<" ";
-        H3_err_mag<<(abs(AnHField_out.phi)-abs(AnHField_in.phi))/abs(AnHField_in.phi)<<" ";
-      }
-      E1_err_mag<<std::endl;  E2_err_mag<<std::endl;  E3_err_mag<<std::endl;
-      H1_err_mag<<std::endl;  H2_err_mag<<std::endl;  H3_err_mag<<std::endl;
+      APoint=Spherical<double>(radius, consPi*(double(ii)/180.), consPi*(double(jj)/180.));
+      getEHFieldsContCheck(APoint, AnEField_out, AnHField_out, projection, outside);
+      getEHFieldsContCheck(APoint, AnEField_in, AnHField_in, projection, inside);
+      // op -------------------------------------------------------------------
+      std::cout<<"Continuity check : computed "<<jj+((ii-1)*(max_ii-1))<<" out of a total of "<<(max_ii-1)*(max_jj-1)<<std::endl;
+      // EF
+      E1_err_mag<<(abs(AnEField_out.rrr)-abs(AnEField_in.rrr*eps_r))/abs(AnEField_in.rrr*eps_r)<<" ";
+      E2_err_mag<<(abs(AnEField_out.the)-abs(AnEField_in.the))/abs(AnEField_in.the)<<" ";
+      E3_err_mag<<(abs(AnEField_out.phi)-abs(AnEField_in.phi))/abs(AnEField_in.phi)<<" ";
+      // EF
+      H1_err_mag<<(abs(AnHField_out.rrr)-abs(AnHField_in.rrr*mu_r))/abs(AnHField_in.rrr*mu_r)<<" ";
+      H2_err_mag<<(abs(AnHField_out.the)-abs(AnHField_in.the))/abs(AnHField_in.the)<<" ";
+      H3_err_mag<<(abs(AnHField_out.phi)-abs(AnHField_in.phi))/abs(AnHField_in.phi)<<" ";
     }
-    E1_err_mag.flush(); E2_err_mag.flush(); E3_err_mag.flush();
-    H1_err_mag.flush(); H2_err_mag.flush(); H3_err_mag.flush();
-    E1_err_mag.close(); E2_err_mag.close(); E3_err_mag.close();
-    H1_err_mag.close(); H2_err_mag.close(); H3_err_mag.close();
+    E1_err_mag<<std::endl;  E2_err_mag<<std::endl;  E3_err_mag<<std::endl;
+    H1_err_mag<<std::endl;  H2_err_mag<<std::endl;  H3_err_mag<<std::endl;
+  }
+  E1_err_mag.flush(); E2_err_mag.flush(); E3_err_mag.flush();
+  H1_err_mag.flush(); H2_err_mag.flush(); H3_err_mag.flush();
+  E1_err_mag.close(); E2_err_mag.close(); E3_err_mag.close();
+  H1_err_mag.close(); H2_err_mag.close(); H3_err_mag.close();
 }

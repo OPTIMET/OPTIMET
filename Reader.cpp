@@ -64,7 +64,7 @@ int Reader::readGeometry()
     {
       std::complex<double> aux_epsilon(1.0, 0.);
       std::complex<double> aux_mu(1.0, 0.);
-            aux_epsilon.real(geo_node.child("background").child("epsilon").attribute("value.real").as_double());
+      aux_epsilon.real(geo_node.child("background").child("epsilon").attribute("value.real").as_double());
       aux_epsilon.imag(geo_node.child("background").child("epsilon").attribute("value.imag").as_double());
       aux_mu.real(geo_node.child("background").child("mu").attribute("value.real").as_double());
       aux_mu.imag(geo_node.child("background").child("mu").attribute("value.imag").as_double());
@@ -80,52 +80,52 @@ int Reader::readGeometry()
 
 int Reader::readExcitation()
 {
-    xml_node ext_node;  //the main work node
+  xml_node ext_node;  //the main work node
 
-    //Find the source node
-    ext_node = inputFile.child("source");
-    if(!ext_node)
-    {
-        std::cerr << "Source not defined!" << std::endl;
-        return 1;
-    }
+  //Find the source node
+  ext_node = inputFile.child("source");
+  if(!ext_node)
+  {
+    std::cerr << "Source not defined!" << std::endl;
+    return 1;
+  }
 
-    int source_type;
-    double wavelength;
-    SphericalP<std::complex<double> > Einc(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
-    Spherical<double> vKinc(0.0, 0.0, 0.0);
+  int source_type;
+  double wavelength;
+  SphericalP<std::complex<double> > Einc(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0));
+  Spherical<double> vKinc(0.0, 0.0, 0.0);
 
-    //Determine source type
-    if(!std::strcmp(ext_node.attribute("type").value(), "planewave"))
-        source_type = 0;
-    else //Default is always planewave
-        source_type = 0;
+  //Determine source type
+  if(!std::strcmp(ext_node.attribute("type").value(), "planewave"))
+    source_type = 0;
+  else //Default is always planewave
+    source_type = 0;
 
-    //Determine wavelength
-    wavelength = ext_node.child("wavelength").attribute("value").as_double();
-    wavelength *= 1e-9;
+  //Determine wavelength
+  wavelength = ext_node.child("wavelength").attribute("value").as_double();
+  wavelength *= 1e-9;
 
-    //Determine propagation values
-    vKinc = Spherical<double>(2*consPi/wavelength, ext_node.child("propagation").attribute("theta").as_double() * consPi/180.0, ext_node.child("propagation").attribute("phi").as_double() * consPi/180.0);
+  //Determine propagation values
+  vKinc = Spherical<double>(2*consPi/wavelength, ext_node.child("propagation").attribute("theta").as_double() * consPi/180.0, ext_node.child("propagation").attribute("phi").as_double() * consPi/180.0);
 
-    //Determine polarisation (initial field values)
-    SphericalP<std::complex<double> > Eaux;
-    Spherical<double> vAux = Spherical<double>(0.0, vKinc.the, vKinc.phi);
-    Eaux = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0),
-                      std::complex<double>(ext_node.child("polarization").attribute("Etheta.real").as_double(),
-                          ext_node.child("polarization").attribute("Etheta.imag").as_double()),
-                      std::complex<double>(ext_node.child("polarization").attribute("Ephi.real").as_double(),
-                          ext_node.child("polarization").attribute("Ephi.imag").as_double()));
-    Einc = Tools::toProjection(vAux, Eaux);
+  //Determine polarisation (initial field values)
+  SphericalP<std::complex<double> > Eaux;
+  Spherical<double> vAux = Spherical<double>(0.0, vKinc.the, vKinc.phi);
+  Eaux = SphericalP<std::complex<double> >(std::complex<double>(0.0, 0.0),
+      std::complex<double>(ext_node.child("polarization").attribute("Etheta.real").as_double(),
+        ext_node.child("polarization").attribute("Etheta.imag").as_double()),
+      std::complex<double>(ext_node.child("polarization").attribute("Ephi.real").as_double(),
+        ext_node.child("polarization").attribute("Ephi.imag").as_double()));
+  Einc = Tools::toProjection(vAux, Eaux);
 
-    //Initialize and populate the excitation
-    run->excitation.init(source_type, Einc, vKinc, run->nMax);
-    run->excitation.populate();
+  //Initialize and populate the excitation
+  run->excitation.init(source_type, Einc, vKinc, run->nMax);
+  run->excitation.populate();
 
-    //Update the geometry in case we had dynamic models
-    run->geometry.update(&(run->excitation));
+  //Update the geometry in case we had dynamic models
+  run->geometry.update(&(run->excitation));
 
-    return 0;
+  return 0;
 }
 
 int Reader::readStructure(xml_node geo_node_)
@@ -185,9 +185,9 @@ int Reader::readStructure(xml_node geo_node_)
       double x_;
       double y_;
       Tools::Pol2Cart(R, i*Theta, x_, y_);
-        x[j] = x_ + R;
-        y[j] = y_;
-        j++;
+      x[j] = x_ + R;
+      y[j] = y_;
+      j++;
     }
 
     j=0;
@@ -237,108 +237,108 @@ int Reader::readStructure(xml_node geo_node_)
 
 int Reader::readOutput()
 {
-    xml_node out_node;  //the main work node
+  xml_node out_node;  //the main work node
 
-    //Find the source node
-    out_node = inputFile.child("output");
-    if(!out_node)
+  //Find the source node
+  out_node = inputFile.child("output");
+  if(!out_node)
+  {
+    std::cerr << "Output not defined!" << std::endl;
+    return 1;
+  }
+
+  //Determine type
+  if(!std::strcmp(out_node.attribute("type").value(), "coefficients"))
+  {
+    run->outputType = 2;
+  }
+
+  if(!std::strcmp(out_node.attribute("type").value(), "field"))
+  {
+    run->outputType = 0;  //Field output requested
+    run->singleComponent = 0; //Set this to zero as default
+
+    run->params[0] = out_node.child("grid").child("x").attribute("min").as_double() * 1e-9;
+    run->params[1] = out_node.child("grid").child("x").attribute("max").as_double()* 1e-9;
+    run->params[2] = out_node.child("grid").child("x").attribute("steps").as_double();
+    run->params[3] = out_node.child("grid").child("y").attribute("min").as_double()* 1e-9;
+    run->params[4] = out_node.child("grid").child("y").attribute("max").as_double()* 1e-9;
+    run->params[5] = out_node.child("grid").child("y").attribute("steps").as_double();
+    run->params[6] = out_node.child("grid").child("z").attribute("min").as_double()* 1e-9;
+    run->params[7] = out_node.child("grid").child("z").attribute("max").as_double()* 1e-9;
+    run->params[8] = out_node.child("grid").child("z").attribute("steps").as_double();
+
+    if(!std::strcmp(out_node.child("projection").attribute("spherical").value(), "true"))
     {
-        std::cerr << "Output not defined!" << std::endl;
-        return 1;
+      run->projection = 1;
+    }
+    else
+    {
+      run->projection = 0;
     }
 
-    //Determine type
-    if(!std::strcmp(out_node.attribute("type").value(), "coefficients"))
+    if(out_node.child("singlemode"))
     {
-      run->outputType = 2;
+      run->singleMode = true;
+    }
+    else
+    {
+      run->singleMode = false;
     }
 
-    if(!std::strcmp(out_node.attribute("type").value(), "field"))
+    if(!std::strcmp(out_node.child("singlemode").attribute("dominant").value(), "auto"))
     {
-      run->outputType = 0;  //Field output requested
-      run->singleComponent = 0; //Set this to zero as default
-
-      run->params[0] = out_node.child("grid").child("x").attribute("min").as_double() * 1e-9;
-      run->params[1] = out_node.child("grid").child("x").attribute("max").as_double()* 1e-9;
-      run->params[2] = out_node.child("grid").child("x").attribute("steps").as_double();
-      run->params[3] = out_node.child("grid").child("y").attribute("min").as_double()* 1e-9;
-      run->params[4] = out_node.child("grid").child("y").attribute("max").as_double()* 1e-9;
-      run->params[5] = out_node.child("grid").child("y").attribute("steps").as_double();
-      run->params[6] = out_node.child("grid").child("z").attribute("min").as_double()* 1e-9;
-      run->params[7] = out_node.child("grid").child("z").attribute("max").as_double()* 1e-9;
-      run->params[8] = out_node.child("grid").child("z").attribute("steps").as_double();
-
-      if(!std::strcmp(out_node.child("projection").attribute("spherical").value(), "true"))
+      run->dominantAuto = true;
+    }
+    else
+    {
+      run->dominantAuto = false;
+      run->singleModeIndex.init(out_node.child("singlemode").attribute("n").as_int(),
+          out_node.child("singlemode").attribute("m").as_int());
+      if(!std::strcmp(out_node.child("singlemode").attribute("component").value(), "TE"))
       {
-        run->projection = 1;
+        run->singleComponent = 1;
       }
-      else
+      if(!std::strcmp(out_node.child("singlemode").attribute("component").value(), "TM"))
       {
-        run->projection = 0;
-      }
-
-      if(out_node.child("singlemode"))
-      {
-        run->singleMode = true;
-      }
-      else
-      {
-        run->singleMode = false;
-      }
-
-      if(!std::strcmp(out_node.child("singlemode").attribute("dominant").value(), "auto"))
-      {
-        run->dominantAuto = true;
-      }
-      else
-      {
-        run->dominantAuto = false;
-        run->singleModeIndex.init(out_node.child("singlemode").attribute("n").as_int(),
-            out_node.child("singlemode").attribute("m").as_int());
-        if(!std::strcmp(out_node.child("singlemode").attribute("component").value(), "TE"))
-        {
-          run->singleComponent = 1;
-        }
-        if(!std::strcmp(out_node.child("singlemode").attribute("component").value(), "TM"))
-        {
-          run->singleComponent = 2;
-        }
+        run->singleComponent = 2;
       }
     }
+  }
 
-    if(!std::strcmp(out_node.attribute("type").value(), "response"))
+  if(!std::strcmp(out_node.attribute("type").value(), "response"))
+  {
+    if(out_node.child("scan").child("wavelength"))
     {
-      if(out_node.child("scan").child("wavelength"))
-      {
-          double lam_start(0.), lam_final(0.);
+      double lam_start(0.), lam_final(0.);
       lam_start = out_node.child("scan").child("wavelength").attribute("initial").as_double();
-            lam_final = out_node.child("scan").child("wavelength").attribute("final").as_double();
+      lam_final = out_node.child("scan").child("wavelength").attribute("final").as_double();
       run->params[0] = out_node.child("scan").child("wavelength").attribute("initial").as_double() * 1e-9;
-            run->params[1] = out_node.child("scan").child("wavelength").attribute("final").as_double()* 1e-9;
+      run->params[1] = out_node.child("scan").child("wavelength").attribute("final").as_double()* 1e-9;
 
       int stepsize(0), steps(0);
       stepsize = out_node.child("scan").child("wavelength").attribute("stepsize").as_double();
 
       // claculate no of steps
       steps = int(lam_final - lam_start) / stepsize;
-            run->params[2] = steps+1;
-//      run->params[2] = out_node.child("scan").child("wavelength").attribute("steps").as_double();
-            run->outputType = 11;
-      }
-
-      if(out_node.child("scan").child("radius"))
-      {
-          run->params[3] = out_node.child("scan").child("radius").attribute("initial").as_double() * 1e-9;
-            run->params[4] = out_node.child("scan").child("radius").attribute("final").as_double()* 1e-9;
-            run->params[5] = out_node.child("scan").child("radius").attribute("steps").as_double();
-            run->outputType = 12;
-      }
-
-      if(out_node.child("scan").child("wavelength") && out_node.child("scan").child("radius"))
-        run->outputType = 112;
+      run->params[2] = steps+1;
+      //      run->params[2] = out_node.child("scan").child("wavelength").attribute("steps").as_double();
+      run->outputType = 11;
     }
 
-   return 0;
+    if(out_node.child("scan").child("radius"))
+    {
+      run->params[3] = out_node.child("scan").child("radius").attribute("initial").as_double() * 1e-9;
+      run->params[4] = out_node.child("scan").child("radius").attribute("final").as_double()* 1e-9;
+      run->params[5] = out_node.child("scan").child("radius").attribute("steps").as_double();
+      run->outputType = 12;
+    }
+
+    if(out_node.child("scan").child("wavelength") && out_node.child("scan").child("radius"))
+      run->outputType = 112;
+  }
+
+  return 0;
 }
 
 Reader::Reader(Run *run_)
@@ -371,19 +371,19 @@ int Reader::readSimulation(std::string const & fileName_)
     return 1;
   }
 
-    //Read Excitation
-    if(readExcitation())
-    {
-        std::cerr << "Source not valid!";
-        return 1;
-    }
+  //Read Excitation
+  if(readExcitation())
+  {
+    std::cerr << "Source not valid!";
+    return 1;
+  }
 
-    //Read Excitation
-    if(readOutput())
-    {
-        std::cerr << "Output not valid!";
-        return 1;
-    }
+  //Read Excitation
+  if(readOutput())
+  {
+    std::cerr << "Output not valid!";
+    return 1;
+  }
 
 
   return 0;
@@ -397,10 +397,10 @@ Scatterer Reader::readSphericalScatterer(pugi::xml_node const &node)
   //Assign coordinates to the Scatterer work_object
   if(node.child("cartesian")) //Cartesian coordinates
     result.vR = Tools::toSpherical(Cartesian<double>{
-      node.child("cartesian").attribute("x").as_double() * consFrnmTom,
-      node.child("cartesian").attribute("y").as_double() * consFrnmTom,
-      node.child("cartesian").attribute("z").as_double() * consFrnmTom
-    });
+        node.child("cartesian").attribute("x").as_double() * consFrnmTom,
+        node.child("cartesian").attribute("y").as_double() * consFrnmTom,
+        node.child("cartesian").attribute("z").as_double() * consFrnmTom
+        });
   else if(node.child("spherical")) //Spherical coordinates
     result.vR = {
       node.child("spherical").attribute("rrr").as_double() * consFrnmTom,
@@ -422,18 +422,18 @@ Scatterer Reader::readSphericalScatterer(pugi::xml_node const &node)
       throw std::runtime_error("The type for mu must be \"relative\"");
 
     std::complex<double> const aux_mu(
-      node.child("mu").attribute("value.real").as_double(),
-      node.child("mu").attribute("value.imag").as_double()
-    );
+        node.child("mu").attribute("value.real").as_double(),
+        node.child("mu").attribute("value.imag").as_double()
+        );
 
     //Now the two epsilon models
     if(node.child("epsilon").attribute("type").value() == std::string("relative"))
     {
       // Static values
       std::complex<double> epsilon(
-        node.child("epsilon").attribute("value.real").as_double(),
-        node.child("epsilon").attribute("value.imag").as_double()
-      );
+          node.child("epsilon").attribute("value.real").as_double(),
+          node.child("epsilon").attribute("value.imag").as_double()
+          );
       result.elmag.init_r(epsilon, aux_mu);
     }
     else if(node.child("epsilon").attribute("type").value() == std::string("DrudeModel"))

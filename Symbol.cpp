@@ -24,7 +24,7 @@ double Symbol::Wigner9j(int j11, int j12, int j13, int j21, int j22, int j23,
 
 double Symbol::CleGor(int j, int m, int j1, int m1, int j2, int m2)
 {
-//  double wig = Wigner3j(j1, j2, j, m1, m2, -m);
+  //  double wig = Wigner3j(j1, j2, j, m1, m2, -m);
   return std::pow(-1.0, m+j1-j2) * std::sqrt(2.0 * j + 1.0) * Wigner3j(j1, j2, j, m1, m2, -m);
 }
 
@@ -154,7 +154,7 @@ std::complex<double> Symbol::A_1(int, int n, double R, std::complex<double> wave
   besselH.populate();
   // to be double checked - d/dr(J(kr)) --------------------
   return std::complex<double>(0., 1.)*(1./waveK_i)*
-      (waveK_i*besselH.ddata[n]+besselH.data[n]/R)*dmn_1;
+    (waveK_i*besselH.ddata[n]+besselH.data[n]/R)*dmn_1;
 
 }
 
@@ -166,17 +166,17 @@ std::complex<double> Symbol::A_m1(int, int n, double R, std::complex<double> wav
   besselH.populate();
 
   return std::complex<double>(0., 1.)*std::sqrt(n*(n+1.))*(1./waveK_i/R)*
-      (besselH.data[n])*dmn_1;
+    (besselH.data[n])*dmn_1;
 
 }
 
 double Symbol::W(int L1, int J1, int M1, int L2, int J2, int M2, int L, int M)
 {
   return std::pow(-1., J2+L1+L)*
-      std::sqrt((2.*J1+1.)*(2.*J2+1.)*(2.*L1+1.)*(2.*L2+1.)/(4/consPi/(2.*L+1)))*
-      Wigner6j(L1, L2, L, J2, J1, 1)*
-      CleGor(L, 0, L1, 0, L2, 0)*
-      CleGor(L, M, J1, M1, J2, M2);
+    std::sqrt((2.*J1+1.)*(2.*J2+1.)*(2.*L1+1.)*(2.*L2+1.)/(4/consPi/(2.*L+1)))*
+    Wigner6j(L1, L2, L, J2, J1, 1)*
+    CleGor(L, 0, L1, 0, L2, 0)*
+    CleGor(L, M, J1, M1, J2, M2);
 
 }
 
@@ -208,12 +208,12 @@ std::complex<double> Symbol::up_mn(int m, int n, int nMax_, std::complex<double>
       n2 = q.first;
       m2 = q.second;
       sum +=  A_1(m1, n1, R, waveK_j1, dmn_1)*
-          A_m1(m2, n2, R, waveK_j1, dmn_1)*
-          C_10m1(n1, m1, n2, m2, n, m)
+        A_m1(m2, n2, R, waveK_j1, dmn_1)*
+        C_10m1(n1, m1, n2, m2, n, m)
 
         + A_0(m1, n1, R, waveK_j1, cmn_1)*
-          A_m1(m2, n2, R, waveK_j1, dmn_1)*
-          C_11m1(n1, m1, n2, m2, n, m);
+        A_m1(m2, n2, R, waveK_j1, dmn_1)*
+        C_11m1(n1, m1, n2, m2, n, m);
     }
   }
   return sum*std::complex<double>(0., 1.)*(-b_non/2.)*std::sqrt(mu_b/eps_b)/std::sqrt(mu_0/eps_b);
@@ -244,12 +244,12 @@ std::complex<double> Symbol::vp_mn(int m, int n, int nMax_, std::complex<double>
       n2 = q.first;
       m2 = q.second;
       sum +=  A_1(m1, n1, R, waveK_j1, dmn_1)*
-          A_m1(m2, n2, R, waveK_j1, dmn_1)*
-          C_00m1(n1, m1, n2, m2, n, m)
+        A_m1(m2, n2, R, waveK_j1, dmn_1)*
+        C_00m1(n1, m1, n2, m2, n, m)
 
         + A_0(m1, n1, R, waveK_j1, cmn_1)*
-          A_m1(m2, n2, R, waveK_j1, dmn_1)*
-          C_01m1(n1, m1, n2, m2, n, m);
+        A_m1(m2, n2, R, waveK_j1, dmn_1)*
+        C_01m1(n1, m1, n2, m2, n, m);
     }
   }
   return sum*std::complex<double>(-2., 0.)*(-b_non/2.)*std::sqrt(mu_b/eps_b)/std::sqrt(mu_0/eps_0);
@@ -287,33 +287,33 @@ std::complex<double> Symbol::upp_mn(int m, int n, int nMax_, std::complex<double
       m2 = q.second;
 
       gmn +=  A_m1(m1, n1, R, waveK_j1, dmn_1)*
-          A_m1(m2, n2, R, waveK_j1, dmn_1)*
-          ( std::sqrt((n1)  /(2.*n1+1.))*std::sqrt((n2)  /(2.*n2+1.))*W(n1-1, n1, m1, n2-1, n2, m2, n, m)
+        A_m1(m2, n2, R, waveK_j1, dmn_1)*
+        ( std::sqrt((n1)  /(2.*n1+1.))*std::sqrt((n2)  /(2.*n2+1.))*W(n1-1, n1, m1, n2-1, n2, m2, n, m)
           + std::sqrt((n1+1)/(2.*n1+1.))*std::sqrt((n2+1)/(2.*n2+1.))*W(n1+1, n1, m1, n2+1, n2, m2, n, m)
           - std::sqrt((n1)  /(2.*n1+1.))*std::sqrt((n2+1)/(2.*n2+1.))*W(n1-1, n1, m1, n2+1, n2, m2, n, m)
           - std::sqrt((n1+1)/(2.*n1+1.))*std::sqrt((n2)  /(2.*n2+1.))*W(n1+1, n1, m1, n2-1, n2, m2, n, m));
 
       fmn +=  A_1(m1, n1, R, waveK_j1, dmn_1)*
-          A_1(m2, n2, R, waveK_j1, dmn_1)*
-          ( std::sqrt((n1+1)/(2.*n1+1.))*std::sqrt((n2+1)/(2.*n2+1.))*W(n1-1, n1, m1, n2-1, n2, m2, n, m)
+        A_1(m2, n2, R, waveK_j1, dmn_1)*
+        ( std::sqrt((n1+1)/(2.*n1+1.))*std::sqrt((n2+1)/(2.*n2+1.))*W(n1-1, n1, m1, n2-1, n2, m2, n, m)
           + std::sqrt((n1)  /(2.*n1+1.))*std::sqrt((n2)  /(2.*n2+1.))*W(n1+1, n1, m1, n2+1, n2, m2, n, m)
           - std::sqrt((n1+1)/(2.*n1+1.))*std::sqrt((n2)  /(2.*n2+1.))*W(n1-1, n1, m1, n2+1, n2, m2, n, m)
           - std::sqrt((n1)  /(2.*n1+1.))*std::sqrt((n2+1)/(2.*n2+1.))*W(n1+1, n1, m1, n2-1, n2, m2, n, m)
-        + A_0(m1, n1, R, waveK_j1, cmn_1)*
+          + A_0(m1, n1, R, waveK_j1, cmn_1)*
           A_0(m2, n2, R, waveK_j1, cmn_1)*
           W(n1, n1, m1, n2, n2, m2, n, m)
-        + A_1(m1, n1, R, waveK_j1, dmn_1)*
+          + A_1(m1, n1, R, waveK_j1, dmn_1)*
           A_0(m2, n2, R, waveK_j1, cmn_1)*
           ( std::sqrt((n1+1)/(2.*n1+1.))*W(n1-1, n1, m1, n2, n2, m2, n, m)
-          + std::sqrt((n1)  /(2.*n1+1.))*W(n1+1, n1, m1, n2, n2, m2, n, m))
-        + A_0(m1, n1, R, waveK_j1, cmn_1)*
+            + std::sqrt((n1)  /(2.*n1+1.))*W(n1+1, n1, m1, n2, n2, m2, n, m))
+          + A_0(m1, n1, R, waveK_j1, cmn_1)*
           A_1(m2, n2, R, waveK_j1, dmn_1)*
           ( std::sqrt((n1+1)/(2.*n1+1.))*W(n1, n1, m1, n2-1, n2, m2, n, m)
-          + std::sqrt((n2)  /(2.*n1+1.))*W(n1, n1, m1, n2+1, n2, m2, n, m))            );
+            + std::sqrt((n2)  /(2.*n1+1.))*W(n1, n1, m1, n2+1, n2, m2, n, m))            );
     }
   }
   return    std::complex<double>(0., 1.)*(-a_non/4.)*std::sqrt(n*(n+1))*gmn/waveK_01/R
-      + std::complex<double>(0., 1.)*(-d_non/8.)*(eps_0/eps_j2)*std::sqrt(n*(n+1))*(gmn+fmn)/waveK_01/R;
+    + std::complex<double>(0., 1.)*(-d_non/8.)*(eps_0/eps_j2)*std::sqrt(n*(n+1))*(gmn+fmn)/waveK_01/R;
 }
 
 

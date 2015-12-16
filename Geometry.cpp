@@ -23,8 +23,8 @@ void Geometry::pushObject(Scatterer const & object_)
   if(not no_overlap(object_)) {
     std::ostringstream sstr;
     sstr << "The sphere at ("
-         << object_.vR.rrr << ", " << object_.vR.the << ", " << object_.vR.phi
-         << " overlap";
+      << object_.vR.rrr << ", " << object_.vR.the << ", " << object_.vR.phi
+      << " overlap";
     throw std::runtime_error(sstr.str());
   }
   objects.emplace_back(object_);
@@ -140,11 +140,11 @@ int Geometry::getTLocal(double omega_, int objectIndex_, int nMax_, std::complex
 
         //TE Part
         T_local_[p][q] = (psi/ksi)    * (mu_sob*dpsi/psi - rho*dpsirho/psirho)
-                        / (rho*dpsirho/psirho - mu_sob*dksi/ksi);
+          / (rho*dpsirho/psirho - mu_sob*dksi/ksi);
 
         //TM part
         T_local_[(int)p+pMax][(int)q+qMax] = (psi/ksi)  * (mu_sob*dpsirho/psirho - rho*dpsi/psi)
-                                / (rho*dksi/ksi - mu_sob*dpsirho/psirho);
+          / (rho*dksi/ksi - mu_sob*dpsirho/psirho);
         // AJ ------------------------------------------------------------
       }
       else
@@ -276,20 +276,20 @@ int Geometry::getIaux(double omega_, int objectIndex_, int nMax_, std::complex<d
 
   for(p=0; (int)p<pMax; p++)
   {
-      // obtain Riccati-Bessel functions
-      psi = r_0*J_n.data[p.first];
-      dpsi= r_0*J_n.ddata[p.first] + J_n.data[p.first];
+    // obtain Riccati-Bessel functions
+    psi = r_0*J_n.data[p.first];
+    dpsi= r_0*J_n.ddata[p.first] + J_n.data[p.first];
 
-      psirho = r_0*rho*Jrho_n.data[p.first];
-      dpsirho= r_0*rho*Jrho_n.ddata[p.first] + Jrho_n.data[p.first];
+    psirho = r_0*rho*Jrho_n.data[p.first];
+    dpsirho= r_0*rho*Jrho_n.ddata[p.first] + Jrho_n.data[p.first];
 
-      //TE Part
-      I_aux_[p]       = (mu_j*rho) / (mu_0*rho*dpsirho*psi - mu_j*psirho*dpsi);
-      I_aux_[p]        *= std::complex<double>(0., 1.);
+    //TE Part
+    I_aux_[p]       = (mu_j*rho) / (mu_0*rho*dpsirho*psi - mu_j*psirho*dpsi);
+    I_aux_[p]        *= std::complex<double>(0., 1.);
 
-      //TM part
-      I_aux_[(int)p+pMax] = (mu_j*rho) / (mu_j*psi*dpsirho - mu_0*rho*psirho*dpsi);
-      I_aux_[(int)p+pMax]*= std::complex<double>(0., 1.);
+    //TM part
+    I_aux_[(int)p+pMax] = (mu_j*rho) / (mu_j*psi*dpsirho - mu_0*rho*psirho*dpsi);
+    I_aux_[(int)p+pMax]*= std::complex<double>(0., 1.);
   }
   return 0;
 }
@@ -344,25 +344,25 @@ int  Geometry::getCabsAux (double omega_, int objectIndex_, int nMax_, double *C
 
   for(p=0; (int)p<pMax; p++)
   {
-      // obtain Riccati-Bessel functions
-      psi = r_0*J_n.data[p.first];
-      dpsi= r_0*J_n.ddata[p.first] + J_n.data[p.first];
+    // obtain Riccati-Bessel functions
+    psi = r_0*J_n.data[p.first];
+    dpsi= r_0*J_n.ddata[p.first] + J_n.data[p.first];
 
-      psirho = r_0*rho*Jrho_n.data[p.first];
-      dpsirho= r_0*rho*Jrho_n.ddata[p.first] + Jrho_n.data[p.first];
+    psirho = r_0*rho*Jrho_n.data[p.first];
+    dpsirho= r_0*rho*Jrho_n.ddata[p.first] + Jrho_n.data[p.first];
 
-      // Stout 2002 - from scattered
-      //TE Part
-      temp1 = std::complex<double>(0., 1.)*rho*mu_0*conj(mu_j)*conj(psirho)*dpsirho;
-      temp2 = abs((mu_j*psirho*dpsi - mu_0*rho*dpsirho*psi));
-      temp2*=temp2;
-      Cabs_aux_[p]      = real(temp1)/temp2;
+    // Stout 2002 - from scattered
+    //TE Part
+    temp1 = std::complex<double>(0., 1.)*rho*mu_0*conj(mu_j)*conj(psirho)*dpsirho;
+    temp2 = abs((mu_j*psirho*dpsi - mu_0*rho*dpsirho*psi));
+    temp2*=temp2;
+    Cabs_aux_[p]      = real(temp1)/temp2;
 
-      //TM part
-      temp1 = std::complex<double>(0., 1.)*conj(rho)*mu_0*mu_j*conj(psirho)*dpsirho;
-      temp2 = abs((mu_0*rho*psirho*dpsi - mu_j*dpsirho*psi));
-      temp2*=temp2;
-      Cabs_aux_[(int)p+pMax]  = real(temp1)/temp2;
+    //TM part
+    temp1 = std::complex<double>(0., 1.)*conj(rho)*mu_0*mu_j*conj(psirho)*dpsirho;
+    temp2 = abs((mu_0*rho*psirho*dpsi - mu_j*dpsirho*psi));
+    temp2*=temp2;
+    Cabs_aux_[(int)p+pMax]  = real(temp1)/temp2;
   }
   return 0;
 }
@@ -407,12 +407,12 @@ int Geometry::setSourcesSingle(Excitation *incWave_, std::complex<double> *inter
     {
       objects[j].sourceCoef[static_cast<int>(p)] = sourceU[p] * Symbol::up_mn(p.second, p.first, nMax_, internalCoef_FF_[j*2*pMax+p.compound],
           internalCoef_FF_[pMax+j*2*pMax+p.compound], incWave_->omega, &objects[j], bground) +
-          sourceV[p] * Symbol::vp_mn(p.second, p.first, nMax_, internalCoef_FF_[j*2*pMax+p.compound],
-          internalCoef_FF_[pMax+j*2*pMax+p.compound], incWave_->omega, &objects[j], bground);
+        sourceV[p] * Symbol::vp_mn(p.second, p.first, nMax_, internalCoef_FF_[j*2*pMax+p.compound],
+            internalCoef_FF_[pMax+j*2*pMax+p.compound], incWave_->omega, &objects[j], bground);
 
       objects[j].sourceCoef[static_cast<int>(p)+pMax] = sourceU[p+pMax] * Symbol::upp_mn(p.second, p.first, nMax_, internalCoef_FF_[j*2*pMax+p.compound],
           internalCoef_FF_[pMax+j*2*pMax+p.compound], incWave_->omega, &objects[j], bground) +
-          sourceV[p+pMax]; //<- this last bit is zero for the moment
+        sourceV[p+pMax]; //<- this last bit is zero for the moment
     }
   }
 

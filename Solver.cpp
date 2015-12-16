@@ -11,8 +11,8 @@
 
 Solver::Solver() : initDone(false), flagSH(false) {}
 
-Solver::Solver(Geometry* geometry_, Excitation* incWave_, int method_, long nMax_)
-  : initDone(false), flagSH(false)
+  Solver::Solver(Geometry* geometry_, Excitation* incWave_, int method_, long nMax_)
+: initDone(false), flagSH(false)
 {
   init(geometry_, incWave_, method_, nMax_);
 }
@@ -152,7 +152,7 @@ int Solver::populateDirect()
         //Multiply T and T_AB to get T_fin = -T*T_AB
         Algebra::multiplyMatrixMatrix(T, 2*pMax, 2*pMax, T_AB, 2*pMax, 2*pMax, T_fin, consCm1, consC0);
 
-          //Push T into the S matrix
+        //Push T into the S matrix
         pushToMatrix(T_fin, 2*pMax, 2*pMax, S, i*2*pMax, j*2*pMax);
       }
     }

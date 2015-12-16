@@ -16,38 +16,38 @@
  */
 class Run
 {
-public:
-  Geometry geometry;    /**< The Geometry of the case. */
-  Excitation excitation;  /**< The Excitation of the case. */
+  public:
+    Geometry geometry;    /**< The Geometry of the case. */
+    Excitation excitation;  /**< The Excitation of the case. */
 
-  int nMax;       /**< The maximum value of the n iterator. */
+    int nMax;       /**< The maximum value of the n iterator. */
 
-  //This bit will be moved to the case or where it is appropiate
-  int projection;
-  double params[9];
-  int outputType;     /**< Output type required: 0 -> Field, 1 -> Cross Sections, 2 -> Scattering Coefficients. */
-  bool singleMode;    /**< Output only one mode (harmonic) in the field profile. */
-  CompoundIterator singleModeIndex; /**< Index of single mode to output in the field profile. */
-  bool dominantAuto;    /**< Get dominant mode automatically. */
-  int singleComponent;  /**< Get only one or both components: 0 -> Both, 1 - > TE, 2 - > TM. */
+    //This bit will be moved to the case or where it is appropiate
+    int projection;
+    double params[9];
+    int outputType;     /**< Output type required: 0 -> Field, 1 -> Cross Sections, 2 -> Scattering Coefficients. */
+    bool singleMode;    /**< Output only one mode (harmonic) in the field profile. */
+    CompoundIterator singleModeIndex; /**< Index of single mode to output in the field profile. */
+    bool dominantAuto;    /**< Get dominant mode automatically. */
+    int singleComponent;  /**< Get only one or both components: 0 -> Both, 1 - > TE, 2 - > TM. */
 
 
-  /**
-   * Params:
-   *    -> for Field see OutputGrid
-   *    -> For cross section only 3 used: params[0] - initial lambda, params[1] - final lambda, params[2] - number of steps
-   */
+    /**
+     * Params:
+     *    -> for Field see OutputGrid
+     *    -> For cross section only 3 used: params[0] - initial lambda, params[1] - final lambda, params[2] - number of steps
+     */
 
-  /**
-   * Default constructor for the Case class.
-   * Does NOT initialize the instance.
-   */
-  Run();
+    /**
+     * Default constructor for the Case class.
+     * Does NOT initialize the instance.
+     */
+    Run();
 
-  /**
-   * Default destructor for the Case class.
-   */
-  virtual ~Run();
+    /**
+     * Default destructor for the Case class.
+     */
+    virtual ~Run();
 };
 
 #endif /* RUN_H_ */
