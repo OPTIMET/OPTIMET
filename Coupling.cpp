@@ -10,6 +10,54 @@
 namespace optimet {
 
   namespace {
+    std::tuple<t_real, t_real, t_real> coefficients_A(t_int l, t_int n, t_int m, t_int k) {
+      return {
+        0.5 / std::sqrt(static_cast<t_real>(l * (l+1) * n *(n + 1))),
+          std::sqrt(static_cast<t_real>((n - m) * (n + m + 1) * (l - k) * (l + k + 1))),
+          std::sqrt(static_cast<t_real>((n + m) * (n - m + 1) * (l + k) * (l - k + 1)))
+      };
+    }
+    t_complex coefficients_A(
+        t_int l, t_int n, t_int m, t_int k, t_int n_max, t_complex**** AlBe_nmlk) {
+      if(std::abs(k) > l)
+        return 0e0;
+      auto const offset = 7; // something optimet
+      auto const coeffs = coefficients_A(l, n, m, k);
+      auto const zero = AlBe_nmlk[n][m + n_max + offset][l][k + n_max + offset];
+      auto const one = AlBe_nmlk[n][m + n_max + offset + 1][l][k + n_max + offset + 1];
+      auto const two = AlBe_nmlk[n][m + n_max + offset - 1][l][k + n_max + offset - 1];
+      return std::get<0>(coeffs) * (
+          static_cast<t_real>(2 * k * m) * zero
+          + std::get<1>(coeffs) * one
+          + std::get<2>(coeffs) * two
+          );
+    }
+
+    std::tuple<t_real, t_real, t_real> coefficients_B(t_int l, t_int n, t_int m, t_int k) {
+      auto const a0 = 2 * l + 1;
+      auto const a1 = (2 * l - 1) * l * (l + 1) * n * (n + 1);
+      return {
+        0.5 * std::sqrt(static_cast<t_real>(a0) / static_cast<t_real>(a1)),
+          std::sqrt(static_cast<t_real>((n - m) * (n + m + 1) * (l - k) * (l - k - 1))),
+          std::sqrt(static_cast<t_real>((n + m) * (n - m + 1) * (l + k) * (l + k - 1)))
+      };
+    }
+    t_complex coefficients_B(
+        t_int l, t_int n, t_int m, t_int k, t_int n_max, t_complex**** AlBe_nmlk) {
+      if(std::abs(k) > l)
+        return 0e0;
+      auto const offset = 7; // something optimet
+      auto const coeffs = coefficients_B(l, n, m, k);
+      auto const zero = AlBe_nmlk[n][m + n_max + offset][l - 1][k + n_max + offset];
+      auto const one = AlBe_nmlk[n][m + n_max + offset + 1][l - 1][k + n_max + offset + 1];
+      auto const two = AlBe_nmlk[n][m + n_max + offset - 1][l - 1][k + n_max + offset - 1];
+      return t_complex(0, -std::get<0>(coeffs)) * (
+          static_cast<t_real>(2 * m) * std::sqrt(static_cast<t_real>(l * l - k * k)) * zero
+          + std::get<1>(coeffs) * one
+          - std::get<2>(coeffs) * two
+          );
+    }
+
     /**
      * Calculates the coupling coefficients for a relative vector R.
      * @param R the relative Spherical vector.
@@ -105,20 +153,28 @@ namespace optimet {
                     A2 =    sqrt( (d_n-d_m)*(d_n+d_m+1.)*(d_l-d_k)*(d_l+d_k+1.) );
                     A3 =    sqrt( (d_n+d_m)*(d_n-d_m+1.)*(d_l+d_k)*(d_l-d_k+1.) );
 
+                    assert(std::abs(A1 -  std::get<0>(coefficients_A(ii, i, j - n_max - e, jj - n_max - e))) < 1e-12);
+                    assert(std::abs(A2 -  std::get<1>(coefficients_A(ii, i, j - n_max - e, jj - n_max - e))) < 1e-12);
+                    assert(std::abs(A3 -  std::get<2>(coefficients_A(ii, i, j - n_max - e, jj - n_max - e))) < 1e-12);
                     Anmlk[i][j][ii][jj] = 2.*d_k*d_m*AlBe_nmlk[i][j][ii][jj]
                       + A2*AlBe_nmlk[i][j+1][ii][jj+1]
                       + A3*AlBe_nmlk[i][j-1][ii][jj-1];
                     Anmlk[i][j][ii][jj]*=A1;
+                    assert(std::abs(Anmlk[i][j][ii][jj] -  coefficients_A(ii, i, j - n_max - e, jj - n_max - e, n_max, AlBe_nmlk)) < 1e-12);
 
                     // Bnmlk ---------------------------------------------------
                     // obtain three coefficients -------------------------------
                     B1 = 0.5* sqrt( ((2.*d_l+1.)/(2.*d_l-1.))*(1./(d_l*(d_l+1.)*d_n*(d_n+1.))) );
                     B2 =    sqrt( (d_n-d_m)*(d_n+d_m+1.)*(d_l-d_k)*(d_l-d_k-1.) );
                     B3 =    sqrt( (d_n+d_m)*(d_n-d_m+1.)*(d_l+d_k)*(d_l+d_k-1.) );
+                    assert(std::abs(B1 -  std::get<0>(coefficients_B(ii, i, j - n_max - e, jj - n_max - e))) < 1e-12);
+                    assert(std::abs(B2 -  std::get<1>(coefficients_B(ii, i, j - n_max - e, jj - n_max - e))) < 1e-12);
+                    assert(std::abs(B3 -  std::get<2>(coefficients_B(ii, i, j - n_max - e, jj - n_max - e))) < 1e-12);
                     Bnmlk[i][j][ii][jj] = 2.*d_m*sqrt((d_l-d_k)*(d_l+d_k))*AlBe_nmlk[i][j][ii-1][jj]
                       + B2*AlBe_nmlk[i][j+1][ii-1][jj+1]
                       - B3*AlBe_nmlk[i][j-1][ii-1][jj-1];
                     Bnmlk[i][j][ii][jj]*=std::complex<double>(0., -B1);
+                    assert(std::abs(Bnmlk[i][j][ii][jj] -  coefficients_B(ii, i, j - n_max - e, jj - n_max - e, n_max, AlBe_nmlk)) < 1e-12);
 
 
                   }
@@ -196,7 +252,7 @@ namespace optimet {
       delete[] AlBe_nmlk;
       delete[] Anmlk;   delete[] Bnmlk;
     }
-  }
+  } // anonymous namespace
 
   int Coupling::populate()
   {
