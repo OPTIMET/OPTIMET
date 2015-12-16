@@ -1,6 +1,5 @@
 #include "Coupling.h"
 
-#include "CompoundIterator.h"
 #include "PeriodicCoupling.h"
 #include "constants.h"
 
