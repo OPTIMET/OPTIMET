@@ -1,5 +1,5 @@
 <simulation>
-  <harmonics nmax="10" />
+  <harmonics nmax="3" />
 </simulation>
 
 <source type="planewave">
@@ -22,8 +22,8 @@
 
 <output type="field">
   <grid type="cartesian">
-    <x min="-2000" max="2000" steps="20" />
+    <x min="-2000" max="2000" steps="10" />
     <y min="-0.1" max="0.1" steps="2" />
-    <z min="-2000" max="2000" steps="20" />
+    <z min="-2000" max="2000" steps="10" />
   </grid>
 </output>
