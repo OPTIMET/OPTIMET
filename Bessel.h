@@ -97,6 +97,23 @@ bessel(const std::complex<double> &z, long int max_order) {
   return std::make_tuple(data, ddata);
 }
 
+static std::tuple<std::vector<std::complex<double>>,
+                  std::vector<std::complex<double>>>
+bessel(const std::complex<double> &z, enum BESSEL_TYPE besselType, bool scale,
+       long int nMax) {
+  switch (besselType) {
+  case Bessel:
+    return (scale) ? bessel<Bessel, true>(z, nMax)
+                   : bessel<Bessel, false>(z, nMax);
+  case Hankel1:
+    return (scale) ? bessel<Hankel1, true>(z, nMax)
+                   : bessel<Hankel1, false>(z, nMax);
+  case Hankel2:
+    return (scale) ? bessel<Hankel2, true>(z, nMax)
+                   : bessel<Hankel2, false>(z, nMax);
+  }
+}
+
 } // namespace optimet
 
 #endif /* OPTIMET_BESSEL_H */
