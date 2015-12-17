@@ -20,7 +20,7 @@ if(HDF5_DIFF_EXECUTABLE)
   add_regression_test(ThreeParticles
     BLESSED ${CMAKE_SOURCE_DIR}/test-data/ThreeParticles.h5
     OUTPUTS ${CMAKE_BINARY_DIR}/examples/ThreeParticles.h5
-    HDF5_PRECISION 1.0e-10
+    HDF5_PRECISION 6.4e-9
     LABELS "slow"
   )
   add_regression_test(SpiralStructure
