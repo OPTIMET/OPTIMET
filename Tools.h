@@ -1,9 +1,9 @@
 #ifndef TOOLS_H_
 #define TOOLS_H_
 
+#include "Types.h"
 #include "Spherical.h"
 #include "Cartesian.h"
-#include "Types.h"
 #include <complex>
 
 namespace optimet {

@@ -1,8 +1,8 @@
 #include "OutputGrid.h"
 
+#include "Tools.h"
 #include "aliases.h"
 #include "Cartesian.h"
-#include "Tools.h"
 #include <cmath>
 
 OutputGrid::OutputGrid()
