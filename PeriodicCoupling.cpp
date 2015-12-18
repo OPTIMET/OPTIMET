@@ -127,13 +127,11 @@ void compute_AlBe_nmlk(Spherical<t_real> R, t_complex waveK, t_int BHreg,
   // --------------------------------------------------------------
   // I - fundamental building blocks - Ynm
   // ----------------------------------------
-  Matrix<t_complex> Ynm = Matrix<t_complex>(n_Matsize1, m_Matsize1);
-  for (n = 0; n < n_Matsize1; n++)
-    for (j = 0, m = -(n_max + e); j < m_Matsize1; j++, m++)
-      if (n == 0 && m == 0)
-        Ynm(n, j) = 1e0 / std::sqrt(4. * consPi);
-      else if (std::abs(m) <= n)
-        Ynm(n, j) = dataYp[flatten_indices(n, m)];
+  auto Ynm = [&dataYp, &n_max, &e](t_int n, t_int m) {
+    return n == 0 and m == n_max + e
+               ? 1e0 / std::sqrt(4e0 * consPi)
+               : dataYp[flatten_indices(n, m - n_max - e)];
+  };
 
   // II - Global matrix - Alpha-Beta (n, m, l, k) - AlBe_nmlk
   // ---------------------
