@@ -24,22 +24,28 @@
 namespace optimet {
 
 namespace {
-t_real a_nm_p(t_real n, t_real m) {
-  return -std::sqrt(((n + m + 1.) * (n - m + 1.)) /
-                    ((2. * n + 1.) * (2. * n + 3.)));
+t_real a_nm_p(t_int n, t_int m) {
+  t_real const numerator = (n + m + 1) * (n - m + 1);
+  t_real const denominator = (2 * n + 1) * (2 * n + 3);
+  return -std::sqrt(numerator / denominator);
 }
 
-t_real a_nm_m(t_real n, t_real m) {
-  return +std::sqrt(((n + m) * (n - m)) / ((2. * n + 1.) * (2. * n - 1.)));
+t_real a_nm_m(t_int n, t_int m) {
+  t_real const numerator = (n + m) * (n - m);
+  t_real const denominator = (2 * n + 1) * (2 * n - 1);
+  return std::sqrt(numerator / denominator);
 }
 
-t_real b_nm_p(t_real n, t_real m) {
-  return +std::sqrt(((n + m + 2.) * (n + m + 1.)) /
-                    ((2. * n + 1.) * (2. * n + 3.)));
+t_real b_nm_p(t_int n, t_int m) {
+  t_real const numerator = (n + m + 2) * (n + m + 1);
+  t_real const denominator = (2 * n + 1) * (2 * n + 3);
+  return std::sqrt(numerator / denominator);
 }
 
-t_real b_nm_m(t_real n, t_real m) {
-  return +std::sqrt(((n - m) * (n - m - 1.)) / ((2. * n + 1.) * (2. * n - 1.)));
+t_real b_nm_m(t_int n, t_int m) {
+  t_real const numerator = (n - m) * (n - m - 1);
+  t_real const denominator = (2 * n + 1) * (2 * n - 1);
+  return std::sqrt(numerator / denominator);
 }
 } // anonymous namespace
 
@@ -248,9 +254,9 @@ void compute_AlBe_nmlk(Spherical<t_real> R, t_complex waveK, t_int BHreg,
 
             if (abs(k) <= l) {
               // obtain three coefficients ----------------------------
-              B1 = b_nm_p(d_n - 1., d_n - 1.);
-              B2 = b_nm_p(d_l - 1., d_k - 1.);
-              B3 = b_nm_m(d_l + 1., d_k - 1.);
+              B1 = b_nm_p(n - 1, n - 1);
+              B2 = b_nm_p(l - 1, k - 1);
+              B3 = b_nm_m(l + 1, k - 1);
 
               if (((ii - 1) < 0) || ((jj - 1) < 0)) {
                 AlBe2 = t_complex(0., 0.);
@@ -310,10 +316,10 @@ void compute_AlBe_nmlk(Spherical<t_real> R, t_complex waveK, t_int BHreg,
 
               if (abs(k) <= l) {
                 // obtain three coefficients -------------------------------
-                A1 = a_nm_p(d_n - 1., d_m);
-                A2 = a_nm_m(d_n - 1., d_m);
-                A3 = a_nm_p(d_l - 1., d_k);
-                A4 = a_nm_m(d_l + 1., d_k);
+                A1 = a_nm_p(n - 1, m);
+                A2 = a_nm_m(n - 1, m);
+                A3 = a_nm_p(l - 1, k);
+                A4 = a_nm_m(l + 1, k);
 
                 // evaluate current term -----------------------------------
                 if (((i - 2) < 0)) {
