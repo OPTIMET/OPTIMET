@@ -17,6 +17,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <iostream>
 
 #include "gsl/gsl_sf_gamma.h"
 
@@ -72,7 +73,7 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R,
   // Assign corresponding input values
   // ---------------------------------------------
   std::complex<double> wkR = R.rrr * waveK;
-  std::complex<double> wkRconj(0., 0.);
+  std::complex<double> wkRconj = std::conj(wkR);
   std::complex<double> exp_iwk_theji(0., 0.); // function of m & theji
 
   // prepare for computing transfer matrices
@@ -99,31 +100,30 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R,
 
   // prepare for calculating translation coefficients
   // -----------------------------
-  std::complex<double> *dataYp;
-  dataYp = new std::complex<double>[pl.max(n_max + e) + 1];
-  compute_Yp(R, waveK, n_max + e, dataYp);
+  std::vector<std::complex<double>> dataYp = optimet::compute_Yp(R, n_max + e);
 
   // 1.2 Prepare for AlBe_nmlk[0][n_max+e][ii][jj] evaluation
   // ---------------------
-  Bessel HB, HBconj; // create Bessel object
-  // waveK
-  HB.init(wkR, BHreg, 0, n_Matsize1); // Initialize Bessel object : start from
-                                      // n==0 - not from n==1!!
-  HB.populate();                      // calculate Bessel object
-  // conj(waveK)
-  if (BHreg == 0) { // regular case
-    wkRconj = conj(wkR);
-    HBconj.init(wkRconj, BHreg, 0, n_Matsize1); // Initialize Bessel object :
-                                                // start from n==0 - not from
-                                                // n==1!!
-    HBconj.populate();
-  } else if (BHreg == 1) { // Irregular case
-    wkRconj = conj(wkR);
-    HBconj.init(consCm1 * wkRconj, BHreg, 0, n_Matsize1); // Initialize Bessel
-                                                          // object : start from
-                                                          // n==0 - not from
-                                                          // n==1!!
-    HBconj.populate();
+  std::vector<std::complex<double>> HB_data, HB_ddata, HBconj_data,
+      HBconj_ddata; // create Bessel object
+  try {
+    if (BHreg == 0) { // regular case
+      // waveK
+      std::tie(HB_data, HB_ddata) =
+          optimet::bessel<optimet::Bessel>(wkR, n_Matsize1);
+      // conj(waveK)
+      std::tie(HBconj_data, HBconj_ddata) =
+          optimet::bessel<optimet::Bessel>(wkRconj, n_Matsize1);
+    } else if (BHreg == 1) { // irregular case
+      // waveK
+      std::tie(HB_data, HB_ddata) =
+          optimet::bessel<optimet::Hankel1>(wkR, n_Matsize1);
+      // conj(waveK)
+      std::tie(HBconj_data, HBconj_ddata) =
+          optimet::bessel<optimet::Hankel1>(consCm1 * wkRconj, n_Matsize1);
+    }
+  } catch (std::range_error &e) {
+    std::cerr << e.what() << std::endl;
   }
 
   // Building blocks
@@ -213,10 +213,10 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R,
         d_temp = std::sqrt(4. * consPi) * pow(-1., d_l + d_k);
         // wavek
         AlBe_nmlk[0][n_max + e][ii][jj] =
-            d_temp * Ynm[ii][k_mirror] * HB.data[l]; // eqn (C3)
+            d_temp * Ynm[ii][k_mirror] * HB_data[l]; // eqn (C3)
         // waveconj
         AlBe_nmlkconj[0][n_max + e][ii][jj] =
-            d_temp * Ynm[ii][k_mirror] * HBconj.data[l]; // eqn (C3)
+            d_temp * Ynm[ii][k_mirror] * HBconj_data[l]; // eqn (C3)
 
       } // if(abs(k)<=l)
 
@@ -433,8 +433,6 @@ void PeriodicCoupling::compute_AlBe_nmlk(Spherical<double> R,
 
   delete[] AlBe_nmlkconj;
   delete[] Ynm;
-  delete[] dataYp; // AJ - this needs to be deleted - currently producing an
-                   // error - AJ //
 }
 // ---------------------------------------------------------------------------------------
 
@@ -444,8 +442,8 @@ std::complex<double> PeriodicCoupling::compute_Bnm(int n, int n1, int n2, int m,
                                                    int m1, int m2) {
 
   return std::sqrt(((2 * n + 1) * (2 * n1 + 1) * (2 * n2 + 1)) / (4 * consPi)) *
-         Symbol::Wigner3j(n, n1, n2, 0, 0, 0) *
-         Symbol::Wigner3j(n, n1, n2, m, m1, m2);
+         optimet::symbol::Wigner3j(n, n1, n2, 0, 0, 0) *
+         optimet::symbol::Wigner3j(n, n1, n2, m, m1, m2);
 }
 // ---------------------------------------------------------------------------------------
 
@@ -547,12 +545,6 @@ int PeriodicCoupling::compute_Znmlk(double a1, double a2,
     Rn.y = double(ll) * b2;
     Rn.z = 0.;
 
-    //    // get magnitude of Rn
-    //    Rn_mag = std::sqrt( Rn.x*Rn.x + Rn.y*Rn.y + Rn.z*Rn.z );
-    //    // Automatic check if truncation limit is reached - for later -
-    //    ------------------------
-    //    if(Rn_mag - Rmax <0.){
-
     // positive lattice members of Rn(+l)
     // --------------------------------------------------
     Rn.x = double(ll) * b1;
@@ -611,11 +603,6 @@ int PeriodicCoupling::compute_Znmlk(double a1, double a2,
       }         // j
     }           // i
     // --------------------------------------------------------------------------------------
-    //    }
-    //    // otherwise, exit routine --------------------------------------
-    //    else{
-    //      break;
-    //    }
   }
 
   // delete all other matrices ----------------------------------------
@@ -884,12 +871,10 @@ int PeriodicCoupling::compute_Ap_vkg(
       c_temp_III(0., 0.);
 
   // compute spherical harmonics for n_max+1
-  std::complex<double> *dataYp_R;
-  dataYp_R = new std::complex<double>[p.max(n_max + 1) +
-                                      1]; // extra element for (n,m)=(0,0)
 
   R = Tools::toSpherical(vecKg); // AJ - to be double checked - AJ //
-  compute_Yp(R, waveK, n_max + 1, dataYp_R);
+  std::vector<std::complex<double>> dataYp_R =
+      optimet::compute_Yp(R, n_max + 1);
 
   // obtain dataAp_vKg
   // --------------------------------------------------------------
@@ -906,14 +891,14 @@ int PeriodicCoupling::compute_Ap_vkg(
              (waveK * Ao * vecKg.z * std::sqrt(n * (n + 1)));
 
     // I --------------------------------------------
-    c_temp_I = alpha_nm * dataYp_R[i] + beta_nm * dataYp_R[j];
+    c_temp_I = alpha_nm * dataYp_R[(long)i] + beta_nm * dataYp_R[(long)j];
 
     // II -------------------------------------------
-    c_temp_II = alpha_nm * dataYp_R[i] - beta_nm * dataYp_R[j];
+    c_temp_II = alpha_nm * dataYp_R[(long)i] - beta_nm * dataYp_R[(long)j];
     c_temp_II *= std::complex<double>(0, -1);
 
     // III ------------------------------------------
-    c_temp_III = double(p.second) * dataYp_R[p];
+    c_temp_III = double(p.second) * dataYp_R[(long)p];
 
     // allocate values of dataAp_vkg from I, II, III
     dataAp_vkg[p].x = c_temp * c_temp_I;
@@ -921,10 +906,5 @@ int PeriodicCoupling::compute_Ap_vkg(
     dataAp_vkg[p].z = c_temp * c_temp_III;
   }
 
-  //  return(   std::complex<double>(1,  0)*(compute_alpha_nm(n, m) +
-  //  compute_beta_nm(n, m)),
-  //        std::complex<double>(0, -1)*(compute_alpha_nm(n, m) -
-  //        compute_beta_nm(n, m)),
-  //        std::complex<double>(1,  0)*m);
   return 0;
 }

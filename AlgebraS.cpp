@@ -10,5 +10,5 @@ void solveMatrixVector(Matrix<t_complex> const &A, Vector<t_complex> const &b,
   // Solve A*x = b
   Vector<t_complex>::Map(x, A.cols()) = A.colPivHouseholderQr().solve(b);
 }
-}
-} // namespace optimet::algebra
+} // namespace algebra
+} // namespace optimet

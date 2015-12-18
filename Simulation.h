@@ -15,15 +15,15 @@ private:
   std::string caseFile; /**< Name of the case without extensions. */
 public:
   /**
-   * Default constructor for the Simulation class.
-   * Does NOT initialize the object.
+   * Initialization constructor for the Simulation class.
+   * @param caseFile the name of the case file (NO extension).
    */
-  Simulation(std::string const &filename) : caseFile(filename){};
+  Simulation(std::string const &filename) : caseFile(filename) {}
 
   /**
    * Default destructor for the Simulation class.
    */
-  virtual ~Simulation(){};
+  virtual ~Simulation() {}
 
   /**
    * Starts a simulation.

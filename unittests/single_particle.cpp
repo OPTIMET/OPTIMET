@@ -1,7 +1,7 @@
 #include <iostream>
 #include "catch.hpp"
 
-#include "types.h"
+#include "Types.h"
 #include "Geometry.h"
 #include "Scatterer.h"
 #include "constants.h"

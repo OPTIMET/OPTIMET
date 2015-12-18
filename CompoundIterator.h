@@ -62,7 +62,7 @@ public:
    * @param first_ the maximum value for first.
    * @return the maximum value for compound.
    */
-  int max(int first_);
+  static int max(int first_);
 
   /**
    * Default destructor for the CompoundIterator class.
@@ -160,13 +160,13 @@ public:
    * Operator overload for int typecast.
    * Returns the compound value.
    */
-  operator int();
+  operator int() const;
 
   /**
    * Operator overload for long typecast.
    * Returns the compound value.
    */
-  operator long();
+  operator long() const;
 };
 
 #endif /* COMPOUNDITERATOR_H_ */

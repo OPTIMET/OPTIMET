@@ -4,9 +4,7 @@ Output::Output() { initDone = false; }
 
 Output::Output(std::string const &outputFileName_) { init(outputFileName_); }
 
-Output::~Output() {
-  //
-}
+Output::~Output() {}
 
 hid_t Output::init(std::string const &outputFileName_) {
   outputFile = H5Fcreate(outputFileName_.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT,

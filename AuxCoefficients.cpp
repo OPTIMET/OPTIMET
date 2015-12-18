@@ -24,9 +24,7 @@ int AuxCoefficients::compute_dn(int nMax, double *dn) {
 
   return 0;
 }
-// -----------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------------
 int AuxCoefficients::compute_Pn(int nMax, double *Wigner,
                                 SphericalP<std::complex<double>> *Pn) {
   /*-------------------------------------------------------------------------------*/
@@ -42,67 +40,61 @@ int AuxCoefficients::compute_Pn(int nMax, double *Wigner,
 
   return 0;
 } // end P_func
-// ---------------------------------------------------------------------
-/*
-//
-----------------------------------------------------------------------------------
+
 int AuxCoefficients::compute_Pp(Spherical<double> R, int nMax,
-SphericalP<std::complex<double> > *dataPp){
+                                SphericalP<std::complex<double>> *dataPp) {
 
-double *dn;
-dn = new double[nMax + 1];
+  double *dn;
+  dn = new double[nMax + 1];
 
-// Wigner d function test
--------------------------------------------------------
-double *Wigner, *dWigner;
-Wigner = new double[nMax + 1];
-dWigner = new double[nMax + 1];
+  // Wigner d function test
+  double *Wigner, *dWigner;
+  Wigner = new double[nMax + 1];
+  dWigner = new double[nMax + 1];
 
-// Vector spherical functions
----------------------------------------------------
-SphericalP<std::complex<double> > *Pn; // P function arrays
-Pn = new SphericalP<std::complex<double> > [nMax + 1];
+  // Vector spherical functions
+  SphericalP<std::complex<double>> *Pn; // P function arrays
+  Pn = new SphericalP<std::complex<double>>[nMax + 1];
 
-CompoundIterator p;
-CompoundIterator q;
+  CompoundIterator p;
+  CompoundIterator q;
 
-double d_n(0.0);
-double d_temp(0.0);
+  double d_n(0.0);
+  double d_temp(0.0);
 
-for (q = CompoundIterator(nMax, nMax); q < q.max(nMax); q++) {
+  for (q = CompoundIterator(nMax, nMax); q < q.max(nMax); q++) {
 
-// prepare for spherical functions calculation ------------------------------
-VIGdVIG(nMax, q.second, R, Wigner, dWigner);
-compute_dn(nMax, dn);
+    // prepare for spherical functions calculation
+    VIGdVIG(nMax, q.second, R, Wigner, dWigner);
+    compute_dn(nMax, dn);
 
-// call vector spherical functions ------------------------------------------
-compute_Pn(nMax, Wigner, Pn);
+    // call vector spherical functions
+    compute_Pn(nMax, Wigner, Pn);
 
-for (int n = abs(q.second); n <= nMax; n++) {
-if (n != 0) {
-d_n=double(n);
+    for (int n = abs(q.second); n <= nMax; n++) {
+      if (n != 0) {
+        d_n = double(n);
 
-double dm = pow(-1., double(q.second));         // Legendre to Wigner function
-std::complex<double> exp_imphi = exp(consCi * (double)q.second * R.phi);
+        double dm = pow(-1., double(q.second)); // Legendre to Wigner function
+        std::complex<double> exp_imphi = exp(consCi * (double)q.second * R.phi);
 
-d_temp  = dm * dn[n] * std::sqrt(d_n*(d_n+1.));
+        d_temp = dm * dn[n] * std::sqrt(d_n * (d_n + 1.));
 
-p.init(n, q.second);
+        p.init(n, q.second);
 
-//dataPp[p] = Tools::toProjection(R, Pn[n] * (exp_imphi * d_temp));
-dataPp[p] = Pn[n] * (exp_imphi * d_temp);
+        // dataPp[p] = Tools::toProjection(R, Pn[n] * (exp_imphi * d_temp));
+        dataPp[p] = Pn[n] * (exp_imphi * d_temp);
+      }
+    }
+  }
+
+  delete[] Pn;
+  delete[] Wigner;
+  delete[] dWigner;
+  delete[] dn;
+
+  return 0;
 }
-}
-}
-
-delete [] Pn;
-delete [] Wigner;
-delete [] dWigner;
-delete [] dn;
-
-return 0;
-}
- */
 // ----------------------------------------------------------------------------------
 int AuxCoefficients::compute_Cn(int nMax, int m_, Spherical<double> R,
                                 double *Wigner, double *dWigner,
@@ -191,9 +183,9 @@ int AuxCoefficients::compute_Mn(int nMax, int m_, Spherical<double> R,
   int i(0);
   std::complex<double> c_temp(0.0, 0.0);
 
-  Bessel besselH;
-  besselH.init(R.rrr * waveK, BHreg, 0, nMax);
-  besselH.populate();
+  std::vector<std::complex<double>> data, ddata;
+  std::tie(data, ddata) =
+      optimet::bessel(R.rrr * waveK, (optimet::BESSEL_TYPE)BHreg, 0, nMax);
 
   double dm = pow(-1., double(m_)); // Legendre to Wigner function
   std::complex<double> exp_imphi(cos(double(m_) * R.phi),
@@ -203,9 +195,9 @@ int AuxCoefficients::compute_Mn(int nMax, int m_, Spherical<double> R,
 
     c_temp = dm * dn[i] * exp_imphi;
 
-    Mn[i].rrr = c_temp * besselH.data[i] * Cn[i].rrr;
-    Mn[i].the = c_temp * besselH.data[i] * Cn[i].the;
-    Mn[i].phi = c_temp * besselH.data[i] * Cn[i].phi;
+    Mn[i].rrr = c_temp * data[i] * Cn[i].rrr;
+    Mn[i].the = c_temp * data[i] * Cn[i].the;
+    Mn[i].phi = c_temp * data[i] * Cn[i].phi;
   }
 
   return 0;
@@ -240,9 +232,9 @@ int AuxCoefficients::compute_Nn(int nMax, int m_, Spherical<double> R,
   std::complex<double> Kr = waveK * R.rrr;
   std::complex<double> c_temp(0., 0.);
 
-  Bessel besselH;
-  besselH.init(R.rrr * waveK, BHreg, 0, nMax);
-  besselH.populate();
+  std::vector<std::complex<double>> data, ddata;
+  std::tie(data, ddata) =
+      optimet::bessel(R.rrr * waveK, (optimet::BESSEL_TYPE)BHreg, 0, nMax);
 
   double dm = pow(-1., double(m_)); // Legendre to Wigner function
   std::complex<double> exp_imphi(cos(double(m_) * R.phi),
@@ -255,16 +247,16 @@ int AuxCoefficients::compute_Nn(int nMax, int m_, Spherical<double> R,
   for (i = 1; i <= nMax; i++) {
     d_n = double(i);
     Nn[i].rrr = (1. / Kr) * dm * dn[i] *
-                ((d_n * (d_n + 1.) * besselH.data[i] * Pn[i].rrr) +
-                 ((Kr * besselH.ddata[i] + besselH.data[i]) * Bn[i].rrr)) *
+                ((d_n * (d_n + 1.) * data[i] * Pn[i].rrr) +
+                 ((Kr * ddata[i] + data[i]) * Bn[i].rrr)) *
                 exp_imphi;
     Nn[i].the = (1. / Kr) * dm * dn[i] *
-                ((d_n * (d_n + 1.) * besselH.data[i] * Pn[i].the) +
-                 ((Kr * besselH.ddata[i] + besselH.data[i]) * Bn[i].the)) *
+                ((d_n * (d_n + 1.) * data[i] * Pn[i].the) +
+                 ((Kr * ddata[i] + data[i]) * Bn[i].the)) *
                 exp_imphi;
     Nn[i].phi = (1. / Kr) * dm * dn[i] *
-                ((d_n * (d_n + 1.) * besselH.data[i] * Pn[i].phi) +
-                 ((Kr * besselH.ddata[i] + besselH.data[i]) * Bn[i].phi)) *
+                ((d_n * (d_n + 1.) * data[i] * Pn[i].phi) +
+                 ((Kr * ddata[i] + data[i]) * Bn[i].phi)) *
                 exp_imphi;
   }
   return 0;

@@ -1,11 +1,11 @@
 #ifndef SOLVER_H_
 #define SOLVER_H_
 
+#include "Types.h"
 #include "Geometry.h"
 #include "Excitation.h"
 #include "Coupling.h"
 #include "Result.h"
-#include "Types.h"
 #include <complex>
 
 /**

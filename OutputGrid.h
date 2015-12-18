@@ -1,6 +1,7 @@
 #ifndef OUTPUT_GRID_H_
 #define OUTPUT_GRID_H_
 
+#include "Types.h"
 #include "Spherical.h"
 #include "SphericalP.h"
 #include <complex>

@@ -18,8 +18,8 @@ class Excitation {
 private:
   bool initDone; /**< Specifies if the object has been initialized. */
 public:
-  SphericalP<std::complex<double>> Einc; /**< The incoming wave values as (0,
-                                             Einc_the, Einc_phi) in [V/m]. */
+  //! The incoming wave values as (0, Einc_the, Einc_phi) in [V/m].
+  SphericalP<std::complex<double>> Einc;
   Spherical<double> vKInc; /**< The incoming wavevector angular values as (R,
                               Kinc_the, Kinc_pphi). */
   long nMax;               /**< The maximum value for the n iterator. */
