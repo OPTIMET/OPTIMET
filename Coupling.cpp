@@ -86,7 +86,7 @@ void TransferCoefficients(Spherical<double> R, std::complex<double> waveK,
   // ------------------------------------------
   auto AlBe_nmlk =
       Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
-  PeriodicCoupling::compute_AlBe_nmlk(R, waveK, BHreg, n_max, AlBe_nmlk);
+  compute_AlBe_nmlk(R, waveK, BHreg, n_max, AlBe_nmlk);
 
   for (int n = 1; n < n_Matsize1 - e;
        n++) { // start at n==1 up to and including n_max
