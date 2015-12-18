@@ -23,7 +23,8 @@ TEST_CASE("Add scatterers to geometry") {
     CHECK(geometry.objects.front().vR.phi == Approx(0));
     CHECK(geometry.objects.front().elmag.epsilon_r.real() == Approx(1.1));
     CHECK(geometry.objects.front().elmag.epsilon_r.imag() == Approx(0));
-    CHECK(geometry.objects.front().elmag.epsilon.real() == Approx(1.1 * consEpsilon0));
+    CHECK(geometry.objects.front().elmag.epsilon.real() ==
+          Approx(1.1 * consEpsilon0));
     CHECK(geometry.objects.front().elmag.epsilon.imag() == Approx(0));
     CHECK(geometry.objects.front().elmag.mu_r.real() == Approx(1.2));
     CHECK(geometry.objects.front().elmag.mu_r.imag() == Approx(0));
@@ -31,7 +32,8 @@ TEST_CASE("Add scatterers to geometry") {
     CHECK(geometry.objects.front().elmag.mu.imag() == Approx(0));
     CHECK(geometry.objects.front().radius == Approx(0.5));
     CHECK(geometry.objects.front().nMax == 2);
-    CHECK(geometry.objects.front().sourceCoef.size() == 2*Tools::iteratorMax(2));
+    CHECK(geometry.objects.front().sourceCoef.size() ==
+          2 * Tools::iteratorMax(2));
   }
 
   SECTION("Add second scatterer") {
@@ -43,7 +45,8 @@ TEST_CASE("Add scatterers to geometry") {
       CHECK(geometry.objects.back().vR.phi == Approx(0.0));
     }
     SECTION("Overlap -- touching")
-      CHECK_THROWS_AS(geometry.pushObject({{2, 0, 0}, {1.1e0, 1.2e0}, 0.5, 2}), std::runtime_error);
+    CHECK_THROWS_AS(geometry.pushObject({{2, 0, 0}, {1.1e0, 1.2e0}, 0.5, 2}),
+                    std::runtime_error);
   }
 }
 
@@ -57,7 +60,8 @@ TEST_CASE("Two spheres") {
 
   // Create excitation
   auto const wavelength = 14960e-9;
-  Spherical<t_real> const vKinc{2*consPi/wavelength, 90 * consPi/180.0, 90 * consPi/180.0};
+  Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0,
+                                90 * consPi / 180.0};
   SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
   Excitation excitation{0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics};
   excitation.populate();
@@ -72,7 +76,8 @@ TEST_CASE("Two spheres") {
 
   SECTION("Check transparent <==> identity") {
     solver.populate();
-    CHECK(solver.S.isApprox(Matrix<>::Identity(solver.S.rows(), solver.S.cols())));
+    CHECK(solver.S.isApprox(
+        Matrix<>::Identity(solver.S.rows(), solver.S.cols())));
   }
   SECTION("Check structure for only one transparent sphere") {
     geometry.objects.front() = {{0, 0, 0}, {10.0e0, 1.0e0}, 0.5, nHarmonics};
