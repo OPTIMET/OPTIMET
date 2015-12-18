@@ -19,8 +19,6 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "gsl/gsl_sf_gamma.h"
-
 namespace optimet {
 
 namespace {
@@ -57,7 +55,7 @@ void compute_AlBe_nmlk(Spherical<t_real> R, t_complex waveK, t_int BHreg,
   // -------------------------------------------------------------------------------
   // temp variables
   t_complex c_temp(0., 0.);
-  t_real d_temp(0.), d_temp1(0.), d_temp2(0.);
+  t_real d_temp(0.);
   // working variables
   t_int i(0), j(0);
   t_int ii(0), jj(0);
@@ -73,8 +71,7 @@ void compute_AlBe_nmlk(Spherical<t_real> R, t_complex waveK, t_int BHreg,
   t_real A1(0.), A2(0.), A3(0.), A4(0.); // auxiliary coefficients
   t_real B1(0.), B2(0.), B3(0.);         // auxiliary coefficients
   t_int k_mirror(0), m_mirror(0);        // for calculating (negative)m
-  t_int p = (0);           // q(0);              // compound like iterator
-  CompoundIterator pl, ql; // Create a compound iterator
+  CompoundIterator pl, ql;               // Create a compound iterator
 
   // Assign corresponding input values
   // ---------------------------------------------
@@ -89,26 +86,18 @@ void compute_AlBe_nmlk(Spherical<t_real> R, t_complex waveK, t_int BHreg,
   // based on n_max
   t_int n_Matsize, m_Matsize; // dependent on (n_max)
   n_Matsize = (n_max) + 1;    // up to and including n_max    : indexed from 1
-  m_Matsize = 2 * (n_max) +
-              1; // up to and including m_max    : indexed from 0 + 1 for m==0
-  //  t_int p_max = n_max*n_max + 2*n_max;      // progression relationship -
-  //  for
-  //  n, m
-  // based on n_max+e             // (e) is required from recurrence relations
+  // up to and including m_max    : indexed from 0 + 1 for m==0
+  m_Matsize = 2 * (n_max) + 1;
   t_int e = 7; // required for extra values in 'AlBe_00lk'
   t_int n_Matsize1(0), m_Matsize1(0); // dependent on (n_max+e)
-  n_Matsize1 =
-      (n_max + e) + 1; // up to and including (n_max+e)  : indexed from 1
-  m_Matsize1 =
-      2 * (n_max + e) +
-      1; // up to and including (n_max+e)  : indexed from 0 + 1 for m==0
-  //  t_int p_max1 = (n_max+e)*(n_max+e)+2*(n_max+e); // progression
-  //  relationship
-  //  - for n, m
+  // up to and including (n_max+e)  : indexed from 1
+  n_Matsize1 = (n_max + e) + 1;
+  // up to and including (n_max+e)  : indexed from 0 + 1 for m==0
+  m_Matsize1 = 2 * (n_max + e) + 1;
 
   // prepare for calculating translation coefficients
   // -----------------------------
-  std::vector<t_complex> dataYp = optimet::compute_Yp(R, n_max + e);
+  auto const dataYp = optimet::compute_Yp(R, n_max + e);
 
   // 1.2 Prepare for AlBe_nmlk[0][n_max+e][ii][jj] evaluation
   // ---------------------
@@ -138,51 +127,13 @@ void compute_AlBe_nmlk(Spherical<t_real> R, t_complex waveK, t_int BHreg,
   // --------------------------------------------------------------
   // I - fundamental building blocks - Ynm
   // ----------------------------------------
-  t_complex **Ynm;
-  Ynm = Tools::Get_2D_c_double(n_Matsize1, m_Matsize1);
-  for (i = 0; i < n_Matsize1; i++) {
-    for (j = 0; j < m_Matsize1; j++) {
-      Ynm[i][j] = t_complex(0., 0.);
-    }
-  }
-
-  // Obtain Y_nm(the, phi)
-  // --------------------------------------------------------
-  t_complex ALegendre00(1., 0.); // to be changed
-  for (i = 0, n = 0; i < n_Matsize1;
-       i++, n++) { // start at n==0 up to and including n_max
-    for (j = 0, m = -(n_max + e); j < m_Matsize1;
-         j++, m++) { // increment by the padded e value
-
-      d_n = t_real(n);
-      d_m = t_real(m);
-
-      // if n==m==0 -----------------------------------------------------------
-      if (n == 0 && m == 0) {
-
-        d_temp1 = gsl_sf_fact(n - m); // source of a possible overflow!
-        d_temp2 = gsl_sf_fact(n + m); // source of a possible overflow!
-        d_temp = ((2. * d_n + 1.) * d_temp1) / (4 * consPi * d_temp2);
-        d_temp = std::sqrt(d_temp);
-
-        t_complex exp_ik_phiji(cos(m * R.phi), sin(m * R.phi));
-        Ynm[i][j] = d_temp * ALegendre00 * exp_ik_phiji; // eqn (A1)
-
-      }
-
-      // else, for all abs(m)<=n -----------------------------------------------
-      else if (abs(m) <= n) {
-
-        pl.init(n, m); // get vector location (p) corresponding to pl(n,m)
-        p = pl;
-        Ynm[i][j] = dataYp[p]; // eqn (A1) - spherical harmonic
-        d_temp *= 1.;
-
-        // p++;                          // increment p
-      }
-    }
-  }
-  // ------------------------------------------------------------------------------
+  Matrix<t_complex> Ynm = Matrix<t_complex>(n_Matsize1, m_Matsize1);
+  for (n = 0; n < n_Matsize1; n++)
+    for (j = 0, m = -(n_max + e); j < m_Matsize1; j++, m++)
+      if (n == 0 && m == 0)
+        Ynm(n, j) = 1e0 / std::sqrt(4. * consPi);
+      else if (std::abs(m) <= n)
+        Ynm(n, j) = dataYp[flatten_indices(n, m)];
 
   // II - Global matrix - Alpha-Beta (n, m, l, k) - AlBe_nmlk
   // ---------------------
@@ -221,10 +172,10 @@ void compute_AlBe_nmlk(Spherical<t_real> R, t_complex waveK, t_int BHreg,
         d_temp = std::sqrt(4. * consPi) * pow(-1., d_l + d_k);
         // wavek
         AlBe_nmlk[0][n_max + e][ii][jj] =
-            d_temp * Ynm[ii][k_mirror] * HB_data[l]; // eqn (C3)
+            d_temp * Ynm(ii, k_mirror) * HB_data[l]; // eqn (C3)
         // waveconj
         AlBe_nmlkconj[0][n_max + e][ii][jj] =
-            d_temp * Ynm[ii][k_mirror] * HBconj_data[l]; // eqn (C3)
+            d_temp * Ynm(ii, k_mirror) * HBconj_data[l]; // eqn (C3)
 
       } // if(abs(k)<=l)
 
@@ -436,10 +387,8 @@ void compute_AlBe_nmlk(Spherical<t_real> R, t_complex waveK, t_int BHreg,
 
   for (i = 0; i < n_Matsize1; i++) {
     delete[] AlBe_nmlkconj[i];
-    delete[] Ynm[i];
   }
 
   delete[] AlBe_nmlkconj;
-  delete[] Ynm;
 }
 }
