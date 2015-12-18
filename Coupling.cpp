@@ -1,6 +1,7 @@
 #include "Coupling.h"
 
 #include "PeriodicCoupling.h"
+#include "CompoundIterator.h"
 #include "constants.h"
 
 #include <cmath>
@@ -94,13 +95,13 @@ void TransferCoefficients(Spherical<double> R, std::complex<double> waveK,
          j++, m++) { // increment by the padded e value
 
       if (std::abs(m) <= n) {
-        auto const p = n * (n + 1) - m - 1;
+        auto const p = flatten_indices(n, m);
 
         for (int l = 1; l < n_Matsize1 - e; l++) {
           for (int jj = e, k = -n_max; jj < m_Matsize1 - e; jj++, k++) {
 
             if (std::abs(k) <= l) {
-              auto const q = l * (l + 1) - k - 1;
+              auto const q = flatten_indices(l, k);
               dataApq(p, q) = coefficients_A(l, n, j - n_max - e,
                                              jj - n_max - e, n_max, AlBe_nmlk);
               dataBpq(p, q) = coefficients_B(l, n, j - n_max - e,
