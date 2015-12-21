@@ -11,15 +11,13 @@
 
 Solver::Solver() : initDone(false), flagSH(false) {}
 
-Solver::Solver(Geometry *geometry_, Excitation *incWave_, int method_,
-               long nMax_)
+Solver::Solver(Geometry *geometry_, Excitation *incWave_, int method_, long nMax_)
     : initDone(false), flagSH(false) {
   init(geometry_, incWave_, method_, nMax_);
 }
 
-void Solver::init(Geometry *geometry_, Excitation *incWave_, int method_,
-                  long nMax_) {
-  if (initDone) {
+void Solver::init(Geometry *geometry_, Excitation *incWave_, int method_, long nMax_) {
+  if(initDone) {
     std::cerr << "Solver object initialized previously! Use update()!";
     exit(1);
   }
@@ -34,8 +32,7 @@ void Solver::init(Geometry *geometry_, Excitation *incWave_, int method_,
 
   CompoundIterator p;
 
-  S.resize(2 * p.max(nMax) * geometry->objects.size(),
-           2 * p.max(nMax) * geometry->objects.size());
+  S.resize(2 * p.max(nMax) * geometry->objects.size(), 2 * p.max(nMax) * geometry->objects.size());
   Q.resize(2 * p.max(nMax) * geometry->objects.size());
 
   result_FF = NULL;
@@ -44,14 +41,14 @@ void Solver::init(Geometry *geometry_, Excitation *incWave_, int method_,
 }
 
 int Solver::populate() {
-  if (!initDone) {
+  if(!initDone) {
     std::cerr << "Solver not initialized!";
     return 1;
   }
 
-  if (solverMethod == O3DSolverDirect)
+  if(solverMethod == O3DSolverDirect)
     populateDirect();
-  else if (solverMethod == O3DSolverIndirect)
+  else if(solverMethod == O3DSolverIndirect)
     populateIndirect();
   else // Default
     populateDirect();
@@ -61,7 +58,7 @@ int Solver::populate() {
 
 int Solver::populateDirect() {
   using namespace optimet;
-  if (!initDone) {
+  if(!initDone) {
     std::cerr << "Solver not initialized!";
     return 1;
   }
@@ -78,19 +75,19 @@ int Solver::populateDirect() {
   std::complex<double> **T_fin = new std::complex<double> *[2 * p.max(nMax)];
   std::complex<double> **T_AB = new std::complex<double> *[2 * (p.max(nMax))];
 
-  for (p = 0; p < (int)(2 * p.max(nMax)); p++) {
+  for(p = 0; p < (int)(2 * p.max(nMax)); p++) {
     T[p] = new std::complex<double>[2 * p.max(nMax)];
     Ti[p] = new std::complex<double>[2 * p.max(nMax)];
     T_fin[p] = new std::complex<double>[2 * p.max(nMax)];
     T_AB[p] = new std::complex<double>[2 * p.max(nMax)];
   }
 
-  if (flagSH) // if SH simulation, set the local source first
+  if(flagSH) // if SH simulation, set the local source first
   {
     geometry->setSourcesSingle(incWave, result_FF->internal_coef, nMax);
   }
 
-  for (size_t i = 0; i < geometry->objects.size(); i++) {
+  for(size_t i = 0; i < geometry->objects.size(); i++) {
     int pMax = p.max(nMax);
     int qMax = q.max(nMax);
 
@@ -98,11 +95,10 @@ int Solver::populateDirect() {
 
     // Get the T and IncLocal matrices first
     geometry->getTLocal(incWave->omega, i, nMax, T);
-    if (flagSH) // we are in the SH case -> get the local sources from the
-                // geometry
+    if(flagSH) // we are in the SH case -> get the local sources from the
+               // geometry
     {
-      geometry->getSourceLocal(i, incWave, result_FF->internal_coef, nMax,
-                               Q_local);
+      geometry->getSourceLocal(i, incWave, result_FF->internal_coef, nMax, Q_local);
     } else // we are in the FF case -> get the incoming excitation from the
            // geometry
     {
@@ -112,38 +108,35 @@ int Solver::populateDirect() {
     // Allocate space for a "result" matrix C, multiply T [A] with Q_local and
     // push to Q.
     std::complex<double> *C = new std::complex<double>[2 * pMax];
-    Algebra::multiplyVectorMatrix(T, 2 * pMax, 2 * pMax, Q_local, C, consC1,
-                                  consC0);
+    Algebra::multiplyVectorMatrix(T, 2 * pMax, 2 * pMax, Q_local, C, consC1, consC0);
 
-    for (size_t j = 0; j < static_cast<size_t>(2 * pMax); j++) {
+    for(size_t j = 0; j < static_cast<size_t>(2 * pMax); j++) {
       Q(j + i * 2 * pMax) = C[j];
     }
 
     delete[] Q_local;
     delete[] C;
 
-    for (size_t j = 0; j < geometry->objects.size(); j++) {
-      if (i == j) {
+    for(size_t j = 0; j < geometry->objects.size(); j++) {
+      if(i == j) {
         // Build and push an I matrix
         Tools::makeUnitMatrix(2 * pMax, Ti);
         pushToMatrix(Ti, 2 * pMax, 2 * pMax, S, i * 2 * pMax, i * 2 * pMax);
       } else {
         // Build the T_AB matrix
-        Coupling AB(geometry->objects[i].vR - geometry->objects[j].vR,
-                    incWave->waveK, 0, nMax);
-        AB.populate();
+        Coupling const AB(geometry->objects[i].vR - geometry->objects[j].vR, incWave->waveK, nMax);
 
-        for (p = 0; p < pMax; p++)
-          for (q = 0; q < qMax; q++) {
-            T_AB[p][q] = AB.dataApq(q, p);
-            T_AB[p + pMax][q + qMax] = AB.dataApq(q, p);
-            T_AB[p + pMax][q] = AB.dataBpq(q, p);
-            T_AB[p][q + qMax] = AB.dataBpq(q, p);
+        for(p = 0; p < pMax; p++)
+          for(q = 0; q < qMax; q++) {
+            T_AB[p][q] = AB.diagonal(q, p);
+            T_AB[p + pMax][q + qMax] = AB.diagonal(q, p);
+            T_AB[p + pMax][q] = AB.offdiagonal(q, p);
+            T_AB[p][q + qMax] = AB.offdiagonal(q, p);
           }
 
         // Multiply T and T_AB to get T_fin = -T*T_AB
-        Algebra::multiplyMatrixMatrix(T, 2 * pMax, 2 * pMax, T_AB, 2 * pMax,
-                                      2 * pMax, T_fin, consCm1, consC0);
+        Algebra::multiplyMatrixMatrix(T, 2 * pMax, 2 * pMax, T_AB, 2 * pMax, 2 * pMax, T_fin,
+                                      consCm1, consC0);
 
         // Push T into the S matrix
         pushToMatrix(T_fin, 2 * pMax, 2 * pMax, S, i * 2 * pMax, j * 2 * pMax);
@@ -153,7 +146,7 @@ int Solver::populateDirect() {
 
   // Clean up memory
 
-  for (p = 0; p < (int)(2 * p.max(nMax)); p++) {
+  for(p = 0; p < (int)(2 * p.max(nMax)); p++) {
     delete[] T[p];
     delete[] Ti[p];
     delete[] T_fin[p];
@@ -169,9 +162,9 @@ int Solver::populateDirect() {
 }
 
 int Solver::solve(std::complex<double> *X_sca_, std::complex<double> *X_int_) {
-  if (solverMethod == O3DSolverDirect)
+  if(solverMethod == O3DSolverDirect)
     solveScatteredDirect(X_sca_);
-  else if (solverMethod == O3DSolverIndirect)
+  else if(solverMethod == O3DSolverIndirect)
     solveScatteredIndirect(X_sca_);
   else // Default
     solveScatteredDirect(X_sca_);
@@ -183,7 +176,7 @@ int Solver::solve(std::complex<double> *X_sca_, std::complex<double> *X_int_) {
 
 int Solver::solveScatteredDirect(std::complex<double> *X_sca_) {
   using namespace optimet;
-  if (!initDone) {
+  if(!initDone) {
     std::cerr << "Solver object not initialized!";
     return 1;
   }
@@ -195,7 +188,7 @@ int Solver::solveScatteredDirect(std::complex<double> *X_sca_) {
 
 int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
   using namespace optimet;
-  if (!initDone) {
+  if(!initDone) {
     std::cerr << "Solver object not initialized!";
     return 1;
   }
@@ -210,7 +203,7 @@ int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
       new std::complex<double>[2 * p.max(nMax) * geometry->objects.size()];
   std::complex<double> **T = new std::complex<double> *[2 * p.max(nMax)];
 
-  for (p = 0; p < (int)(2 * p.max(nMax)); p++) {
+  for(p = 0; p < (int)(2 * p.max(nMax)); p++) {
     T[p] = new std::complex<double>[2 * p.max(nMax)];
   }
 
@@ -218,21 +211,21 @@ int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
   // result in X_sca_local
   optimet::algebra::solveMatrixVector(S, Q, X_sca_local);
 
-  for (size_t i = 0; i < geometry->objects.size(); i++) {
+  for(size_t i = 0; i < geometry->objects.size(); i++) {
     // Get the local scattering matrix for object i
     geometry->getTLocal(incWave->omega, i, nMax, T);
 
     // Build a partial X_sca_part vector
-    for (p = 0; p < (int)(2 * p.max(nMax)); p++) {
+    for(p = 0; p < (int)(2 * p.max(nMax)); p++) {
       X_sca_part[p] = X_sca_local[i * 2 * p.max(nMax) + p.compound];
     }
 
     // Multiply T with X_sca_part to get X_sca_fin
-    Algebra::multiplyVectorMatrix(T, 2 * p.max(nMax), 2 * p.max(nMax),
-                                  X_sca_part, X_sca_part_fin, consC1, consC0);
+    Algebra::multiplyVectorMatrix(T, 2 * p.max(nMax), 2 * p.max(nMax), X_sca_part, X_sca_part_fin,
+                                  consC1, consC0);
 
     // Push new X_sca_fin into the X_sca_ final solution
-    for (p = 0; p < (int)(2 * p.max(nMax)); p++) {
+    for(p = 0; p < (int)(2 * p.max(nMax)); p++) {
       X_sca_[i * 2 * p.max(nMax) + p.compound] = X_sca_part_fin[p];
     }
   }
@@ -241,7 +234,7 @@ int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
   delete[] X_sca_local;
   delete[] X_sca_part;
   delete[] X_sca_part_fin;
-  for (p = 0; p < (int)(2 * p.max(nMax)); p++) {
+  for(p = 0; p < (int)(2 * p.max(nMax)); p++) {
     delete[] T[p];
   }
   delete[] T;
@@ -250,9 +243,8 @@ int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
 }
 
 int Solver::switchSH(Excitation *incWave_, Result *result_FF_, long nMax_) {
-  if (!initDone) {
-    std::cerr
-        << "Solver object was not created and initialized in the FF case!";
+  if(!initDone) {
+    std::cerr << "Solver object was not created and initialized in the FF case!";
     return 1;
   }
 
@@ -266,26 +258,23 @@ int Solver::switchSH(Excitation *incWave_, Result *result_FF_, long nMax_) {
   return 0;
 }
 
-int Solver::solveInternal(std::complex<double> *X_sca_,
-                          std::complex<double> *X_int_) {
-  if (!initDone) {
+int Solver::solveInternal(std::complex<double> *X_sca_, std::complex<double> *X_int_) {
+  if(!initDone) {
     std::cerr << "Solver object not initialized!";
     return 1;
   }
 
   CompoundIterator p, q;
 
-  std::complex<double> *Iaux =
-      new std::complex<double>[2 * Tools::iteratorMax(nMax)];
+  std::complex<double> *Iaux = new std::complex<double>[2 * Tools::iteratorMax(nMax)];
 
-  for (size_t j = 0; j < geometry->objects.size(); j++) {
+  for(size_t j = 0; j < geometry->objects.size(); j++) {
     int pMax = p.max(nMax);
     geometry->getIaux(incWave->omega, j, nMax, Iaux);
 
-    for (p = 0; p < pMax; p++) {
+    for(p = 0; p < pMax; p++) {
       // scattered
-      X_int_[j * 2 * pMax + p.compound] =
-          X_sca_[j * 2 * pMax + p.compound] * Iaux[p];
+      X_int_[j * 2 * pMax + p.compound] = X_sca_[j * 2 * pMax + p.compound] * Iaux[p];
       X_int_[pMax + j * 2 * pMax + p.compound] =
           X_sca_[pMax + j * 2 * pMax + p.compound] * Iaux[p + pMax];
     }
@@ -298,7 +287,7 @@ int Solver::solveInternal(std::complex<double> *X_sca_,
 
 int Solver::populateIndirect() {
   using namespace optimet;
-  if (!initDone) {
+  if(!initDone) {
     std::cerr << "Geometry not initialized!";
     return 1;
   }
@@ -315,19 +304,19 @@ int Solver::populateIndirect() {
   std::complex<double> **T_fin = new std::complex<double> *[2 * p.max(nMax)];
   std::complex<double> **T_AB = new std::complex<double> *[2 * (p.max(nMax))];
 
-  for (p = 0; p < (int)(2 * p.max(nMax)); p++) {
+  for(p = 0; p < (int)(2 * p.max(nMax)); p++) {
     T[p] = new std::complex<double>[2 * p.max(nMax)];
     Ti[p] = new std::complex<double>[2 * p.max(nMax)];
     T_fin[p] = new std::complex<double>[2 * p.max(nMax)];
     T_AB[p] = new std::complex<double>[2 * p.max(nMax)];
   }
 
-  if (flagSH) // if SH simulation, set the local source first
+  if(flagSH) // if SH simulation, set the local source first
   {
     geometry->setSourcesSingle(incWave, result_FF->internal_coef, nMax);
   }
 
-  for (size_t i = 0; i < geometry->objects.size(); i++) {
+  for(size_t i = 0; i < geometry->objects.size(); i++) {
     int const pMax = p.max(nMax);
     int const qMax = q.max(nMax);
 
@@ -336,11 +325,10 @@ int Solver::populateIndirect() {
     // Get the IncLocal matrices
     // These correspond directly to the Beta*a in Stout2002 Eq. 10 as
     // they are already translated.
-    if (flagSH) // we are in the SH case -> get the local sources from the
-                // geometry
+    if(flagSH) // we are in the SH case -> get the local sources from the
+               // geometry
     {
-      geometry->getSourceLocal(i, incWave, result_FF->internal_coef, nMax,
-                               Q_local.data());
+      geometry->getSourceLocal(i, incWave, result_FF->internal_coef, nMax, Q_local.data());
     } else // we are in the FF case -> get the incoming excitation from the
            // geometry
     {
@@ -351,22 +339,20 @@ int Solver::populateIndirect() {
     // point)
     Q.segment(i * 2 * pMax, 2 * pMax) = Q_local;
 
-    for (size_t j = 0; j < geometry->objects.size(); j++) {
-      if (i == j)
+    for(size_t j = 0; j < geometry->objects.size(); j++) {
+      if(i == j)
         S.block(i * 2 * pMax, i * 2 * pMax, 2 * pMax, 2 * pMax) =
             Matrix<>::Identity(2 * pMax, 2 * pMax);
       else {
         // Build the T_AB matrix (non-regular corresponding to alpha(i,j))
-        Coupling AB(geometry->objects[i].vR - geometry->objects[j].vR,
-                    incWave->waveK, 0, nMax);
-        AB.populate();
+        Coupling const AB(geometry->objects[i].vR - geometry->objects[j].vR, incWave->waveK, nMax);
 
-        for (p = 0; p < pMax; p++)
-          for (q = 0; q < qMax; q++) {
-            T_AB[p][q] = AB.dataApq(q, p);
-            T_AB[p + pMax][q + qMax] = AB.dataApq(q, p);
-            T_AB[p + pMax][q] = AB.dataBpq(q, p);
-            T_AB[p][q + qMax] = AB.dataBpq(q, p);
+        for(p = 0; p < pMax; p++)
+          for(q = 0; q < qMax; q++) {
+            T_AB[p][q] = AB.diagonal(q, p);
+            T_AB[p + pMax][q + qMax] = AB.diagonal(q, p);
+            T_AB[p + pMax][q] = AB.offdiagonal(q, p);
+            T_AB[p][q + qMax] = AB.offdiagonal(q, p);
           }
 
         // In this case, T needs to correspond to the SECOND object; so get it
@@ -374,8 +360,8 @@ int Solver::populateIndirect() {
         geometry->getTLocal(incWave->omega, j, nMax, T);
 
         // Multiply T_AB and T to get T_fin = -T_AB*T
-        Algebra::multiplyMatrixMatrix(T_AB, 2 * pMax, 2 * pMax, T, 2 * pMax,
-                                      2 * pMax, T_fin, consCm1, consC0);
+        Algebra::multiplyMatrixMatrix(T_AB, 2 * pMax, 2 * pMax, T, 2 * pMax, 2 * pMax, T_fin,
+                                      consCm1, consC0);
 
         // Push T_fin into the S matrix
         pushToMatrix(T_fin, 2 * pMax, 2 * pMax, S, i * 2 * pMax, j * 2 * pMax);
@@ -385,7 +371,7 @@ int Solver::populateIndirect() {
 
   // Clean up memory
 
-  for (p = 0; p < (int)(2 * p.max(nMax)); p++) {
+  for(p = 0; p < (int)(2 * p.max(nMax)); p++) {
     delete[] T[p];
     delete[] Ti[p];
     delete[] T_fin[p];
