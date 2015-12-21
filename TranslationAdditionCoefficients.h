@@ -10,14 +10,16 @@ namespace optimet {
 //! Equation 1 of Appendix A in Stout (2002)
 t_complex Ynm(Spherical<t_real> const &R, t_int n, t_int m);
 
-//! \brief Computes translation addition coefficients
-//! \details Equations come from Stout (2002), appendix C.
-class TranslationAdditionCoefficients {
+namespace details {
+//! \brief Computes translation addition coefficients for m > 0
+//! \details Equations come from Stout (2002), appendix C. Negative m coefficients should be
+//! obtained using the symmetry relationship. This class caches previously computed coefficients.
+class CachedRecurrence {
   //! Indices tuple
   typedef std::array<t_int, 4> t_indices;
 
 public:
-  TranslationAdditionCoefficients(Spherical<t_real> R, t_complex waveK, bool regular = true)
+  CachedRecurrence(Spherical<t_real> R, t_complex waveK, bool regular = true)
       : direction(R), waveK(waveK), regular(regular) {}
 
   //! \brief Returns translation addition coefficients
@@ -38,12 +40,14 @@ protected:
   bool regular;
   //! Caches known coefficients
   std::map<t_indices, t_complex> cache;
-  //! Caches known coefficients for m < 0 version
-  std::map<t_indices, t_complex> cache_conj;
 
-  //! Initial values
+  //! Switches between recurrence relationships
+  t_complex impl(t_int n, t_int m, t_int l, t_int k);
   t_complex initial(t_int l, t_int k);
+  t_complex diagonal_recurrence(t_int n, t_int l, t_int k);
+  t_complex offdiagonal_recurrence(t_int n, t_int m, t_int l, t_int k);
 };
+}
 }
 
 #endif
