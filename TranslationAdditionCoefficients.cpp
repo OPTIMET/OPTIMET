@@ -4,6 +4,7 @@
 
 #include <complex>
 #include <cmath>
+#include <iostream>
 
 #include <boost/math/special_functions/legendre.hpp>
 
@@ -17,6 +18,13 @@ constexpr bool is_valid(t_int n, t_int m, t_int l, t_int k) {
 }
 //! Does just that
 constexpr t_int factorial(t_int n) { return n < 2 ? 1 : n * factorial(n - 1); }
+constexpr t_int partial_factorial(t_int n, t_int m) {
+  return n > m ? n * partial_factorial(n - 1, m) : 1;
+}
+constexpr t_real factorial_ratio(t_int n, t_int m) {
+  return n >= m ? static_cast<t_real>(partial_factorial(n, m)) :
+                  1e0 / static_cast<t_real>(partial_factorial(m, n));
+}
 //! Coefficient of Stout (2004) Appendix C recurrence relationship
 inline t_real a_plus(t_int n, t_int m) {
   if(not is_valid(n, m))
@@ -50,10 +58,8 @@ inline t_real b_minus(t_int n, t_int m) {
 t_complex Ynm(Spherical<t_real> const &R, t_int n, t_int m) {
   if(not is_valid(n, m))
     return 0;
-  auto const gamma =
-      static_cast<t_real>(n * (n + 1) * (2 * n + 1)) /
-      (constant::pi * static_cast<t_real>(4 * n * (n + 1))) *
-      (static_cast<t_real>(factorial(n - m)) / static_cast<t_real>(factorial(n + m)));
+  auto const gamma = static_cast<t_real>(2 * n + 1) / (constant::pi * static_cast<t_real>(4)) *
+                     (factorial_ratio(n - m, n + m));
   return std::sqrt(gamma) * std::exp(constant::i * (m * R.phi)) *
          boost::math::legendre_p(n, m, std::cos(R.the));
 }
@@ -89,13 +95,13 @@ t_complex CachedRecurrence::recurrence(t_int n, t_int m, t_int l, t_int k) {
 }
 
 t_complex CachedRecurrence::initial(t_int l, t_int k) {
-  if(l == 0 and k == 0)
-    return 1e0 / std::sqrt(4e0 * constant::pi);
   auto const wave = direction.rrr * waveK;
   auto const bessel = regular ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
   auto const hb = std::get<0>(bessel(wave, l + 1));
+  if(l == 0 and k == 0)
+    return hb[l];
   auto const factor = std::sqrt(4e0 * constant::pi) * ((l + k) % 2 == 0 ? 1 : -1);
-  assert(hb.size() > l + 1 and l >= 0);
+  assert(hb.size() > l and l >= 0);
   return factor * Ynm(direction, l, -k) * hb[l];
 }
 
