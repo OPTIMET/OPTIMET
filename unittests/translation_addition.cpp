@@ -102,4 +102,34 @@ TEST_CASE("Translation-Addition cached-recurrence coefficients") {
     CHECK(left0.real() == Approx(right0.real()));
     CHECK(left0.imag() == Approx(right0.imag()));
   }
+
+  SECTION("Check off-diagonal recurrence") {
+    auto const a10_31 = ta(1, 0, 3, 1);
+    auto const a00_21 = ta(0, 0, 2, 1);
+    auto const a00_41 = ta(0, 0, 4, 1);
+    auto const left0 = std::sqrt(1e0 / 3e0) * a10_31;
+    auto const right0 = std::sqrt(8e0 / 35e0) * a00_21 + std::sqrt(15e0 / 63e0) * a00_41;
+    CHECK(left0.real() == Approx(right0.real()));
+    CHECK(left0.imag() == Approx(right0.imag()));
+
+    auto const a52_31 = ta(5, 2, 3, 1);
+    auto const a32_31 = ta(3, 2, 3, 1);
+    auto const a42_21 = ta(4, 2, 2, 1);
+    auto const a42_41 = ta(4, 2, 4, 1);
+    auto const left1 = std::sqrt(21e0 / 99e0) * a52_31;
+    auto const right1 = -std::sqrt(12e0 / 63e0) * a32_31 + std::sqrt(8e0 / 35e0) * a42_21 +
+                        std::sqrt(15e0 / 63e0) * a42_41;
+    CHECK(left1.real() == Approx(right1.real()));
+    CHECK(left1.imag() == Approx(right1.imag()));
+  }
+
+  SECTION("Try and check pathologies") {
+    auto const a52_00 = ta(5, 2, 0, 0);
+    auto const a32_00 = ta(3, 2, 0, 0);
+    auto const a42_10 = ta(4, 2, 1, 0);
+    auto const left0 = std::sqrt(21e0 / 99e0) * a52_00;
+    auto const right0 = -std::sqrt(12e0 / 63e0) * a32_00 + std::sqrt(1e0 / 3e0) * a42_10;
+    CHECK(left0.real() == Approx(right0.real()));
+    CHECK(left0.imag() == Approx(right0.imag()));
+  }
 }

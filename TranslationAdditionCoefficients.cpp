@@ -13,18 +13,26 @@ namespace optimet {
 namespace {
 constexpr t_int factorial(t_int n) { return n < 2 ? 1 : n * factorial(n - 1); }
 inline t_real a_plus(t_int n, t_int m) {
+  if(n < 0 or std::abs(m) > n)
+    return 0e0;
   return std::sqrt(static_cast<t_real>((n + m + 1) * (n - m + 1)) /
                    static_cast<t_real>((2 * n + 1) * (2 * n + 3)));
 }
 inline t_real a_minus(t_int n, t_int m) {
+  if(n < 0 or std::abs(m) > n)
+    return 0e0;
   return std::sqrt(static_cast<t_real>((n + m) * (n - m)) /
                    static_cast<t_real>((2 * n + 1) * (2 * n - 1)));
 }
 inline t_real b_plus(t_int n, t_int m) {
+  if(n < 0 or std::abs(m) > n)
+    return 0e0;
   return std::sqrt(static_cast<t_real>((n + m + 2) * (n + m + 1)) /
                    static_cast<t_real>((2 * n + 1) * (2 * n + 3)));
 }
 inline t_real b_minus(t_int n, t_int m) {
+  if(n < 0 or std::abs(m) > n)
+    return 0e0;
   return std::sqrt(static_cast<t_real>((n - m) * (n - m - 1)) /
                    static_cast<t_real>((2 * n + 1) * (2 * n - 1)));
 }
@@ -43,7 +51,8 @@ t_complex Ynm(Spherical<t_real> const &R, t_int n, t_int m) {
 
 namespace details {
 t_complex CachedRecurrence::operator()(t_int n, t_int m, t_int l, t_int k) {
-  if(std::abs(k) > l or std::abs(m) > n)
+  // It simplifies the recurrence if we assume zero outside the domain of validity
+  if(std::abs(k) > l or std::abs(m) > n or n < 0 or l < 0)
     return 0e0;
 
   // For simplicity, coefficients for negative m should be implemented separately using the symmetry
@@ -88,9 +97,9 @@ t_complex CachedRecurrence::diagonal_recurrence(t_int n, t_int l, t_int k) {
 }
 
 t_complex CachedRecurrence::offdiagonal_recurrence(t_int n, t_int m, t_int l, t_int k) {
-  return (-operator()(n - 2, m, l, k) * a_minus(n - 2, m) +
+  return (-operator()(n - 2, m, l, k) * a_minus(n - 1, m) +
           operator()(n - 1, m, l - 1, k) * a_plus(l - 1, k) +
-          operator()(n - 1, m, l + 1, k) * a_plus(l + 1, k)) /
+          operator()(n - 1, m, l + 1, k) * a_minus(l + 1, k)) /
          a_plus(n - 1, m);
 }
 }
