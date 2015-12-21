@@ -11,27 +11,31 @@
 
 namespace optimet {
 namespace {
+constexpr bool is_valid(t_int n, t_int m) { return n >= 0 and std::abs(m) <= n; }
+constexpr bool is_valid(t_int n, t_int m, t_int l, t_int k) {
+  return is_valid(n, m) and is_valid(l, k);
+}
 constexpr t_int factorial(t_int n) { return n < 2 ? 1 : n * factorial(n - 1); }
 inline t_real a_plus(t_int n, t_int m) {
-  if(n < 0 or std::abs(m) > n)
+  if(not is_valid(n, m))
     return 0e0;
   return std::sqrt(static_cast<t_real>((n + m + 1) * (n - m + 1)) /
                    static_cast<t_real>((2 * n + 1) * (2 * n + 3)));
 }
 inline t_real a_minus(t_int n, t_int m) {
-  if(n < 0 or std::abs(m) > n)
+  if(not is_valid(n, m))
     return 0e0;
   return std::sqrt(static_cast<t_real>((n + m) * (n - m)) /
                    static_cast<t_real>((2 * n + 1) * (2 * n - 1)));
 }
 inline t_real b_plus(t_int n, t_int m) {
-  if(n < 0 or std::abs(m) > n)
+  if(not is_valid(n, m))
     return 0e0;
   return std::sqrt(static_cast<t_real>((n + m + 2) * (n + m + 1)) /
                    static_cast<t_real>((2 * n + 1) * (2 * n + 3)));
 }
 inline t_real b_minus(t_int n, t_int m) {
-  if(n < 0 or std::abs(m) > n)
+  if(not is_valid(n, m))
     return 0e0;
   return std::sqrt(static_cast<t_real>((n - m) * (n - m - 1)) /
                    static_cast<t_real>((2 * n + 1) * (2 * n - 1)));
@@ -39,7 +43,7 @@ inline t_real b_minus(t_int n, t_int m) {
 } // anonymous namespace
 
 t_complex Ynm(Spherical<t_real> const &R, t_int n, t_int m) {
-  if(n < std::abs(m))
+  if(not is_valid(n, m))
     return 0;
   auto const gamma =
       static_cast<t_real>(n * (n + 1) * (2 * n + 1)) /
@@ -52,7 +56,7 @@ t_complex Ynm(Spherical<t_real> const &R, t_int n, t_int m) {
 namespace details {
 t_complex CachedRecurrence::operator()(t_int n, t_int m, t_int l, t_int k) {
   // It simplifies the recurrence if we assume zero outside the domain of validity
-  if(std::abs(k) > l or std::abs(m) > n or n < 0 or l < 0)
+  if(not is_valid(n, m, l, k))
     return 0e0;
 
   // For simplicity, coefficients for negative m should be implemented separately using the symmetry
