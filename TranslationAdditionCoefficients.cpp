@@ -11,29 +11,36 @@
 
 namespace optimet {
 namespace {
+//! True if n and m within shperical harmonics validity regime
 constexpr bool is_valid(t_int n, t_int m) { return n >= 0 and std::abs(m) <= n; }
+//! True if both pairs are valid
 constexpr bool is_valid(t_int n, t_int m, t_int l, t_int k) {
   return is_valid(n, m) and is_valid(l, k);
 }
+//! Does just that
 constexpr t_int factorial(t_int n) { return n < 2 ? 1 : n * factorial(n - 1); }
+//! Coefficient of Stout (2004) Appendix C recurrence relationship
 inline t_real a_plus(t_int n, t_int m) {
   if(not is_valid(n, m))
     return 0e0;
   return std::sqrt(static_cast<t_real>((n + m + 1) * (n - m + 1)) /
                    static_cast<t_real>((2 * n + 1) * (2 * n + 3)));
 }
+//! Coefficient of Stout (2004) Appendix C recurrence relationship
 inline t_real a_minus(t_int n, t_int m) {
   if(not is_valid(n, m))
     return 0e0;
   return std::sqrt(static_cast<t_real>((n + m) * (n - m)) /
                    static_cast<t_real>((2 * n + 1) * (2 * n - 1)));
 }
+//! Coefficient of Stout (2004) Appendix C recurrence relationship
 inline t_real b_plus(t_int n, t_int m) {
   if(not is_valid(n, m))
     return 0e0;
   return std::sqrt(static_cast<t_real>((n + m + 2) * (n + m + 1)) /
                    static_cast<t_real>((2 * n + 1) * (2 * n + 3)));
 }
+//! Coefficient of Stout (2004) Appendix C recurrence relationship
 inline t_real b_minus(t_int n, t_int m) {
   if(not is_valid(n, m))
     return 0e0;
