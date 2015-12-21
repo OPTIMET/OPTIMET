@@ -42,7 +42,7 @@ protected:
   std::map<t_indices, t_complex> cache;
 
   //! Switches between recurrence relationships
-  t_complex impl(t_int n, t_int m, t_int l, t_int k);
+  t_complex recurrence(t_int n, t_int m, t_int l, t_int k);
   t_complex initial(t_int l, t_int k);
   t_complex diagonal_recurrence(t_int n, t_int l, t_int k);
   t_complex offdiagonal_recurrence(t_int n, t_int m, t_int l, t_int k);

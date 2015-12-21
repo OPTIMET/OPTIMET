@@ -76,13 +76,12 @@ t_complex CachedRecurrence::operator()(t_int n, t_int m, t_int l, t_int k) {
   if(i_found != cache.end())
     return i_found->second;
 
-  // Then check recursion that will be needed
-  auto const result = impl(n, m, l, k);
+  auto const result = recurrence(n, m, l, k);
   cache[indices] = result;
   return result;
 }
 
-t_complex CachedRecurrence::impl(t_int n, t_int m, t_int l, t_int k) {
+t_complex CachedRecurrence::recurrence(t_int n, t_int m, t_int l, t_int k) {
   if(n == 0 and m == 0)
     return initial(l, k);
   else if(n == m)
