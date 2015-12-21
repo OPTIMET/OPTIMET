@@ -34,11 +34,10 @@ TEST_CASE("Check Ynm") {
   CHECK(std::abs(Y40 - Ynm(R, 4, 0)) == Approx(0));
 }
 
-TEST_CASE("Translation-Addition cached-recurrence coefficients") {
+template <class RECURRENCE>
+void check_recurrence(Spherical<t_real> const &R, t_complex const &waveK, bool is_regular) {
   using namespace boost::math;
-  Spherical<t_real> const R(1e0, 0.42, 0.36);
-  t_complex const waveK(1e0, 1.5e0);
-  details::CachedRecurrence ta(R, waveK);
+  RECURRENCE ta(R, waveK, is_regular);
 
   SECTION("Check k > l always zero") {
     CHECK(std::abs(ta(0, 0, 0, 1)) == Approx(0));
@@ -53,7 +52,8 @@ TEST_CASE("Translation-Addition cached-recurrence coefficients") {
     CHECK(ta(0, 0, 0, 0).real() == Approx(1e0 / std::sqrt(4e0 * constant::pi)));
     CHECK(ta(0, 0, 0, 0).imag() == Approx(0));
 
-    auto const hb = std::get<0>(bessel<Bessel>(R.rrr * waveK, 4));
+    auto const bess = is_regular ? bessel<Bessel> : bessel<Hankel1>;
+    auto const hb = std::get<0>(bess(R.rrr * waveK, 4));
     auto const Y10 = std::sqrt(6e0 / 8e0 / constant::pi) * legendre_p(1, 0, std::cos(R.the));
     auto const Y1m1 = std::sqrt(12e0 / 8e0 / constant::pi) * legendre_p(1, -1, std::cos(R.the)) *
                       std::exp(-constant::i * R.phi);
@@ -84,7 +84,7 @@ TEST_CASE("Translation-Addition cached-recurrence coefficients") {
     auto const a11_51 = ta(1, 1, 5, 1);
     auto const a00_60 = ta(0, 0, 6, 0);
     auto const left2 = std::sqrt(2e0 / 3e0) * a11_51;
-    auto const right2 = std::sqrt(30e0 / 99e0) * a00_40 + std::sqrt(30e0 / 141e0) * a00_60;
+    auto const right2 = std::sqrt(30e0 / 99e0) * a00_40 + std::sqrt(30e0 / 143e0) * a00_60;
     CHECK(left2.real() == Approx(right2.real()));
     CHECK(left2.imag() == Approx(right2.imag()));
 
@@ -131,5 +131,51 @@ TEST_CASE("Translation-Addition cached-recurrence coefficients") {
     auto const right0 = -std::sqrt(12e0 / 63e0) * a32_00 + std::sqrt(1e0 / 3e0) * a42_10;
     CHECK(left0.real() == Approx(right0.real()));
     CHECK(left0.imag() == Approx(right0.imag()));
+  }
+}
+
+TEST_CASE("Translation-Addition positive m") {
+  Spherical<t_real> const R(1e0, 0.42, 0.36);
+  t_complex const waveK(1e0, 1.5e0);
+  SECTION("Regular") { check_recurrence<details::CachedRecurrence>(R, waveK, true); }
+  SECTION("Irregular") { check_recurrence<details::CachedRecurrence>(R, waveK, false); }
+}
+
+TEST_CASE("Translation-Addition all m") {
+  Spherical<t_real> const R(1e0, 0.42, 0.36);
+  t_complex const waveK(1e0, 1.5e0);
+  SECTION("Regular") { check_recurrence<TranslationAdditionCoefficients>(R, waveK, true); }
+  SECTION("Irregular") { check_recurrence<TranslationAdditionCoefficients>(R, waveK, false); }
+  SECTION("Negative regular") {
+    TranslationAdditionCoefficients ta(R, waveK, true);
+    TranslationAdditionCoefficients ta_conj(R, std::conj(waveK), true);
+    CHECK(ta(3, -2, 5, -2).real() == Approx(-ta_conj(3, 2, 5, 2).real()));
+    CHECK(ta(3, -2, 5, -2).imag() == Approx(-ta_conj(3, 2, 5, 2).imag()));
+    CHECK(ta(3, -2, 5, 2).real() == Approx(-ta_conj(3, 2, 5, -2).real()));
+    CHECK(ta(3, -2, 5, 2).imag() == Approx(-ta_conj(3, 2, 5, -2).imag()));
+    CHECK(ta(3, -2, 5, -1).real() == Approx(ta_conj(3, 2, 5, 1).real()));
+    CHECK(ta(3, -2, 5, -1).imag() == Approx(ta_conj(3, 2, 5, 1).imag()));
+    CHECK(ta(3, -2, 5, 1).real() == Approx(ta_conj(3, 2, 5, -1).real()));
+    CHECK(ta(3, -2, 5, 1).imag() == Approx(ta_conj(3, 2, 5, -1).imag()));
+    CHECK(ta(5, -3, 3, 1).real() == Approx(ta_conj(5, 3, 3, -1).real()));
+    CHECK(ta(5, -3, 3, 1).imag() == Approx(ta_conj(5, 3, 3, -1).imag()));
+    CHECK(ta(5, -3, 3, -1).real() == Approx(ta_conj(5, 3, 3, 1).real()));
+    CHECK(ta(5, -3, 3, -1).imag() == Approx(ta_conj(5, 3, 3, 1).imag()));
+  }
+  SECTION("Irregular regular") {
+    TranslationAdditionCoefficients ta(R, waveK, false);
+    TranslationAdditionCoefficients ta_conj(R, -std::conj(waveK), false);
+    CHECK(ta(3, -2, 5, -2).real() == Approx(-ta_conj(3, 2, 5, 2).real()));
+    CHECK(ta(3, -2, 5, -2).imag() == Approx(-ta_conj(3, 2, 5, 2).imag()));
+    CHECK(ta(3, -2, 5, 2).real() == Approx(-ta_conj(3, 2, 5, -2).real()));
+    CHECK(ta(3, -2, 5, 2).imag() == Approx(-ta_conj(3, 2, 5, -2).imag()));
+    CHECK(ta(3, -2, 5, -1).real() == Approx(ta_conj(3, 2, 5, 1).real()));
+    CHECK(ta(3, -2, 5, -1).imag() == Approx(ta_conj(3, 2, 5, 1).imag()));
+    CHECK(ta(3, -2, 5, 1).real() == Approx(ta_conj(3, 2, 5, -1).real()));
+    CHECK(ta(3, -2, 5, 1).imag() == Approx(ta_conj(3, 2, 5, -1).imag()));
+    CHECK(ta(5, -3, 3, 1).real() == Approx(-ta_conj(5, 3, 3, -1).real()));
+    CHECK(ta(5, -3, 3, 1).imag() == Approx(-ta_conj(5, 3, 3, -1).imag()));
+    CHECK(ta(5, -3, 3, -1).real() == Approx(-ta_conj(5, 3, 3, 1).real()));
+    CHECK(ta(5, -3, 3, -1).imag() == Approx(-ta_conj(5, 3, 3, 1).imag()));
   }
 }

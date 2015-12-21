@@ -94,7 +94,8 @@ t_complex CachedRecurrence::initial(t_int l, t_int k) {
   if(l == 0 and k == 0)
     return 1e0 / std::sqrt(4e0 * constant::pi);
   auto const wave = direction.rrr * waveK;
-  auto const hb = std::get<0>(regular ? bessel<Bessel>(wave, l + 1) : bessel<Hankel1>(wave, l + 1));
+  auto const bessel = regular ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
+  auto const hb = std::get<0>(bessel(wave, l + 1));
   auto const factor = std::sqrt(4e0 * constant::pi) * ((l + k) % 2 == 0 ? 1 : -1);
   assert(hb.size() > l + 1 and l >= 0);
   return factor * Ynm(direction, l, -k) * hb[l];
@@ -112,5 +113,13 @@ t_complex CachedRecurrence::offdiagonal_recurrence(t_int n, t_int m, t_int l, t_
           operator()(n - 1, m, l + 1, k) * a_minus(l + 1, k)) /
          a_plus(n - 1, m);
 }
+}
+t_complex TranslationAdditionCoefficients::operator()(t_int n, t_int m, t_int l, t_int k) {
+  if(m >= 0)
+    return positive(n, m, l, k);
+
+  auto const sign = negative.is_regular() ? ((k + l) % 2 == 0) : ((n + l + k + m) % 2 != 0);
+  auto const result = negative(n, -m, l, -k);
+  return sign ? result : -result;
 }
 }
