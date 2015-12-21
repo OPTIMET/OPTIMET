@@ -1,10 +1,8 @@
 #include "TranslationAdditionCoefficients.h"
 #include "Bessel.h"
-#include "AJ_AuxFuns.h"
 #include "constants.h"
-#include "CompoundIterator.h"
+
 #include <complex>
-#include <iostream>
 #include <cmath>
 
 #include <boost/math/special_functions/legendre.hpp>
@@ -113,7 +111,8 @@ t_complex CachedRecurrence::offdiagonal_recurrence(t_int n, t_int m, t_int l, t_
           operator()(n - 1, m, l + 1, k) * a_minus(l + 1, k)) /
          a_plus(n - 1, m);
 }
-}
+} // end of detailed namespace
+
 t_complex TranslationAdditionCoefficients::operator()(t_int n, t_int m, t_int l, t_int k) {
   if(m >= 0)
     return positive(n, m, l, k);
@@ -122,4 +121,4 @@ t_complex TranslationAdditionCoefficients::operator()(t_int n, t_int m, t_int l,
   auto const result = negative(n, -m, l, -k);
   return sign ? result : -result;
 }
-}
+} // end of optimet namespace
