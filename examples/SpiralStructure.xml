@@ -1,5 +1,5 @@
 <simulation>
-  <harmonics nmax="10" />
+  <harmonics nmax="6" />
 </simulation>
 
 <source type="planewave">
