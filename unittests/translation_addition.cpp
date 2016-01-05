@@ -3,7 +3,9 @@
 #include "TranslationAdditionCoefficients.h"
 #include "constants.h"
 #include "Bessel.h"
+#include "Tools.h"
 #include "AJ_AuxFuns.h"
+#include "PeriodicCoupling.h"
 #include <boost/math/special_functions/legendre.hpp>
 
 using namespace optimet;
@@ -223,4 +225,34 @@ TEST_CASE("Regression of Ynm coefficients") {
   }
   CHECK(dataYp.back().real() == Approx(optimet::Ynm(R, 0, 0).real()));
   CHECK(dataYp.back().imag() == Approx(optimet::Ynm(R, 0, 0).imag()));
+}
+
+TEST_CASE("Regression of AlBe_nmlk coefficients") {
+  Spherical<t_real> const R(1e0, 0.42, 0.36);
+  t_complex const waveK(1e0, 1.5e0);
+  auto const n_max=6; // can't be larger than that. For higher orders, old optimet returns garbage.
+  auto const e = 7; // because this "e" value is hard-coded everywhere.
+  auto const n_Matsize1 = (n_max + e) + 1;
+  auto const m_Matsize1 = 2 * (n_max + e) + 1;
+  auto AlBe_nmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
+
+  auto check = [=](bool regular) {
+    compute_AlBe_nmlk(R, waveK, regular ? 0: 1, n_max, AlBe_nmlk);
+    TranslationAdditionCoefficients ta(R, waveK, regular);
+
+    for(int n(1); n < n_Matsize1 - e; ++n)
+      for(int j(e), m(-n_max); j <= n_max; ++j, ++m)
+        if(std::abs(m) < n and m >= 0) {
+          for(int l(0); l < n_Matsize1 - e; ++l) {
+            for(int u(0), k(-n_max - e); u <= m_Matsize1; ++u, ++k)
+              if(abs(k) <= l) {
+                CHECK(ta(n, m, l, k).real() == Approx(AlBe_nmlk[n][j][l][u].real()));
+                CHECK(ta(n, m, l, k).imag() == Approx(AlBe_nmlk[n][j][l][u].imag()));
+              }
+          }
+        }
+  };
+
+  check(true);
+  check(false);
 }

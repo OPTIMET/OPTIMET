@@ -3,6 +3,7 @@
 #include "PeriodicCoupling.h"
 #include "CompoundIterator.h"
 #include "constants.h"
+#include "TranslationAdditionCoefficients.h"
 
 #include <cmath>
 #include <iostream>
@@ -26,6 +27,18 @@ t_complex coefficients_A(t_int l, t_int n, t_int m, t_int k, t_int n_max, t_comp
   return std::get<0>(coeffs) * (static_cast<t_real>(2 * k * m) * zero + std::get<1>(coeffs) * one +
                                 std::get<2>(coeffs) * two);
 }
+t_complex coefficients_A(t_int n, t_int m, t_int l, t_int k, TranslationAdditionCoefficients &ta) {
+  if(std::abs(k) > l)
+    return 0e0;
+  auto const factor = 0.5 / std::sqrt(static_cast<t_real>(l * (l + 1) * n * (n + 1)));
+  auto const c0 = static_cast<t_real>(2 * k * m);
+  auto const c1 = std::sqrt(static_cast<t_real>((n - m) * (n + m + 1) * (l - k) * (l + k + 1)));
+  auto const c2 = std::sqrt(static_cast<t_real>((n + m) * (n - m + 1) * (l + k) * (l - k + 1)));
+  if(n == 1 and l == 1 and m == 1 and k == 1)
+    std::cout << "new: " << ta(n, m, l, k) << " " << ta(n, m + 1, l, k + 1) << " "
+              << ta(n, m - 1, l, k - 1) << "\n";
+  return factor * (c0 * ta(n, m, l, k) + c1 * ta(n, m + 1, l, k + 1) + c2 * ta(n, m - 1, l, k - 1));
+}
 
 std::tuple<t_real, t_real, t_real> coefficients_B(t_int l, t_int n, t_int m, t_int k) {
   auto const a0 = 2 * l + 1;
@@ -45,6 +58,43 @@ t_complex coefficients_B(t_int l, t_int n, t_int m, t_int k, t_int n_max, t_comp
   return t_complex(0, -std::get<0>(coeffs)) *
          (static_cast<t_real>(2 * m) * std::sqrt(static_cast<t_real>(l * l - k * k)) * zero +
           std::get<1>(coeffs) * one - std::get<2>(coeffs) * two);
+}
+t_complex coefficients_B(t_int n, t_int m, t_int l, t_int k, TranslationAdditionCoefficients &ta) {
+  if(std::abs(k) > l)
+    return 0e0;
+  t_real const a0 = 2 * l + 1;
+  t_real const a1 = (2 * l - 1) * l * (l + 1) * n * (n + 1);
+  auto const factor = -constant::i * 0.5 / std::sqrt(a0 / a1);
+  auto const c0 = static_cast<t_real>(2 * m) * std::sqrt(static_cast<t_real>((l - k) * (l + k)));
+  auto const c1 = std::sqrt(static_cast<t_real>((n - m) * (n + m + 1) * (l - k) * (l - k - 1)));
+  auto const c2 = std::sqrt(static_cast<t_real>((n + m) * (n - m + 1) * (l + k) * (l + k - 1)));
+  return factor * (c0 * ta(n, m, l - 1, k) + c1 * ta(n, m + 1, l - 1, k + 1) +
+                   c2 * ta(n, m - 1, l - 1, k - 1));
+}
+
+std::tuple<Matrix<t_complex>, Matrix<t_complex>>
+transfer_coefficients(Spherical<double> R, std::complex<double> waveK, bool regular, int n_max) {
+  auto const N = Tools::iteratorMax(n_max);
+  Matrix<t_complex> diagonal = Matrix<t_complex>::Zero(N, N);
+  Matrix<t_complex> offdiagonal = Matrix<t_complex>::Zero(N, N);
+
+  TranslationAdditionCoefficients ta(R, waveK, regular);
+
+  // start at harmonic n = 1. (because n=0 spherical and hence symmetrically incompatible with
+  // propagating wave?)
+  for(t_int n(1); n <= n_max; ++n)
+    for(t_int m(-n); m <= n; ++m) {
+
+      auto const p = flatten_indices(n, m);
+      for(t_int l(1); l <= n_max; ++l)
+        for(t_int k(-l); k <= l; ++k) {
+
+          auto const q = flatten_indices(l, k);
+          diagonal(p, q) = coefficients_A(n, m, l, k, ta);
+          offdiagonal(p, q) = coefficients_B(n, m, l, k, ta);
+        }
+    }
+  return {diagonal, offdiagonal};
 }
 
 /**
@@ -117,7 +167,15 @@ Coupling::Coupling(Spherical<t_real> relR, t_complex waveK, t_uint nMax, bool re
     diagonal = Matrix<t_complex>::Identity(n, n);
   } else {
     diagonal = Matrix<t_complex>::Zero(n, n);
-    TransferCoefficients(relR, waveK, regular, nMax, diagonal, offdiagonal);
+    TransferCoefficients(relR, waveK, regular ? 1 : 0, nMax, diagonal, offdiagonal);
+
+    // auto const r = transfer_coefficients(relR, waveK, not regular, nMax);
+    // std::cout << std::get<0>(r).topLeftCorner(3, 3) << "\n\n" << diagonal.topLeftCorner(3, 3)
+    //           << "\n";
+    // if(not std::get<0>(r).isApprox(diagonal, 1e-12))
+    //   throw std::runtime_error("Goodness gracious");
+    // if(not std::get<1>(r).isApprox(offdiagonal, 1e-12))
+    //   throw std::runtime_error("Goodness gracious");
   };
 }
 } // namespace optimet
