@@ -1,9 +1,4 @@
-find_package(GSL REQUIRED)
-find_package(HDF5 REQUIRED)
 find_package(F2C REQUIRED)
-
-include(PackageLookup)
-lookup_package(Eigen3 REQUIRED)
 
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
@@ -15,4 +10,17 @@ if(DOXYGEN_FOUND)
     COMMENT "Generating API documentation with Doxygen" VERBATIM)
 endif(DOXYGEN_FOUND)
 
-find_package(Boost COMPONENTS math)
+
+macro(add_hunter_package package)
+  find_package(${package} ${ARGN})
+  if(NOT ${package}_FOUND)
+    hunter_add_package(${package} ${ARGN})
+    find_package(${package} REQUIRED ${ARGN})
+  endif()
+endmacro()
+
+add_hunter_package(Boost)
+add_hunter_package(Eigen3)
+add_hunter_package(GSL)
+add_hunter_package(HDF5)
+include(PackageLookup)
