@@ -3,7 +3,7 @@
 
 #include "Tools.h"
 #include "Spherical.h"
-#include "types.h"
+#include "Types.h"
 
 namespace optimet {
 /**

@@ -12,9 +12,9 @@ namespace optimet {
 
 namespace {
 std::tuple<t_real, t_real, t_real> coefficients_A(t_int l, t_int n, t_int m, t_int k) {
-  return {0.5 / std::sqrt(static_cast<t_real>(l * (l + 1) * n * (n + 1))),
+  return std::make_tuple(0.5 / std::sqrt(static_cast<t_real>(l * (l + 1) * n * (n + 1))),
           std::sqrt(static_cast<t_real>((n - m) * (n + m + 1) * (l - k) * (l + k + 1))),
-          std::sqrt(static_cast<t_real>((n + m) * (n - m + 1) * (l + k) * (l - k + 1)))};
+          std::sqrt(static_cast<t_real>((n + m) * (n - m + 1) * (l + k) * (l - k + 1))));
 }
 t_complex coefficients_A(t_int l, t_int n, t_int m, t_int k, t_int n_max, t_complex ****AlBe_nmlk) {
   if(std::abs(k) > l)
@@ -43,9 +43,9 @@ t_complex coefficients_A(t_int n, t_int m, t_int l, t_int k, TranslationAddition
 std::tuple<t_real, t_real, t_real> coefficients_B(t_int l, t_int n, t_int m, t_int k) {
   auto const a0 = 2 * l + 1;
   auto const a1 = (2 * l - 1) * l * (l + 1) * n * (n + 1);
-  return {0.5 * std::sqrt(static_cast<t_real>(a0) / static_cast<t_real>(a1)),
+  return std::make_tuple(0.5 * std::sqrt(static_cast<t_real>(a0) / static_cast<t_real>(a1)),
           std::sqrt(static_cast<t_real>((n - m) * (n + m + 1) * (l - k) * (l - k - 1))),
-          std::sqrt(static_cast<t_real>((n + m) * (n - m + 1) * (l + k) * (l + k - 1)))};
+          std::sqrt(static_cast<t_real>((n + m) * (n - m + 1) * (l + k) * (l + k - 1))));
 }
 t_complex coefficients_B(t_int l, t_int n, t_int m, t_int k, t_int n_max, t_complex ****AlBe_nmlk) {
   if(std::abs(k) > l)
@@ -94,7 +94,7 @@ transfer_coefficients(Spherical<double> R, std::complex<double> waveK, bool regu
           offdiagonal(p, q) = coefficients_B(n, m, l, k, ta);
         }
     }
-  return {diagonal, offdiagonal};
+  return std::make_tuple(diagonal, offdiagonal);
 }
 
 /**
