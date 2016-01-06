@@ -119,8 +119,8 @@ t_complex TranslationAdditionCoefficients::operator()(t_int n, t_int m, t_int l,
   if(m >= 0)
     return positive(n, m, l, k);
 
-  auto const sign = negative.is_regular() ? ((k + l) % 2 == 0) : ((n + l + k + m) % 2 != 0);
-  auto const result = negative(n, -m, l, -k);
+  auto const sign = negative.is_regular() ? ((k + m) % 2 == 0) : ((n + m + l + k + 1) % 2 == 0);
+  auto const result = std::conj(negative(n, -m, l, -k));
   return sign ? result : -result;
 }
 } // end of optimet namespace
