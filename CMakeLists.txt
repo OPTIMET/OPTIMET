@@ -27,7 +27,7 @@ include(dependencies)
 include(AddCPP11Flags)
 
 include_directories(${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${F2C_INCLUDE_DIRS}
-  ${BOOST_INCLUDE_DIR})
+  ${Boost_INCLUDE_DIR})
 if(EIGEN3_INCLUDE_DIR)
   include_directories(${EIGEN3_INCLUDE_DIR})
 endif()
