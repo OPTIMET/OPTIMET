@@ -5,7 +5,7 @@
 #include "AlgebraS.h"
 #include "Algebra.h"
 #include "constants.h"
-#include "aliases.h"
+#include "Aliases.h"
 #include <iostream>
 #include <cstdlib>
 
