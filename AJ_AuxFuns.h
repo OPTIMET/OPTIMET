@@ -3,16 +3,15 @@
 
 #include "Spherical.h"
 
+#include <vector>
 #include <complex>
 
-int compute_YJn_m(Spherical<double> R, std::complex<double> waveK, int BHreg,
-  int nMax, int m, std::complex<double> *YJnm);
-int compute_YJp(Spherical<double> R, std::complex<double> waveK, int BHreg,
-  int nMax, std::complex<double> *dataYJp);
+namespace optimet {
 
-int compute_Yn_m(Spherical<double> R, std::complex<double> waveK, int nMax,
-  int m, std::complex<double> *Ynm);
-int compute_Yp(Spherical<double> R, std::complex<double> waveK, int nMax,
-  std::complex<double> *dataYp);
+std::vector<std::complex<double>> compute_Yn_m(const Spherical<double> &R,
+                                               const int nMax, const int m);
+std::vector<std::complex<double>> compute_Yp(const Spherical<double> &R,
+                                             const int nMax);
+} // namespace optimet
 
 #endif /* AJ_AuxFuns_H_ */

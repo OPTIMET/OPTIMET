@@ -10,12 +10,11 @@
  * Provides an interface for reading a Run object.
  */
 
-class Reader
-{
+class Reader {
 private:
-  Run *run;       /**< Pointer to the Run object. */
+  Run *run;                     /**< Pointer to the Run object. */
   pugi::xml_document inputFile; /**< The input file. */
-  bool initDone;      /**< Specifies if object was initialized. */
+  bool initDone;                /**< Specifies if object was initialized. */
 public:
   /**
    * Default constructor for the Reader class.
@@ -46,26 +45,29 @@ public:
    */
   int readGeometry();
 
-    /**
-     * Read an incoming excitation.
-     * @return 0 if valid, 1 otherwise.
-     */
-    int readExcitation();
+  /**
+   * Read an incoming excitation.
+   * @return 0 if valid, 1 otherwise.
+   */
+  int readExcitation();
 
-    /**
-     * Read a pre-defined geometric structure.
-     * @param geo_node_ the geometry node.
-     * @return number of objects pushed, 0 if failure.
-     */
-    int readStructure(pugi::xml_node geo_node_);
+  /**
+   * Read a pre-defined geometric structure.
+   * @param geo_node_ the geometry node.
+   * @return number of objects pushed, 0 if failure.
+   */
+  int readStructure(pugi::xml_node geo_node_);
 
-  int readSimulation(std::string const& fileName_);
+  int readSimulation(std::string const &fileName_);
 
   /**
    * Read the output requests.
    * @return 0 if valid, 1 otherwise.
    */
   int readOutput();
+
+protected:
+  Scatterer readSphericalScatterer(pugi::xml_node const &node);
 };
 
 #endif /* READER_H_ */

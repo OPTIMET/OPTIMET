@@ -1,298 +1,181 @@
 #include "Coupling.h"
 
-#include "Tools.h"
-#include "CompoundIterator.h"
 #include "PeriodicCoupling.h"
+#include "CompoundIterator.h"
 #include "constants.h"
+#include "TranslationAdditionCoefficients.h"
 
 #include <cmath>
 #include <iostream>
 
-double Coupling::a_nm_p(double n, double m)
-{
-  return -sqrt( ((n+m+1.)*(n-m+1.))/((2.*n+1.)*(2.*n+3.)) );
+namespace optimet {
+
+namespace {
+std::tuple<t_real, t_real, t_real> coefficients_A(t_int l, t_int n, t_int m, t_int k) {
+  return std::make_tuple(0.5 / std::sqrt(static_cast<t_real>(l * (l + 1) * n * (n + 1))),
+          std::sqrt(static_cast<t_real>((n - m) * (n + m + 1) * (l - k) * (l + k + 1))),
+          std::sqrt(static_cast<t_real>((n + m) * (n - m + 1) * (l + k) * (l - k + 1))));
+}
+t_complex coefficients_A(t_int l, t_int n, t_int m, t_int k, t_int n_max, t_complex ****AlBe_nmlk) {
+  if(std::abs(k) > l)
+    return 0e0;
+  auto const offset = 7; // something optimet
+  auto const coeffs = coefficients_A(l, n, m, k);
+  auto const zero = AlBe_nmlk[n][m + n_max + offset][l][k + n_max + offset];
+  auto const one = AlBe_nmlk[n][m + n_max + offset + 1][l][k + n_max + offset + 1];
+  auto const two = AlBe_nmlk[n][m + n_max + offset - 1][l][k + n_max + offset - 1];
+  return std::get<0>(coeffs) * (static_cast<t_real>(2 * k * m) * zero + std::get<1>(coeffs) * one +
+                                std::get<2>(coeffs) * two);
+}
+t_complex coefficients_A(t_int n, t_int m, t_int l, t_int k, TranslationAdditionCoefficients &ta) {
+  if(std::abs(k) > l)
+    return 0e0;
+  auto const factor = 0.5 / std::sqrt(static_cast<t_real>(l * (l + 1) * n * (n + 1)));
+  auto const c0 = static_cast<t_real>(2 * k * m);
+  auto const c1 = std::sqrt(static_cast<t_real>((n - m) * (n + m + 1) * (l - k) * (l + k + 1)));
+  auto const c2 = std::sqrt(static_cast<t_real>((n + m) * (n - m + 1) * (l + k) * (l - k + 1)));
+  if(n == 1 and l == 1 and m == 1 and k == 1)
+    std::cout << "new: " << ta(n, m, l, k) << " " << ta(n, m + 1, l, k + 1) << " "
+              << ta(n, m - 1, l, k - 1) << "\n";
+  return factor * (c0 * ta(n, m, l, k) + c1 * ta(n, m + 1, l, k + 1) + c2 * ta(n, m - 1, l, k - 1));
 }
 
-double Coupling::a_nm_m(double n, double m)
-{
-  return +sqrt( ((n+m)*(n-m))/((2.*n+1.)*(2.*n-1.)) );
+std::tuple<t_real, t_real, t_real> coefficients_B(t_int l, t_int n, t_int m, t_int k) {
+  auto const a0 = 2 * l + 1;
+  auto const a1 = (2 * l - 1) * l * (l + 1) * n * (n + 1);
+  return std::make_tuple(0.5 * std::sqrt(static_cast<t_real>(a0) / static_cast<t_real>(a1)),
+          std::sqrt(static_cast<t_real>((n - m) * (n + m + 1) * (l - k) * (l - k - 1))),
+          std::sqrt(static_cast<t_real>((n + m) * (n - m + 1) * (l + k) * (l + k - 1))));
+}
+t_complex coefficients_B(t_int l, t_int n, t_int m, t_int k, t_int n_max, t_complex ****AlBe_nmlk) {
+  if(std::abs(k) > l)
+    return 0e0;
+  auto const offset = 7; // something optimet
+  auto const coeffs = coefficients_B(l, n, m, k);
+  auto const zero = AlBe_nmlk[n][m + n_max + offset][l - 1][k + n_max + offset];
+  auto const one = AlBe_nmlk[n][m + n_max + offset + 1][l - 1][k + n_max + offset + 1];
+  auto const two = AlBe_nmlk[n][m + n_max + offset - 1][l - 1][k + n_max + offset - 1];
+  return t_complex(0, -std::get<0>(coeffs)) *
+         (static_cast<t_real>(2 * m) * std::sqrt(static_cast<t_real>(l * l - k * k)) * zero +
+          std::get<1>(coeffs) * one - std::get<2>(coeffs) * two);
+}
+t_complex coefficients_B(t_int n, t_int m, t_int l, t_int k, TranslationAdditionCoefficients &ta) {
+  if(std::abs(k) > l)
+    return 0e0;
+  t_real const a0 = 2 * l + 1;
+  t_real const a1 = (2 * l - 1) * l * (l + 1) * n * (n + 1);
+  auto const factor = -constant::i * 0.5 / std::sqrt(a0 / a1);
+  auto const c0 = static_cast<t_real>(2 * m) * std::sqrt(static_cast<t_real>((l - k) * (l + k)));
+  auto const c1 = std::sqrt(static_cast<t_real>((n - m) * (n + m + 1) * (l - k) * (l - k - 1)));
+  auto const c2 = std::sqrt(static_cast<t_real>((n + m) * (n - m + 1) * (l + k) * (l + k - 1)));
+  return factor * (c0 * ta(n, m, l - 1, k) + c1 * ta(n, m + 1, l - 1, k + 1) +
+                   c2 * ta(n, m - 1, l - 1, k - 1));
 }
 
-double Coupling::b_nm_p(double n, double m)
-{
-  return +sqrt( ((n+m+2.)*(n+m+1.))/((2.*n+1.)*(2.*n+3.)) );
-}
+std::tuple<Matrix<t_complex>, Matrix<t_complex>>
+transfer_coefficients(Spherical<double> R, std::complex<double> waveK, bool regular, int n_max) {
+  auto const N = Tools::iteratorMax(n_max);
+  Matrix<t_complex> diagonal = Matrix<t_complex>::Zero(N, N);
+  Matrix<t_complex> offdiagonal = Matrix<t_complex>::Zero(N, N);
 
-double Coupling::b_nm_m(double n, double m)
-{
-  return +sqrt( ((n-m)*(n-m-1.))/((2.*n+1.)*(2.*n-1.)) );
-}
+  TranslationAdditionCoefficients ta(R, waveK, regular);
 
-void Coupling::TransferCoefficients(Spherical<double> R, std::complex<double> waveK, int BHreg,
-      int n_max, std::complex<double> **dataApq, std::complex<double> **dataBpq)
-{
-  // Translation coefficients calculation  -----------------------------------------
-  // -------------------------------------------------------------------------------
-  // temp variables
-  std::complex<double> c_temp(0., 0.);
-  // working variables
-  int i(0), j(0);
-  int ii(0), jj(0);
-  int n(0), m(0), l(0), k(0);         // duale subscript variables
-  double d_n(0.), d_m(0.), d_l(0.), d_k(0.);  // duale subscript variables
-  // auxiliary variables
-  std::complex<double> AlBe2(0., 0.);        // auxiliary coefficients
-  std::complex<double> AlBe3(0., 0.);        // auxiliary coefficients
-  std::complex<double> AlBe4(0., 0.);        // auxiliary coefficients
-  double A1(0.), A2(0.), A3(0.);        // auxiliary coefficients
-  double B1(0.), B2(0.), B3(0.);        // auxiliary coefficients
-  int p=(0), q(0);              // compound like iterator
-  CompoundIterator pl, ql;          // Create a compound iterator
+  // start at harmonic n = 1. (because n=0 spherical and hence symmetrically incompatible with
+  // propagating wave?)
+  for(t_int n(1); n <= n_max; ++n)
+    for(t_int m(-n); m <= n; ++m) {
 
-  // Assign corresponding input values ---------------------------------------------
-  std::complex<double> wkRconj(0., 0.);
-  std::complex<double> exp_iwk_theji(0., 0.);    // function of m & theji
+      auto const p = flatten_indices(n, m);
+      for(t_int l(1); l <= n_max; ++l)
+        for(t_int k(-l); k <= l; ++k) {
 
-  // II - Global matrix - Alpha-Beta (n, m, l, k) - AlBe_nmlk ---------------------
-  // prepare for computing transfer matrices ---------------------------------------
-  // Matrices sizes ----------------------------------------------------------------
-  // based on n_max
-  int n_Matsize, m_Matsize;         // dependent on (n_max)
-  n_Matsize = (n_max)+1;            // up to and including n_max    : indexed from 1
-  m_Matsize = 2*(n_max)+1;          // up to and including m_max    : indexed from 0 + 1 for m==0
-  // based on n_max+e             // (e) is required from recurrence relations
-  int e=7;                  // required for extra values in 'AlBe_00lk'
-  int n_Matsize1(0), m_Matsize1(0);     // dependent on (n_max+e)
-  n_Matsize1 = (n_max+e)+1;         // up to and including (n_max+e)  : indexed from 1
-  m_Matsize1 = 2*(n_max+e)+1;         // up to and including (n_max+e)  : indexed from 0 + 1 for m==0
-  // scalar translation-addition theorem ------------------------------------------
-  std::complex<double> ****AlBe_nmlk;
-  AlBe_nmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
-  PeriodicCoupling::compute_AlBe_nmlk(R, waveK, BHreg, n_max, AlBe_nmlk);
-
-  // III - Global matrix - Anmlk & Bnmlk (n, m, l, k) -----------------------------
-  // vector wave translation-addition theorem -------------------------------------
-  std::complex<double> ****Anmlk, ****Bnmlk;
-  Anmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
-  Bnmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
-  for(i=0; i<n_Matsize1; i++){
-    for(j=0; j<m_Matsize1; j++){
-      for(ii=0; ii<n_Matsize1; ii++){
-        for(jj=0; jj<m_Matsize1; jj++){
-          Anmlk[i][j][ii][jj]=std::complex<double>(0., 0.);
-          Bnmlk[i][j][ii][jj]=std::complex<double>(0., 0.);
+          auto const q = flatten_indices(l, k);
+          diagonal(p, q) = coefficients_A(n, m, l, k, ta);
+          offdiagonal(p, q) = coefficients_B(n, m, l, k, ta);
         }
-      }
     }
-  }
+  return std::make_tuple(diagonal, offdiagonal);
+}
 
-  // A - evaluate Anmlk & Bnmlk ------------------------------------------------------
-  for(i=1, n=1; i<n_Matsize1-e; i++, n++){              // start at n==1 up to and including n_max
-    for(j=e, m=-n_max; j<m_Matsize1-e; j++, m++){         // increment by the padded e value
+/**
+ * Calculates the coupling coefficients for a relative vector R.
+ * @param R the relative Spherical vector.
+ * @param waveK the complex wave vector.
+ * @param BHreg the type of Bessel function.
+ * @param n_max the maximum value of the n iterator.
+ * @param dataApq the storage vector for dataApq.
+ * @param dataBpq the storage vector for dataBpq.
+ */
+void TransferCoefficients(Spherical<double> R, std::complex<double> waveK, int BHreg, int n_max,
+                          Matrix<t_complex> &dataApq, Matrix<t_complex> &dataBpq) {
+  // prepare for computing transfer matrices
+  // ---------------------------------------
+  // Matrices sizes
+  // ----------------------------------------------------------------
+  auto const e = 7;                        // required for extra values in 'AlBe_00lk'
+  auto const n_Matsize1 = (n_max + e) + 1; // up to and including (n_max+e)  : indexed from 1
+  auto const m_Matsize1 =
+      2 * (n_max + e) + 1; // up to and including (n_max+e)  : indexed from 0 + 1 for m==0
+  // scalar translation-addition theorem
+  // ------------------------------------------
+  auto AlBe_nmlk = Tools::Get_4D_c_double(n_Matsize1, m_Matsize1, n_Matsize1, m_Matsize1);
+  compute_AlBe_nmlk(R, waveK, BHreg, n_max, AlBe_nmlk);
 
-      d_n=double(n);  d_m=double(m);
+  for(int n = 1; n < n_Matsize1 - e; n++) { // start at n==1 up to and including n_max
+    for(int j = e, m = -n_max; j < m_Matsize1 - e; j++, m++) { // increment by the padded e value
 
-      if(std::abs(m)<=n){
+      if(std::abs(m) <= n) {
+        auto const p = flatten_indices(n, m);
 
-      // for all m values -------------------------------------------------------
-      if(1){
+        for(int l = 1; l < n_Matsize1 - e; l++) {
+          for(int jj = e, k = -n_max; jj < m_Matsize1 - e; jj++, k++) {
 
-        for(ii=1, l=1; ii<n_Matsize1-e; ii++, l++){
-          for(jj=e, k=-n_max; jj<m_Matsize1-e; jj++, k++){
-
-            d_l=double(l);  d_k=double(k);
-
-            if(std::abs(k) > l){
-              Anmlk[i][j][ii][jj]=std::complex<double>(0., 0.);
-              Bnmlk[i][j][ii][jj]=std::complex<double>(0., 0.);
-            }
-
-            else{
-              // Anmlk ---------------------------------------------------
-              // obtain three coefficients -------------------------------
-              A1 = 0.5* sqrt( 1./(d_l*(d_l+1.)*d_n*(d_n+1.)) );
-              A2 =    sqrt( (d_n-d_m)*(d_n+d_m+1.)*(d_l-d_k)*(d_l+d_k+1.) );
-              A3 =    sqrt( (d_n+d_m)*(d_n-d_m+1.)*(d_l+d_k)*(d_l-d_k+1.) );
-
-              Anmlk[i][j][ii][jj] = 2.*d_k*d_m*AlBe_nmlk[i][j][ii][jj]
-                        + A2*AlBe_nmlk[i][j+1][ii][jj+1]
-                        + A3*AlBe_nmlk[i][j-1][ii][jj-1];
-              Anmlk[i][j][ii][jj]*=A1;
-
-              // Bnmlk ---------------------------------------------------
-              // obtain three coefficients -------------------------------
-              B1 = 0.5* sqrt( ((2.*d_l+1.)/(2.*d_l-1.))*(1./(d_l*(d_l+1.)*d_n*(d_n+1.))) );
-              B2 =    sqrt( (d_n-d_m)*(d_n+d_m+1.)*(d_l-d_k)*(d_l-d_k-1.) );
-              B3 =    sqrt( (d_n+d_m)*(d_n-d_m+1.)*(d_l+d_k)*(d_l+d_k-1.) );
-              Bnmlk[i][j][ii][jj] = 2.*d_m*sqrt((d_l-d_k)*(d_l+d_k))*AlBe_nmlk[i][j][ii-1][jj]
-                          + B2*AlBe_nmlk[i][j+1][ii-1][jj+1]
-                          - B3*AlBe_nmlk[i][j-1][ii-1][jj-1];
-              Bnmlk[i][j][ii][jj]*=std::complex<double>(0., -B1);
-
-
-            }
-          } // jj
-        } // ii
-
-      } // if(m>=0 && m!=n)
-
-      } // if(1)
-
-    } // j
-  } // i
-
-  // B - ---------------------------------------------------------------------------------
-  // store all Anmlk & Bnmlk into a compound iterator like 2D matrix ---------------------
-  int n_check(0), m_check(0), l_check(0), k_check(0);
-  //p=0;
-  for(i=1, n=1; i<n_Matsize1-e; i++, n++){              // start at n==1 up to and including n_max
-    for(j=e, m=-n_max; j<m_Matsize1-e; j++, m++){         // increment by the padded e value
-
-      if(std::abs(m)<=n){
-
-        // double check current n & m -----------------------------------------------
-        pl.init(n,m);
-        p=pl;
-        n_check = int(sqrt(double(p)+1.));
-        m_check = -(p+1)+n*(n+1);
-        //q=0;
-
-        // for all m values --------------------------------------------------------
-        for(ii=1, l=1; ii<n_Matsize1-e; ii++, l++){
-          for(jj=e, k=-n_max; jj<m_Matsize1-e; jj++, k++){
-
-            if(std::abs(k)<=l){
-              // double check current l & k -----------------------------------
-              ql.init(l,k);
-              q=ql;
-              l_check = int(sqrt(double(q)+1.));
-              k_check = -(q+1)+l*(l+1);
-              // map 4D matrix --> 2D matrix ----------------------------------
-              dataApq[p][q]=Anmlk[i][j][ii][jj];
-              dataBpq[p][q]=Bnmlk[i][j][ii][jj];
-              //q++;                    // increment q
+            if(std::abs(k) <= l) {
+              auto const q = flatten_indices(l, k);
+              dataApq(p, q) = coefficients_A(l, n, j - n_max - e, jj - n_max - e, n_max, AlBe_nmlk);
+              dataBpq(p, q) = coefficients_B(l, n, j - n_max - e, jj - n_max - e, n_max, AlBe_nmlk);
             }
 
           } // jj
-        } // ii
+        }   // l
+      }     // if(abs(m)<=n)
+    }       // j
+  }         // n
 
-        //p++;                          // increment p
-
-      } // if(abs(m)<=n)
-
-    } // j
-  } // i
-
-  // C - delete all other matrices --------------------------------------------------------
-  for(i=0; i<n_Matsize1; i++){
-    for(j=0; j<m_Matsize1; j++){
-      for(ii=0; ii<n_Matsize1; ii++){
+  // C - delete all other matrices
+  // --------------------------------------------------------
+  for(int i = 0; i < n_Matsize1; i++)
+    for(int j = 0; j < m_Matsize1; j++)
+      for(int ii = 0; ii < n_Matsize1; ii++)
         delete[] AlBe_nmlk[i][j][ii];
-        delete[] Anmlk[i][j][ii];   delete[] Bnmlk[i][j][ii];
-  } } }
 
-  for(i=0; i<n_Matsize1; i++){
-    for(j=0; j<m_Matsize1; j++){
-        delete[] AlBe_nmlk[i][j];
-        delete[] Anmlk[i][j];     delete[] Bnmlk[i][j];
-  } }
+  for(int i = 0; i < n_Matsize1; i++)
+    for(int j = 0; j < m_Matsize1; j++)
+      delete[] AlBe_nmlk[i][j];
 
-  for(i=0; i<n_Matsize1; i++){
-        delete[] AlBe_nmlk[i];
-        delete[] Anmlk[i];        delete[] Bnmlk[i];
-  }
+  for(int i = 0; i < n_Matsize1; i++)
+    delete[] AlBe_nmlk[i];
 
   delete[] AlBe_nmlk;
-  delete[] Anmlk;   delete[] Bnmlk;
 }
+} // anonymous namespace
 
-Coupling::Coupling()
-{
-  initDone = false;
+Coupling::Coupling(Spherical<t_real> relR, t_complex waveK, t_uint nMax, bool regular) {
+  auto const n = Tools::iteratorMax(nMax);
+  offdiagonal = Matrix<t_complex>::Zero(n, n);
+  if(std::abs(relR.rrr) < errEpsilon) { // Check for NO translation case
+    diagonal = Matrix<t_complex>::Identity(n, n);
+  } else {
+    diagonal = Matrix<t_complex>::Zero(n, n);
+    TransferCoefficients(relR, waveK, regular ? 1 : 0, nMax, diagonal, offdiagonal);
+
+    // auto const r = transfer_coefficients(relR, waveK, not regular, nMax);
+    // std::cout << std::get<0>(r).topLeftCorner(3, 3) << "\n\n" << diagonal.topLeftCorner(3, 3)
+    //           << "\n";
+    // if(not std::get<0>(r).isApprox(diagonal, 1e-12))
+    //   throw std::runtime_error("Goodness gracious");
+    // if(not std::get<1>(r).isApprox(offdiagonal, 1e-12))
+    //   throw std::runtime_error("Goodness gracious");
+  };
 }
-
-Coupling::Coupling(Spherical<double> relR_, std::complex<double> waveK_,
-    int regular_, long nMax_)
-{
-  init(relR_, waveK_, regular_, nMax_);
-}
-
-Coupling::~Coupling()
-{
-  if(initDone)
-  {
-    for(int i=0; i<Tools::iteratorMax(nMax); i++)
-    {
-      delete [] dataApq[i];
-      delete [] dataBpq[i];
-    }
-    delete [] dataApq;
-    delete [] dataBpq;
-  }
-}
-
-void Coupling::init(Spherical<double> relR_, std::complex<double> waveK_,
-    int regular_, long nMax_)
-{
-  relR = relR_;
-  waveK = waveK_;
-  nMax = nMax_;
-
-  regular = regular_;
-
-  if(regular_ == 0)
-    regular = 1;
-  else
-    regular = 0;
-
-  if(initDone)
-  {
-    for(int i=0; i<Tools::iteratorMax(nMax); i++)
-    {
-      delete [] dataApq[i];
-      delete [] dataBpq[i];
-    }
-    delete [] dataApq;
-    delete [] dataBpq;
-
-    initDone = false;
-  }
-
-  if(!initDone)
-  {
-    dataApq = new std::complex<double> *[Tools::iteratorMax(nMax)];
-    dataBpq = new std::complex<double> *[Tools::iteratorMax(nMax)];
-
-    for(int i=0; i<Tools::iteratorMax(nMax); i++)
-    {
-      dataApq[i] = new std::complex<double>[Tools::iteratorMax(nMax)];
-      dataBpq[i] = new std::complex<double>[Tools::iteratorMax(nMax)];
-    }
-  }
-
-  for(int i=0; i<Tools::iteratorMax(nMax); i++)
-    for(int j=0; i<Tools::iteratorMax(nMax); i++)
-    {
-      dataApq[i][j] = std::complex<double>(0.0, 0.0);
-      dataBpq[i][j] = std::complex<double>(0.0, 0.0);
-    }
-
-  initDone = true;
-}
-
-int Coupling::populate()
-{
-  if(!initDone)
-  {
-    std::cerr << "Coupling object not initialized.";
-    return 1;
-  }
-
-  if(std::abs(relR.rrr) < errEpsilon) //Check for NO translation case
-    for(int i=0; i<Tools::iteratorMax(nMax); i++)
-      dataApq[i][i] = std::complex<double>(1.0, 0.0);
-  else
-    TransferCoefficients(relR, waveK, regular, nMax, dataApq, dataBpq);
-
-  return 0;
-}
+} // namespace optimet

@@ -23,13 +23,12 @@
  * The groupIds are then passed to the various OutputX objects
  * (e.g. OutputGrid, OutputScan, etc.) by the Result object.
  */
-class Output
-{
+class Output {
 private:
   bool initDone;
-public:
 
-  hid_t outputFile;   /**< Handle to the HDF5 output file. */
+public:
+  hid_t outputFile; /**< Handle to the HDF5 output file. */
 
   /**
    * Default constructor for the Output class.
@@ -42,7 +41,7 @@ public:
    * Sets the iterator to the starting position.
    * @param outputFileName_ the name of the hdf5 output file.
    */
-  Output(std::string const& outputFileName_);
+  Output(std::string const &outputFileName_);
 
   /**
    * Default destructor for the Output class.
@@ -55,7 +54,7 @@ public:
    * @param outputFileName_ the name of the hdf5 output file.
    * @return the handle to the HDF5 file.
    */
-  hid_t init(std::string const& outputFileName_);
+  hid_t init(std::string const &outputFileName_);
 
   /**
    * Returns the handle to the base GroupID.

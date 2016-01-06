@@ -1,12 +1,17 @@
 #ifndef COMPOUNDITERATOR_H_
 #define COMPOUNDITERATOR_H_
 
+#include "Types.h"
+namespace optimet {
+inline constexpr t_int flatten_indices(t_int first, t_int second) {
+  return first * (first + 1) - second - 1;
+}
+}
 /**
  * The CompoundIterator class implements compound iterators.
  * Iterators map p -> (n, m) -> p using a specified mapping function.
  */
-class CompoundIterator
-{
+class CompoundIterator {
 private:
   /**
    * Private function for (n,m) -> p.
@@ -16,8 +21,8 @@ private:
    * Private function for p -> (n,m).
    */
   void backwardMap();
-public:
 
+public:
   int compound; /**< The compound value of the iterator. */
   int first;    /**< The first member of the iterator. */
   int second;   /**< The second member of the iterator. */
@@ -57,12 +62,13 @@ public:
   void init(int first_, int second_);
 
   /**
-   * Returns the maximum value needed for compound to cover an iterator up to first_.
+   * Returns the maximum value needed for compound to cover an iterator up to
+   * first_.
    * Assumes that second will go from -first_ to first_.
    * @param first_ the maximum value for first.
    * @return the maximum value for compound.
    */
-  int max(int first_);
+  static int max(int first_);
 
   /**
    * Default destructor for the CompoundIterator class.
@@ -73,25 +79,25 @@ public:
    * Operator overload for ++.
    * Increases the compound iterator and re-maps p -> (n,m).
    */
-  void operator ++();
+  void operator++();
 
   /**
    * Operator overload for ++.
    * Increases the compound iterator and re-maps p -> (n,m).
    */
-  void operator ++(int compound_);
+  void operator++(int compound_);
 
   /**
    * Operator overload for --.
    * Decreases the compound iterator and re-maps p -> (n,m).
    */
-  void operator --();
+  void operator--();
 
   /**
    * Operator overload for --.
    * Decreases the compound iterator and re-maps p -> (n,m).
    */
-  void operator --(int compound_);
+  void operator--(int compound_);
 
   /**
    * Operator overload for +.
@@ -99,7 +105,7 @@ public:
    * @param increase_ the value to increase the iterator by.
    * @return the new iterator.
    */
-  CompoundIterator operator +(int increase_);
+  CompoundIterator operator+(int increase_);
 
   /**
    * Operator overload for +.
@@ -107,14 +113,14 @@ public:
    * @param increase_ the value to decrease the iterator by.
    * @return the new iterator.
    */
-  CompoundIterator operator -(int decrease_);
+  CompoundIterator operator-(int decrease_);
 
   /**
    * Operator overload for =.
    * Assigns a new compound iterator value and re-maps p -> (n,m).
    * @param compound_ the value for the compound iterator.
    */
-  void operator =(int compound_);
+  void operator=(int compound_);
 
   /**
    * Operator overload for <.
@@ -122,7 +128,7 @@ public:
    * @param compound_ the compound value.
    * @return true or false.
    */
-  bool operator <(int compound_);
+  bool operator<(int compound_);
 
   /**
    * Operator overload for >.
@@ -130,7 +136,7 @@ public:
    * @param compound_ the compound value.
    * @return true or false.
    */
-  bool operator >(int compound_);
+  bool operator>(int compound_);
 
   /**
    * Operator overload for <=.
@@ -138,7 +144,7 @@ public:
    * @param compound_ the compound value.
    * @return true or false.
    */
-  bool operator <=(int compound_);
+  bool operator<=(int compound_);
 
   /**
    * Operator overload for >=.
@@ -146,7 +152,7 @@ public:
    * @param compound_ the compound value.
    * @return true or false.
    */
-  bool operator >=(int compound_);
+  bool operator>=(int compound_);
 
   /**
    * Operator overload for ==.
@@ -154,19 +160,19 @@ public:
    * @param compound_ the compound value.
    * @return true or false.
    */
-  bool operator ==(int compound_);
+  bool operator==(int compound_);
 
   /**
    * Operator overload for int typecast.
    * Returns the compound value.
    */
-  operator int();
+  operator int() const;
 
   /**
    * Operator overload for long typecast.
    * Returns the compound value.
    */
-  operator long();
+  operator long() const;
 };
 
 #endif /* COMPOUNDITERATOR_H_ */
