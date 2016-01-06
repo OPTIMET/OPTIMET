@@ -23,7 +23,7 @@ inline t_real factorial_ratio(t_int n, t_int m) {
 inline t_real a_plus(t_int n, t_int m) {
   if(not is_valid(n, m))
     return 0e0;
-  return std::sqrt(static_cast<t_real>((n + m + 1) * (n - m + 1)) /
+  return -std::sqrt(static_cast<t_real>((n + m + 1) * (n - m + 1)) /
                    static_cast<t_real>((2 * n + 1) * (2 * n + 3)));
 }
 //! Coefficient of Stout (2004) Appendix C recurrence relationship
