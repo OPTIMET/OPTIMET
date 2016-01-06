@@ -62,7 +62,7 @@ public:
 
   /**
    * Initialization constructor for the OutputGrid class.
-   * @param type_ the grid type as defined in "aliases.h".
+   * @param type_ the grid type as defined in "Aliases.h".
    * @param parameters_ the parameters (depending on the grid type). See class
    * docs.
    * @param groupID_ the HDF5 data space.
@@ -71,7 +71,7 @@ public:
 
   /**
    * Initialization method for the OutputGrid class.
-   * @param type_ the grid type as defined in "aliases.h".
+   * @param type_ the grid type as defined in "Aliases.h".
    * @param parameters_ the parameters (depending on the grid type). See class
    * docs.
    * @param groupID_ the HDF5 data space.

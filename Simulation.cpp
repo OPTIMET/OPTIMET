@@ -6,7 +6,7 @@
 #include "Solver.h"
 #include "Result.h"
 #include "Run.h"
-#include "aliases.h"
+#include "Aliases.h"
 #include "Output.h"
 
 #include <iostream>

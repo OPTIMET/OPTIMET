@@ -1,7 +1,7 @@
 #include "OutputGrid.h"
 
 #include "Tools.h"
-#include "aliases.h"
+#include "Aliases.h"
 #include "Cartesian.h"
 #include <cmath>
 
