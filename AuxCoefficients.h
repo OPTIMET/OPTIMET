@@ -15,14 +15,6 @@
  */
 class AuxCoefficients {
 private:
-  //  /**
-  //   * Compute the d_n symbol.
-  //   * @param nMax the maximum value of n iterator.
-  //   * @param dn the vector to store dn in.
-  //   * @return 0 if succesful, 1 otherwise (deprecated).
-  //   */
-  //  int compute_dn(int nMax, double *dn);
-
   /**
    * Compute the Pn functions
    * @param nMax the maximum value of the n iterator.
@@ -122,18 +114,6 @@ private:
   int compute_Pp(Spherical<double> R, int nMax,
                  SphericalP<std::complex<double>> *dataPp);
 
-  //  /**
-  //   * Compute the Wigner functions and their derivatives.
-  //   * @param nMax the maximum value of the n iterator.
-  //   * @param m_ the value of the m iterator.
-  //   * @param R the Spherical vector.
-  //   * @param Wigner the Wigner vector.
-  //   * @param dWigner the derivative Wigner vector.
-  //   * @return 0 if succesful, 1 otherwise.
-  //   */
-  //  int VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wigner, double
-  //  *dWigner);
-
   Spherical<double> R; /**< The Spherical vector. */
   int besselType;      /**< Specifies regular or non-regular functions. */
   std::complex<double> waveK; /**< The complex wave number. */
@@ -152,7 +132,7 @@ public:
   double *dn; /**< The dn symbols (required for the Excitation class). */
 
   /**
-   * Initializing constructor for the AuxCoefficients class.l
+   * Initializing constructor for the AuxCoefficients class.
    * @param R_ the Spherical vector.
    * @param waveK_ the wave number.
    * @param regular_ the type of coefficients (regular or not).
@@ -161,10 +141,22 @@ public:
   AuxCoefficients(Spherical<double> R_, std::complex<double> waveK_,
                   int regular_, int nMax_);
 
-  // AJ
-  // -----------------------------------------------------------------------------
-  // temporary call for checking addition-translation coefficients evaluations
+  /**
+   * Compute the d_n symbol.
+   * @param nMax the maximum value of n iterator.
+   * @return the d_n symbol vector.
+   */
   static std::vector<double> compute_dn(int nMax);
+
+  /**
+   * Compute the Wigner functions and their derivatives.
+   * @param nMax the maximum value of the n iterator.
+   * @param m_ the value of the m iterator.
+   * @param R the Spherical vector.
+   * @param Wigner the Wigner vector.
+   * @param dWigner the derivative Wigner vector.
+   * @return 0 if succesful, 1 otherwise.
+   */
   static int VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wigner,
                      double *dWigner);
 };
