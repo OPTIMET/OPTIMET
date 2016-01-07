@@ -56,23 +56,22 @@ public:
    * @param argument_ the vector to be multiplied with.
    * @return the dot-product of this and argument_.
    */
-  carType operator*(SphericalP<carType> argument_) {
-    return rrr * argument_.rrr + the * argument_.the + phi * argument_.phi;
+  carType operator*(const SphericalP<carType> &argument) const {
+    return rrr * argument.rrr + the * argument.the + phi * argument.phi;
   }
 
-  SphericalP<carType> operator+(SphericalP<carType> argument_) {
-    return SphericalP<carType>(rrr + argument_.rrr, the + argument_.the,
-                               phi + argument_.phi);
+  SphericalP<carType> operator+(const SphericalP<carType> &argument) const {
+    return SphericalP<carType>(rrr + argument.rrr, the + argument.the,
+                               phi + argument.phi);
   }
 
-  SphericalP<carType> operator-(SphericalP<carType> argument_) {
-    return SphericalP<carType>(rrr - argument_.rrr, the - argument_.the,
-                               phi - argument_.phi);
+  SphericalP<carType> operator-(const SphericalP<carType> &argument) const {
+    return SphericalP<carType>(rrr - argument.rrr, the - argument.the,
+                               phi - argument.phi);
   }
 
-  SphericalP<carType> operator*(carType argument_) {
-    return SphericalP<carType>(rrr * argument_, the * argument_,
-                               phi * argument_);
+  SphericalP<carType> operator*(const carType &argument) const {
+    return SphericalP<carType>(rrr * argument, the * argument, phi * argument);
   }
 };
 
