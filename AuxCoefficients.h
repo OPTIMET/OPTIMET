@@ -6,6 +6,7 @@
 
 #include <complex>
 #include <vector>
+#include <tuple>
 
 /**
  * The AuxCoefficients class implements the spherical functions M, N, B and C.
@@ -138,8 +139,8 @@ public:
    * @param regular_ the type of coefficients (regular or not).
    * @param nMax_ the maximum value of the n iterator.
    */
-  AuxCoefficients(Spherical<double> R_, std::complex<double> waveK_,
-                  int regular_, int nMax_);
+  AuxCoefficients(const Spherical<double> &R, std::complex<double> waveK,
+                  int regular, int nMax);
 
   /**
    * Compute the d_n symbol.
@@ -151,14 +152,12 @@ public:
   /**
    * Compute the Wigner functions and their derivatives.
    * @param nMax the maximum value of the n iterator.
-   * @param m_ the value of the m iterator.
+   * @param m the value of the m iterator.
    * @param R the Spherical vector.
-   * @param Wigner the Wigner vector.
-   * @param dWigner the derivative Wigner vector.
-   * @return 0 if succesful, 1 otherwise.
+   * @return the Wigner and dWigner vectors, in that order.
    */
-  static int VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wigner,
-                     double *dWigner);
+  static std::tuple<std::vector<double>, std::vector<double>>
+  VIGdVIG(int nMax, int m, const Spherical<double> &R);
 };
 
 #endif /*AUX_COEFFICIENTS_H_*/

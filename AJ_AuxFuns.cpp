@@ -19,7 +19,7 @@ std::vector<std::complex<double>> compute_Yn_m(const Spherical<double> &R,
   std::vector<double> Wigner(nMax + 1), dWigner(nMax + 1);
 
   const std::vector<double> dn = AuxCoefficients::compute_dn(nMax);
-  AuxCoefficients::VIGdVIG(nMax, m, R, Wigner.data(), dWigner.data());
+  std::tie(Wigner, dWigner) = AuxCoefficients::VIGdVIG(nMax, m, R);
 
   const double dm =
       std::pow(-1.0, static_cast<double>(m)); // Legendre to Wigner function
