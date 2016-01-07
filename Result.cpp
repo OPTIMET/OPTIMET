@@ -110,7 +110,7 @@ void Result::getEHFieldsModal(Spherical<double> R_,
                  // field
     {
       // Incoming field
-      AuxCoefficients aCoefInc(R_, waveK, 1, nMax);
+      optimet::AuxCoefficients aCoefInc(R_, waveK, 1, nMax);
 
       if (singleComponent_ == 1) // Only TE part
       {
@@ -144,7 +144,7 @@ void Result::getEHFieldsModal(Spherical<double> R_,
       // Source fields
       for (size_t j = 0; j < geometry->objects.size(); j++) {
         Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
-        AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
+        optimet::AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
 
         Einc = Einc +
                aCoef.M(static_cast<long>(p)) *
@@ -163,7 +163,7 @@ void Result::getEHFieldsModal(Spherical<double> R_,
                                            std::complex<double>(0.0, 0.0));
 
       Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
-      AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
+      optimet::AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
 
       if (singleComponent_ == 1) // TE Part only
       {
@@ -207,7 +207,7 @@ void Result::getEHFieldsModal(Spherical<double> R_,
   } else // Inside a sphere
   {
     Rrel = Tools::toPoint(R_, geometry->objects[intInd].vR);
-    AuxCoefficients aCoef(
+    optimet::AuxCoefficients aCoef(
         Rrel, waveK * sqrt(geometry->objects[intInd].elmag.epsilon_r *
                            geometry->objects[intInd].elmag.mu_r),
         1, nMax);
@@ -309,7 +309,7 @@ void Result::getEHFields(Spherical<double> R_,
                  // field
     {
       // Incoming field
-      AuxCoefficients aCoefInc(R_, waveK, 1, nMax);
+      optimet::AuxCoefficients aCoefInc(R_, waveK, 1, nMax);
       for (p = 0; p < p.max(nMax); p++) {
         Einc = Einc +
                (aCoefInc.M(static_cast<long>(p)) * excitation->dataIncAp[p] +
@@ -325,7 +325,7 @@ void Result::getEHFields(Spherical<double> R_,
       // Source fields
       for (size_t j = 0; j < geometry->objects.size(); j++) {
         Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
-        AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
+        optimet::AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
 
         for (p = 0; p < pMax; p++) {
           Einc =
@@ -346,7 +346,7 @@ void Result::getEHFields(Spherical<double> R_,
                                            std::complex<double>(0.0, 0.0));
 
       Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
-      AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
+      optimet::AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
 
       for (p = 0; p < p.max(nMax); p++) {
         Efield = Efield +
@@ -365,7 +365,7 @@ void Result::getEHFields(Spherical<double> R_,
   } else // Inside a sphere
   {
     Rrel = Tools::toPoint(R_, geometry->objects[intInd].vR);
-    AuxCoefficients aCoef(
+    optimet::AuxCoefficients aCoef(
         Rrel, waveK * sqrt(geometry->objects[intInd].elmag.epsilon_r *
                            geometry->objects[intInd].elmag.mu_r),
         1, nMax);
@@ -430,7 +430,7 @@ SphericalP<std::complex<double>> Result::getEFieldC(Spherical<double> R_,
                  // field
     {
       // Incoming field
-      AuxCoefficients aCoefInc(R_, waveK, 1, nMax);
+      optimet::AuxCoefficients aCoefInc(R_, waveK, 1, nMax);
       for (p = 0; p < p.max(nMax); p++) {
         Einc = Einc +
                (aCoefInc.M(static_cast<long>(p)) * excitation->dataIncAp[p] +
@@ -447,7 +447,7 @@ SphericalP<std::complex<double>> Result::getEFieldC(Spherical<double> R_,
       // Source fields
       for (size_t j = 0; j < geometry->objects.size(); j++) {
         Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
-        AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
+        optimet::AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
 
         for (p = 0; p < pMax; p++) {
           Einc =
@@ -465,7 +465,7 @@ SphericalP<std::complex<double>> Result::getEFieldC(Spherical<double> R_,
       }
     }
 
-    AuxCoefficients aCoef(R_, waveK, 0, nMax);
+    optimet::AuxCoefficients aCoef(R_, waveK, 0, nMax);
 
     // Scattered field
     for (p = 0; p < p.max(nMax); p++) {
@@ -482,7 +482,7 @@ SphericalP<std::complex<double>> Result::getEFieldC(Spherical<double> R_,
   } else // Inside a sphere
   {
     Rrel = Tools::toPoint(R_, geometry->objects[intInd].vR);
-    AuxCoefficients aCoef(Rrel, waveK, 1, nMax);
+    optimet::AuxCoefficients aCoef(Rrel, waveK, 1, nMax);
 
     for (p = 0; p < p.max(nMax); p++) {
       Efield =
@@ -717,7 +717,7 @@ void Result::getEHFieldsContCheck(Spherical<double> R_,
                  // field
     {
       // Incoming field
-      AuxCoefficients aCoefInc(R_, waveK, 1, nMax);
+      optimet::AuxCoefficients aCoefInc(R_, waveK, 1, nMax);
       for (p = 0; p < p.max(nMax); p++) {
         Einc = Einc +
                (aCoefInc.M(static_cast<long>(p)) * excitation->dataIncAp[p] +
@@ -733,7 +733,7 @@ void Result::getEHFieldsContCheck(Spherical<double> R_,
       // Source fields
       for (size_t j = 0; j < geometry->objects.size(); j++) {
         Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
-        AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
+        optimet::AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
 
         for (p = 0; p < pMax; p++) {
           Einc =
@@ -754,7 +754,7 @@ void Result::getEHFieldsContCheck(Spherical<double> R_,
                                            std::complex<double>(0.0, 0.0));
 
       Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
-      AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
+      optimet::AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
 
       for (p = 0; p < p.max(nMax); p++) {
         Efield = Efield +
@@ -773,7 +773,7 @@ void Result::getEHFieldsContCheck(Spherical<double> R_,
   } else // Inside a sphere
   {
     Rrel = Tools::toPoint(R_, geometry->objects[intInd].vR);
-    AuxCoefficients aCoef(
+    optimet::AuxCoefficients aCoef(
         Rrel, waveK * sqrt(geometry->objects[intInd].elmag.epsilon_r *
                            geometry->objects[intInd].elmag.mu_r),
         1, nMax);

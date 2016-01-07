@@ -3,7 +3,6 @@
 #include "constants.h"
 #include "Tools.h"
 #include "Legendre.h"
-#include "Bessel.h"
 #include "CompoundIterator.h"
 
 #include <cmath>
@@ -11,6 +10,8 @@
 #include <iostream>
 
 #include "gsl/gsl_sf_gamma.h"
+
+namespace optimet {
 
 std::vector<double> AuxCoefficients::compute_dn(int nMax) {
   std::vector<double> dn(nMax + 1);
@@ -26,306 +27,130 @@ std::vector<double> AuxCoefficients::compute_dn(int nMax) {
   return dn;
 }
 
-int AuxCoefficients::compute_Pn(int nMax, double *Wigner,
-                                SphericalP<std::complex<double>> *Pn) {
-  /*-------------------------------------------------------------------------------*/
-  /* PURPOSE: Evaluate P_nm function from vig_d  and d_vig_d
-   * --------------------- */
-  /*-------------------------------------------------------------------------------*/
+std::vector<SphericalP<std::complex<double>>>
+AuxCoefficients::compute_Pn(int nMax, const std::vector<double> &Wigner) {
+  std::vector<SphericalP<std::complex<double>>> Pn(nMax + 1);
+
   for (int i = 0; i <= nMax; i++) {
-    //    Pn[i].rrr = exp_imphi * Wigner[i];
     Pn[i].rrr = Wigner[i];
     Pn[i].the = 0.;
     Pn[i].phi = 0.;
   }
 
-  return 0;
-} // end P_func
-
-int AuxCoefficients::compute_Pp(Spherical<double> R, int nMax,
-                                SphericalP<std::complex<double>> *dataPp) {
-
-  // Wigner d function test
-  std::vector<double> Wigner(nMax + 1), dWigner(nMax + 1);
-
-  // Vector spherical functions
-  SphericalP<std::complex<double>> *Pn; // P function arrays
-  Pn = new SphericalP<std::complex<double>>[nMax + 1];
-
-  CompoundIterator p;
-  CompoundIterator q;
-
-  double d_n(0.0);
-  double d_temp(0.0);
-
-  for (q = CompoundIterator(nMax, nMax); q < q.max(nMax); q++) {
-
-    // prepare for spherical functions calculation
-    std::tie(Wigner, dWigner) = VIGdVIG(nMax, q.second, R);
-    const std::vector<double> dn = compute_dn(nMax);
-
-    // call vector spherical functions
-    compute_Pn(nMax, Wigner.data(), Pn);
-
-    for (int n = abs(q.second); n <= nMax; n++) {
-      if (n != 0) {
-        d_n = double(n);
-
-        double dm = pow(-1., double(q.second)); // Legendre to Wigner function
-        std::complex<double> exp_imphi = exp(consCi * (double)q.second * R.phi);
-
-        d_temp = dm * dn[n] * std::sqrt(d_n * (d_n + 1.));
-
-        p.init(n, q.second);
-
-        // dataPp[p] = Tools::toProjection(R, Pn[n] * (exp_imphi * d_temp));
-        dataPp[p] = Pn[n] * (exp_imphi * d_temp);
-      }
-    }
-  }
-
-  delete[] Pn;
-  delete[] dn;
-
-  return 0;
+  return Pn;
 }
-// ----------------------------------------------------------------------------------
-int AuxCoefficients::compute_Cn(int nMax, int m, Spherical<double> R,
-                                double *Wigner, double *dWigner,
-                                SphericalP<std::complex<double>> *Cn) {
-  /*-------------------------------------------------------------------------------*/
-  /* PURPOSE: Evaluate P_nm function from vig_d  and d_vig_d
-   * --------------------- */
-  /*-------------------------------------------------------------------------------*/
 
-  int i(0);
-  double A(0.), B(0.);
+std::vector<SphericalP<std::complex<double>>>
+AuxCoefficients::compute_Cn(int nMax, int m, const Spherical<double> &R,
+                            const std::vector<double> &Wigner,
+                            const std::vector<double> &dWigner) {
+  std::vector<SphericalP<std::complex<double>>> Cn(nMax + 1);
 
-  for (i = 0; i <= nMax; i++) {
+  for (int i = 0; i <= nMax; i++) {
+    double A;
     if (m == 0)
       A = 0.0;
     else if (std::abs(R.the) < 1e-10 ||
              (std::abs(R.the) - consPi + 1e-10) > 0.0)
-      A = double(m) / cos(R.the) * dWigner[i];
+      A = double(m) / std::cos(R.the) * dWigner[i];
     else
-      A = double(m) / sin(R.the) * Wigner[i];
+      A = double(m) / std::sin(R.the) * Wigner[i];
 
-    B = dWigner[i];
-    Cn[i].rrr = std::complex<double>(0., 0);
-    Cn[i].the = std::complex<double>(0., A);
-    Cn[i].phi = std::complex<double>(-B, 0.);
+    Cn[i].rrr = std::complex<double>(0.0, 0.0);
+    Cn[i].the = std::complex<double>(0.0, A);
+    Cn[i].phi = std::complex<double>(-dWigner[i], 0.0);
   }
 
-  return 0;
-} // end P_func
-// ---------------------------------------------------------------------
+  return Cn;
+}
 
-// ----------------------------------------------------------------------------------
-int AuxCoefficients::compute_Bn(int nMax, int m, Spherical<double> R,
-                                double *Wigner, double *dWigner,
-                                SphericalP<std::complex<double>> *Bn) {
-  /*-------------------------------------------------------------------------------*/
-  /* PURPOSE: Evaluate P_nm function from vig_d  and d_vig_d
-   * --------------------- */
-  /*-------------------------------------------------------------------------------*/
+std::vector<SphericalP<std::complex<double>>>
+AuxCoefficients::compute_Bn(int nMax, int m, const Spherical<double> &R,
+                            const std::vector<double> &Wigner,
+                            const std::vector<double> &dWigner) {
+  std::vector<SphericalP<std::complex<double>>> Bn(nMax + 1);
 
-  int i(0);
-  double A(0.), B(0.);
-
-  for (i = 0; i <= nMax; i++) {
-
+  for (int i = 0; i <= nMax; i++) {
+    double A;
     if (m == 0)
       A = 0.0;
     else if (std::abs(R.the) < 1e-10 ||
              (std::abs(R.the) - consPi + 1e-10) > 0.0)
-      A = double(m) / cos(R.the) * dWigner[i];
+      A = double(m) / std::cos(R.the) * dWigner[i];
     else
-      A = double(m) / sin(R.the) * Wigner[i];
+      A = double(m) / std::sin(R.the) * Wigner[i];
 
-    B = dWigner[i];
-
-    Bn[i].rrr = std::complex<double>(0., 0);
-    Bn[i].the = std::complex<double>(B, 0.);
-    Bn[i].phi = std::complex<double>(0., A);
+    Bn[i].rrr = std::complex<double>(0.0, 0.0);
+    Bn[i].the = std::complex<double>(dWigner[i], 0.0);
+    Bn[i].phi = std::complex<double>(0.0, A);
   }
 
-  return 0;
-} // end P_func
-// ---------------------------------------------------------------------
+  return Bn;
+}
 
-// ----------------------------------------------------------------------------------
-int AuxCoefficients::compute_Mn(int nMax, int m, Spherical<double> R,
-                                std::complex<double> waveK, double *dn,
-                                SphericalP<std::complex<double>> *Cn,
-                                SphericalP<std::complex<double>> *Mn,
-                                int BHreg) {
-  /*-------------------------------------------------------------------------------*/
-  /* PURPOSE: Evaluate M_nm function from c_sph C_nm[] and bh functions
-   * ---------- */
-  /* bh_indx == 1 -> use bessj
-   * --------------------------------------------------- */
-  /* bh_indx == 2 -> use bessy
-   * --------------------------------------------------- */
-  /* bh_indx == 3 -> use bessh1
-   * -------------------------------------------------- */
-  /* bh_indx == 4 -> use bessh2
-   * -------------------------------------------------- */
-  /* M_nm(kR) = (-1)^m * dn * bh(kR) * C_nm * exp(i*m*phi)  - eq(7) ref paper --
-   */
-  /*-------------------------------------------------------------------------------*/
-
-  int i(0);
-  std::complex<double> c_temp(0.0, 0.0);
+std::vector<SphericalP<std::complex<double>>> AuxCoefficients::compute_Mn(
+    int nMax, int m, const Spherical<double> &R, std::complex<double> waveK,
+    const std::vector<double> &dn,
+    const std::vector<SphericalP<std::complex<double>>> &Cn,
+    BESSEL_TYPE besselType) {
+  std::vector<SphericalP<std::complex<double>>> Mn(nMax + 1);
 
   std::vector<std::complex<double>> data, ddata;
-  std::tie(data, ddata) =
-      optimet::bessel(R.rrr * waveK, (optimet::BESSEL_TYPE)BHreg, 0, nMax);
+  std::tie(data, ddata) = optimet::bessel(R.rrr * waveK, besselType, 0, nMax);
 
-  double dm = pow(-1., double(m)); // Legendre to Wigner function
-  std::complex<double> exp_imphi(cos(double(m) * R.phi),
-                                 sin(double(m) * R.phi));
+  const double dm = std::pow(-1.0, double(m)); // Legendre to Wigner function
+  const std::complex<double> exp_imphi(std::cos(double(m) * R.phi),
+                                       std::sin(double(m) * R.phi));
 
-  for (i = 0; i <= nMax; i++) {
-
-    c_temp = dm * dn[i] * exp_imphi;
+  for (int i = 0; i <= nMax; i++) {
+    const std::complex<double> c_temp = dm * dn[i] * exp_imphi;
 
     Mn[i].rrr = c_temp * data[i] * Cn[i].rrr;
     Mn[i].the = c_temp * data[i] * Cn[i].the;
     Mn[i].phi = c_temp * data[i] * Cn[i].phi;
   }
 
-  return 0;
-} // end P_func
-// ---------------------------------------------------------------------
+  return Mn;
+}
 
-// ----------------------------------------------------------------------------------
-int AuxCoefficients::compute_Nn(int nMax, int m, Spherical<double> R,
-                                std::complex<double> waveK, double *dn,
-                                SphericalP<std::complex<double>> *Pn,
-                                SphericalP<std::complex<double>> *Bn,
-                                SphericalP<std::complex<double>> *Nn,
-                                int BHreg) {
-  /*-------------------------------------------------------------------------------*/
-  /* PURPOSE: Evaluate N_nm function from P_nm & B_nm[] and bh functions
-   * --------- */
-  /* bh_indx == 1 -> use bessj
-   * --------------------------------------------------- */
-  /* bh_indx == 2 -> use bessy
-   * --------------------------------------------------- */
-  /* bh_indx == 3 -> use bessh1
-   * -------------------------------------------------- */
-  /* bh_indx == 4 -> use bessh2
-   * -------------------------------------------------- */
-  /* N_nm(kR) = (-1)^m * dn * exp(i*m*phi) *     -- eq(8) ref paper --       */
-  /*        [ n*(n+1)/(kR)bh(kR)*P_nm + 1./(kR)*(kR*derbh(kR)+bh(kR))*B_nm ] */
-  /*-------------------------------------------------------------------------------*/
+std::vector<SphericalP<std::complex<double>>> AuxCoefficients::compute_Nn(
+    int nMax, int m, const Spherical<double> &R, std::complex<double> waveK,
+    const std::vector<double> &dn,
+    const std::vector<SphericalP<std::complex<double>>> &Pn,
+    const std::vector<SphericalP<std::complex<double>>> &Bn,
+    BESSEL_TYPE besselType) {
+  std::vector<SphericalP<std::complex<double>>> Nn(nMax + 1);
 
-  int i(0);
-  double d_n(0.);
-
-  std::complex<double> Kr = waveK * R.rrr;
-  std::complex<double> c_temp(0., 0.);
+  const std::complex<double> Kr = waveK * R.rrr;
 
   std::vector<std::complex<double>> data, ddata;
-  std::tie(data, ddata) =
-      optimet::bessel(R.rrr * waveK, (optimet::BESSEL_TYPE)BHreg, 0, nMax);
+  std::tie(data, ddata) = optimet::bessel(R.rrr * waveK, besselType, 0, nMax);
 
-  double dm = pow(-1., double(m)); // Legendre to Wigner function
-  std::complex<double> exp_imphi(cos(double(m) * R.phi),
-                                 sin(double(m) * R.phi));
+  const double dm = std::pow(-1.0, double(m)); // Legendre to Wigner function
+  const std::complex<double> exp_imphi(std::cos(double(m) * R.phi),
+                                       std::sin(double(m) * R.phi));
 
-  Nn[0].rrr = std::complex<double>(0., 0.);
-  Nn[0].the = std::complex<double>(0., 0.);
-  Nn[0].phi = std::complex<double>(0., 0.);
+  Nn[0].rrr = std::complex<double>(0.0, 0.0);
+  Nn[0].the = std::complex<double>(0.0, 0.0);
+  Nn[0].phi = std::complex<double>(0.0, 0.0);
 
-  for (i = 1; i <= nMax; i++) {
-    d_n = double(i);
-    Nn[i].rrr = (1. / Kr) * dm * dn[i] *
-                ((d_n * (d_n + 1.) * data[i] * Pn[i].rrr) +
+  for (int i = 1; i <= nMax; i++) {
+    const double d_n = double(i);
+    Nn[i].rrr = (1.0 / Kr) * dm * dn[i] *
+                ((d_n * (d_n + 1.0) * data[i] * Pn[i].rrr) +
                  ((Kr * ddata[i] + data[i]) * Bn[i].rrr)) *
                 exp_imphi;
-    Nn[i].the = (1. / Kr) * dm * dn[i] *
-                ((d_n * (d_n + 1.) * data[i] * Pn[i].the) +
+    Nn[i].the = (1.0 / Kr) * dm * dn[i] *
+                ((d_n * (d_n + 1.0) * data[i] * Pn[i].the) +
                  ((Kr * ddata[i] + data[i]) * Bn[i].the)) *
                 exp_imphi;
-    Nn[i].phi = (1. / Kr) * dm * dn[i] *
-                ((d_n * (d_n + 1.) * data[i] * Pn[i].phi) +
+    Nn[i].phi = (1.0 / Kr) * dm * dn[i] *
+                ((d_n * (d_n + 1.0) * data[i] * Pn[i].phi) +
                  ((Kr * ddata[i] + data[i]) * Bn[i].phi)) *
                 exp_imphi;
   }
-  return 0;
-} // end P_func
-// ----------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------------
-int AuxCoefficients::compute_MpNp(Spherical<double> R,
-                                  std::complex<double> waveK, int BHreg,
-                                  int nMax,
-                                  SphericalP<std::complex<double>> *dataMp,
-                                  SphericalP<std::complex<double>> *dataNp) {
-
-  //  double d_temp=0.;
-
-  // Wigner d function test
-  // --------------------------------------------------------------
-  std::vector<double> Wigner(nMax + 1), dWigner(nMax + 1);
-
-  // Vector spherical functions
-  // ----------------------------------------------------------
-  SphericalP<std::complex<double>> *Pn; // P function arrays
-  SphericalP<std::complex<double>> *Cn; // C function arrays
-  SphericalP<std::complex<double>> *Bn; // B function arrays
-  Pn = new SphericalP<std::complex<double>>[nMax + 1];
-  Cn = new SphericalP<std::complex<double>>[nMax + 1];
-  Bn = new SphericalP<std::complex<double>>[nMax + 1];
-
-  // Vector spherical Waves
-  // --------------------------------------------------------------
-  SphericalP<std::complex<double>> *Mn; // M function arrays
-  SphericalP<std::complex<double>> *Nn; // N function arrays
-  Mn = new SphericalP<std::complex<double>>[nMax + 1];
-  Nn = new SphericalP<std::complex<double>>[nMax + 1];
-  // -------------------------------------------------------------------------------------
-
-  CompoundIterator p;
-  CompoundIterator q;
-
-  for (q = CompoundIterator(nMax, nMax); q < q.max(nMax); q++) {
-
-    std::tie(Wigner, dWigner) = VIGdVIG(nMax, q.second, R);
-    const std::vector<double> compute_dn(nMax);
-
-    // call vector spherical functions
-    // -----------------------------------------------------
-    compute_Pn(nMax, Wigner.data(), Pn);
-    compute_Cn(nMax, q.second, R, Wigner.data(), dWigner.data(), Cn);
-    compute_Bn(nMax, q.second, R, Wigner.data(), dWigner.data(), Bn);
-
-    // call vector spherical waves
-    // ---------------------------------------------------------
-    compute_Mn(nMax, q.second, R, waveK, dn, Cn, Mn, BHreg);
-    compute_Nn(nMax, q.second, R, waveK, dn, Pn, Bn, Nn, BHreg);
-
-    for (int n = std::abs(q.second); n <= nMax; n++) {
-      if (n != 0) {
-
-        p.init(n, q.second);
-
-        dataBp[p] = Tools::toProjection(R, Bn[n]);
-        dataCp[p] = Tools::toProjection(R, Cn[n]);
-        dataMp[p] = Tools::toProjection(R, Mn[n]);
-        dataNp[p] = Tools::toProjection(R, Nn[n]);
-      }
-    }
-  }
-
-  delete[] Pn;
-  delete[] Cn;
-  delete[] Bn;
-  delete[] Mn;
-  delete[] Nn;
-
-  return 0;
+  return Nn;
 }
 
 std::tuple<std::vector<double>, std::vector<double>>
@@ -579,16 +404,46 @@ AuxCoefficients::VIGdVIG(int nMax, int m, const Spherical<double> &R) {
 }
 
 AuxCoefficients::AuxCoefficients(const Spherical<double> &R,
-                                 std::complex<double> waveK, int regular,
+                                 std::complex<double> waveK, bool regular,
                                  int nMax)
-    : R(R), waveK(waveK), nMax(nMax), besselType(regular != 0) {
+    : _M(nMax + 1), _N(nMax + 1), _B(nMax + 1), _C(nMax + 1),
+      _dn(compute_dn(nMax)) {
 
-  dataMp = new SphericalP<std::complex<double>>[Tools::iteratorMax(nMax)];
-  dataNp = new SphericalP<std::complex<double>>[Tools::iteratorMax(nMax)];
-  dataBp = new SphericalP<std::complex<double>>[Tools::iteratorMax(nMax)];
-  dataCp = new SphericalP<std::complex<double>>[Tools::iteratorMax(nMax)];
+  const BESSEL_TYPE besselType = (regular) ? Bessel : Hankel1;
 
-  dn = new double[nMax + 1];
+  // Wigner d function test
+  std::vector<double> Wigner, dWigner;
 
-  compute_MpNp(R, waveK, besselType, nMax, dataMp, dataNp);
+  const std::vector<SphericalP<std::complex<double>>> Pn =
+      compute_Pn(nMax, Wigner);
+
+  for (CompoundIterator q(nMax, nMax); q < q.max(nMax); ++q) {
+
+    std::tie(Wigner, dWigner) = VIGdVIG(nMax, q.second, R);
+
+    // call vector spherical functions
+    const std::vector<SphericalP<std::complex<double>>> Cn =
+        compute_Cn(nMax, q.second, R, Wigner, dWigner);
+    const std::vector<SphericalP<std::complex<double>>> Bn =
+        compute_Bn(nMax, q.second, R, Wigner, dWigner);
+
+    // call vector spherical waves
+    const std::vector<SphericalP<std::complex<double>>> Mn =
+        compute_Mn(nMax, q.second, R, waveK, _dn, Cn, besselType);
+    const std::vector<SphericalP<std::complex<double>>> Nn =
+        compute_Nn(nMax, q.second, R, waveK, _dn, Pn, Bn, besselType);
+
+    for (int n = std::abs(q.second); n <= nMax; n++) {
+      if (n != 0) {
+        CompoundIterator p(n, q.second);
+
+        _B[static_cast<long>(p)] = Tools::toProjection(R, Bn[n]);
+        _C[static_cast<long>(p)] = Tools::toProjection(R, Cn[n]);
+        _M[static_cast<long>(p)] = Tools::toProjection(R, Mn[n]);
+        _N[static_cast<long>(p)] = Tools::toProjection(R, Nn[n]);
+      }
+    }
+  }
 }
+
+} // namespace optimet
