@@ -111,6 +111,17 @@ private:
                    int nMax, SphericalP<std::complex<double>> *dataMp,
                    SphericalP<std::complex<double>> *dataNp);
 
+  /**
+   * Compute the P_nm functions in compound iterator format.
+   * Needed for transfer coefficients in Coupling object.
+   * @param R the r coordinate.
+   * @param nMax the maximum value of the n iterator.
+   * @param dataPp the Pp vector.
+   * @return 0 if successful, 1 otherwise.
+   */
+  int compute_Pp(Spherical<double> R, int nMax,
+                 SphericalP<std::complex<double>> *dataPp);
+
   //  /**
   //   * Compute the Wigner functions and their derivatives.
   //   * @param nMax the maximum value of the n iterator.
@@ -149,17 +160,6 @@ public:
    */
   AuxCoefficients(Spherical<double> R_, std::complex<double> waveK_,
                   int regular_, int nMax_);
-
-  /**
-   * Compute the P_nm functions in compound iterator format.
-   * Needed for transfer coefficients in Coupling object.
-   * @param R the r coordinate.
-   * @param nMax the maximum value of the n iterator.
-   * @param dataPp the Pp vector.
-   * @return 0 if successful, 1 otherwise.
-   */
-  int compute_Pp(Spherical<double> R, int nMax,
-                 SphericalP<std::complex<double>> *dataPp);
 
   // AJ
   // -----------------------------------------------------------------------------
