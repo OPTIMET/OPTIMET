@@ -12,10 +12,10 @@ namespace {
 t_complex coefficients_A(t_int n, t_int m, t_int l, t_int k, TranslationAdditionCoefficients &ta) {
   if(std::abs(k) > l)
     return 0e0;
-  auto const factor = 0.5 / std::sqrt(static_cast<t_real>(l * (l + 1) * n * (n + 1)));
-  auto const c0 = static_cast<t_real>(2 * k * m);
-  auto const c1 = std::sqrt(static_cast<t_real>((n - m) * (n + m + 1) * (l - k) * (l + k + 1)));
-  auto const c2 = std::sqrt(static_cast<t_real>((n + m) * (n - m + 1) * (l + k) * (l - k + 1)));
+  auto const factor = 0.5 / std::sqrt(l * (l + 1) * n * (n + 1));
+  t_real const c0 = 2 * k * m;
+  auto const c1 = std::sqrt((n - m) * (n + m + 1) * (l - k) * (l + k + 1));
+  auto const c2 = std::sqrt((n + m) * (n - m + 1) * (l + k) * (l - k + 1));
   return factor * (c0 * ta(n, m, l, k) + c1 * ta(n, m + 1, l, k + 1) + c2 * ta(n, m - 1, l, k - 1));
 }
 

@@ -17,14 +17,14 @@ constexpr bool is_valid(t_int n, t_int m, t_int l, t_int k) {
 }
 //! Eases computing ratios of two factorials
 inline t_real factorial_ratio(t_int n, t_int m) {
-  return n == m ? 1: std::tgamma(n + 1) / std::tgamma(m + 1);
+  return n == m ? 1 : std::tgamma(n + 1) / std::tgamma(m + 1);
 }
 //! Coefficient of Stout (2004) Appendix C recurrence relationship
 inline t_real a_plus(t_int n, t_int m) {
   if(not is_valid(n, m))
     return 0e0;
   return -std::sqrt(static_cast<t_real>((n + m + 1) * (n - m + 1)) /
-                   static_cast<t_real>((2 * n + 1) * (2 * n + 3)));
+                    static_cast<t_real>((2 * n + 1) * (2 * n + 3)));
 }
 //! Coefficient of Stout (2004) Appendix C recurrence relationship
 inline t_real a_minus(t_int n, t_int m) {
@@ -53,7 +53,7 @@ t_complex Ynm(Spherical<t_real> const &R, t_int n, t_int m) {
   if(not is_valid(n, m))
     return 0;
   auto const gamma = static_cast<t_real>(2 * n + 1) / (constant::pi * static_cast<t_real>(4)) *
-                     (factorial_ratio(n - m, n + m));
+                     factorial_ratio(n - m, n + m);
   return std::sqrt(gamma) * std::exp(constant::i * (m * R.phi)) *
          boost::math::legendre_p(n, m, std::cos(R.the));
 }
