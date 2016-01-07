@@ -223,6 +223,21 @@ void compute_AlBe_nmlk(Spherical<t_real> R, t_complex waveK, t_int BHreg, t_int 
               // wavekconj
               AlBe_nmlkconj[i][j][ii][jj] = B2 * AlBe2conj + B3 * AlBe3conj;
               AlBe_nmlkconj[i][j][ii][jj] /= B1; // eqn (C1-B)
+              if( (n == 8 and m == 8 and l == 8 and k == 6)
+                  or (n == 7 and m == 7 and l == 9 and k == 5)
+                  or (n == 6 and m == 6 and l == 10 and k == 4)
+                  or (n == 5 and m == 5 and l == 11 and k == 3)
+                  or (n == 4 and m == 4 and l == 12 and k == 2)
+                  or (n == 3 and m == 3 and l == 13 and k == 1)
+                  or (n == 2 and m == 2 and l == 14 and k == 0)
+                  or (n == 1 and m == 1 and l == 15 and k == -1)
+                  or (n == 0 and m == 0 and l == 16 and k == -2)) {
+                auto const a = ta(n, m, l, k);
+                std::cout << "for nmlk: (" << n << ", " << m << ", " << l << ", " << k << ")\n";
+                std::cout << "   - " << a << " vs " << AlBe_nmlk[i][j][ii][jj] << "\n";
+                std::cout << "   - (n - 1, n -1, l - 1, k - 1): " << ta(n - 1, m - 1, l - 1, k - 1) << " vs " << AlBe2 << "\n";
+                std::cout << "   - (n - 1, n -1, l + 1, k - 1): " << ta(n - 1, m - 1, l + 1, k - 1) << " vs " << AlBe3 << "\n";
+              }
             }
           } // jj
         }   // ii
