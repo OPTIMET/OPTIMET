@@ -120,7 +120,6 @@ private:
   std::complex<double> waveK; /**< The complex wave number. */
   int nMax;                   /**< The maximum value of the n iterator. */
 
-public:
   SphericalP<std::complex<double>>
       *dataMp; /**< The M functions in compound iterator format. */
   SphericalP<std::complex<double>>
@@ -132,6 +131,7 @@ public:
 
   double *dn; /**< The dn symbols (required for the Excitation class). */
 
+public:
   /**
    * Initializing constructor for the AuxCoefficients class.
    * @param R_ the Spherical vector.
@@ -141,6 +141,21 @@ public:
    */
   AuxCoefficients(const Spherical<double> &R, std::complex<double> waveK,
                   int regular, int nMax);
+
+  const SphericalP<std::complex<double>> &M(std::size_t i) const {
+    return dataMp[i];
+  }
+  const SphericalP<std::complex<double>> &N(std::size_t i) const {
+    return dataNp[i];
+  }
+  const SphericalP<std::complex<double>> &B(std::size_t i) const {
+    return dataBp[i];
+  }
+  const SphericalP<std::complex<double>> &C(std::size_t i) const {
+    return dataCp[i];
+  }
+
+  const double &d(std::size_t i) const { return dn[i]; }
 
   /**
    * Compute the d_n symbol.

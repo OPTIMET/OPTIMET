@@ -82,7 +82,7 @@ void Result::init(Geometry *geometry_, Excitation *excitation_,
 void Result::getEHFieldsModal(Spherical<double> R_,
                               SphericalP<std::complex<double>> &EField_,
                               SphericalP<std::complex<double>> &HField_,
-                              int projection_, CompoundIterator p_,
+                              int projection_, CompoundIterator p,
                               int singleComponent_) {
   SphericalP<std::complex<double>> Efield = SphericalP<std::complex<double>>(
       std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
@@ -114,23 +114,28 @@ void Result::getEHFieldsModal(Spherical<double> R_,
 
       if (singleComponent_ == 1) // Only TE part
       {
-        Einc = Einc + aCoefInc.dataMp[p_] * excitation->dataIncAp[p_];
-        Hinc = Hinc + aCoefInc.dataMp[p_] * excitation->dataIncBp[p_] * iZ;
+        Einc =
+            Einc + aCoefInc.M(static_cast<long>(p)) * excitation->dataIncAp[p];
+        Hinc = Hinc +
+               aCoefInc.M(static_cast<long>(p)) * excitation->dataIncBp[p] * iZ;
       }
 
       if (singleComponent_ == 2) // Only TM part
       {
-        Einc = Einc + aCoefInc.dataNp[p_] * excitation->dataIncBp[p_];
-        Hinc = Hinc + aCoefInc.dataNp[p_] * excitation->dataIncAp[p_] * iZ;
+        Einc =
+            Einc + aCoefInc.N(static_cast<long>(p)) * excitation->dataIncBp[p];
+        Hinc = Hinc +
+               aCoefInc.N(static_cast<long>(p)) * excitation->dataIncAp[p] * iZ;
       }
 
       if (!singleComponent_) // Both TE and TM part
       {
-        Einc = Einc + (aCoefInc.dataMp[p_] * excitation->dataIncAp[p_] +
-                       aCoefInc.dataNp[p_] * excitation->dataIncBp[p_]);
+        Einc = Einc +
+               (aCoefInc.M(static_cast<long>(p)) * excitation->dataIncAp[p] +
+                aCoefInc.N(static_cast<long>(p)) * excitation->dataIncBp[p]);
         Hinc = Hinc +
-               (aCoefInc.dataNp[p_] * excitation->dataIncAp[p_] +
-                aCoefInc.dataMp[p_] * excitation->dataIncBp[p_]) *
+               (aCoefInc.N(static_cast<long>(p)) * excitation->dataIncAp[p] +
+                aCoefInc.M(static_cast<long>(p)) * excitation->dataIncBp[p]) *
                    iZ;
       }
     } else // this a second harmonic frequency result - calculate the source
@@ -142,11 +147,11 @@ void Result::getEHFieldsModal(Spherical<double> R_,
         AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
 
         Einc = Einc +
-               aCoef.dataMp[p_] *
-                   geometry->objects[j].sourceCoef[static_cast<int>(p_)] +
-               aCoef.dataNp[p_] *
+               aCoef.M(static_cast<long>(p)) *
+                   geometry->objects[j].sourceCoef[static_cast<int>(p)] +
+               aCoef.N(static_cast<long>(p)) *
                    geometry->objects[j]
-                       .sourceCoef[static_cast<int>(p_) + p_.max(nMax)];
+                       .sourceCoef[static_cast<int>(p) + p.max(nMax)];
       }
     }
 
@@ -162,41 +167,41 @@ void Result::getEHFieldsModal(Spherical<double> R_,
 
       if (singleComponent_ == 1) // TE Part only
       {
-        Efield =
-            Efield +
-            aCoef.dataMp[p_] * scatter_coef[j * 2 * p_.max(nMax) + p_.compound];
-        Hfield = Hfield +
-                 aCoef.dataMp[p_] *
-                     scatter_coef[p_.max(nMax) + j * 2 * p_.max(nMax) +
-                                  p_.compound] *
-                     iZ;
+        Efield = Efield +
+                 aCoef.M(static_cast<long>(p)) *
+                     scatter_coef[j * 2 * p.max(nMax) + p.compound];
+        Hfield =
+            Hfield +
+            aCoef.M(static_cast<long>(p)) *
+                scatter_coef[p.max(nMax) + j * 2 * p.max(nMax) + p.compound] *
+                iZ;
       }
 
       if (singleComponent_ == 2) // TM Part only
       {
         Efield =
             Efield +
-            aCoef.dataNp[p_] *
-                scatter_coef[p_.max(nMax) + j * 2 * p_.max(nMax) + p_.compound];
+            aCoef.N(static_cast<long>(p)) *
+                scatter_coef[p.max(nMax) + j * 2 * p.max(nMax) + p.compound];
         Hfield = Hfield +
-                 aCoef.dataNp[p_] *
-                     scatter_coef[j * 2 * p_.max(nMax) + p_.compound] * iZ;
+                 aCoef.N(static_cast<long>(p)) *
+                     scatter_coef[j * 2 * p.max(nMax) + p.compound] * iZ;
       }
 
       if (!singleComponent_) {
         Efield =
             Efield +
-            aCoef.dataMp[p_] *
-                scatter_coef[j * 2 * p_.max(nMax) + p_.compound] +
-            aCoef.dataNp[p_] *
-                scatter_coef[p_.max(nMax) + j * 2 * p_.max(nMax) + p_.compound];
-        Hfield = Hfield +
-                 (aCoef.dataNp[p_] *
-                      scatter_coef[j * 2 * p_.max(nMax) + p_.compound] +
-                  aCoef.dataMp[p_] *
-                      scatter_coef[p_.max(nMax) + j * 2 * p_.max(nMax) +
-                                   p_.compound]) *
-                     iZ;
+            aCoef.M(static_cast<long>(p)) *
+                scatter_coef[j * 2 * p.max(nMax) + p.compound] +
+            aCoef.N(static_cast<long>(p)) *
+                scatter_coef[p.max(nMax) + j * 2 * p.max(nMax) + p.compound];
+        Hfield =
+            Hfield +
+            (aCoef.N(static_cast<long>(p)) *
+                 scatter_coef[j * 2 * p.max(nMax) + p.compound] +
+             aCoef.M(static_cast<long>(p)) *
+                 scatter_coef[p.max(nMax) + j * 2 * p.max(nMax) + p.compound]) *
+                iZ;
       }
     }
   } else // Inside a sphere
@@ -214,41 +219,41 @@ void Result::getEHFieldsModal(Spherical<double> R_,
     if (singleComponent_ == 1) // TE Part Only
     {
       Efield = Efield +
-               aCoef.dataMp[p_] *
-                   internal_coef[intInd * 2 * p_.max(nMax) + p_.compound];
+               aCoef.M(static_cast<long>(p)) *
+                   internal_coef[intInd * 2 * p.max(nMax) + p.compound];
       Hfield = Hfield +
-               aCoef.dataMp[p_] *
-                   internal_coef[p_.max(nMax) + intInd * 2 * p_.max(nMax) +
-                                 p_.compound] *
+               aCoef.M(static_cast<long>(p)) *
+                   internal_coef[p.max(nMax) + intInd * 2 * p.max(nMax) +
+                                 p.compound] *
                    iZ_object;
     }
 
     if (singleComponent_ == 2) // TM Part Only
     {
       Efield = Efield +
-               aCoef.dataNp[p_] *
-                   internal_coef[p_.max(nMax) + intInd * 2 * p_.max(nMax) +
-                                 p_.compound];
+               aCoef.N(static_cast<long>(p)) *
+                   internal_coef[p.max(nMax) + intInd * 2 * p.max(nMax) +
+                                 p.compound];
       Hfield = Hfield +
-               aCoef.dataNp[p_] *
-                   internal_coef[intInd * 2 * p_.max(nMax) + p_.compound] *
+               aCoef.N(static_cast<long>(p)) *
+                   internal_coef[intInd * 2 * p.max(nMax) + p.compound] *
                    iZ_object;
     }
 
     if (!singleComponent_) // Both TE and TM
     {
       Efield =
-          Efield + (aCoef.dataMp[p_] *
-                        internal_coef[intInd * 2 * p_.max(nMax) + p_.compound] +
-                    aCoef.dataNp[p_] *
-                        internal_coef[p_.max(nMax) + intInd * 2 * p_.max(nMax) +
-                                      p_.compound]);
+          Efield + (aCoef.M(static_cast<long>(p)) *
+                        internal_coef[intInd * 2 * p.max(nMax) + p.compound] +
+                    aCoef.N(static_cast<long>(p)) *
+                        internal_coef[p.max(nMax) + intInd * 2 * p.max(nMax) +
+                                      p.compound]);
       Hfield = Hfield +
-               (aCoef.dataNp[p_] *
-                    internal_coef[intInd * 2 * p_.max(nMax) + p_.compound] +
-                aCoef.dataMp[p_] *
-                    internal_coef[p_.max(nMax) + intInd * 2 * p_.max(nMax) +
-                                  p_.compound]) *
+               (aCoef.N(static_cast<long>(p)) *
+                    internal_coef[intInd * 2 * p.max(nMax) + p.compound] +
+                aCoef.M(static_cast<long>(p)) *
+                    internal_coef[p.max(nMax) + intInd * 2 * p.max(nMax) +
+                                  p.compound]) *
                    iZ_object;
     }
   }
@@ -306,11 +311,12 @@ void Result::getEHFields(Spherical<double> R_,
       // Incoming field
       AuxCoefficients aCoefInc(R_, waveK, 1, nMax);
       for (p = 0; p < p.max(nMax); p++) {
-        Einc = Einc + (aCoefInc.dataMp[p] * excitation->dataIncAp[p] +
-                       aCoefInc.dataNp[p] * excitation->dataIncBp[p]);
+        Einc = Einc +
+               (aCoefInc.M(static_cast<long>(p)) * excitation->dataIncAp[p] +
+                aCoefInc.N(static_cast<long>(p)) * excitation->dataIncBp[p]);
         Hinc = Hinc +
-               (aCoefInc.dataNp[p] * excitation->dataIncAp[p] +
-                aCoefInc.dataMp[p] * excitation->dataIncBp[p]) *
+               (aCoefInc.N(static_cast<long>(p)) * excitation->dataIncAp[p] +
+                aCoefInc.M(static_cast<long>(p)) * excitation->dataIncBp[p]) *
                    iZ;
       }
     } else // this a second harmonic frequency result - calculate the source
@@ -324,9 +330,9 @@ void Result::getEHFields(Spherical<double> R_,
         for (p = 0; p < pMax; p++) {
           Einc =
               Einc +
-              aCoef.dataMp[p] *
+              aCoef.M(static_cast<long>(p)) *
                   geometry->objects[j].sourceCoef[static_cast<int>(p)] +
-              aCoef.dataNp[p] *
+              aCoef.N(static_cast<long>(p)) *
                   geometry->objects[j].sourceCoef[static_cast<int>(p) + pMax];
         }
       }
@@ -343,14 +349,17 @@ void Result::getEHFields(Spherical<double> R_,
       AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
 
       for (p = 0; p < p.max(nMax); p++) {
-        Efield =
-            Efield + aCoef.dataMp[p] * scatter_coef[j * 2 * pMax + p.compound] +
-            aCoef.dataNp[p] * scatter_coef[pMax + j * 2 * pMax + p.compound];
-        Hfield =
-            Hfield +
-            (aCoef.dataNp[p] * scatter_coef[j * 2 * pMax + p.compound] +
-             aCoef.dataMp[p] * scatter_coef[pMax + j * 2 * pMax + p.compound]) *
-                iZ;
+        Efield = Efield +
+                 aCoef.M(static_cast<long>(p)) *
+                     scatter_coef[j * 2 * pMax + p.compound] +
+                 aCoef.N(static_cast<long>(p)) *
+                     scatter_coef[pMax + j * 2 * pMax + p.compound];
+        Hfield = Hfield +
+                 (aCoef.N(static_cast<long>(p)) *
+                      scatter_coef[j * 2 * pMax + p.compound] +
+                  aCoef.M(static_cast<long>(p)) *
+                      scatter_coef[pMax + j * 2 * pMax + p.compound]) *
+                     iZ;
       }
     }
   } else // Inside a sphere
@@ -367,16 +376,16 @@ void Result::getEHFields(Spherical<double> R_,
 
     for (p = 0; p < p.max(nMax); p++) {
       Efield =
-          Efield +
-          (aCoef.dataMp[p] * internal_coef[intInd * 2 * pMax + p.compound] +
-           aCoef.dataNp[p] *
-               internal_coef[pMax + intInd * 2 * pMax + p.compound]);
-      Hfield =
-          Hfield +
-          (aCoef.dataNp[p] * internal_coef[intInd * 2 * pMax + p.compound] +
-           aCoef.dataMp[p] *
-               internal_coef[pMax + intInd * 2 * pMax + p.compound]) *
-              iZ_object;
+          Efield + (aCoef.M(static_cast<long>(p)) *
+                        internal_coef[intInd * 2 * pMax + p.compound] +
+                    aCoef.N(static_cast<long>(p)) *
+                        internal_coef[pMax + intInd * 2 * pMax + p.compound]);
+      Hfield = Hfield +
+               (aCoef.N(static_cast<long>(p)) *
+                    internal_coef[intInd * 2 * pMax + p.compound] +
+                aCoef.M(static_cast<long>(p)) *
+                    internal_coef[pMax + intInd * 2 * pMax + p.compound]) *
+                   iZ_object;
     }
   }
 
@@ -423,8 +432,9 @@ SphericalP<std::complex<double>> Result::getEFieldC(Spherical<double> R_,
       // Incoming field
       AuxCoefficients aCoefInc(R_, waveK, 1, nMax);
       for (p = 0; p < p.max(nMax); p++) {
-        Einc = Einc + (aCoefInc.dataMp[p] * excitation->dataIncAp[p] +
-                       aCoefInc.dataNp[p] * excitation->dataIncBp[p]);
+        Einc = Einc +
+               (aCoefInc.M(static_cast<long>(p)) * excitation->dataIncAp[p] +
+                aCoefInc.N(static_cast<long>(p)) * excitation->dataIncBp[p]);
       }
 
       if (projection) // Spherical projection
@@ -442,9 +452,9 @@ SphericalP<std::complex<double>> Result::getEFieldC(Spherical<double> R_,
         for (p = 0; p < pMax; p++) {
           Einc =
               Einc +
-              aCoef.dataMp[p] *
+              aCoef.M(static_cast<long>(p)) *
                   geometry->objects[j].sourceCoef[static_cast<int>(p)] +
-              aCoef.dataNp[p] *
+              aCoef.N(static_cast<long>(p)) *
                   geometry->objects[j].sourceCoef[static_cast<int>(p) + pMax];
         }
       }
@@ -459,8 +469,10 @@ SphericalP<std::complex<double>> Result::getEFieldC(Spherical<double> R_,
 
     // Scattered field
     for (p = 0; p < p.max(nMax); p++) {
-      Efield = Efield + (aCoef.dataMp[p] * c_scatter_coef[p.compound] +
-                         aCoef.dataNp[p] * c_scatter_coef[pMax + p.compound]);
+      Efield =
+          Efield +
+          (aCoef.M(static_cast<long>(p)) * c_scatter_coef[p.compound] +
+           aCoef.N(static_cast<long>(p)) * c_scatter_coef[pMax + p.compound]);
     }
 
     if (projection) // Spherical projection
@@ -474,10 +486,10 @@ SphericalP<std::complex<double>> Result::getEFieldC(Spherical<double> R_,
 
     for (p = 0; p < p.max(nMax); p++) {
       Efield =
-          Efield +
-          (aCoef.dataMp[p] * internal_coef[intInd * 2 * pMax + p.compound] +
-           aCoef.dataNp[p] *
-               internal_coef[pMax + intInd * 2 * pMax + p.compound]);
+          Efield + (aCoef.M(static_cast<long>(p)) *
+                        internal_coef[intInd * 2 * pMax + p.compound] +
+                    aCoef.N(static_cast<long>(p)) *
+                        internal_coef[pMax + intInd * 2 * pMax + p.compound]);
     }
 
     if (projection) // Spherical projection
@@ -707,11 +719,12 @@ void Result::getEHFieldsContCheck(Spherical<double> R_,
       // Incoming field
       AuxCoefficients aCoefInc(R_, waveK, 1, nMax);
       for (p = 0; p < p.max(nMax); p++) {
-        Einc = Einc + (aCoefInc.dataMp[p] * excitation->dataIncAp[p] +
-                       aCoefInc.dataNp[p] * excitation->dataIncBp[p]);
+        Einc = Einc +
+               (aCoefInc.M(static_cast<long>(p)) * excitation->dataIncAp[p] +
+                aCoefInc.N(static_cast<long>(p)) * excitation->dataIncBp[p]);
         Hinc = Hinc +
-               (aCoefInc.dataNp[p] * excitation->dataIncAp[p] +
-                aCoefInc.dataMp[p] * excitation->dataIncBp[p]) *
+               (aCoefInc.N(static_cast<long>(p)) * excitation->dataIncAp[p] +
+                aCoefInc.M(static_cast<long>(p)) * excitation->dataIncBp[p]) *
                    iZ;
       }
     } else // this a second harmonic frequency result - calculate the source
@@ -725,9 +738,9 @@ void Result::getEHFieldsContCheck(Spherical<double> R_,
         for (p = 0; p < pMax; p++) {
           Einc =
               Einc +
-              aCoef.dataMp[p] *
+              aCoef.M(static_cast<long>(p)) *
                   geometry->objects[j].sourceCoef[static_cast<int>(p)] +
-              aCoef.dataNp[p] *
+              aCoef.N(static_cast<long>(p)) *
                   geometry->objects[j].sourceCoef[static_cast<int>(p) + pMax];
         }
       }
@@ -744,14 +757,17 @@ void Result::getEHFieldsContCheck(Spherical<double> R_,
       AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
 
       for (p = 0; p < p.max(nMax); p++) {
-        Efield =
-            Efield + aCoef.dataMp[p] * scatter_coef[j * 2 * pMax + p.compound] +
-            aCoef.dataNp[p] * scatter_coef[pMax + j * 2 * pMax + p.compound];
-        Hfield =
-            Hfield +
-            (aCoef.dataNp[p] * scatter_coef[j * 2 * pMax + p.compound] +
-             aCoef.dataMp[p] * scatter_coef[pMax + j * 2 * pMax + p.compound]) *
-                iZ;
+        Efield = Efield +
+                 aCoef.M(static_cast<long>(p)) *
+                     scatter_coef[j * 2 * pMax + p.compound] +
+                 aCoef.N(static_cast<long>(p)) *
+                     scatter_coef[pMax + j * 2 * pMax + p.compound];
+        Hfield = Hfield +
+                 (aCoef.N(static_cast<long>(p)) *
+                      scatter_coef[j * 2 * pMax + p.compound] +
+                  aCoef.M(static_cast<long>(p)) *
+                      scatter_coef[pMax + j * 2 * pMax + p.compound]) *
+                     iZ;
       }
     }
   } else // Inside a sphere
@@ -768,16 +784,16 @@ void Result::getEHFieldsContCheck(Spherical<double> R_,
 
     for (p = 0; p < p.max(nMax); p++) {
       Efield =
-          Efield +
-          (aCoef.dataMp[p] * internal_coef[intInd * 2 * pMax + p.compound] +
-           aCoef.dataNp[p] *
-               internal_coef[pMax + intInd * 2 * pMax + p.compound]);
-      Hfield =
-          Hfield +
-          (aCoef.dataNp[p] * internal_coef[intInd * 2 * pMax + p.compound] +
-           aCoef.dataMp[p] *
-               internal_coef[pMax + intInd * 2 * pMax + p.compound]) *
-              iZ_object;
+          Efield + (aCoef.M(static_cast<long>(p)) *
+                        internal_coef[intInd * 2 * pMax + p.compound] +
+                    aCoef.N(static_cast<long>(p)) *
+                        internal_coef[pMax + intInd * 2 * pMax + p.compound]);
+      Hfield = Hfield +
+               (aCoef.N(static_cast<long>(p)) *
+                    internal_coef[intInd * 2 * pMax + p.compound] +
+                aCoef.M(static_cast<long>(p)) *
+                    internal_coef[pMax + intInd * 2 * pMax + p.compound]) *
+                   iZ_object;
     }
   }
 

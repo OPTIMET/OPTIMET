@@ -70,14 +70,14 @@ int Excitation::populate() {
   CompoundIterator p;
 
   for (p = 0; p < p.max(nMax); p++) {
-    SphericalP<std::complex<double>> C_local = coef.dataCp[p];
-    SphericalP<std::complex<double>> B_local = coef.dataBp[p];
+    SphericalP<std::complex<double>> C_local = coef.C(static_cast<long>(p));
+    SphericalP<std::complex<double>> B_local = coef.B(static_cast<long>(p));
 
     SphericalP<std::complex<double>> conjAux(
         std::conj(C_local.rrr), std::conj(C_local.the),
         std::conj(C_local.phi)); // std::complex conjugate of C
     dataIncAp[p] = 4 * consPi * std::pow(-1.0, p.second) *
-                   std::pow(consCi, p.first) * coef.dn[p.first] *
+                   std::pow(consCi, p.first) * coef.d(p.first) *
                    (conjAux * Einc) *
                    std::exp(consCmi * (double)p.second * vKInc.phi);
 
@@ -85,7 +85,7 @@ int Excitation::populate() {
         std::conj(B_local.rrr), std::conj(B_local.the),
         std::conj(B_local.phi)); // std::complex conjugate of B
     dataIncBp[p] = 4 * consPi * std::pow(-1.0, p.second) *
-                   std::pow(consCi, p.first - 1) * coef.dn[p.first] *
+                   std::pow(consCi, p.first - 1) * coef.d(p.first) *
                    (conjAux * Einc) *
                    std::exp(consCmi * (double)p.second * vKInc.phi);
   }
