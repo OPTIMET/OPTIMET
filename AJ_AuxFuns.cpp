@@ -16,11 +16,9 @@ std::vector<std::complex<double>> compute_Yn_m(const Spherical<double> &R,
                                                const int nMax, const int m) {
   std::vector<std::complex<double>> Ynm(nMax + 1);
 
-  std::vector<double> dn(nMax + 1);
-
   std::vector<double> Wigner(nMax + 1), dWigner(nMax + 1);
 
-  AuxCoefficients::compute_dn(nMax, dn.data());
+  const std::vector<double> dn = AuxCoefficients::compute_dn(nMax);
   AuxCoefficients::VIGdVIG(nMax, m, R, Wigner.data(), dWigner.data());
 
   const double dm =

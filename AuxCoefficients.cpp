@@ -12,7 +12,8 @@
 
 #include "gsl/gsl_sf_gamma.h"
 
-int AuxCoefficients::compute_dn(int nMax, double *dn) {
+std::vector<double> AuxCoefficients::compute_dn(int nMax) {
+  std::vector<double> dn(nMax + 1);
 
   double d_n(0.);
 
@@ -22,7 +23,7 @@ int AuxCoefficients::compute_dn(int nMax, double *dn) {
     dn[i] = std::sqrt((2. * d_n + 1.) / (4 * consPi * d_n * (d_n + 1.)));
   }
 
-  return 0;
+  return dn;
 }
 
 int AuxCoefficients::compute_Pn(int nMax, double *Wigner,
@@ -44,9 +45,6 @@ int AuxCoefficients::compute_Pn(int nMax, double *Wigner,
 int AuxCoefficients::compute_Pp(Spherical<double> R, int nMax,
                                 SphericalP<std::complex<double>> *dataPp) {
 
-  double *dn;
-  dn = new double[nMax + 1];
-
   // Wigner d function test
   double *Wigner, *dWigner;
   Wigner = new double[nMax + 1];
@@ -66,7 +64,7 @@ int AuxCoefficients::compute_Pp(Spherical<double> R, int nMax,
 
     // prepare for spherical functions calculation
     VIGdVIG(nMax, q.second, R, Wigner, dWigner);
-    compute_dn(nMax, dn);
+    const std::vector<double> dn = compute_dn(nMax);
 
     // call vector spherical functions
     compute_Pn(nMax, Wigner, Pn);
@@ -301,7 +299,7 @@ int AuxCoefficients::compute_MpNp(Spherical<double> R,
   for (q = CompoundIterator(nMax, nMax); q < q.max(nMax); q++) {
 
     VIGdVIG(nMax, q.second, R, Wigner, dWigner);
-    compute_dn(nMax, dn);
+    const std::vector<double> compute_dn(nMax);
 
     // call vector spherical functions
     // -----------------------------------------------------

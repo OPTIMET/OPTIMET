@@ -5,6 +5,7 @@
 #include "SphericalP.h"
 
 #include <complex>
+#include <vector>
 
 /**
  * The AuxCoefficients class implements the spherical functions M, N, B and C.
@@ -122,6 +123,11 @@ private:
   //  int VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wigner, double
   //  *dWigner);
 
+  Spherical<double> R; /**< The Spherical vector. */
+  int besselType;      /**< Specifies regular or non-regular functions. */
+  std::complex<double> waveK; /**< The complex wave number. */
+  int nMax;                   /**< The maximum value of the n iterator. */
+
 public:
   SphericalP<std::complex<double>>
       *dataMp; /**< The M functions in compound iterator format. */
@@ -133,11 +139,6 @@ public:
       *dataCp; /**< The C functions in compound iterator format. */
 
   double *dn; /**< The dn symbols (required for the Excitation class). */
-
-  Spherical<double> R; /**< The Spherical vector. */
-  int besselType;      /**< Specifies regular or non-regular functions. */
-  std::complex<double> waveK; /**< The complex wave number. */
-  int nMax;                   /**< The maximum value of the n iterator. */
 
   /**
    * Initializing constructor for the AuxCoefficients class.l
@@ -163,7 +164,7 @@ public:
   // AJ
   // -----------------------------------------------------------------------------
   // temporary call for checking addition-translation coefficients evaluations
-  static int compute_dn(int nMax, double *dn);
+  static std::vector<double> compute_dn(int nMax);
   static int VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wigner,
                      double *dWigner);
 };
