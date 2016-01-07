@@ -8,8 +8,6 @@
 
 namespace optimet {
 
-std::vector<std::complex<double>> compute_Yn_m(const Spherical<double> &R,
-                                               const int nMax, const int m);
 std::vector<std::complex<double>> compute_Yp(const Spherical<double> &R,
                                              const int nMax);
 } // namespace optimet

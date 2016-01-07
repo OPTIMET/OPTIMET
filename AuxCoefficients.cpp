@@ -589,26 +589,9 @@ int AuxCoefficients::VIGdVIG(int nMax, int m_, Spherical<double> R,
   return 0;
 }
 
-AuxCoefficients::AuxCoefficients() { initDone = false; }
-
 AuxCoefficients::AuxCoefficients(Spherical<double> R_,
                                  std::complex<double> waveK_, int regular_,
                                  int nMax_) {
-  init(R_, waveK_, regular_, nMax_);
-}
-
-AuxCoefficients::~AuxCoefficients() {
-  if (initDone) {
-    delete[] dataMp;
-    delete[] dataNp;
-    delete[] dataBp;
-    delete[] dataCp;
-    delete[] dn;
-  }
-}
-
-void AuxCoefficients::init(Spherical<double> R_, std::complex<double> waveK_,
-                           int regular_, int nMax_) {
   R = R_;
   waveK = waveK_;
   nMax = nMax_;
@@ -619,25 +602,12 @@ void AuxCoefficients::init(Spherical<double> R_, std::complex<double> waveK_,
   else
     besselType = 0;
 
-  if (!initDone) {
-    dataMp = new SphericalP<std::complex<double>>[Tools::iteratorMax(nMax)];
-    dataNp = new SphericalP<std::complex<double>>[Tools::iteratorMax(nMax)];
-    dataBp = new SphericalP<std::complex<double>>[Tools::iteratorMax(nMax)];
-    dataCp = new SphericalP<std::complex<double>>[Tools::iteratorMax(nMax)];
+  dataMp = new SphericalP<std::complex<double>>[Tools::iteratorMax(nMax)];
+  dataNp = new SphericalP<std::complex<double>>[Tools::iteratorMax(nMax)];
+  dataBp = new SphericalP<std::complex<double>>[Tools::iteratorMax(nMax)];
+  dataCp = new SphericalP<std::complex<double>>[Tools::iteratorMax(nMax)];
 
-    dn = new double[nMax + 1];
-  }
-
-  initDone = true;
-}
-
-int AuxCoefficients::populate() {
-  if (!initDone) {
-    std::cerr << "AuxCoefficients object was not initialized!";
-    return 1;
-  }
+  dn = new double[nMax + 1];
 
   compute_MpNp(R, waveK, besselType, nMax, dataMp, dataNp);
-
-  return 0;
 }

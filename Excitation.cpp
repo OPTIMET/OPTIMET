@@ -64,13 +64,8 @@ int Excitation::populate() {
     return 1;
   }
 
-  AuxCoefficients coef;
-
-  coef.init(Spherical<double>(0.0, vKInc.the, vKInc.phi), waveK, 1, nMax);
-  if (coef.populate())
-    return 1;
-
-  Spherical<double> K_local = Spherical<double>(0.0, vKInc.the, vKInc.phi);
+  AuxCoefficients coef(Spherical<double>(0.0, vKInc.the, vKInc.phi), waveK, 1,
+                       nMax);
 
   CompoundIterator p;
 

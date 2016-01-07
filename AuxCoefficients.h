@@ -122,7 +122,6 @@ private:
   //  int VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wigner, double
   //  *dWigner);
 
-  bool initDone; /**< Specifies if the object has been initialized. */
 public:
   SphericalP<std::complex<double>>
       *dataMp; /**< The M functions in compound iterator format. */
@@ -141,12 +140,6 @@ public:
   int nMax;                   /**< The maximum value of the n iterator. */
 
   /**
-   * Default constructor for the AuxCoefficients class.
-   * Does NOT initialize the object.
-   */
-  AuxCoefficients();
-
-  /**
    * Initializing constructor for the AuxCoefficients class.l
    * @param R_ the Spherical vector.
    * @param waveK_ the wave number.
@@ -155,27 +148,6 @@ public:
    */
   AuxCoefficients(Spherical<double> R_, std::complex<double> waveK_,
                   int regular_, int nMax_);
-
-  /**
-   * Default destructor for the AuxCoefficients class.
-   */
-  ~AuxCoefficients();
-
-  /**
-   * Initialization method for the AuxCoefficients class.
-   * @param R_ the Spherical vector.
-   * @param waveK_ the wave number.
-   * @param regular_ the type of coefficients (regular or not).
-   * @param nMax_ the maximum value of the n iterator.
-   */
-  void init(Spherical<double> R_, std::complex<double> waveK_, int regular_,
-            int nMax_);
-
-  /**
-   * Populate the M and N vectors.
-   * @return 0 if successful, 1 otherwise.
-   */
-  int populate();
 
   /**
    * Compute the P_nm functions in compound iterator format.
@@ -191,9 +163,9 @@ public:
   // AJ
   // -----------------------------------------------------------------------------
   // temporary call for checking addition-translation coefficients evaluations
-  int compute_dn(int nMax, double *dn);
-  int VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wigner,
-              double *dWigner);
+  static int compute_dn(int nMax, double *dn);
+  static int VIGdVIG(int nMax, int m_, Spherical<double> R, double *Wigner,
+                     double *dWigner);
 };
 
 #endif /*AUX_COEFFICIENTS_H_*/
