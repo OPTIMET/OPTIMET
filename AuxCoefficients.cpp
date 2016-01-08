@@ -155,176 +155,48 @@ std::vector<SphericalP<std::complex<double>>> AuxCoefficients::compute_Nn(
 
 std::tuple<std::vector<double>, std::vector<double>>
 AuxCoefficients::VIGdVIG(int nMax, int m, const Spherical<double> &R) {
-  /*-------------------------------------------------------------------------------*/
-  /* PURPOSE: Evaluate Wigner d function & its derivative : vig_d  and d_vig_d
-   * --- */
-  /* VIG_d(n)             = vig_d  (l=0, m, n, the)
-   * -------------------------------------- */
-  /* d_VIG_d(n)   = d_vig_d(l=0, m, n, the)
-   * -------------------------------------- */
-  /*-------------------------------------------------------------------------------*/
 
-  std::vector<double> Wigner(nMax + 1), dWigner(nMax + 1);
+  std::vector<double> Wigner(nMax + 1, 0.0), dWigner(nMax + 1, 0.0);
 
-  // variables
-  // ---------------------------------------------------------------------
-  // loop variables
-  // ----------------------------------------------------------------
-  int i(0), ii(0);
-  int check_m_negative(0); // flag for m<0
-  // temp variables
-  // ---------------------------------------------------------------
-  double d_temp(0.); // double temp
-  double d_temp1(0.), d_temp2(0.), d_temp3(0.), d_temp4(0.), d_temp5(0.),
-      d_temp6(0.);
-  // Wigner function indices
-  // -------------------------------------------------------
-  int n_min(0);       // vector spherical function index              : n>=1,
-                      // n_min=max(|l|,|m|)
-  int l(0), l_abs(0); // wigner function index
-  int m_abs(0);       // vector spherical function index
-                      // Wigner function variables
-                      // -----------------------------------------------------
-  // double vig_d(0.); // wigner function value
-  double vig_the = R.the; // wigner function argument : [0<=the<=PI]
-  double vig_x(0.);       // wigner function auxiliary variable   : x=cos(the)
-  double vig_exy_lm(0.);  // wigner function auxiliary variable   :
-                          // exy_lm=eq(B.16)                       - book
-                          // reference
-  // Wigner recursive relationship terms - to be used for finally obtaining
-  // vig_d -
-  double vig_d_n_min(0.); // wigner function recursive term               :
-                          // d_n_min=eq(B.24)                      - book
-                          // reference
-  // -------------------------------------------------------------------------------
+  // I and II - determine n_min and obtain vig_d_n_min
+  const bool check_m_negative = (m < 0);
+  // vector spherical function index : n_min=max(|l|,|m|), where l == 0
+  const int n_min = m = std::abs(m);
+  // wigner function argument : [0<=the<=PI]
+  const double vig_the = (check_m_negative) ? consPi - R.the : R.the;
+  // wigner function auxiliary variable   : x=cos(the)
+  const double vig_x = std::cos(vig_the); // calculate in radians
 
-  // ------------------ prepare for VIG functions evaluations
-  // ----------------------
-  // -------------------------------------------------------------------------------
-  for (i = 0; i <= nMax; i++) { // rest
-    Wigner[i] = 0.;
-    dWigner[i] = 0.;
-  }
-  // prepare for vig_d evaluation
-  // --------------------------------------------------
-  l_abs = std::abs(l);
-  m_abs = std::abs(m);
-  // -------------------------------------------------------------------------------
-
-  // -------------------------------------------------------------------------------
-  // I - determine n_min : n_min=max(|l|,|m|)
-  // --------------------------------------
-  //      if(l_abs>n_min)
-  //    n_min = l_abs;
-  //      if(m_abs>n_min)
-  n_min = m_abs; // this is always true, since l==0
-                 // -------------------------------------------------------------------------------
-
-  // -------------------------------------------------------------------------------
-  // II - obtain vig_d_n_min ---------------------------------------------------
-  // 0 - set : vig_the==vig_the
-  //      if(m>=0) // solve directly eqs(B.22-B24)
-  //              vig_the = vig_the; // keep as it is
-  if (m < 0) {                  // solve using symmetry relation eq(B.7)
-    vig_the = consPi - vig_the; // modify value of vig_x   : eq(B.7)
-    m = std::abs(m);            // obtain solution for |m| : eq(B.7)
-    check_m_negative = 1;       // check m<0 : to use in IV below
-  }
-  vig_x = cos(vig_the); // calculate in radians
-
-  // A - evaluate vig_exy_lm                                      // wigner
-  // function recursive term in d_n_min=eq(B.23)   : exy_lm=eq(B.16)       -
-  // book reference
-  if (m >= l)
-    vig_exy_lm = 1.; // this is always true, since l==0 & m>=0
-  else if (m < l)
-    vig_exy_lm = pow(-1., double(l - m));
-
-  // B - evaluate all other terms in d_n_min = eqn(B.24) -----------------------
-  d_temp1 = pow(2., -n_min);
-  //
-  d_temp2 = std::sqrt(double(gsl_sf_fact(2 * n_min)));
-  d_temp3 = std::sqrt(double(gsl_sf_fact(std::abs(l - m))));
-  d_temp4 = std::sqrt(double(gsl_sf_fact(std::abs(l + m))));
-  //
-  d_temp5 = pow(1. - vig_x, std::abs(double(l - m)) / 2.);
-  d_temp6 = pow(1. + vig_x, std::abs(double(l + m)) / 2.);
-
-  // C - evaluate vig_d_n_min --------------------------------------------------
-  // vig_d_n_min = vig_exy_lm*d_temp1*(d_temp2/d_temp3/d_temp4)*d_temp5*d_temp6;
-  vig_d_n_min = vig_exy_lm;
-  vig_d_n_min *= d_temp1;
-  vig_d_n_min *= d_temp2;
-  vig_d_n_min /= d_temp3;
-  vig_d_n_min /= d_temp4;
-  vig_d_n_min *= d_temp5;
-  vig_d_n_min *= d_temp6;
-  // ----------------------------------------------------------------------------
-
-  // ----------------------------------------------------------------------------
   // III - calculate VIG_d & d_VIG_d
-  // --------------------------------------------
   // III.1 - check for singularity cases - i.e (m==0)
-  // ---------------------------
-  if (m == 0) { // singularity check
-                // A - if (i<n_min), then set VIG_d to zero
-                // -----------------------------------
-    //              for(i=0; i<n_min; i++){                                 //
-    //              for loop
-    //              VIG_d[i]  =0.;                                          //
-    //              == zero by default
-    //} // end for loop
-    // B - obtain the readily availble VIG_d[n_min] value
-    // ------------------------
-    // vig_d
-    // ---------------------------------------------------------------------
-    Wigner[n_min] = vig_d_n_min; // by definition
-    // C - obtain all other values in VIG_d[i] from recursive relationship
-    // --------
-    //   - Based on 'n_min' value and 'n' value; total recursive steps == n -
-    //   n_min
-    // obtain first term in recursive relationship eq(B.22) - from special case
-    Wigner[n_min + 1] = vig_x;
+  if (m == 0) {
+    // obtain the readily availble VIG_d[n_min] value
+    Wigner[0] = 1.0; // by definition
     // d_vig_d for the previous from current : d_VIG_d[i] = 0.*VIG_d[i-1] +
     // 0.*VIG_d[i] + ...*VIG_d[i+1]    - eqn(B.26)
-    ii = n_min;
-    d_temp1 = std::sqrt((double(ii) + 1.) * (double(ii) + 1.) - double(l * l));
-    d_temp2 = std::sqrt((double(ii) + 1.) * (double(ii) + 1.) - double(m * m));
-    d_temp3 = (2. * double(ii) + 1.);
-    d_temp4 = (double(ii) + 1.);
-    dWigner[ii] =
-        double(ii) * d_temp1 * d_temp2 / (d_temp3 * d_temp4) * Wigner[ii + 1];
-    dWigner[ii] /= sin(vig_the); // == zero by definition
-    // obtain all successive terms in eq(B.22) - directrly
-    for (i = n_min + 2; i <= nMax + 1; i++) { // for loop
-      ii = i - 1;
-      d_temp1 =
-          std::sqrt((double(ii) + 1.) * (double(ii) + 1.) - double(l * l));
-      d_temp2 =
-          std::sqrt((double(ii) + 1.) * (double(ii) + 1.) - double(m * m));
-      d_temp3 = (2. * double(ii) + 1.) * (ii * (ii + 1.) * vig_x - l * m);
-      d_temp4 = (double(ii) + 1.);
-      d_temp5 = std::sqrt(double(ii * ii) - double(l * l));
-      d_temp6 = std::sqrt(double(ii * ii) - double(m * m));
+    dWigner[0] = 0.0; // == zero by definition
+    // obtain first term in recursive relationship eq(B.22) - from special case
+    Wigner[1] = vig_x;
+    // obtain all other values in VIG_d[i] from recursive relationship
+    for (int i = 2; i <= nMax + 1; i++) {
       // evaluate from above
       // vig_d        : VIG_d[i] = ...*VIG_d[i-1] + ...*VIG_d[i-2] - eqn(B.22)
-      d_temp = (1. / double(ii) / d_temp1 / d_temp2) *
-               ((d_temp3)*Wigner[i - 1] -
-                (d_temp4 * d_temp5 * d_temp6) * Wigner[i - 2]);
+      const double d_temp = ((double)(i + 1) / 2.0) *
+                                (double)((2 * i - 1) * i * (i - 1)) * vig_x *
+                                Wigner[i - 1] -
+                            (double)(i * (i - 1) * (i - 1)) * Wigner[i - 2];
       if (i <= nMax)
         Wigner[i] = d_temp;
       // d_vig_d      : d_VIG_d[i-1] = ...*VIG_d[i-2] + ...*VIG_d[i-1] +
       // ...*VIG_d[i]         - eqn(B.26)
-      dWigner[i - 1] = -d_temp4 * d_temp5 * d_temp6 /
-                           (double(ii) * (2. * double(ii) + 1.)) *
-                           Wigner[i - 2] -
-                       0. // since l==0
-                       +
-                       double(ii) * d_temp1 * d_temp2 /
-                           (d_temp4 * (2. * double(ii) + 1.)) * d_temp;
-      dWigner[i - 1] /= sin(vig_the);
-    } // end for loop
-  }   // end singularity check
+      dWigner[i - 1] =
+          ((-(double)(i * (i - 1) * (i - 1)) / (double)((i - 1)) *
+            (2 * i - 1)) *
+               Wigner[i - 2] +
+           ((double)(i * i * (i - 1)) / (double)(2 * i * i - i)) * d_temp) /
+          std::sin(vig_the);
+    }
+  }
 
   // III.2 - else if (m!=0), no special case
   // ----------------------------------------
@@ -388,17 +260,13 @@ AuxCoefficients::VIGdVIG(int nMax, int m, const Spherical<double> &R) {
   // -------------------------------------------------------------------------------
 
   // IV - if (m<0) : apply symmetry property eq(B.7) to eqs(B.22-B.24)
-  // -------------
-  if (check_m_negative == 1) {    // solve using symmetry relation eq(B.7)
-    for (i = 0; i <= nMax; i++) { // for loop
-      d_temp1 =
-          1. / (pow(-1., double(i + l))); // this can be simplified, since l==0
-      Wigner[i] *= d_temp1;               // obtain final VIG_d
-      dWigner[i] *= -d_temp1;             // obtain final VIG_d
-    }                                     // end : for loop
-  }                                       // end : if (m<0) condition
-
-  // ------------------------------------------------------------------------------
+  if (check_m_negative) { // solve using symmetry relation eq(B.7)
+    for (int i = 0; i <= nMax; i++) {
+      const double c = 1.0 / std::pow(-1.0, i);
+      Wigner[i] *= c;   // obtain final VIG_d
+      dWigner[i] *= -c; // obtain final VIG_d
+    }
+  }
 
   return std::make_tuple(Wigner, dWigner);
 }
