@@ -33,7 +33,7 @@
 <output type="field">
   <grid type="cartesian">
     <x min="-0.1" max="0.1" steps="2" />
-    <y min="-3000" max="3000" steps="201" />
-    <z min="-3000" max="3000" steps="201" />
+    <y min="-3000" max="3000" steps="21" />
+    <z min="-3000" max="3000" steps="21" />
   </grid>
 </output>

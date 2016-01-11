@@ -7,27 +7,18 @@
 #include <iostream>
 #include <cmath>
 
-Legendre::Legendre()
-{
-  initDone = false;
-}
+Legendre::Legendre() { initDone = false; }
 
-Legendre::Legendre(double argument_, int nMax_)
-{
-  init(argument_, nMax_);
-}
+Legendre::Legendre(double argument_, int nMax_) { init(argument_, nMax_); }
 
-Legendre::~Legendre()
-{
-  if(initDone)
-  {
-    delete [] data;
-    delete [] ddata;
+Legendre::~Legendre() {
+  if (initDone) {
+    delete[] data;
+    delete[] ddata;
   }
 }
 
-void Legendre::init(double argument_, int nMax_)
-{
+void Legendre::init(double argument_, int nMax_) {
   argument = argument_;
   nMax = nMax_;
   data = new double[Tools::iteratorMax(nMax)];
@@ -35,49 +26,43 @@ void Legendre::init(double argument_, int nMax_)
   initDone = true;
 }
 
-int Legendre::populate()
-{
-  if(!initDone)
-  {
+int Legendre::populate() {
+  if (!initDone) {
     std::cerr << "Legendre engine was not initialized!";
     return 1;
   }
 
   CompoundIterator q;
 
-  for(int m=0; m<=nMax; m++)
-  {
+  for (int m = 0; m <= nMax; m++) {
     int n;
-    //Compute positives
-    double *data_l = new double [nMax-m+1];
-    double *ddata_l = new double [nMax-m+1];
+    // Compute positives
+    double *data_l = new double[nMax - m + 1];
+    double *ddata_l = new double[nMax - m + 1];
 
     gsl_sf_legendre_Plm_deriv_array(nMax, m, argument, data_l, ddata_l);
 
-    if(m == 0)
+    if (m == 0)
       n = 1;
     else
       n = m;
 
-    for(int i=0; i<=(nMax-m); i++)
-    {
-      if((m == 0) && (i==0)) //For (0,0), skip first
+    for (int i = 0; i <= (nMax - m); i++) {
+      if ((m == 0) && (i == 0)) // For (0,0), skip first
       {
         i++;
       }
 
-      q.init(n,m);
+      q.init(n, m);
       data[q] = data_l[i];
       ddata[q] = ddata_l[i];
 
-      //Make negatives
-      if(m > 0)
-      {
-        q.init(n,-m);
+      // Make negatives
+      if (m > 0) {
+        q.init(n, -m);
 
-        double neg_factor = std::pow(-1.0, m) *
-            (gsl_sf_fact(n-m) /
-             gsl_sf_fact(n+m));
+        double neg_factor =
+            std::pow(-1.0, m) * (gsl_sf_fact(n - m) / gsl_sf_fact(n + m));
 
         data[q] = neg_factor * data_l[i];
         ddata[q] = neg_factor * ddata_l[i];
@@ -86,8 +71,8 @@ int Legendre::populate()
       n++;
     }
 
-    delete [] data_l;
-    delete [] ddata_l;
+    delete[] data_l;
+    delete[] ddata_l;
   }
 
   return 0;

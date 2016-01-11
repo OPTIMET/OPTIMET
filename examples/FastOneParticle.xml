@@ -17,8 +17,10 @@
   </object>
 </geometry>
 
-<output type="response">
-  <scan type="A+E">
-    <wavelength initial="1300" final="3300" stepsize="10" />
-  </scan>
+<output type="field">
+  <grid type="cartesian">
+    <x min="-1000" max="1000" steps="21" />
+    <y min="-0.1" max="0.1" steps="2" />
+    <z min="-1000" max="1000" steps="21" />
+  </grid>
 </output>

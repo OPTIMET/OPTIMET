@@ -7,9 +7,7 @@
  * spherical coordinates.
  * @warning Do not use without initialization.
  */
-template<class carType>
-class Cartesian
-{
+template <class carType> class Cartesian {
 public:
   carType x; /**< The x cartesian coordinate. */
   carType y; /**< The y cartesian coordinate. */
@@ -22,24 +20,19 @@ public:
    * @param z_ the carType value for z
    * @see init()
    */
-  Cartesian(carType x_, carType y_, carType z_)
-  {
-    init(x_, y_, z_);
-  }
+  Cartesian(carType x_, carType y_, carType z_) { init(x_, y_, z_); }
 
   /**
    * Default Cartesian constructor.
    */
-  Cartesian(void)
-  {
+  Cartesian(void) {
     //
   }
 
   /**
    * Default Cartesian destructor.
    */
-  ~Cartesian(void)
-  {
+  ~Cartesian(void) {
     //
   }
 
@@ -50,8 +43,7 @@ public:
    * @param z_ the carType value for z
    * @see Cartesian()
    */
-  void init(carType x_, carType y_, carType z_)
-  {
+  void init(carType x_, carType y_, carType z_) {
     x = x_;
     y = y_;
     z = z_;
@@ -62,8 +54,7 @@ public:
    * @param argument_ the vector to be multiplied with.
    * @return the dot-product of this and argument_.
    */
-  carType operator * (Cartesian<carType> argument_)
-  {
+  carType operator*(Cartesian<carType> argument_) {
     return x * argument_.x + y * argument_.y + z * argument_.z;
   }
 
@@ -72,13 +63,10 @@ public:
    * @param argument_ the vector to be subtracted.
    * @return
    */
-  Cartesian<carType> operator - (Cartesian<carType> argument_)
-  {
-    return Cartesian<carType>(x - argument_.x, y - argument_.y, z - argument_.z);
+  Cartesian<carType> operator-(Cartesian<carType> argument_) {
+    return Cartesian<carType>(x - argument_.x, y - argument_.y,
+                              z - argument_.z);
   }
-
 };
 
-
 #endif /* CARTESIAN_H_ */
-
