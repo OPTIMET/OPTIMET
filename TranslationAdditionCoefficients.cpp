@@ -91,13 +91,13 @@ t_complex CachedRecurrence::recurrence(t_int n, t_int m, t_int l, t_int k) {
 }
 
 t_complex CachedRecurrence::initial(t_int l, t_int k) {
+  assert(l >= 0);
   auto const wave = direction.rrr * waveK;
   auto const bessel = regular ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
   auto const hb = std::get<0>(bessel(wave, l)).back();
   if(l == 0 and k == 0)
     return hb;
   auto const factor = std::sqrt(4e0 * constant::pi) * ((l + k) % 2 == 0 ? 1 : -1);
-  assert(hb.size() > l and l >= 0);
   return factor * Ynm(direction, l, -k) * hb;
 }
 
