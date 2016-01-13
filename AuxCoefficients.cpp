@@ -215,7 +215,8 @@ AuxCoefficients::VIGdVIG(int nMax, int m, const Spherical<double> &R) {
     for (int i = m + 1; i <= nMax + 1; i++) {
       // evaluate from terms above
       const double d_temp =
-          -((1.0 - (double)i) / 2.0) / std::sqrt((double)(i * i - m * m)) *
+          (1.0 / (double)(i - 1) / (double)i /
+           std::sqrt((double)(i * i - m * m))) *
           ((double)((2 * i - 1) * (i - 1) * i) * vig_x * Wigner[i - 1] -
            (double)(i * (i - 1)) *
                std::sqrt((double)((i - m - 1) * (i + m - 1))) * Wigner[i - 2]);
