@@ -16,13 +16,10 @@ namespace optimet {
 std::vector<double> AuxCoefficients::compute_dn(int nMax) {
   std::vector<double> dn(nMax + 1);
 
-  double d_n(0.);
-
   dn[0] = -1000; // this should return infinity!
-  for (int i = 1; i <= nMax; i++) {
-    d_n = double(i);
-    dn[i] = std::sqrt((2. * d_n + 1.) / (4 * consPi * d_n * (d_n + 1.)));
-  }
+  for (int i = 1; i <= nMax; i++)
+    dn[i] = std::sqrt((2.0 * (double)i + 1.0) /
+                      (4.0 * consPi * (double)(i * (i + 1))));
 
   return dn;
 }
@@ -257,17 +254,16 @@ AuxCoefficients::AuxCoefficients(const Spherical<double> &R,
 
   const BESSEL_TYPE besselType = (regular) ? Bessel : Hankel1;
 
-  // Wigner d function test
-  std::vector<double> Wigner, dWigner;
-
-  const std::vector<SphericalP<std::complex<double>>> Pn =
-      compute_Pn(nMax, Wigner);
-
   for (CompoundIterator q(nMax, nMax); q < q.max(nMax); ++q) {
 
+    // Wigner d function test
+    std::vector<double> Wigner, dWigner;
     std::tie(Wigner, dWigner) = VIGdVIG(nMax, q.second, R);
 
     // call vector spherical functions
+
+    const std::vector<SphericalP<std::complex<double>>> Pn =
+        compute_Pn(nMax, Wigner);
     const std::vector<SphericalP<std::complex<double>>> Cn =
         compute_Cn(nMax, q.second, R, Wigner, dWigner);
     const std::vector<SphericalP<std::complex<double>>> Bn =
