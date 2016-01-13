@@ -249,7 +249,8 @@ AuxCoefficients::VIGdVIG(int nMax, int m, const Spherical<double> &R) {
 AuxCoefficients::AuxCoefficients(const Spherical<double> &R,
                                  std::complex<double> waveK, bool regular,
                                  int nMax)
-    : _M(nMax + 1), _N(nMax + 1), _B(nMax + 1), _C(nMax + 1),
+    : _M(Tools::iteratorMax(nMax)), _N(Tools::iteratorMax(nMax)),
+      _B(Tools::iteratorMax(nMax)), _C(Tools::iteratorMax(nMax)),
       _dn(compute_dn(nMax)) {
 
   const BESSEL_TYPE besselType = (regular) ? Bessel : Hankel1;
