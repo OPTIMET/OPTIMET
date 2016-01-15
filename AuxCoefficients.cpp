@@ -153,6 +153,12 @@ std::vector<SphericalP<std::complex<double>>> AuxCoefficients::compute_Nn(
 std::tuple<std::vector<double>, std::vector<double>>
 AuxCoefficients::VIGdVIG(int nMax, int m, const Spherical<double> &R) {
 
+  // std::cout << "nMax = " << nMax << std::endl;
+  // std::cout << "m = " << m << std::endl;
+  // std::cout << "R = { .rrr = " << R.rrr << "," << std::endl
+  //           << "      .the = " << R.the << "," << std::endl
+  //           << "      .phi = " << R.phi << "}" << std::endl;
+
   std::vector<double> Wigner(nMax + 1, 0.0), dWigner(nMax + 1, 0.0);
 
   // I and II - determine n_min and obtain vig_d_n_min
@@ -178,19 +184,18 @@ AuxCoefficients::VIGdVIG(int nMax, int m, const Spherical<double> &R) {
     for (int i = 2; i <= nMax + 1; i++) {
       // evaluate from above
       // vig_d        : VIG_d[i] = ...*VIG_d[i-1] + ...*VIG_d[i-2] - eqn(B.22)
-      const double d_temp = 1.0 / ((double)(i * i * (i - 1))) *
-                                (double)((2 * i - 1) * i * (i - 1)) * vig_x *
-                                Wigner[i - 1] -
-                            (double)(i * (i - 1) * (i - 1)) * Wigner[i - 2];
+      const double d_temp =
+          1.0 / ((double)(i * i * (i - 1))) *
+          ((double)((2 * i - 1) * i * (i - 1)) * vig_x * Wigner[i - 1] -
+           (double)(i * (i - 1) * (i - 1)) * Wigner[i - 2]);
       if (i <= nMax)
         Wigner[i] = d_temp;
       // d_vig_d      : d_VIG_d[i-1] = ...*VIG_d[i-2] + ...*VIG_d[i-1] +
       // ...*VIG_d[i]         - eqn(B.26)
       dWigner[i - 1] =
-          ((-(double)(i * (i - 1) * (i - 1)) / (double)((i - 1)) *
-            (2 * i - 1)) *
+          (-(double)(i * (i - 1) * (i - 1)) / (double)((i - 1) * (2 * i - 1)) *
                Wigner[i - 2] +
-           ((double)(i * i * (i - 1)) / (double)(2 * i * i - i)) * d_temp) /
+           (double)(i * i * (i - 1)) / (double)(2 * i * i - i) * d_temp) /
           std::sin(vig_the);
     }
   }
@@ -243,6 +248,16 @@ AuxCoefficients::VIGdVIG(int nMax, int m, const Spherical<double> &R) {
       dWigner[i] *= -c; // obtain final VIG_d
     }
   }
+
+  // std::cout << "Wigner = {" << std::endl;
+  // for (int i = 0; i <= nMax; i++)
+  //   std::cout << "[" << i << "] = " << Wigner[i] << std::endl;
+  // std::cout << "}" << std::endl;
+  //
+  // std::cout << "dWigner = {" << std::endl;
+  // for (int i = 0; i <= nMax; i++)
+  //   std::cout << "[" << i << "] = " << dWigner[i] << std::endl;
+  // std::cout << "}" << std::endl;
 
   return std::make_tuple(Wigner, dWigner);
 }
