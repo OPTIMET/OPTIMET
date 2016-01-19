@@ -2,9 +2,11 @@
 
 #include "CompoundIterator.h"
 #include "constants.h"
+#include "Types.h"
 #include "TranslationAdditionCoefficients.h"
 
 #include <cmath>
+#include <tuple>
 
 namespace optimet {
 

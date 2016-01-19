@@ -1,5 +1,6 @@
 #include "Algebra.h"
 
+#include <stddef.h>
 #include <gsl/gsl_cblas.h>
 
 Algebra::Algebra() {
