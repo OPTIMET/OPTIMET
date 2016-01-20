@@ -178,17 +178,15 @@ AuxCoefficients::VIGdVIG(int nMax, int m, const Spherical<double> &R) {
       // evaluate from above
       // vig_d        : VIG_d[i] = ...*VIG_d[i-1] + ...*VIG_d[i-2] - eqn(B.22)
       const double d_temp =
-          1.0 / ((double)(i * i * (i - 1))) *
-          ((double)((2 * i - 1) * i * (i - 1)) * vig_x * Wigner[i - 1] -
-           (double)(i * (i - 1) * (i - 1)) * Wigner[i - 2]);
+          ((2 * i - 1) * vig_x * Wigner[i - 1] - (i - 1) * Wigner[i - 2]) / i;
+
       if (i <= nMax)
         Wigner[i] = d_temp;
       // d_vig_d      : d_VIG_d[i-1] = ...*VIG_d[i-2] + ...*VIG_d[i-1] +
       // ...*VIG_d[i]         - eqn(B.26)
       dWigner[i - 1] =
-          (-(double)(i * (i - 1) * (i - 1)) / (double)((i - 1) * (2 * i - 1)) *
-               Wigner[i - 2] +
-           (double)(i * i * (i - 1)) / (double)(2 * i * i - i) * d_temp) /
+          ((i * i - i) * d_temp / (2 * i - 1) -
+           i * (i * i - 2 * i + 1) * Wigner[i - 2] / (2 * i * i - 3 * i + 1)) /
           std::sin(vig_the);
     }
   }
