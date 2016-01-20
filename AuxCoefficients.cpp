@@ -211,22 +211,18 @@ AuxCoefficients::VIGdVIG(int nMax, int m, const Spherical<double> &R) {
     for (int i = m + 1; i <= nMax + 1; i++) {
       // evaluate from terms above
       const double d_temp =
-          (1.0 / (double)(i - 1) / (double)i /
-           std::sqrt((double)(i * i - m * m))) *
-          ((double)((2 * i - 1) * (i - 1) * i) * vig_x * Wigner[i - 1] -
-           (double)(i * (i - 1)) *
-               std::sqrt((double)((i - m - 1) * (i + m - 1))) * Wigner[i - 2]);
+          ((2 * i - 1) * vig_x * Wigner[i - 1] -
+           std::sqrt((i - m - 1) * (i + m - 1)) * Wigner[i - 2]) /
+          std::sqrt(i * i - m * m);
       // populate VIG_d[i] array
       if (i <= nMax)
         Wigner[i] = d_temp;
       // d_vig_d for the previous from current : d_VIG_d[i-1] = ...*VIG_d[i-2] +
       // ...*VIG_d[i-1] + ...*VIG_d[i]        - eqn(B.26)
       dWigner[i - 1] =
-          (-(double)(i * (i - 1)) *
-               std::sqrt((double)((i - m - 1) * (i + m - 1))) /
-               (double)((i - 1) * (2 * i - 1)) * Wigner[i - 2] +
-           (double)(i * (i - 1)) * std::sqrt((double)((i * i) - (m * m))) /
-               (double)(i * (2 * i - 1)) * d_temp) /
+          ((i - 1) * std::sqrt(i * i - m * m) * d_temp / (2 * i - 1) -
+           i * std::sqrt((i - m - 1) * (i + m - 1)) * Wigner[i - 2] /
+               (2 * i - 1)) /
           std::sin(vig_the);
     }
   }
