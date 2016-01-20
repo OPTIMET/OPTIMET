@@ -153,12 +153,6 @@ std::vector<SphericalP<std::complex<double>>> AuxCoefficients::compute_Nn(
 std::tuple<std::vector<double>, std::vector<double>>
 AuxCoefficients::VIGdVIG(int nMax, int m, const Spherical<double> &R) {
 
-  // std::cout << "nMax = " << nMax << std::endl;
-  // std::cout << "m = " << m << std::endl;
-  // std::cout << "R = { .rrr = " << R.rrr << "," << std::endl
-  //           << "      .the = " << R.the << "," << std::endl
-  //           << "      .phi = " << R.phi << "}" << std::endl;
-
   std::vector<double> Wigner(nMax + 1, 0.0), dWigner(nMax + 1, 0.0);
 
   // I and II - determine n_min and obtain vig_d_n_min
@@ -248,16 +242,6 @@ AuxCoefficients::VIGdVIG(int nMax, int m, const Spherical<double> &R) {
       dWigner[i] *= -c; // obtain final VIG_d
     }
   }
-
-  // std::cout << "Wigner = {" << std::endl;
-  // for (int i = 0; i <= nMax; i++)
-  //   std::cout << "[" << i << "] = " << Wigner[i] << std::endl;
-  // std::cout << "}" << std::endl;
-  //
-  // std::cout << "dWigner = {" << std::endl;
-  // for (int i = 0; i <= nMax; i++)
-  //   std::cout << "[" << i << "] = " << dWigner[i] << std::endl;
-  // std::cout << "}" << std::endl;
 
   return std::make_tuple(Wigner, dWigner);
 }
