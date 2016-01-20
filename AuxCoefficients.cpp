@@ -132,17 +132,16 @@ std::vector<SphericalP<std::complex<double>>> AuxCoefficients::compute_Nn(
   Nn[0].phi = std::complex<double>(0.0, 0.0);
 
   for (int i = 1; i <= nMax; i++) {
-    const double d_n = double(i);
     Nn[i].rrr = (1.0 / Kr) * dm * dn[i] *
-                ((d_n * (d_n + 1.0) * data[i] * Pn[i].rrr) +
+                ((static_cast<double>(i * (i + 1)) * data[i] * Pn[i].rrr) +
                  ((Kr * ddata[i] + data[i]) * Bn[i].rrr)) *
                 exp_imphi;
     Nn[i].the = (1.0 / Kr) * dm * dn[i] *
-                ((d_n * (d_n + 1.0) * data[i] * Pn[i].the) +
+                ((static_cast<double>(i * (i + 1)) * data[i] * Pn[i].the) +
                  ((Kr * ddata[i] + data[i]) * Bn[i].the)) *
                 exp_imphi;
     Nn[i].phi = (1.0 / Kr) * dm * dn[i] *
-                ((d_n * (d_n + 1.0) * data[i] * Pn[i].phi) +
+                ((static_cast<double>(i * (i + 1)) * data[i] * Pn[i].phi) +
                  ((Kr * ddata[i] + data[i]) * Bn[i].phi)) *
                 exp_imphi;
   }
