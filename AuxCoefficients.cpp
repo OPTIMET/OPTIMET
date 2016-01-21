@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "gsl/gsl_sf_gamma.h"
+#include <boost/math/special_functions/factorials.hpp>
 
 namespace optimet {
 
@@ -194,12 +194,11 @@ AuxCoefficients::VIGdVIG(int nMax, int m, const Spherical<double> &R) {
   // III.2 - else if (m!=0), no special case
   else {
     // obtain the readily availble VIG_d[n_min] value
-    const double vig_d_n_min =
-        std::pow(2.0, -m) *
-        (std::sqrt((double)gsl_sf_fact(2 * m)) / (double)gsl_sf_fact(m)) *
-        std::pow(1.0 - vig_x, (double)m / 2.0) *
-        std::pow(1.0 + vig_x, (double)m / 2.0);
-    Wigner[m] = vig_d_n_min; // by definition
+    using boost::math::factorial;
+    Wigner[m] = std::pow(2.0, -m) *
+                (std::sqrt(factorial<double>(2 * m)) / factorial<double>(m)) *
+                std::pow(1.0 - vig_x, (double)m / 2.0) *
+                std::pow(1.0 + vig_x, (double)m / 2.0); // by definition
 
     // d_vig_d for the previous from current : d_VIG_d[i] = 0.*VIG_d[i-1] +
     // 0.*VIG_d[i] + ...*VIG_d[i+1]    - eqn(B.26)

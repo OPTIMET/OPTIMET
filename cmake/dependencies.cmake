@@ -1,3 +1,4 @@
+find_package(BOOST 1.35.0 REQUIRED COMPONENTS math)
 find_package(GSL REQUIRED)
 find_package(HDF5 REQUIRED)
 find_package(F2C REQUIRED)
