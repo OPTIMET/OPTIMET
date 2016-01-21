@@ -102,6 +102,4 @@ bool CompoundIterator::operator==(int compound_) {
   return compound == compound_;
 }
 
-CompoundIterator::operator int() const { return compound; }
-
-CompoundIterator::operator long() const { return compound; }
+CompoundIterator::operator optimet::t_uint() const { return compound; }

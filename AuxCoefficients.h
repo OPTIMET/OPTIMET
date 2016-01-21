@@ -4,6 +4,7 @@
 #include "Spherical.h"
 #include "SphericalP.h"
 #include "Bessel.h"
+#include "Types.h"
 
 #include <complex>
 #include <vector>
@@ -24,7 +25,7 @@ public:
    * @param nMax the maximum value of n iterator.
    * @return the d_n symbol vector.
    */
-  static std::vector<double> compute_dn(int nMax);
+  static std::vector<t_real> compute_dn(t_uint nMax);
 
   /**
    * Compute the Wigner functions and their derivatives.
@@ -33,8 +34,8 @@ public:
    * @param R the Spherical vector.
    * @return the Wigner and dWigner vectors, in that order.
    */
-  static std::tuple<std::vector<double>, std::vector<double>>
-  VIGdVIG(int nMax, int m, const Spherical<double> &R);
+  static std::tuple<std::vector<t_real>, std::vector<t_real>>
+  VIGdVIG(t_uint nMax, t_int m, const Spherical<t_real> &R);
 
   /**
    * Initializing constructor for the AuxCoefficients class.
@@ -43,23 +44,15 @@ public:
    * @param regular_ the type of coefficients (regular or not).
    * @param nMax_ the maximum value of the n iterator.
    */
-  AuxCoefficients(const Spherical<double> &R, std::complex<double> waveK,
-                  bool regular, int nMax);
+  AuxCoefficients(const Spherical<t_real> &R, t_complex waveK, bool regular,
+                  t_uint nMax);
 
-  const SphericalP<std::complex<double>> &M(std::size_t i) const {
-    return _M[i];
-  }
-  const SphericalP<std::complex<double>> &N(std::size_t i) const {
-    return _N[i];
-  }
-  const SphericalP<std::complex<double>> &B(std::size_t i) const {
-    return _B[i];
-  }
-  const SphericalP<std::complex<double>> &C(std::size_t i) const {
-    return _C[i];
-  }
+  const SphericalP<t_complex> &M(t_uint i) const { return _M[i]; }
+  const SphericalP<t_complex> &N(t_uint i) const { return _N[i]; }
+  const SphericalP<t_complex> &B(t_uint i) const { return _B[i]; }
+  const SphericalP<t_complex> &C(t_uint i) const { return _C[i]; }
 
-  const double &dn(std::size_t i) const { return _dn[i]; }
+  const t_real &dn(t_uint i) const { return _dn[i]; }
 
 private:
   /**
@@ -68,8 +61,8 @@ private:
    * @param Wigner the Wigner functions.
    * @return Pn.
    */
-  std::vector<SphericalP<std::complex<double>>>
-  compute_Pn(int nMax, const std::vector<double> &Wigner);
+  std::vector<SphericalP<t_complex>>
+  compute_Pn(t_uint nMax, const std::vector<t_real> &Wigner);
 
   /**
    * Compute the Cn functions
@@ -82,10 +75,10 @@ private:
    * @param Cn the vector to store Cn in.
    * @return 0 if succesful, 1 otherwise (deprecated).
    */
-  std::vector<SphericalP<std::complex<double>>>
-  compute_Cn(int nMax, int m, const Spherical<double> &R,
-             const std::vector<double> &Wigner,
-             const std::vector<double> &dWigner);
+  std::vector<SphericalP<t_complex>>
+  compute_Cn(t_uint nMax, t_int m, const Spherical<t_real> &R,
+             const std::vector<t_real> &Wigner,
+             const std::vector<t_real> &dWigner);
 
   /**
    * Compute the Bn functions
@@ -98,10 +91,10 @@ private:
    * @param Bn the vector to store Bn in.
    * @return 0 if succesful, 1 otherwise (deprecated).
    */
-  std::vector<SphericalP<std::complex<double>>>
-  compute_Bn(int nMax, int m, const Spherical<double> &R,
-             const std::vector<double> &Wigner,
-             const std::vector<double> &dWigner);
+  std::vector<SphericalP<t_complex>>
+  compute_Bn(t_uint nMax, t_int m, const Spherical<t_real> &R,
+             const std::vector<t_real> &Wigner,
+             const std::vector<t_real> &dWigner);
 
   /**
    * Compute the Mn functions.
@@ -113,11 +106,10 @@ private:
    * @param BHreg the type of Bessel functions (regular or not).
    * @return 0 if succesful, 1 otherwise (deprecated).
    */
-  std::vector<SphericalP<std::complex<double>>>
-  compute_Mn(int nMax, int m, const Spherical<double> &R,
-             std::complex<double> waveK, const std::vector<double> &dn,
-             const std::vector<SphericalP<std::complex<double>>> &Cnm,
-             BESSEL_TYPE BHreg);
+  std::vector<SphericalP<t_complex>>
+  compute_Mn(t_uint nMax, t_int m, const Spherical<t_real> &R,
+             std::complex<t_real> waveK, const std::vector<t_real> &dn,
+             const std::vector<SphericalP<t_complex>> &Cnm, BESSEL_TYPE BHreg);
 
   /**
    * Compute the Nn functions.
@@ -130,17 +122,16 @@ private:
    * @param BHreg the type of Bessel functions (regular or not).
    * @return 0 if successful, 1 otherwise(deprecated).
    */
-  std::vector<SphericalP<std::complex<double>>>
-  compute_Nn(int nMax, int m, const Spherical<double> &R,
-             std::complex<double> waveK, const std::vector<double> &dn,
-             const std::vector<SphericalP<std::complex<double>>> &Pn,
-             const std::vector<SphericalP<std::complex<double>>> &Bn,
-             BESSEL_TYPE BHreg);
+  std::vector<SphericalP<t_complex>>
+  compute_Nn(t_uint nMax, t_int m, const Spherical<t_real> &R, t_complex waveK,
+             const std::vector<t_real> &dn,
+             const std::vector<SphericalP<t_complex>> &Pn,
+             const std::vector<SphericalP<t_complex>> &Bn, BESSEL_TYPE BHreg);
 
-  std::vector<SphericalP<std::complex<double>>> _M, _N, _B,
+  std::vector<SphericalP<t_complex>> _M, _N, _B,
       _C; /**< The M, N, B and C functions in compound iterator format. */
 
-  std::vector<double>
+  std::vector<t_real>
       _dn; /**< The dn symbols (required for the Excitation class). */
 };
 
