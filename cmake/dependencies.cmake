@@ -38,3 +38,8 @@ add_hunter_package(Eigen PACKAGE Eigen3 CHECK_SYSTEM)
 add_hunter_package(hdf5 PACKAGE HDF5 CHECK_SYSTEM)
 add_hunter_package(GSL CHECK_SYSTEM)
 include(PackageLookup)
+
+if(dompi)
+  find_package(MPI)
+  find_package(scalapack REQUIRED)
+endif()
