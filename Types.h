@@ -18,11 +18,9 @@ typedef std::complex<t_real> t_complex;
 
 //! \brief A vector of a given type
 //! \details Operates as mathematical vector.
-template <class T = t_complex>
-using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+template <class T = t_complex> using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 //! \brief A matrix of a given type
 //! \details Operates as mathematical matrix.
-template <class T = t_complex>
-using Matrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+template <class T = t_complex> using Matrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 }
 #endif

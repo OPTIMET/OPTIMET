@@ -1,5 +1,6 @@
 #include "Legendre.h"
 
+#include <stddef.h>
 #include "gsl/gsl_sf_legendre.h"
 #include "gsl/gsl_sf_gamma.h"
 #include "CompoundIterator.h"

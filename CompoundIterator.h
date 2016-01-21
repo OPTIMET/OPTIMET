@@ -1,6 +1,12 @@
 #ifndef COMPOUNDITERATOR_H_
 #define COMPOUNDITERATOR_H_
 
+#include "Types.h"
+namespace optimet {
+inline constexpr t_int flatten_indices(t_int first, t_int second) {
+  return first * (first + 1) - second - 1;
+}
+}
 /**
  * The CompoundIterator class implements compound iterators.
  * Iterators map p -> (n, m) -> p using a specified mapping function.

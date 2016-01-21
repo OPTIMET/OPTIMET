@@ -14,3 +14,18 @@ extern const std::complex<double> consCm1 = std::complex<double>(-1.0, 0.0);
 extern const std::complex<double> consC0 = std::complex<double>(0.0, 0.0);
 
 extern const double errEpsilon = 1e-10;
+
+namespace optimet {
+namespace constant {
+extern const double pi = consPi;
+extern const t_real epsilon0 = consEpsilon0;
+extern const t_real mu0 = consMu0;
+extern const t_real c = consC;
+
+extern const t_real from_nm_to_m = consFrnmTom;
+
+extern const t_complex i{0, 1};
+
+extern const t_real tolerance = errEpsilon;
+}
+}
