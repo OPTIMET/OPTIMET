@@ -101,8 +101,7 @@ int Excitation::getIncLocal(Spherical<double> point_,
   }
 
   Spherical<double> Rrel = point_ - Spherical<double>(0.0, 0.0, 0.0);
-  optimet::Coupling coupling(Rrel, waveK, 1, nMax_);
-  coupling.populate();
+  optimet::Coupling const coupling(Rrel, waveK, nMax_, false);
 
   CompoundIterator p, q;
 
@@ -122,10 +121,10 @@ int Excitation::getIncLocal(Spherical<double> point_,
 
   for (p = 0; p < pMax; p++) {
     for (q = 0; q < qMax; q++) {
-      T_AB[p][q] = coupling.dataApq(q, p);
-      T_AB[p + pMax][q + qMax] = coupling.dataApq(q, p);
-      T_AB[p + pMax][q] = coupling.dataBpq(q, p);
-      T_AB[p][q + qMax] = coupling.dataBpq(q, p);
+      T_AB[p][q] = coupling.diagonal(q, p);
+      T_AB[p + pMax][q + qMax] = coupling.diagonal(q, p);
+      T_AB[p + pMax][q] = coupling.offdiagonal(q, p);
+      T_AB[p][q + qMax] = coupling.offdiagonal(q, p);
     }
   }
 
