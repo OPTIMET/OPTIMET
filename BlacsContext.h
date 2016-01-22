@@ -5,9 +5,10 @@
 #include <memory>
 
 namespace optimet {
+namespace scalapack {
 
 //! A context for a distributed array
-class BlacsContext {
+class Context {
   //! Holds actual data associated with the context
   struct Impl {
     //! The blacs context
@@ -24,9 +25,9 @@ class BlacsContext {
 
 public:
   //! Constructs a context
-  BlacsContext(t_uint rows, t_uint cols);
+  Context(t_uint rows, t_uint cols);
 
-  virtual ~BlacsContext() {};
+  virtual ~Context() {};
 
   //! Whether this is a valid context for this process
   bool is_valid() const { return static_cast<bool>(impl); }
@@ -49,5 +50,6 @@ private:
   static void delete_context(Impl *impl);
 };
 
-} /* optime */
+} /* scalapack */
+} /* optimet */
 #endif /* ifndef OPTIMET_BLACS_CONTEXT */

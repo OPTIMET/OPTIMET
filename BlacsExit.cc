@@ -4,6 +4,7 @@
 #include "Blacs.h"
 
 namespace optimet {
+namespace scalapack {
 namespace {
 t_uint &blacs_reference() {
   static t_uint nrefs = 0;
@@ -21,17 +22,27 @@ std::tuple<t_uint, t_uint> blacs_pinfo() {
   }
   return result;
 }
+
+bool &has_did_done_exit() {
+  static bool has = false;
+  return has;
+}
+
 } // anonymous namespace
-void blacks_exit(t_int status) {
-  if(blacs_reference() != 0)
-    throw std::runtime_error("At least one context has not been deleted");
+
+bool finalized() { return has_did_done_exit(); }
+void finalize(t_int status) {
+  if(finalized())
+    return;
+  has_did_done_exit() = true;
   int stat = status;
   OPTIMET_FC_GLOBAL(blacs_exit, BLACS_EXIT)(&stat);
 }
 
-t_uint blacs_rank() { return std::get<0>(blacs_pinfo()); }
-t_uint blacs_size() { return std::get<1>(blacs_pinfo()); }
+t_uint global_rank() { return std::get<0>(blacs_pinfo()); }
+t_uint global_size() { return std::get<1>(blacs_pinfo()); }
 
-void increment_blacs_ref() { ++blacs_reference(); }
-void decrement_blacs_ref() { --blacs_reference(); }
+void increment_ref() { ++blacs_reference(); }
+void decrement_ref() { --blacs_reference(); }
+} /* scalapack  */
 } /* optimet  */

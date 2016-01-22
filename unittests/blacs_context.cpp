@@ -10,9 +10,9 @@ using namespace optimet;
 
 TEST_CASE("Check pinfo") {
   mpi::Communicator world;
-  CHECK(world.size() == blacs_size());
+  CHECK(world.size() == scalapack::global_size());
 
-  auto ranks = world.gather(blacs_rank());
+  auto ranks = world.gather(scalapack::global_rank());
   if(not world.is_root())
     return;
 
@@ -23,8 +23,8 @@ TEST_CASE("Check pinfo") {
 }
 
 TEST_CASE("Creates a blacs context 1x1") {
-  auto const rank = blacs_rank();
-  BlacsContext const context(1, 1);
+  auto const rank = scalapack::global_rank();
+  scalapack::Context const context(1, 1);
   REQUIRE(context.is_valid() == (rank == 0));
   if(rank == 0) {
     CHECK(context.rows() == 1);
@@ -37,8 +37,8 @@ TEST_CASE("Creates a blacs context 1x1") {
 void check_nxm(t_uint n, t_uint m) {
   if(mpi::Communicator().size() < m * n)
     return;
-  auto const rank = blacs_rank();
-  BlacsContext const context(n, m);
+  auto const rank = scalapack::global_rank();
+  scalapack::Context const context(n, m);
   REQUIRE(context.is_valid() == (rank < n * m));
   if(rank < n * m) {
     CHECK(context.rows() == n);
