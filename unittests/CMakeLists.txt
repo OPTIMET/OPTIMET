@@ -3,7 +3,11 @@ add_catch_test(single_particle LIBRARIES optilib ${library_dependencies})
 add_catch_test(translation_addition LIBRARIES optilib ${library_dependencies})
 
 if(dompi)
+  if(CATCH_INCLUDE_DIR)
+    include_directories(${CATCH_INCLUDE_DIR})
+  endif()
   add_library(common_mpi_catch_main_object OBJECT common_mpi_catch_main.cpp)
+
   function(add_mpi_test testname)
     add_catch_test(${testname}
       COMMON_MAIN common_mpi_catch_main_object
