@@ -41,7 +41,7 @@ TEST_CASE("Creates an mpi communicator") {
 }
 
 TEST_CASE("Broadcasting") {
-  mpi::Communicator world;
+  mpi::Communicator const world;
 
   SECTION("From root") {
     CHECK(world.broadcast(world.rank() * 2) == 0);
@@ -69,5 +69,15 @@ TEST_CASE("Broadcasting") {
       world.rank() == 1 ?
       world.broadcast('d', root): world.broadcast<char>(root);
     CHECK(value == 'd');
+  }
+}
+
+TEST_CASE("Gathering") {
+  mpi::Communicator const world;
+
+  SECTION("From root") {
+    auto const result = world.gather(world.rank() * 2);
+    for(std::size_t i(0); i < result.size(); ++i)
+      CHECK(result[i] == i * 2);
   }
 }

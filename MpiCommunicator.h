@@ -5,6 +5,7 @@
 #include <memory>
 #include <cwchar>
 #include <type_traits>
+#include <vector>
 #include "MpiTypes.h"
 #include "Types.h"
 
@@ -15,18 +16,16 @@ class Communicator;
 //! Broadcast from somewhere to somewhere
 template <class T>
 typename std::enable_if<std::is_fundamental<T>::value, T>::type
-broadcast(Communicator const &, T &&, t_uint root);
+broadcast(T const &, Communicator const &, t_uint root);
 //! Broadcast from somewhere to somewhere
 template <class T>
 typename std::enable_if<std::is_fundamental<T>::value, T>::type
 broadcast(Communicator const &, t_uint root);
-//! Broadcast from somewhere to somewhere
+
+//! Gathers data from all procs to root
 template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, T>::type broadcast(Communicator const &);
-//! Broadcast from somewhere to somewhere
-template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, T>::type
-broadcast(Communicator const &, T &&);
+typename std::enable_if<std::is_fundamental<T>::value, std::vector<T>>::type
+gather(T const&, Communicator const &, t_uint root);
 
 //! \brief A C++ wrapper for an mpi communicator
 //! \details All copies made of this communicator are shallow: they reference the same communicator.
@@ -68,17 +67,24 @@ public:
   //! Alias for duplicate
   Communicator clone() const { return duplicate(); }
 
-  //! Helper function for broadcasting
+  //! \brief Helper function for broadcasting
   template <class T>
-  decltype(optimet::mpi::broadcast(std::declval<Communicator>(), std::declval<T>()))
-  broadcast(T &&args, t_uint root = Communicator::root_id()) {
-    return optimet::mpi::broadcast(*this, std::forward<T>(args), root);
+  decltype(optimet::mpi::broadcast(std::declval<T>(), std::declval<Communicator>(), 0u))
+  broadcast(T const &args, t_uint root = Communicator::root_id()) const {
+    return optimet::mpi::broadcast(args, *this, static_cast<t_uint>(root));
   }
   //! Helper function for broadcasting
   template <class T>
-  decltype(optimet::mpi::broadcast<T>(std::declval<Communicator>()))
-  broadcast(t_uint root = Communicator::root_id()) {
+  decltype(optimet::mpi::broadcast<T>(std::declval<Communicator>(), 0u))
+  broadcast(t_uint root = Communicator::root_id()) const {
     return optimet::mpi::broadcast<T>(*this, root);
+  }
+
+  //! Helper function for gathering
+  template <class T>
+  decltype(optimet::mpi::gather(std::declval<T>(), std::declval<Communicator>(), 0u))
+  gather(T const & value, t_uint root = Communicator::root_id()) const {
+    return optimet::mpi::gather(value, *this, root);
   }
 
   //! Root id for this communicator
@@ -98,16 +104,14 @@ private:
   Communicator(MPI_Comm const &comm);
 };
 
-//! Broadcast from somewhere to somewhere
 template <class T>
 typename std::enable_if<std::is_fundamental<T>::value, T>::type
-broadcast(Communicator const &comm, T &&value, t_uint root) {
+broadcast(T const & value, Communicator const &comm, t_uint root) {
   assert(root < comm.size());
   T result = value;
   MPI_Bcast(&result, 1, registered_type(result), root, *comm);
   return result;
 }
-//! Broadcast from somewhere to somewhere
 template <class T>
 typename std::enable_if<std::is_fundamental<T>::value, T>::type
 broadcast(Communicator const &comm, t_uint root) {
@@ -116,17 +120,17 @@ broadcast(Communicator const &comm, t_uint root) {
   MPI_Bcast(&result, 1, registered_type(result), root, *comm);
   return result;
 }
-//! Broadcast from somewhere to somewhere
+
 template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, T>::type
-broadcast(Communicator const &comm, T &&value) {
-  return broadcast(comm, std::forward<T>(value), comm.root_id());
-}
-//! Broadcast from somewhere to somewhere
-template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, T>::type
-broadcast(Communicator const &comm) {
-  return broadcast(comm, comm.root_id());
+typename std::enable_if<std::is_fundamental<T>::value, std::vector<T>>::type
+gather(T const &value, Communicator const &comm, t_uint root) {
+  assert(root < comm.size());
+  std::vector<T> result(root == comm.rank() ? comm.size() : 1);
+  MPI_Gather(&value, 1, registered_type(value), result.data(), 1, registered_type(value), root,
+            *comm);
+  if(comm.rank() != root)
+    result.clear();
+  return result;
 }
 
 } /* optime::mpi */
