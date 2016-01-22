@@ -2,8 +2,8 @@
 #include "catch.hpp"
 
 #include "Types.h"
-#include "BlacsContext.h"
-#include "BlacsExit.h"
+#include "ScalapackContext.h"
+#include "ScalapackExit.h"
 #include "MpiCommunicator.h"
 
 using namespace optimet;

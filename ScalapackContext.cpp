@@ -1,6 +1,6 @@
 #include <exception>
-#include "BlacsContext.h"
-#include "BlacsExit.h"
+#include "ScalapackContext.h"
+#include "ScalapackExit.h"
 #include "Blacs.h"
 
 namespace optimet {

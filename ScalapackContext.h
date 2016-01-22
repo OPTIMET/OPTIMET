@@ -1,5 +1,5 @@
-#ifndef OPTIMET_BLACS_CONTEXT
-#define OPTIMET_BLACS_CONTEXT
+#ifndef OPTIMET_SCALAPACK_CONTEXT_H
+#define OPTIMET_SCALAPACK_CONTEXT_H
 
 #include "Types.h"
 #include <memory>

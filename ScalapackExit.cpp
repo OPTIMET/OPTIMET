@@ -1,6 +1,6 @@
 #include <exception>
 #include <tuple>
-#include "BlacsExit.h"
+#include "ScalapackExit.h"
 #include "Blacs.h"
 
 namespace optimet {

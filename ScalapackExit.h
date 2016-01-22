@@ -1,5 +1,5 @@
-#ifndef OPTIMET_BLACS_EXIT_H
-#define OPTIMET_BLACS_EXIT_H
+#ifndef OPTIMET_SCALAPACK_EXIT_H
+#define OPTIMET_SCALAPACK_EXIT_H
 
 #include "Types.h"
 
