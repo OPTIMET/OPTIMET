@@ -4,6 +4,10 @@
 #include "Types.h"
 
 namespace optimet {
+//! Rank of this proc
+t_uint blacs_rank();
+//! Size of this proc
+t_uint blacs_size();
 //! Exits all blacs stuff
 void blacks_exit(t_int status);
 //! Increments number of blacs objects

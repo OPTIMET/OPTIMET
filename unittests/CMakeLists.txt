@@ -15,4 +15,5 @@ if(dompi)
   endfunction()
 
   add_mpi_test(mpi_communicator LIBRARIES optilib ${library_dependencies})
+  add_mpi_test(blacs_context LIBRARIES optilib ${library_dependencies})
 endif()
