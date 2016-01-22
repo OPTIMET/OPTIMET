@@ -16,9 +16,9 @@ int main(int argc, char ** argv) {
     return returnCode;
   mersenne.reset(new std::mt19937_64(session.configData().rngSeed));
 
-  optimet::mpi_init(argc, argv);
+  optimet::mpi::init(argc, argv);
 
   auto const result = session.run();
-  optimet::mpi_finalize();
+  optimet::mpi::finalize();
   return result;
 }

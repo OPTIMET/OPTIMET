@@ -4,17 +4,19 @@
 #include "Types.h"
 
 namespace optimet {
+namespace mpi {
 //! Calls mpi init
-void mpi_init(int argc, char **argv );
+void init(int argc, char **argv);
 //! True if mpi has been initialized
-bool mpi_initialized();
+bool initialized();
 //! True if mpi has been finalized
-bool mpi_finalized();
+bool finalized();
 //! Closes mpi stuff
-void mpi_finalize();
+void finalize();
 //! Increments number of mpi objects
-void increment_mpi_ref();
+void increment_ref();
 //! Decrements number of mpi objects
-void decrement_mpi_ref();
-} /* optime */
+void decrement_ref();
+} /* optimet::mpi */
+} /* optimet */
 #endif /* ifndef OPTIMET_BLACS_CONTEXT */

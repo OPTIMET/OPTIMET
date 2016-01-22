@@ -3,39 +3,41 @@
 #include <mpi.h>
 
 namespace optimet {
+namespace mpi {
 namespace {
 bool &did_done_do_init() {
   static bool nrefs = false;
   return nrefs;
 }
 
-t_uint &mpi_reference() {
+t_uint &global_reference() {
   static t_uint nrefs = 0;
   return nrefs;
 }
 } // anonymous namespace
 
-void mpi_init(int argc, char **argv) {
+void init(int argc, char **argv) {
   if(did_done_do_init())
     return;
   MPI_Init(&argc, &argv);
   did_done_do_init() = true;
 }
 
-bool mpi_initialized() { return did_done_do_init(); }
+bool initialized() { return did_done_do_init(); }
 
-bool mpi_finalized() {
+bool finalized() {
   int finalized;
   MPI_Finalized(&finalized);
   return finalized;
 }
 
-void mpi_finalize() {
-  if(mpi_finalized() or not mpi_initialized())
+void finalize() {
+  if(finalized() or not initialized())
     return;
   MPI_Finalize();
 }
 
-void increment_mpi_ref() { ++mpi_reference(); }
-void decrement_mpi_ref() { --mpi_reference(); }
+void increment_ref() { ++global_reference(); }
+void decrement_ref() { --global_reference(); }
+} /* optimet::mpi  */
 } /* optimet  */
