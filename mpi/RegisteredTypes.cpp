@@ -1,4 +1,4 @@
-#include "MpiTypes.h"
+#include "mpi/RegisteredTypes.h"
 
 namespace optimet {
 namespace mpi {

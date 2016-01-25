@@ -2,8 +2,8 @@
 #include "catch.hpp"
 
 #include "Types.h"
-#include "MpiCommunicator.h"
-#include "MpiExit.h"
+#include "mpi/Communicator.h"
+#include "mpi/Session.h"
 
 using namespace optimet;
 

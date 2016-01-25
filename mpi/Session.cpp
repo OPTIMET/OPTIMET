@@ -1,5 +1,5 @@
 #include <exception>
-#include "MpiExit.h"
+#include "mpi/Session.h"
 #include <mpi.h>
 
 namespace optimet {

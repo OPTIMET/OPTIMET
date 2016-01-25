@@ -1,7 +1,7 @@
 #include <exception>
 #include <mpi.h>
-#include "MpiCommunicator.h"
-#include "MpiExit.h"
+#include "mpi/Communicator.h"
+#include "mpi/Session.h"
 
 namespace optimet { namespace mpi {
 

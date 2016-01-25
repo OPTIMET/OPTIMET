@@ -3,10 +3,9 @@
 
 #include <mpi.h>
 #include <memory>
-#include <cwchar>
 #include <type_traits>
 #include <vector>
-#include "MpiTypes.h"
+#include "mpi/RegisteredTypes.h"
 #include "Types.h"
 
 namespace optimet {

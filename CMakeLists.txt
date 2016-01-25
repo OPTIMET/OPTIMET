@@ -32,10 +32,10 @@ if(EIGEN3_INCLUDE_DIR)
 endif()
 
 # list all object files
-file(GLOB SRC *.c* scalapack/*.cpp pugi/*.c*)
+file(GLOB SRC *.c* scalapack/*.cpp mpi/*.cpp pugi/*.c*)
 list(REMOVE_ITEM SRC main.cpp)
 if(NOT dompi)
-  file(GLOB mpisrc Mpi*.cpp Blacs*.cpp scalapack/*.cpp)
+  file(GLOB mpisrc mpi/*.cpp Blacs*.cpp scalapack/*.cpp)
   list(REMOVE_ITEM SRC ${mpisrc})
 else()
   # Add fortran interface for blacs and scalapack
