@@ -1,7 +1,7 @@
 #include <exception>
 #include <tuple>
-#include "ScalapackExit.h"
-#include "Blacs.h"
+#include "scalapack/InitExit.h"
+#include "scalapack/Blacs.h"
 
 namespace optimet {
 namespace scalapack {

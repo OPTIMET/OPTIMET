@@ -26,17 +26,17 @@ include(dependencies)
 # adds flags for compiling with c++11
 include(AddCPP11Flags)
 
-include_directories(${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${F2C_INCLUDE_DIRS}
-  ${Boost_INCLUDE_DIR})
+include_directories(${PROJECT_SOURCE_DIR} ${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS}
+  ${F2C_INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
 if(EIGEN3_INCLUDE_DIR)
   include_directories(${EIGEN3_INCLUDE_DIR})
 endif()
 
 # list all object files
-file(GLOB SRC *.c* pugi/*.c*)
+file(GLOB SRC *.c* scalapack/*.cpp pugi/*.c*)
 list(REMOVE_ITEM SRC main.cpp)
 if(NOT dompi)
-  file(GLOB mpisrc Mpi*.cpp Blacs*.cpp Scalapack*.cpp)
+  file(GLOB mpisrc Mpi*.cpp Blacs*.cpp scalapack/*.cpp)
   list(REMOVE_ITEM SRC ${mpisrc})
 else()
   include_directories(${MPI_CXX_INCLUDE_PATH})

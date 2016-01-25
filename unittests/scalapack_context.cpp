@@ -2,8 +2,8 @@
 #include "catch.hpp"
 
 #include "Types.h"
-#include "ScalapackContext.h"
-#include "ScalapackExit.h"
+#include "scalapack/Context.h"
+#include "scalapack/InitExit.h"
 #include "MpiCommunicator.h"
 
 using namespace optimet;
