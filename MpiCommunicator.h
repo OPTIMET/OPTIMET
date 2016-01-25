@@ -25,7 +25,11 @@ broadcast(Communicator const &, t_uint root);
 //! Gathers data from all procs to root
 template <class T>
 typename std::enable_if<std::is_fundamental<T>::value, std::vector<T>>::type
-gather(T const&, Communicator const &, t_uint root);
+gather(T const &, Communicator const &, t_uint root);
+//! Gathers data from all procs to all procs
+template <class T>
+typename std::enable_if<std::is_fundamental<T>::value, std::vector<T>>::type
+all_gather(T const &, Communicator const &);
 
 //! \brief A C++ wrapper for an mpi communicator
 //! \details All copies made of this communicator are shallow: they reference the same communicator.
@@ -83,8 +87,14 @@ public:
   //! Helper function for gathering
   template <class T>
   decltype(optimet::mpi::gather(std::declval<T>(), std::declval<Communicator>(), 0u))
-  gather(T const & value, t_uint root = Communicator::root_id()) const {
+  gather(T const &value, t_uint root = Communicator::root_id()) const {
     return optimet::mpi::gather(value, *this, root);
+  }
+  //! Helper function for gathering
+  template <class T>
+  decltype(optimet::mpi::all_gather(std::declval<T>(), std::declval<Communicator>()))
+  all_gather(T const &value) const {
+    return optimet::mpi::all_gather(value, *this);
   }
 
   //! Root id for this communicator
@@ -106,7 +116,7 @@ private:
 
 template <class T>
 typename std::enable_if<std::is_fundamental<T>::value, T>::type
-broadcast(T const & value, Communicator const &comm, t_uint root) {
+broadcast(T const &value, Communicator const &comm, t_uint root) {
   assert(root < comm.size());
   T result = value;
   MPI_Bcast(&result, 1, registered_type(result), root, *comm);
@@ -127,9 +137,17 @@ gather(T const &value, Communicator const &comm, t_uint root) {
   assert(root < comm.size());
   std::vector<T> result(root == comm.rank() ? comm.size() : 1);
   MPI_Gather(&value, 1, registered_type(value), result.data(), 1, registered_type(value), root,
-            *comm);
+             *comm);
   if(comm.rank() != root)
     result.clear();
+  return result;
+}
+
+template <class T>
+typename std::enable_if<std::is_fundamental<T>::value, std::vector<T>>::type
+all_gather(T const &value, Communicator const &comm) {
+  std::vector<T> result(comm.size());
+  MPI_Allgather(&value, 1, registered_type(value), result.data(), 1, registered_type(value), *comm);
   return result;
 }
 
