@@ -17,8 +17,5 @@ void OPTIMET_FC_GLOBAL_(blacs_gridinit, BLACS_GRIDINIT)(int *context, char *orde
                                                         int *cols);
 void OPTIMET_FC_GLOBAL(pdgemr2d, PDGEMR2D)(int *m, int *n, double *A, int *IA, int *JA, int *descA,
                                            double *B, int *IB, int *JB, int *descB, int *gcontext);
-void OPTIMET_FC_GLOBAL(pdtrmr2d, PDTRMR2D)(char *uplo, char *diag, int *m, int *n, double *A,
-                                           int *IA, int *JA, int *descA, double *B, int *IB,
-                                           int *JB, int *descB, int *gcontext);
 } /* optimet */
 #endif

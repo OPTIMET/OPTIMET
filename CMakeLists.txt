@@ -10,8 +10,7 @@ HunterGate(
   URL "https://github.com/ruslo/hunter/archive/v0.12.33.tar.gz"
   SHA1 "f64eda11326e12d84b6aa7f4aed80c09c182aa64"
 )
-
-project(Optimet3D CXX C Fortran)
+project(Optimet3D CXX C)
 
 option(dompi "Enable mpi" on)
 option(dotesting "Enable testing" on)
@@ -39,7 +38,11 @@ if(NOT dompi)
   file(GLOB mpisrc Mpi*.cpp Blacs*.cpp scalapack/*.cpp)
   list(REMOVE_ITEM SRC ${mpisrc})
 else()
+  # Add fortran interface for blacs and scalapack
+  include(DetectFortran)
+  DetectFortran("${PROJECT_BINARY_DIR}/include/optimet/OptimetFC.h")
   include_directories(${MPI_CXX_INCLUDE_PATH})
+  include_directories("${PROJECT_BINARY_DIR}/include/optimet")
 endif()
 
 # add a library that can be linked against in unittests as well
@@ -50,11 +53,6 @@ if(dompi)
   list(APPEND library_dependencies ${MPI_LIBRARIES} scalapack)
 endif()
 
-# Add fortran interface for blacs and scalapack
-include(FortranCInterface)
-FortranCInterface_HEADER(
-  ${PROJECT_BINARY_DIR}/include/optimet/OptimetFC.h MACRO_NAMESPACE "OPTIMET_FC_")
-include_directories(${PROJECT_BINARY_DIR}/include/optimet)
 
 # main executable
 add_executable(Optimet3D main.cpp)
