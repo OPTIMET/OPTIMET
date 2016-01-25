@@ -17,7 +17,7 @@ std::tuple<t_uint, t_uint> blacs_pinfo() {
   if(first_call) {
     first_call = false;
     int rank, size;
-    OPTIMET_FC_GLOBAL(blacs_pinfo, BLACS_PINFO)(&rank, &size);
+    OPTIMET_FC_GLOBAL_(blacs_pinfo, BLACS_PINFO)(&rank, &size);
     result = {static_cast<t_uint>(rank), static_cast<t_uint>(size)};
   }
   return result;
@@ -36,7 +36,7 @@ void finalize(t_int status) {
     return;
   has_did_done_exit() = true;
   int stat = status;
-  OPTIMET_FC_GLOBAL(blacs_exit, BLACS_EXIT)(&stat);
+  OPTIMET_FC_GLOBAL_(blacs_exit, BLACS_EXIT)(&stat);
 }
 
 t_uint global_rank() { return std::get<0>(blacs_pinfo()); }
