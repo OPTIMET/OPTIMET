@@ -4,7 +4,7 @@
 #include <random>
 #include <memory>
 #include <mpi.h>
-#include "MpiExit.h"
+#include "mpi/Session.h"
 
 std::unique_ptr<std::mt19937_64> mersenne(new std::mt19937_64(0));
 

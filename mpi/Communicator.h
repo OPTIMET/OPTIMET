@@ -6,29 +6,11 @@
 #include <type_traits>
 #include <vector>
 #include "mpi/RegisteredTypes.h"
+#include "mpi/Collectives.hpp"
 #include "Types.h"
 
 namespace optimet {
 namespace mpi {
-
-class Communicator;
-//! Broadcast from somewhere to somewhere
-template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, T>::type
-broadcast(T const &, Communicator const &, t_uint root);
-//! Broadcast from somewhere to somewhere
-template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, T>::type
-broadcast(Communicator const &, t_uint root);
-
-//! Gathers data from all procs to root
-template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, std::vector<T>>::type
-gather(T const &, Communicator const &, t_uint root);
-//! Gathers data from all procs to all procs
-template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, std::vector<T>>::type
-all_gather(T const &, Communicator const &);
 
 //! \brief A C++ wrapper for an mpi communicator
 //! \details All copies made of this communicator are shallow: they reference the same communicator.
@@ -96,6 +78,8 @@ public:
     return optimet::mpi::all_gather(value, *this);
   }
 
+  void barrier() const { return optimet::mpi::barrier(*this); }
+
   //! Root id for this communicator
   static constexpr t_uint root_id() { return 0; }
 
@@ -112,43 +96,6 @@ private:
   //! released.
   Communicator(MPI_Comm const &comm);
 };
-
-template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, T>::type
-broadcast(T const &value, Communicator const &comm, t_uint root) {
-  assert(root < comm.size());
-  T result = value;
-  MPI_Bcast(&result, 1, registered_type(result), root, *comm);
-  return result;
-}
-template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, T>::type
-broadcast(Communicator const &comm, t_uint root) {
-  assert(root < comm.size());
-  T result;
-  MPI_Bcast(&result, 1, registered_type(result), root, *comm);
-  return result;
-}
-
-template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, std::vector<T>>::type
-gather(T const &value, Communicator const &comm, t_uint root) {
-  assert(root < comm.size());
-  std::vector<T> result(root == comm.rank() ? comm.size() : 1);
-  MPI_Gather(&value, 1, registered_type(value), result.data(), 1, registered_type(value), root,
-             *comm);
-  if(comm.rank() != root)
-    result.clear();
-  return result;
-}
-
-template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, std::vector<T>>::type
-all_gather(T const &value, Communicator const &comm) {
-  std::vector<T> result(comm.size());
-  MPI_Allgather(&value, 1, registered_type(value), result.data(), 1, registered_type(value), *comm);
-  return result;
-}
 
 } /* optime::mpi */
 } /* optimet */
