@@ -6,7 +6,6 @@
 #include <Eigen/Core>
 
 namespace optimet {
-
 //! Root of the type hierarchy for signed integers
 typedef int t_int;
 //! Root of the type hierarchy for unsigned integers
@@ -23,6 +22,6 @@ using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 //! \brief A matrix of a given type
 //! \details Operates as mathematical matrix.
 template <class T = t_complex>
-using Matrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+using Matrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
 }
 #endif

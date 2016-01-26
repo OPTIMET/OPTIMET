@@ -6,7 +6,8 @@
 #include "scalapack/Context.h"
 #include "scalapack/InitExit.h"
 #include "scalapack/Matrix.h"
-#include "MpiCommunicator.h"
+#include "mpi/Communicator.h"
+#include "mpi/Collectives.h"
 
 using namespace optimet;
 
@@ -81,4 +82,37 @@ TEST_CASE("Creates a matrice in nxm context") {
   check(2, 2);
   check(3, 1);
   check(3, 2);
+}
+
+TEST_CASE("Transfer from 1x1 to 2x1") {
+  mpi::Communicator const world;
+  auto const ranks = world.all_gather(scalapack::global_rank());
+  auto const root = std::find(ranks.begin(), ranks.end(), 0) - ranks.begin();
+  scalapack::Context const single(1, 1);
+  scalapack::Context const parallel(2, 2);
+
+  auto const split = mpi::Communicator().split(single.is_valid() or parallel.is_valid());
+  scalapack::Matrix::Sizes const size = {18, 18};
+  scalapack::Matrix::Sizes const blocks = {3, 3};
+  scalapack::Matrix input(single, size, blocks);
+  if(single.is_valid())
+    input.eigen() = optimet::Matrix<t_real>::Random(size.rows, size.cols);
+  auto const input_matrix = split.broadcast(input.eigen(), root);
+  auto const intermediate = input.transfer_to(parallel);
+  CHECK(intermediate.rows() == input.rows());
+  CHECK(intermediate.cols() == input.cols());
+  if(parallel.is_valid()) {
+    CHECK(intermediate.eigen().rows() > 0);
+    CHECK(intermediate.eigen().cols() > 0);
+    CHECK(static_cast<t_uint>(intermediate.eigen().rows()) < intermediate.rows());
+    CHECK(static_cast<t_uint>(intermediate.eigen().rows()) >= blocks.rows);
+  }
+
+  if(parallel.is_valid() and parallel.row() == 0 and parallel.col() == 0) {
+    CAPTURE(input_matrix);
+    CAPTURE(input_matrix.topLeftCorner(blocks.rows, blocks.cols));
+    CAPTURE(intermediate.eigen());
+    CHECK(input_matrix.topLeftCorner(blocks.rows, blocks.cols)
+              .isApprox(intermediate.eigen().topLeftCorner(blocks.rows, blocks.cols)));
+  }
 }

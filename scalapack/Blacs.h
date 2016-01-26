@@ -18,5 +18,9 @@ void OPTIMET_FC_GLOBAL_(blacs_gridinit, BLACS_GRIDINIT)(int *context, char *orde
 void OPTIMET_FC_GLOBAL(pdgemr2d, PDGEMR2D)(int *m, int *n, double *A, int *IA, int *JA, int *descA,
                                            double *B, int *IB, int *JB, int *descB, int *gcontext);
 int OPTIMET_FC_GLOBAL(numroc, NUMROC)(int *n, int *nb, int *iproc, int *isrcproc, int *nprocs);
+void OPTIMET_FC_GLOBAL(pdgemr2d, PDGEMR2D)(int *m, int *n, double *ptrmyblock, int *ia, int *ja,
+                                           int *ma, double *ptrmynewblock, int *ib, int *jb,
+                                           int *mb, int *globcontext);
+
 } /* optimet */
 #endif
