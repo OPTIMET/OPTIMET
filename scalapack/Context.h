@@ -44,6 +44,11 @@ public:
   //! Returns the Blacs context in a way blacs undersands
   decltype(Impl::context) operator*() const { return impl->context; }
 
+  //! Check contexts are the same
+  bool operator==(Context const &c) const { return **this == *c; }
+  //! Check contexts are the same
+  bool operator!=(Context const &c) const { return not operator==(c); }
+
 private:
   //! Holds data associated with the context
   std::shared_ptr<Impl const> impl;
