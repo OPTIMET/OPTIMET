@@ -18,8 +18,8 @@ TEST_CASE("Creates a matrix in 1x1 context") {
   REQUIRE(context.is_valid() == (rank == 0));
   scalapack::Matrix matrix(context, {64, 64}, {20, 10});
 
-  CHECK(matrix.eigen().rows() == (context.is_valid() ? 64 : 0));
-  CHECK(matrix.eigen().cols() == (context.is_valid() ? 64 : 0));
+  CHECK(matrix.local().rows() == (context.is_valid() ? 64 : 0));
+  CHECK(matrix.local().cols() == (context.is_valid() ? 64 : 0));
   CHECK(matrix.blacs()[0] == 1);
   if(context.is_valid())
     CHECK(matrix.blacs()[1] == *context);
@@ -29,7 +29,7 @@ TEST_CASE("Creates a matrix in 1x1 context") {
   CHECK(matrix.blacs()[5] == 10);
   CHECK(matrix.blacs()[6] == 0);
   CHECK(matrix.blacs()[7] == 0);
-  auto const leading = matrix.eigen().IsRowMajor ? matrix.eigen().cols() : matrix.eigen().rows();
+  auto const leading = matrix.local().IsRowMajor ? matrix.local().cols() : matrix.local().rows();
   CHECK(matrix.blacs()[8] == leading);
 }
 
@@ -39,8 +39,8 @@ TEST_CASE("Creates a matrix in 1x2 context") {
   CAPTURE(context.is_valid());
   scalapack::Matrix matrix(context, {64, 64}, {16, 8});
 
-  CHECK(matrix.eigen().rows() == (context.is_valid() ? 64 : 0));
-  CHECK(matrix.eigen().cols() == (context.is_valid() ? 32 : 0));
+  CHECK(matrix.local().rows() == (context.is_valid() ? 64 : 0));
+  CHECK(matrix.local().cols() == (context.is_valid() ? 32 : 0));
   CHECK(matrix.blacs()[0] == 1);
   CHECK(matrix.blacs()[1] == (context.is_valid() ? *context : -1));
   CHECK(matrix.blacs()[2] == 64);
@@ -49,7 +49,7 @@ TEST_CASE("Creates a matrix in 1x2 context") {
   CHECK(matrix.blacs()[5] == 8);
   CHECK(matrix.blacs()[6] == 0);
   CHECK(matrix.blacs()[7] == 0);
-  auto const leading = matrix.eigen().IsRowMajor ? matrix.eigen().cols() : matrix.eigen().rows();
+  auto const leading = matrix.local().IsRowMajor ? matrix.local().cols() : matrix.local().rows();
   CHECK(matrix.blacs()[8] == leading);
 }
 
@@ -64,11 +64,11 @@ void check_creation(t_uint n, t_uint m) {
   scalapack::Matrix matrix(context, size, blocks);
 
   if(context.is_valid()) {
-    REQUIRE(matrix.eigen().rows() > 0);
-    REQUIRE(matrix.eigen().cols() > 0);
+    REQUIRE(matrix.local().rows() > 0);
+    REQUIRE(matrix.local().cols() > 0);
   } else {
-    REQUIRE(matrix.eigen().rows() == 0);
-    REQUIRE(matrix.eigen().cols() == 0);
+    REQUIRE(matrix.local().rows() == 0);
+    REQUIRE(matrix.local().cols() == 0);
   }
 
   auto const split = mpi::Communicator().split(context.is_valid());
@@ -76,8 +76,8 @@ void check_creation(t_uint n, t_uint m) {
     return;
 
   REQUIRE(split.size() == n * m);
-  auto const rows = split.all_gather(matrix.eigen().rows());
-  auto const cols = split.all_gather(matrix.eigen().cols());
+  auto const rows = split.all_gather(matrix.local().rows());
+  auto const cols = split.all_gather(matrix.local().cols());
   auto n_elements = 0;
   for(std::size_t i(0); i < split.size(); ++i)
     n_elements += rows[i] * cols[i];
@@ -91,7 +91,7 @@ void check_creation(t_uint n, t_uint m) {
   CHECK(static_cast<t_uint>(matrix.blacs()[5]) == blocks.cols);
   CHECK(matrix.blacs()[6] == 0);
   CHECK(matrix.blacs()[7] == 0);
-  auto const leading = matrix.eigen().IsRowMajor ? matrix.eigen().cols() : matrix.eigen().rows();
+  auto const leading = matrix.local().IsRowMajor ? matrix.local().cols() : matrix.local().rows();
   CHECK(matrix.blacs()[8] == leading);
 }
 
@@ -117,8 +117,8 @@ TEST_CASE("Transfer from 1x1 to 2x1") {
   scalapack::Matrix::Sizes const blocks = {16, 32};
   scalapack::Matrix input(single, size, blocks);
   if(single.is_valid())
-    input.eigen() = optimet::Matrix<t_real>::Random(size.rows, size.cols);
-  auto const input_matrix = split.broadcast(input.eigen(), root);
+    input.local() = optimet::Matrix<t_real>::Random(size.rows, size.cols);
+  auto const input_matrix = split.broadcast(input.local(), root);
 
   // perform transfer
   auto const scattered = input.transfer_to(all, parallel);
@@ -127,13 +127,13 @@ TEST_CASE("Transfer from 1x1 to 2x1") {
   CHECK(scattered.cols() == input.cols());
   if(parallel.is_valid()) {
     // Check local sizes
-    CHECK(static_cast<t_uint>(scattered.eigen().cols()) == size.cols);
-    CHECK(static_cast<t_uint>(scattered.eigen().rows()) == size.rows / 2);
+    CHECK(static_cast<t_uint>(scattered.local().cols()) == size.cols);
+    CHECK(static_cast<t_uint>(scattered.local().rows()) == size.rows / 2);
     // Check upper left block remains the same
     // Other blocks are too painful to check
     if(parallel.row() == 0 and parallel.col() == 0)
       CHECK(input_matrix.topLeftCorner(blocks.rows, blocks.cols)
-                .isApprox(scattered.eigen().topLeftCorner(blocks.rows, blocks.cols)));
+                .isApprox(scattered.local().topLeftCorner(blocks.rows, blocks.cols)));
   }
 
   // gather matrix back to origin
@@ -143,10 +143,10 @@ TEST_CASE("Transfer from 1x1 to 2x1") {
   CHECK(gathered.cols() == input.cols());
   if(single.is_valid()) {
     // Check local sizes
-    CHECK(static_cast<t_uint>(gathered.eigen().cols()) == size.cols);
-    CHECK(static_cast<t_uint>(gathered.eigen().rows()) == size.rows);
+    CHECK(static_cast<t_uint>(gathered.local().cols()) == size.cols);
+    CHECK(static_cast<t_uint>(gathered.local().rows()) == size.rows);
     // Check input matrix was recovered
-    CHECK(input_matrix.isApprox(gathered.eigen(), 1e-12));
+    CHECK(input_matrix.isApprox(gathered.local(), 1e-12));
   }
 }
 
@@ -170,22 +170,22 @@ void check_distribute(optimet::scalapack::Matrix::Sizes const &grid,
   auto const split = mpi::Communicator().split(single.is_valid() or parallel.is_valid());
   scalapack::Matrix input(single, size, blocks);
   if(single.is_valid())
-    input.eigen() = optimet::Matrix<t_real>::Random(size.rows, size.cols);
-  auto const input_matrix = split.broadcast(input.eigen(), root);
+    input.local() = optimet::Matrix<t_real>::Random(size.rows, size.cols);
+  auto const input_matrix = split.broadcast(input.local(), root);
 
   // perform transfer
   auto scattered = input.transfer_to(all, parallel);
-  scattered.eigen() *= 2;
+  scattered.local() *= 2;
   // go to transpose
   auto transposed = scattered.transfer_to(transpose);
-  transposed.eigen() *= 1.5;
+  transposed.local() *= 1.5;
   // return to single
   auto const gathered = transposed.transfer_to(single);
   // Global size remain the same
   CHECK(gathered.rows() == input.rows());
   CHECK(gathered.cols() == input.cols());
   if(single.is_valid())
-    CHECK((3e0 * input_matrix).isApprox(gathered.eigen(), 1e-12));
+    CHECK((3e0 * input_matrix).isApprox(gathered.local(), 1e-12));
 }
 
 TEST_CASE("Transfer from 1x1 to nxm to mxn to 1x1") {

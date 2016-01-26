@@ -34,10 +34,10 @@ public:
                 static_cast<int>(blocks.cols), static_cast<int>(index.row),
                 static_cast<int>(index.col), static_cast<int>(local_leading())}} {}
 
-  //! Gets the underlying eigen matrix
-  EigenMatrix &eigen() { return matrix_; }
-  //! Gets the underlying eigen matrix
-  EigenMatrix const &eigen() const { return matrix_; }
+  //! Gets the underlying local eigen matrix
+  EigenMatrix &local() { return matrix_; }
+  //! Gets the underlying local eigen matrix
+  EigenMatrix const &local() const { return matrix_; }
 
   //! The underlying blacs context
   Context const &context() const { return context_; }
@@ -81,7 +81,7 @@ public:
   t_uint size() const { return rows() * cols(); }
 
   //! Local leading dimension
-  t_uint local_leading() const { return EigenMatrix::IsRowMajor ? eigen().cols() : eigen().rows(); }
+  t_uint local_leading() const { return EigenMatrix::IsRowMajor ? local().cols() : local().rows(); }
 
 protected:
   //! Associated blacs context

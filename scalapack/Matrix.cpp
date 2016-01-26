@@ -25,8 +25,8 @@ OPTIMET_MACRO(col);
 
 void Matrix::transfer_to(Context const &un, Matrix &other) const {
   if(context().is_valid() or un.is_valid() or other.context().is_valid())
-    Cpdgemr2d(rows(), cols(), const_cast<t_real *>(eigen().data()), 1, 1,
-              const_cast<int*>(blacs().data()), other.eigen().data(), 1, 1,
+    Cpdgemr2d(rows(), cols(), const_cast<t_real *>(local().data()), 1, 1,
+              const_cast<int*>(blacs().data()), other.local().data(), 1, 1,
               const_cast<int*>(other.blacs().data()), *un);
 }
 Matrix Matrix::transfer_to(Context const &un, Context const &other, Sizes const &_blocks,
