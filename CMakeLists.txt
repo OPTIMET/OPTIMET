@@ -48,11 +48,11 @@ endif()
 # add a library that can be linked against in unittests as well
 add_library(optilib STATIC ${SRC})
 add_dependencies(optilib lookup_dependencies)
-set(library_dependencies ${GSL_LIBRARIES} ${HDF5_LIBRARIES} ${F2C_LIBRARIES})
+set(library_dependencies ${GSL_LIBRARIES} ${HDF5_LIBRARIES})
 if(dompi)
   list(APPEND library_dependencies ${MPI_LIBRARIES} scalapack)
 endif()
-
+list(APPEND library_dependencies ${F2C_LIBRARIES})
 
 # main executable
 add_executable(Optimet3D main.cpp)

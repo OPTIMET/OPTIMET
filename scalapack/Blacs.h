@@ -1,7 +1,6 @@
 #ifndef OPTIMET_BLACS_H
 #define OPTIMET_BLACS_H
 
-#include "Types.h"
 #include "OptimetFC.h"
 
 extern "C" {
@@ -20,6 +19,8 @@ void OPTIMET_FC_GLOBAL(pdgemr2d, PDGEMR2D)(int *m, int *n, double *A, int *IA, i
 int OPTIMET_FC_GLOBAL(numroc, NUMROC)(int *n, int *nb, int *iproc, int *isrcproc, int *nprocs);
 void Cpdgemr2d(int m, int n, double *ptrmyblock, int ia, int ja, int *ma, double *ptrmynewblock,
                int ib, int jb, int *mb, int globcontext);
-
+void OPTIMET_FC_GLOBAL(pdgesv, PDGESV)(int *n, int *nrhs, double *a, int *ia, int *ja, int *desca,
+                                       int *ipiv, double *b, int *ib, int *jb, int *descb,
+                                       int *info);
 } /* optimet */
 #endif
