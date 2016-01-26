@@ -17,10 +17,12 @@ typedef std::complex<t_real> t_complex;
 
 //! \brief A vector of a given type
 //! \details Operates as mathematical vector.
+//! \note Scalapack probably expects column-major. Best not to offend it.
 template <class T = t_complex>
-using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
 //! \brief A matrix of a given type
 //! \details Operates as mathematical matrix.
+//! \note Scalapack probably expects column-major. Best not to offend it.
 template <class T = t_complex>
 using Matrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
 }
