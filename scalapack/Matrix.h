@@ -24,14 +24,15 @@ public:
 
   //! Constructs from any eigen matrix
   Matrix(Context const &context, Sizes size, Sizes blocks, Index index = {0, 0})
-      : context_(context), blacs_{{1, context.is_valid() ? *context : -1,
-                                   static_cast<int>(size.rows), static_cast<int>(size.cols),
-                                   static_cast<int>(blocks.rows), static_cast<int>(blocks.cols),
-                                   static_cast<int>(index.row), static_cast<int>(index.col)}},
+      : context_(context),
+
         matrix_(EigenMatrix::Zero(rows(context, size, blocks, index),
-                                  cols(context, size, blocks, index))) {
-    blacs_[8] = EigenMatrix::IsRowMajor ? eigen().rows() : eigen().cols();
-  };
+                                  cols(context, size, blocks, index))),
+
+        blacs_{{1, context.is_valid() ? *context : -1, static_cast<int>(size.rows),
+                static_cast<int>(size.cols), static_cast<int>(blocks.rows),
+                static_cast<int>(blocks.cols), static_cast<int>(index.row),
+                static_cast<int>(index.col), static_cast<int>(local_leading())}} {}
 
   //! Gets the underlying eigen matrix
   EigenMatrix &eigen() { return matrix_; }
@@ -45,7 +46,7 @@ public:
   std::array<int, 9> const &blacs() const { return blacs_; }
 
   //! Transfer matrix to another context
-  void transfer_to(Context const & un, Matrix &other) const;
+  void transfer_to(Context const &un, Matrix &other) const;
   //! Transfer matrix to another context
   void transfer_to(Matrix &other) const {
     return transfer_to(context().size() > other.size() ? context() : other.context(), other);
@@ -58,7 +59,7 @@ public:
                                            std::numeric_limits<t_uint>::max()}) const;
   Matrix transfer_to(Context const &other,
                      Sizes const &blocks = {std::numeric_limits<t_uint>::max(),
-                                           std::numeric_limits<t_uint>::max()},
+                                            std::numeric_limits<t_uint>::max()},
                      Index const &index = {std::numeric_limits<t_uint>::max(),
                                            std::numeric_limits<t_uint>::max()}) const {
     return transfer_to(context().size() > other.size() ? context() : other, other, blocks, index);
@@ -80,15 +81,15 @@ public:
   t_uint size() const { return rows() * cols(); }
 
   //! Local leading dimension
-  t_uint local_leading() const { return EigenMatrix::IsRowMajor ? eigen().rows() : eigen().cols(); }
+  t_uint local_leading() const { return EigenMatrix::IsRowMajor ? eigen().cols() : eigen().rows(); }
 
 protected:
   //! Associated blacs context
   Context context_;
-  //! Blacs construct
-  std::array<int, 9> blacs_;
   //! The underlying eigen matrix
   EigenMatrix matrix_;
+  //! Blacs construct
+  std::array<int, 9> blacs_;
 
   static EigenMatrix::Index rows(Context const &context, Sizes size, Sizes blocks, Index index);
   static EigenMatrix::Index cols(Context const &context, Sizes size, Sizes blocks, Index index);

@@ -2,12 +2,9 @@
 #include "scalapack/Matrix.h"
 #include "scalapack/InitExit.h"
 #include "scalapack/Blacs.h"
-#include "AttachDebug.h"
 
 namespace optimet {
 namespace scalapack {
-// Matrix Matrix::transfer(Context other) const {
-// }
 
 #define OPTIMET_MACRO(NAME)                                                                        \
   Matrix::EigenMatrix::Index Matrix::NAME##s(Context const &context, Sizes size, Sizes blocks,     \
@@ -27,14 +24,10 @@ OPTIMET_MACRO(col);
 #undef OPTIMET_MACRO
 
 void Matrix::transfer_to(Context const &un, Matrix &other) const {
-  int m = rows();
-  int n = cols();
-  int one = 1;
-  int c = *un;
-  // wait_for_debugger();
-  OPTIMET_FC_GLOBAL(pdgemr2d, PDGEMR2D)(&n, &m, const_cast<t_real *>(eigen().data()), &one, &one,
-            const_cast<int*>(blacs().data()), other.eigen().data(), &one, &one,
-            const_cast<int*>(other.blacs().data()), &c);
+  if(context().is_valid() or un.is_valid() or other.context().is_valid())
+    Cpdgemr2d(rows(), cols(), const_cast<t_real *>(eigen().data()), 1, 1,
+              const_cast<int*>(blacs().data()), other.eigen().data(), 1, 1,
+              const_cast<int*>(other.blacs().data()), *un);
 }
 Matrix Matrix::transfer_to(Context const &un, Context const &other, Sizes const &_blocks,
                            Index const &_index) const {
