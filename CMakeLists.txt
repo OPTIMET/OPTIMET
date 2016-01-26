@@ -32,12 +32,12 @@ if(EIGEN3_INCLUDE_DIR)
 endif()
 
 # list all object files
-file(GLOB SRC *.c* scalapack/*.cpp mpi/*.cpp pugi/*.c*)
+file(GLOB SRC *.c*  pugi/*.c*)
 list(REMOVE_ITEM SRC main.cpp)
-if(NOT dompi)
-  file(GLOB mpisrc mpi/*.cpp Blacs*.cpp scalapack/*.cpp)
-  list(REMOVE_ITEM SRC ${mpisrc})
-else()
+if(dompi)
+  add_definitions(-DOPTIMET_MPI)
+  file(GLOB parallel_files scalapack/*.cpp mpi/*.cpp)
+  list(APPEND SRC ${parallel_files})
   # Add fortran interface for blacs and scalapack
   include(DetectFortran)
   DetectFortran("${PROJECT_BINARY_DIR}/include/optimet/OptimetFC.h")

@@ -1,12 +1,13 @@
 #ifndef SOLVER_H_
 #define SOLVER_H_
 
+#include <complex>
 #include "Types.h"
 #include "Geometry.h"
 #include "Excitation.h"
 #include "Coupling.h"
 #include "Result.h"
-#include <complex>
+#include "mpi/Communicator.h"
 
 /**
  * The Solver class builds and solves the scattering matrix equation.
@@ -21,11 +22,12 @@ private:
   Result *result_FF;   /**< The fundamental frequency results. */
   int solverMethod;    /**< Solver method: Direct = Mischenko1996, Indirect =
                           Stout2002 */
+  //! \brief MPI commnunicator
+  //! \details Fake if not compiled with MPI
+  optimet::mpi::Communicator communicator_;
 public:
-  optimet::Matrix<optimet::t_complex>
-      S; /**< The scattering matrix S = I - T*AB. */
-  optimet::Vector<optimet::t_complex>
-      Q; /**< The local field matrix Q = T*AB*a. */
+  optimet::Matrix<optimet::t_complex> S; /**< The scattering matrix S = I - T*AB. */
+  optimet::Vector<optimet::t_complex> Q; /**< The local field matrix Q = T*AB*a. */
 
   /**
    * Default constructor for the Solver class.
@@ -40,7 +42,8 @@ public:
    * @param method_ the solver method to be used.
    * @param nMax_ the maximum value for the n iterator.
    */
-  Solver(Geometry *geometry_, Excitation *incWave_, int method_, long nMax_);
+  Solver(Geometry *geometry_, Excitation *incWave_, int method_, long nMax_,
+         optimet::mpi::Communicator const &communicator = optimet::mpi::Communicator());
 
   /**
    * Default destructor for the Solver class.
@@ -68,7 +71,7 @@ public:
 
   /**
    * Populate the S and Q matrices using the solverMethod option.
-   * @return 0 if successful, 1 otherwise.
+    @return 0 if successful, 1 otherwise.
    */
   int populate();
 
@@ -124,6 +127,12 @@ public:
    * @param nMax_ the maximum value for the n iterator.
    */
   void update(Geometry *geometry_, Excitation *incWave_, long nMax_);
+
+  optimet::mpi::Communicator const &communicator() const { return communicator_; }
+  Solver &communicator(optimet::mpi::Communicator const &c) {
+    communicator_ = c;
+    return *this;
+  }
 };
 
 #endif /* SOLVER_H_ */

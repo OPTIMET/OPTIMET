@@ -2,6 +2,7 @@
 #define SIMULATION_H_
 
 #include <string>
+#include "mpi/Communicator.h"
 
 class Run;
 class Solver;
@@ -11,14 +12,14 @@ class Solver;
  * on the input file.
  */
 class Simulation {
-private:
-  std::string caseFile; /**< Name of the case without extensions. */
 public:
   /**
    * Initialization constructor for the Simulation class.
    * @param caseFile the name of the case file (NO extension).
    */
-  Simulation(std::string const &filename) : caseFile(filename) {}
+  Simulation(std::string const &filename) : Simulation(filename, optimet::mpi::Communicator()) {}
+  Simulation(std::string const &filename, optimet::mpi::Communicator const &comm)
+      : caseFile(filename), communicator_(comm) {}
 
   /**
    * Default destructor for the Simulation class.
@@ -38,12 +39,23 @@ public:
    */
   int done();
 
+  optimet::mpi::Communicator const &communicator() const { return communicator_; }
+  Simulation &communicator(optimet::mpi::Communicator const &c) {
+    communicator_ = c;
+    return *this;
+  }
+
 protected:
   void scan_wavelengths(Run &run, Solver &solver);
   void field_simulation(Run &run, Solver &solver);
   void radius_scan(Run &run, Solver &solver);
   void radius_and_wavelength_scan(Run &run, Solver &solver);
   void coefficients(Run &run, Solver &solver);
+
+private:
+  std::string caseFile; /**< Name of the case without extensions. */
+  //! \details Fake if not compiled with MPI
+  optimet::mpi::Communicator communicator_;
 };
 
 #endif /* SIMULATION_H_ */

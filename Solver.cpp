@@ -1,18 +1,26 @@
 #include "Solver.h"
 
+#include <iostream>
+#include <cstdlib>
 #include "CompoundIterator.h"
 #include "Tools.h"
-#include "AlgebraS.h"
 #include "Algebra.h"
 #include "constants.h"
 #include "Aliases.h"
-#include <iostream>
-#include <cstdlib>
+#include "mpi/Communicator.h"
+#include <Eigen/Dense>
+
+namespace {
+void solveMatrixVector(optimet::Matrix<optimet::t_complex> const &A,
+                       optimet::Vector<optimet::t_complex> const &b, optimet::t_complex *x,
+                       optimet::mpi::Communicator const &comm);
+}
 
 Solver::Solver() : initDone(false), flagSH(false) {}
 
-Solver::Solver(Geometry *geometry_, Excitation *incWave_, int method_, long nMax_)
-    : initDone(false), flagSH(false) {
+Solver::Solver(Geometry *geometry_, Excitation *incWave_, int method_, long nMax_,
+    optimet::mpi::Communicator const &c)
+    : initDone(false), flagSH(false), communicator_(c) {
   init(geometry_, incWave_, method_, nMax_);
 }
 
@@ -181,7 +189,7 @@ int Solver::solveScatteredDirect(std::complex<double> *X_sca_) {
     return 1;
   }
 
-  optimet::algebra::solveMatrixVector(S, Q, X_sca_);
+  solveMatrixVector(S, Q, X_sca_, communicator());
 
   return 0;
 }
@@ -209,7 +217,7 @@ int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
 
   // Solve the equation, here Q and S correspond to Eq. 10 in (Stout2002). Store
   // result in X_sca_local
-  optimet::algebra::solveMatrixVector(S, Q, X_sca_local);
+  solveMatrixVector(S, Q, X_sca_local, communicator());
 
   for(size_t i = 0; i < geometry->objects.size(); i++) {
     // Get the local scattering matrix for object i
@@ -394,4 +402,13 @@ void Solver::update(Geometry *geometry_, Excitation *incWave_, long nMax_) {
   result_FF = NULL;
 
   populate();
+}
+
+namespace {
+void solveMatrixVector(optimet::Matrix<optimet::t_complex> const &A,
+                       optimet::Vector<optimet::t_complex> const &b, optimet::t_complex *x,
+                       optimet::mpi::Communicator const &comm) {
+  if(comm.size() == 1)
+    optimet::Vector<optimet::t_complex>::Map(x, A.cols()) = A.colPivHouseholderQr().solve(b);
+}
 }

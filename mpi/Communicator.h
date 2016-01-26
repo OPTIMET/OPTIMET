@@ -1,13 +1,16 @@
 #ifndef OPTIMET_MPI_COMMUNICATOR_H
 #define OPTIMET_MPI_COMMUNICATOR_H
 
+#include "Types.h"
+
+#ifdef OPTIMET_MPI
+
 #include <mpi.h>
 #include <memory>
 #include <type_traits>
 #include <vector>
 #include "mpi/RegisteredTypes.h"
 #include "mpi/Collectives.hpp"
-#include "Types.h"
 
 namespace optimet {
 namespace mpi {
@@ -99,4 +102,14 @@ private:
 
 } /* optime::mpi */
 } /* optimet */
+#else
+namespace optimet {
+namespace mpi {
+class Communicator {
+  public:
+    static t_uint size() { return 1; }
+};
+}
+}
+#endif /* ifdef OPTIMET_MPI */
 #endif /* ifndef OPTIMET_MPI_COMMUNICATOR */
