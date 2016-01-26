@@ -35,7 +35,7 @@ endif()
 file(GLOB SRC *.c*  pugi/*.c*)
 list(REMOVE_ITEM SRC main.cpp)
 if(dompi)
-  add_definitions(-DOPTIMET_MPI)
+  set(OPTIMET_MPI TRUE)
   file(GLOB parallel_files scalapack/*.cpp mpi/*.cpp)
   list(APPEND SRC ${parallel_files})
   # Add fortran interface for blacs and scalapack
@@ -44,6 +44,9 @@ if(dompi)
   include_directories(${MPI_CXX_INCLUDE_PATH})
   include_directories("${PROJECT_BINARY_DIR}/include/optimet")
 endif()
+
+# configure a file with some build defaults
+configure_file(Types.in.h "${PROJECT_BINARY_DIR}/include/optimet/Types.h")
 
 # add a library that can be linked against in unittests as well
 add_library(optilib STATIC ${SRC})

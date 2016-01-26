@@ -5,6 +5,8 @@
 #include <functional>
 #include <Eigen/Core>
 
+#cmakedefine OPTIMET_MPI
+
 namespace optimet {
 //! Root of the type hierarchy for signed integers
 typedef int t_int;

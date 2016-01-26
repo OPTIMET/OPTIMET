@@ -7,21 +7,23 @@
 
 namespace optimet {
 namespace scalapack {
-class Matrix {
+
+//! Rows and Colums of the local blocks
+struct Sizes {
+  t_uint rows, cols;
+};
+//! Indices of the process starting the distribution
+struct Index {
+  t_uint row, col;
+};
+
+
+template<class SCALAR = t_real> class Matrix {
 public:
   //! Underlying scalar type
-  typedef t_real Scalar;
+  typedef SCALAR Scalar;
   //! Underlying eigen matrix type
   typedef optimet::Matrix<Scalar> EigenMatrix;
-  //! Rows and Colums of the local blocks
-  struct Sizes {
-    t_uint rows, cols;
-  };
-  //! Indices of the process starting the distribution
-  struct Index {
-    t_uint row, col;
-  };
-
   //! Constructs from any eigen matrix
   Matrix(Context const &context, Sizes size, Sizes blocks, Index index = {0, 0})
       : context_(context),
@@ -91,9 +93,11 @@ protected:
   //! Blacs construct
   std::array<int, 9> blacs_;
 
-  static EigenMatrix::Index rows(Context const &context, Sizes size, Sizes blocks, Index index);
-  static EigenMatrix::Index cols(Context const &context, Sizes size, Sizes blocks, Index index);
+  static typename EigenMatrix::Index rows(Context const &context, Sizes size, Sizes blocks, Index index);
+  static typename EigenMatrix::Index cols(Context const &context, Sizes size, Sizes blocks, Index index);
 };
 }
 }
+
+#include "scalapack/Matrix.hpp"
 #endif

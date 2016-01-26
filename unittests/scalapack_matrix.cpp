@@ -16,7 +16,7 @@ TEST_CASE("Creates a matrix in 1x1 context") {
   scalapack::Context const context(1, 1);
   CAPTURE(context.is_valid());
   REQUIRE(context.is_valid() == (rank == 0));
-  scalapack::Matrix matrix(context, {64, 64}, {20, 10});
+  scalapack::Matrix<> matrix(context, {64, 64}, {20, 10});
 
   CHECK(matrix.local().rows() == (context.is_valid() ? 64 : 0));
   CHECK(matrix.local().cols() == (context.is_valid() ? 64 : 0));
@@ -37,7 +37,7 @@ TEST_CASE("Creates a matrix in 1x2 context") {
   auto const rank = scalapack::global_rank();
   scalapack::Context const context(1, 2);
   CAPTURE(context.is_valid());
-  scalapack::Matrix matrix(context, {64, 64}, {16, 8});
+  scalapack::Matrix<> matrix(context, {64, 64}, {16, 8});
 
   CHECK(matrix.local().rows() == (context.is_valid() ? 64 : 0));
   CHECK(matrix.local().cols() == (context.is_valid() ? 32 : 0));
@@ -59,9 +59,9 @@ void check_creation(t_uint n, t_uint m) {
   auto const rank = scalapack::global_rank();
   scalapack::Context const context(n, m);
   CAPTURE(context.is_valid());
-  scalapack::Matrix::Sizes const size = {1024, 1024};
-  scalapack::Matrix::Sizes const blocks = {31, 65};
-  scalapack::Matrix matrix(context, size, blocks);
+  scalapack::Sizes const size = {1024, 1024};
+  scalapack::Sizes const blocks = {31, 65};
+  scalapack::Matrix<> matrix(context, size, blocks);
 
   if(context.is_valid()) {
     REQUIRE(matrix.local().rows() > 0);
@@ -113,9 +113,9 @@ TEST_CASE("Transfer from 1x1 to 2x1") {
   scalapack::Context const all(world.size(), 1);
 
   auto const split = mpi::Communicator().split(single.is_valid() or parallel.is_valid());
-  scalapack::Matrix::Sizes const size = {64, 128};
-  scalapack::Matrix::Sizes const blocks = {16, 32};
-  scalapack::Matrix input(single, size, blocks);
+  scalapack::Sizes const size = {64, 128};
+  scalapack::Sizes const blocks = {16, 32};
+  scalapack::Matrix<> input(single, size, blocks);
   if(single.is_valid())
     input.local() = optimet::Matrix<t_real>::Random(size.rows, size.cols);
   auto const input_matrix = split.broadcast(input.local(), root);
@@ -150,9 +150,9 @@ TEST_CASE("Transfer from 1x1 to 2x1") {
   }
 }
 
-void check_distribute(optimet::scalapack::Matrix::Sizes const &grid,
-                      optimet::scalapack::Matrix::Sizes const &size,
-                      optimet::scalapack::Matrix::Sizes const &blocks) {
+void check_distribute(optimet::scalapack::Sizes const &grid,
+                      optimet::scalapack::Sizes const &size,
+                      optimet::scalapack::Sizes const &blocks) {
   mpi::Communicator const world;
   if(world.size() < grid.rows * grid.cols) {
     WARN("Not enough processes to run test: " << grid.rows << "x" << grid.cols << " < "
@@ -168,7 +168,7 @@ void check_distribute(optimet::scalapack::Matrix::Sizes const &grid,
   scalapack::Context const all(world.size(), 1);
 
   auto const split = mpi::Communicator().split(single.is_valid() or parallel.is_valid());
-  scalapack::Matrix input(single, size, blocks);
+  scalapack::Matrix<> input(single, size, blocks);
   if(single.is_valid())
     input.local() = optimet::Matrix<t_real>::Random(size.rows, size.cols);
   auto const input_matrix = split.broadcast(input.local(), root);
