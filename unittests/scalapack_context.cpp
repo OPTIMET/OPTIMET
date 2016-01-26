@@ -4,7 +4,8 @@
 #include "Types.h"
 #include "scalapack/Context.h"
 #include "scalapack/InitExit.h"
-#include "MpiCommunicator.h"
+#include "mpi/Communicator.h"
+#include "mpi/Collectives.h"
 
 using namespace optimet;
 
