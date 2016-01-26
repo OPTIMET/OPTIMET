@@ -17,7 +17,6 @@ class Solver {
 private:
   Geometry *geometry;  /**< Pointer to the geometry. */
   Excitation *incWave; /**< Pointer to the incoming excitation. */
-  bool initDone;       /**< Specifies initialization status. */
   bool flagSH;         /**< Specifies if we have switched to the SH case. */
   long nMax;           /**< The maximum n order. */
   Result *result_FF;   /**< The fundamental frequency results. */
@@ -31,12 +30,6 @@ private:
 public:
   optimet::Matrix<optimet::t_complex> S; /**< The scattering matrix S = I - T*AB. */
   optimet::Vector<optimet::t_complex> Q; /**< The local field matrix Q = T*AB*a. */
-
-  /**
-   * Default constructor for the Solver class.
-   * Does NOT initialize the object.
-   */
-  Solver();
 
   /**
    * Initialization constructor for the Solver class.
@@ -54,15 +47,6 @@ public:
   virtual ~Solver(){};
 
   /**
-   * Initialization method for the Solver class.
-   * @param geometry_ the geometry of the simulation.
-   * @param incWave_ the incoming wave excitation.
-   * @param method_ the solver method to be used.
-   * @param nMax_ the maximum value for the n iterator.
-   */
-  void init(Geometry *geometry_, Excitation *incWave_, int method_, long nMax_);
-
-  /**
    * Switches the Solver object to the SH case.
    * Must have been created and initialized in a FF case.
    * @param incWave_ pointer to the new SH wave excitation.
@@ -72,6 +56,27 @@ public:
    */
   int switchSH(Excitation *incWave_, Result *result_FF_, long nMax_);
 
+  /**
+   * Solve the scattered and internal coefficients using the method specified by
+   * solverMethod.
+   * @param X_sca_ the return vector for the scattered coefficients.
+   * @param X_int_ the return vector for the internal coefficients.
+   * @return 0 if successful, 1 otherwise.
+   */
+  int solve(std::complex<double> *X_sca_, std::complex<double> *X_int_);
+  /**
+   * Update method for the Solver class.
+   * @param geometry_ the geometry of the simulation.
+   * @param incWave_ the incoming wave excitation.
+   * @param nMax_ the maximum value for the n iterator.
+   */
+  void update(Geometry *geometry_, Excitation *incWave_, long nMax_);
+  //! \brief Update after internal parameters changed externally
+  //! \details Because that's how the original implementation rocked.
+  void update() { populate(); }
+
+
+protected:
   /**
    * Populate the S and Q matrices using the solverMethod option.
     @return 0 if successful, 1 otherwise.
@@ -90,15 +95,6 @@ public:
    * @return 0 if succesful, 1 otherwise.
    */
   int populateIndirect();
-
-  /**
-   * Solve the scattered and internal coefficients using the method specified by
-   * solverMethod.
-   * @param X_sca_ the return vector for the scattered coefficients.
-   * @param X_int_ the return vector for the internal coefficients.
-   * @return 0 if successful, 1 otherwise.
-   */
-  int solve(std::complex<double> *X_sca_, std::complex<double> *X_int_);
 
   /**
    * Solve the S*X=Q equation using the Direct (Mischenko1996) method.
@@ -123,21 +119,13 @@ public:
    */
   int solveInternal(std::complex<double> *X_sca_, std::complex<double> *X_int_);
 
-  /**
-   * Update method for the Solver class.
-   * @param geometry_ the geometry of the simulation.
-   * @param incWave_ the incoming wave excitation.
-   * @param nMax_ the maximum value for the n iterator.
-   */
-  void update(Geometry *geometry_, Excitation *incWave_, long nMax_);
-
   optimet::mpi::Communicator const &communicator() const { return communicator_; }
   Solver &communicator(optimet::mpi::Communicator const &c) {
     communicator_ = c;
     return *this;
   }
   optimet::scalapack::Parameters const &parallel_params() const { return parallel_params_; }
-  Solver& parallel_params(optimet::scalapack::Parameters const &c) {
+  Solver &parallel_params(optimet::scalapack::Parameters const &c) {
     parallel_params_ = c;
     return *this;
   }

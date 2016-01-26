@@ -75,14 +75,13 @@ TEST_CASE("Two spheres") {
   CHECK(solver.Q.size() == solver.S.cols());
 
   SECTION("Check transparent <==> identity") {
-    solver.populate();
     CHECK(solver.S.isApprox(
         Matrix<>::Identity(solver.S.rows(), solver.S.cols())));
   }
   SECTION("Check structure for only one transparent sphere") {
     geometry.objects.front() = {{0, 0, 0}, {10.0e0, 1.0e0}, 0.5, nHarmonics};
     geometry.update(&excitation);
-    solver.populate();
+    solver.update();
     CHECK(solver.S.topLeftCorner(nb, nb).isIdentity());
     CHECK(solver.S.bottomRightCorner(nb, nb).isIdentity());
     CHECK(solver.S.topRightCorner(nb, nb).isZero());
@@ -92,7 +91,7 @@ TEST_CASE("Two spheres") {
     geometry.objects.front() = {{-1, 0, 0}, {10.0e0, 1.0e0}, 0.5, nHarmonics};
     geometry.objects.back() = {{1, 0, 0}, {10.0e0, 1.0e0}, 0.5, nHarmonics};
     geometry.update(&excitation);
-    solver.populate();
+    solver.update();
     CHECK(solver.S.topLeftCorner(nb, nb).isIdentity());
     CHECK(solver.S.bottomRightCorner(nb, nb).isIdentity());
     auto const AB = solver.S.topRightCorner(nb, nb);
