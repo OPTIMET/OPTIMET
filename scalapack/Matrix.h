@@ -17,8 +17,9 @@ struct Index {
   t_uint row, col;
 };
 
-
-template<class SCALAR = t_real> class Matrix {
+#ifdef OPTIMET_MPI
+//! Wrapper around scalapack distributed matrix and eigen
+template <class SCALAR = t_real> class Matrix {
 public:
   //! Underlying scalar type
   typedef SCALAR Scalar;
@@ -93,11 +94,16 @@ protected:
   //! Blacs construct
   std::array<int, 9> blacs_;
 
-  static typename EigenMatrix::Index rows(Context const &context, Sizes size, Sizes blocks, Index index);
-  static typename EigenMatrix::Index cols(Context const &context, Sizes size, Sizes blocks, Index index);
+  static typename EigenMatrix::Index
+  rows(Context const &context, Sizes size, Sizes blocks, Index index);
+  static typename EigenMatrix::Index
+  cols(Context const &context, Sizes size, Sizes blocks, Index index);
 };
+#endif
 }
 }
 
+#ifdef OPTIMET_MPI
 #include "scalapack/Matrix.hpp"
+#endif
 #endif

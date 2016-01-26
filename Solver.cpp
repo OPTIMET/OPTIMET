@@ -8,18 +8,13 @@
 #include "constants.h"
 #include "Aliases.h"
 #include "mpi/Communicator.h"
+#include "scalapack/Matrix.h"
 #include <Eigen/Dense>
-
-namespace {
-void solveMatrixVector(optimet::Matrix<optimet::t_complex> const &A,
-                       optimet::Vector<optimet::t_complex> const &b, optimet::t_complex *x,
-                       optimet::mpi::Communicator const &comm);
-}
 
 Solver::Solver() : initDone(false), flagSH(false) {}
 
 Solver::Solver(Geometry *geometry_, Excitation *incWave_, int method_, long nMax_,
-    optimet::mpi::Communicator const &c)
+               optimet::mpi::Communicator const &c)
     : initDone(false), flagSH(false), communicator_(c) {
   init(geometry_, incWave_, method_, nMax_);
 }
@@ -189,7 +184,7 @@ int Solver::solveScatteredDirect(std::complex<double> *X_sca_) {
     return 1;
   }
 
-  solveMatrixVector(S, Q, X_sca_, communicator());
+  solveLinearSystem(S, Q, X_sca_);
 
   return 0;
 }
@@ -217,7 +212,7 @@ int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
 
   // Solve the equation, here Q and S correspond to Eq. 10 in (Stout2002). Store
   // result in X_sca_local
-  solveMatrixVector(S, Q, X_sca_local, communicator());
+  solveLinearSystem(S, Q, X_sca_local);
 
   for(size_t i = 0; i < geometry->objects.size(); i++) {
     // Get the local scattering matrix for object i
@@ -404,11 +399,19 @@ void Solver::update(Geometry *geometry_, Excitation *incWave_, long nMax_) {
   populate();
 }
 
-namespace {
-void solveMatrixVector(optimet::Matrix<optimet::t_complex> const &A,
-                       optimet::Vector<optimet::t_complex> const &b, optimet::t_complex *x,
-                       optimet::mpi::Communicator const &comm) {
-  if(comm.size() == 1)
-    optimet::Vector<optimet::t_complex>::Map(x, A.cols()) = A.colPivHouseholderQr().solve(b);
-}
+void Solver::solveLinearSystem(optimet::Matrix<optimet::t_complex> const &A,
+                               optimet::Vector<optimet::t_complex> const &b,
+                               optimet::t_complex *x) const {
+  using namespace optimet;
+#ifdef OPTIMET_MPI
+  // scalapack::Sizes const size{static_cast<t_uint>(A.rows()), static_cast<t_uint>(A.cols())};
+  // scalapack::Sizes const block{parallel_params().block_size, parallel_params().block_size};
+  // scalapack::Sizes const grid = parallel_params().grid.rows * parallel_params().grid.cols != 0 ?
+  //   parallel_params().grid: scalapack::squarest_largest_grid(communicator().size());
+  // scalapack::Matrix<t_complex> Aserial({1, 1}, size, block);
+  // scalapack::Matrix<t_complex> bserial({1, 1}, size, block);
+  // Aserial.local() = A;
+  // bserial.local() = b;
+#endif
+  Vector<t_complex>::Map(x, A.cols()) = A.colPivHouseholderQr().solve(b);
 }

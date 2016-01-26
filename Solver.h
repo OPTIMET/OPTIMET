@@ -8,6 +8,7 @@
 #include "Coupling.h"
 #include "Result.h"
 #include "mpi/Communicator.h"
+#include "scalapack/Parameters.h"
 
 /**
  * The Solver class builds and solves the scattering matrix equation.
@@ -25,6 +26,8 @@ private:
   //! \brief MPI commnunicator
   //! \details Fake if not compiled with MPI
   optimet::mpi::Communicator communicator_;
+  optimet::scalapack::Parameters parallel_params_;
+
 public:
   optimet::Matrix<optimet::t_complex> S; /**< The scattering matrix S = I - T*AB. */
   optimet::Vector<optimet::t_complex> Q; /**< The local field matrix Q = T*AB*a. */
@@ -133,6 +136,16 @@ public:
     communicator_ = c;
     return *this;
   }
+  optimet::scalapack::Parameters const &parallel_params() const { return parallel_params_; }
+  Solver& parallel_params(optimet::scalapack::Parameters const &c) {
+    parallel_params_ = c;
+    return *this;
+  }
+
+protected:
+  //! Solves linear system of equations
+  void solveLinearSystem(optimet::Matrix<optimet::t_complex> const &A,
+                         optimet::Vector<optimet::t_complex> const &b, optimet::t_complex *x) const;
 };
 
 #endif /* SOLVER_H_ */

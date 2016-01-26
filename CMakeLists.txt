@@ -12,7 +12,7 @@ HunterGate(
 )
 project(Optimet3D CXX C)
 
-option(dompi "Enable mpi" on)
+option(dompi "Enable mpi" off)
 option(dotesting "Enable testing" on)
 
 # Downloads and installs GreatCMakeCookOff
@@ -42,10 +42,10 @@ if(dompi)
   include(DetectFortran)
   DetectFortran("${PROJECT_BINARY_DIR}/include/optimet/OptimetFC.h")
   include_directories(${MPI_CXX_INCLUDE_PATH})
-  include_directories("${PROJECT_BINARY_DIR}/include/optimet")
 endif()
 
 # configure a file with some build defaults
+include_directories("${PROJECT_BINARY_DIR}/include/optimet")
 configure_file(Types.in.h "${PROJECT_BINARY_DIR}/include/optimet/Types.h")
 
 # add a library that can be linked against in unittests as well

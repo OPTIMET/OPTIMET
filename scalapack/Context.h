@@ -1,7 +1,8 @@
 #ifndef OPTIMET_SCALAPACK_CONTEXT_H
 #define OPTIMET_SCALAPACK_CONTEXT_H
-
 #include "Types.h"
+
+#ifdef OPTIMET_MPI
 #include <memory>
 
 namespace optimet {
@@ -59,4 +60,5 @@ private:
 
 } /* scalapack */
 } /* optimet */
+#endif /* ifdef OPTIMET_MPI */
 #endif /* ifndef OPTIMET_BLACS_CONTEXT */
