@@ -5,7 +5,9 @@
 #include "mpi/Communicator.h"
 
 class Run;
+namespace optimet {
 class Solver;
+}
 /**
  * The Simulation class implements a full simulation.
  * A Simulation object will create a set of Cases and Requests based
@@ -46,11 +48,11 @@ public:
   }
 
 protected:
-  void scan_wavelengths(Run &run, Solver &solver);
-  void field_simulation(Run &run, Solver &solver);
-  void radius_scan(Run &run, Solver &solver);
-  void radius_and_wavelength_scan(Run &run, Solver &solver);
-  void coefficients(Run &run, Solver &solver);
+  void scan_wavelengths(Run &run, optimet::Solver &solver);
+  void field_simulation(Run &run, optimet::Solver &solver);
+  void radius_scan(Run &run, optimet::Solver &solver);
+  void radius_and_wavelength_scan(Run &run, optimet::Solver &solver);
+  void coefficients(Run &run, optimet::Solver &solver);
 
 private:
   std::string caseFile; /**< Name of the case without extensions. */

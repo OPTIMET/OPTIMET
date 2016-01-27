@@ -11,11 +11,12 @@
 #include "scalapack/Matrix.h"
 #include <Eigen/Dense>
 
+namespace optimet {
 Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long nMax,
-               optimet::mpi::Communicator const &c)
+               mpi::Communicator const &c)
     : geometry(geometry), incWave(incWave), flagSH(false), nMax(nMax), result_FF(nullptr),
       solverMethod(method), communicator_(c) {
-  auto const flatMax = optimet::max_flat_index(nMax);
+  auto const flatMax = max_flat_index(nMax);
   S.resize(2 * flatMax * geometry->objects.size(), 2 * flatMax * geometry->objects.size());
   Q.resize(2 * flatMax * geometry->objects.size());
   populate();
@@ -32,10 +33,7 @@ int Solver::populate() {
   return 0;
 }
 
-
 int Solver::populateDirect() {
-  using namespace optimet;
-
   CompoundIterator p;
   CompoundIterator q;
 
@@ -148,16 +146,12 @@ int Solver::solve(std::complex<double> *X_sca_, std::complex<double> *X_int_) {
 }
 
 int Solver::solveScatteredDirect(std::complex<double> *X_sca_) {
-  using namespace optimet;
-
   solveLinearSystem(S, Q, X_sca_);
 
   return 0;
 }
 
 int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
-  using namespace optimet;
-
   CompoundIterator p;
 
   std::complex<double> *X_sca_local =
@@ -207,7 +201,7 @@ int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
   return 0;
 }
 
-Solver& Solver::SH(bool sh) {
+Solver &Solver::SH(bool sh) {
 
   if(sh != flagSH) {
     flagSH = sh;
@@ -241,8 +235,6 @@ int Solver::solveInternal(std::complex<double> *X_sca_, std::complex<double> *X_
 }
 
 int Solver::populateIndirect() {
-  using namespace optimet;
-
   CompoundIterator p;
   CompoundIterator q;
 
@@ -347,10 +339,8 @@ void Solver::update(Geometry *geometry_, Excitation const *incWave_, long nMax_)
   populate();
 }
 
-void Solver::solveLinearSystem(optimet::Matrix<optimet::t_complex> const &A,
-                               optimet::Vector<optimet::t_complex> const &b,
-                               optimet::t_complex *x) const {
-  using namespace optimet;
+void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b,
+                               t_complex *x) const {
 #ifdef OPTIMET_MPI
 // scalapack::Sizes const size{static_cast<t_uint>(A.rows()), static_cast<t_uint>(A.cols())};
 // scalapack::Sizes const block{parallel_params().block_size, parallel_params().block_size};
@@ -363,3 +353,5 @@ void Solver::solveLinearSystem(optimet::Matrix<optimet::t_complex> const &A,
 #endif
   Vector<t_complex>::Map(x, A.cols()) = A.colPivHouseholderQr().solve(b);
 }
+
+} // optimet namespace

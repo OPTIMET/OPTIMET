@@ -23,7 +23,7 @@ int Simulation::run() {
     return 1;
 
   // Initialize the solver
-  Solver solver(&(run.geometry), &(run.excitation), O3DSolverIndirect,
+  optimet::Solver solver(&(run.geometry), &(run.excitation), O3DSolverIndirect,
                 run.nMax);
 
   switch (run.outputType) {
@@ -49,7 +49,7 @@ int Simulation::run() {
   return 0;
 }
 
-void Simulation::field_simulation(Run &run, Solver &solver) {
+void Simulation::field_simulation(Run &run, optimet::Solver &solver) {
   // Determine the simulation type and proceed accordingly
   Output oFile(caseFile + ".h5");
 
@@ -82,7 +82,7 @@ void Simulation::field_simulation(Run &run, Solver &solver) {
   oFile.close();
 }
 
-void Simulation::scan_wavelengths(Run &run, Solver &solver) {
+void Simulation::scan_wavelengths(Run &run, optimet::Solver &solver) {
   Result result;
 
   std::ofstream outASec(caseFile + "_AbsorptionCS.dat");
@@ -119,7 +119,7 @@ void Simulation::scan_wavelengths(Run &run, Solver &solver) {
   outESec.close();
 }
 
-void Simulation::radius_scan(Run &run, Solver &solver) {
+void Simulation::radius_scan(Run &run, optimet::Solver &solver) {
   Result result;
 
   std::ofstream outASec(caseFile + "_AbsorptionCS.dat");
@@ -167,7 +167,7 @@ void Simulation::radius_scan(Run &run, Solver &solver) {
   outESec.close();
 }
 
-void Simulation::radius_and_wavelength_scan(Run &run, Solver &solver) {
+void Simulation::radius_and_wavelength_scan(Run &run, optimet::Solver &solver) {
   Result result;
 
   std::ofstream outASec(caseFile + "_AbsorptionCS.dat");
@@ -234,7 +234,7 @@ void Simulation::radius_and_wavelength_scan(Run &run, Solver &solver) {
   outParams.close();
 }
 
-void Simulation::coefficients(Run &run, Solver &solver) {
+void Simulation::coefficients(Run &run, optimet::Solver &solver) {
   // Scattering coefficients requests
   std::ofstream outPCoef(caseFile + "_pCoefficients.dat");
   std::ofstream outQCoef(caseFile + "_qCoefficients.dat");
