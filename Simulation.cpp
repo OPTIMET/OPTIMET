@@ -54,7 +54,7 @@ void Simulation::field_simulation(Run &run, optimet::Solver &solver) {
   Output oFile(caseFile + ".h5");
 
   optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
-  solver.solve(result.scatter_coef.data(), result.internal_coef.data());
+  solver.solve(result.scatter_coef, result.internal_coef);
 
   OutputGrid oEGrid(O3DCartesianRegular, run.params,
                     oFile.getHandle("Field_E"));
@@ -106,7 +106,7 @@ void Simulation::scan_wavelengths(Run &run, optimet::Solver &solver) {
     solver.update(&(run.geometry), &(run.excitation), run.nMax);
 
     optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
-    solver.solve(result.scatter_coef.data(), result.internal_coef.data());
+    solver.solve(result.scatter_coef, result.internal_coef);
 
     outASec << lam << "\t" << result.getAbsorptionCrossSection() << std::endl;
     outESec << lam << "\t" << result.getExtinctionCrossSection() << std::endl;
@@ -151,7 +151,7 @@ void Simulation::radius_scan(Run &run, optimet::Solver &solver) {
     solver.update(&(run.geometry), &(run.excitation), run.nMax);
 
     optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
-    solver.solve(result.scatter_coef.data(), result.internal_coef.data());
+    solver.solve(result.scatter_coef, result.internal_coef);
 
     outASec << rad << "\t" << result.getAbsorptionCrossSection() << std::endl;
     outESec << rad << "\t" << result.getExtinctionCrossSection() << std::endl;
@@ -207,7 +207,7 @@ void Simulation::radius_and_wavelength_scan(Run &run, optimet::Solver &solver) {
       solver.update(&(run.geometry), &(run.excitation), run.nMax);
 
       optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
-      solver.solve(result.scatter_coef.data(), result.internal_coef.data());
+      solver.solve(result.scatter_coef, result.internal_coef);
 
       outASec << result.getAbsorptionCrossSection() << "\t";
       outESec << result.getExtinctionCrossSection() << "\t";
@@ -231,7 +231,7 @@ void Simulation::coefficients(Run &run, optimet::Solver &solver) {
   std::ofstream outQCoef(caseFile + "_qCoefficients.dat");
 
   optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
-  solver.solve(result.scatter_coef.data(), result.internal_coef.data());
+  solver.solve(result.scatter_coef, result.internal_coef);
 
   CompoundIterator p;
 

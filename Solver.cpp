@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstdlib>
 #include "CompoundIterator.h"
+#include "HarmonicsIterator.h"
 #include "Tools.h"
 #include "Algebra.h"
 #include "constants.h"
@@ -16,7 +17,7 @@ Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long n
                mpi::Communicator const &c)
     : geometry(geometry), incWave(incWave), flagSH(false), nMax(nMax), result_FF(nullptr),
       solverMethod(method), communicator_(c) {
-  auto const flatMax = max_flat_index(nMax);
+  auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
   S.resize(2 * flatMax * geometry->objects.size(), 2 * flatMax * geometry->objects.size());
   Q.resize(2 * flatMax * geometry->objects.size());
   populate();
@@ -132,7 +133,7 @@ int Solver::populateDirect() {
   return 0;
 }
 
-int Solver::solve(std::complex<double> *X_sca_, std::complex<double> *X_int_) {
+int Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) {
   if(solverMethod == O3DSolverDirect)
     solveScatteredDirect(X_sca_);
   else if(solverMethod == O3DSolverIndirect)
@@ -145,17 +146,16 @@ int Solver::solve(std::complex<double> *X_sca_, std::complex<double> *X_int_) {
   return 0;
 }
 
-int Solver::solveScatteredDirect(std::complex<double> *X_sca_) {
+int Solver::solveScatteredDirect(Vector<t_complex> &X_sca_) {
   solveLinearSystem(S, Q, X_sca_);
 
   return 0;
 }
 
-int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
+int Solver::solveScatteredIndirect(Vector<t_complex> &X_sca_) {
   CompoundIterator p;
 
-  std::complex<double> *X_sca_local =
-      new std::complex<double>[2 * p.max(nMax) * geometry->objects.size()];
+  Vector<t_complex> X_sca_local(2 * p.max(nMax) * geometry->objects.size());
   std::complex<double> *X_sca_part =
       new std::complex<double>[2 * p.max(nMax) * geometry->objects.size()];
   std::complex<double> *X_sca_part_fin =
@@ -176,7 +176,7 @@ int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
 
     // Build a partial X_sca_part vector
     for(p = 0; p < (int)(2 * p.max(nMax)); p++) {
-      X_sca_part[p] = X_sca_local[i * 2 * p.max(nMax) + p.compound];
+      X_sca_part[p] = X_sca_local(i * 2 * p.max(nMax) + p.compound);
     }
 
     // Multiply T with X_sca_part to get X_sca_fin
@@ -190,7 +190,6 @@ int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
   }
 
   // Clean up the memory
-  delete[] X_sca_local;
   delete[] X_sca_part;
   delete[] X_sca_part_fin;
   for(p = 0; p < (int)(2 * p.max(nMax)); p++) {
@@ -211,25 +210,23 @@ Solver &Solver::SH(bool sh) {
   return *this;
 }
 
-int Solver::solveInternal(std::complex<double> *X_sca_, std::complex<double> *X_int_) {
+int Solver::solveInternal(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) {
 
   CompoundIterator p, q;
 
-  std::complex<double> *Iaux = new std::complex<double>[2 * Tools::iteratorMax(nMax)];
+  Vector<t_complex> Iaux(2 * Tools::iteratorMax(nMax));
 
   for(size_t j = 0; j < geometry->objects.size(); j++) {
     int pMax = p.max(nMax);
-    geometry->getIaux(incWave->omega, j, nMax, Iaux);
+    geometry->getIaux(incWave->omega, j, nMax, Iaux.data());
 
     for(p = 0; p < pMax; p++) {
       // scattered
-      X_int_[j * 2 * pMax + p.compound] = X_sca_[j * 2 * pMax + p.compound] * Iaux[p];
-      X_int_[pMax + j * 2 * pMax + p.compound] =
-          X_sca_[pMax + j * 2 * pMax + p.compound] * Iaux[p + pMax];
+      X_int_(j * 2 * pMax + p.compound) = X_sca_(j * 2 * pMax + p.compound) * Iaux(p);
+      X_int_(pMax + j * 2 * pMax + p.compound) =
+          X_sca_(pMax + j * 2 * pMax + p.compound) * Iaux(p + pMax);
     }
   }
-
-  delete[] Iaux;
 
   return 0;
 }
@@ -340,7 +337,7 @@ void Solver::update(Geometry *geometry_, Excitation const *incWave_, long nMax_)
 }
 
 void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b,
-                               t_complex *x) const {
+                               Vector<t_complex> &x) const {
 #ifdef OPTIMET_MPI
 // scalapack::Sizes const size{static_cast<t_uint>(A.rows()), static_cast<t_uint>(A.cols())};
 // scalapack::Sizes const block{parallel_params().block_size, parallel_params().block_size};
@@ -351,7 +348,7 @@ void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> con
 // Aserial.local() = A;
 // bserial.local() = b;
 #endif
-  Vector<t_complex>::Map(x, A.cols()) = A.colPivHouseholderQr().solve(b);
+  x = A.colPivHouseholderQr().solve(b);
 }
 
 } // optimet namespace

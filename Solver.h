@@ -52,7 +52,7 @@ public:
    * @param X_int_ the return vector for the internal coefficients.
    * @return 0 if successful, 1 otherwise.
    */
-  int solve(std::complex<double> *X_sca_, std::complex<double> *X_int_);
+  int solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_);
   /**
    * Update method for the Solver class.
    * @param geometry_ the geometry of the simulation.
@@ -89,14 +89,14 @@ protected:
    * @param X_sca_ the return vector for the scattered coefficients.
    * @return 0 if successful, 1 otherwise.
    */
-  int solveScatteredDirect(std::complex<double> *X_sca_);
+  int solveScatteredDirect(Vector<t_complex> &X_sca_);
 
   /**
    * Solve the S*X=Q equation using the Indirect (Stout2002) method.
    * @param X_sca_ the return vector for the scattered coefficients.
    * @return 0 if successful, 1 otherwise.
    */
-  int solveScatteredIndirect(std::complex<double> *X_sca_);
+  int solveScatteredIndirect(Vector<t_complex> &X_sca_);
 
   /**
    * Solve the internal coefficients.
@@ -105,7 +105,7 @@ protected:
    * @param X_int_ the return vector for the internal coefficients.
    * @return 0 if successful, 1 otherwise.
    */
-  int solveInternal(std::complex<double> *X_sca_, std::complex<double> *X_int_);
+  int solveInternal(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_);
 
   mpi::Communicator const &communicator() const { return communicator_; }
   Solver &communicator(mpi::Communicator const &c) {
@@ -119,8 +119,8 @@ protected:
   }
 
   //! Solves linear system of equations
-  void
-  solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b, t_complex *x) const;
+  void solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b,
+                         Vector<t_complex> &x) const;
 
 private:
   Geometry *geometry;        /**< Pointer to the geometry. */
