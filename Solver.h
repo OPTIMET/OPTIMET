@@ -54,7 +54,8 @@ public:
    * @param nMax_ the maximum value for the n iterator.
    * @return 0 if successful, 1 otherwise.
    */
-  int switchSH(Excitation *incWave_, Result *result_FF_, long nMax_);
+  Solver& SH(bool sh);
+  bool SH() const { return flagSH; }
 
   /**
    * Solve the scattered and internal coefficients using the method specified by

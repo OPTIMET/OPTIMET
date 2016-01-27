@@ -218,16 +218,14 @@ int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
   return 0;
 }
 
-int Solver::switchSH(Excitation *incWave_, Result *result_FF_, long nMax_) {
+Solver& Solver::SH(bool sh) {
 
-  incWave = incWave_;
-  nMax = nMax_;
+  if(sh != flagSH) {
+    flagSH = sh;
+    populate();
+  }
 
-  result_FF = result_FF_;
-
-  flagSH = true;
-
-  return 0;
+  return *this;
 }
 
 int Solver::solveInternal(std::complex<double> *X_sca_, std::complex<double> *X_int_) {
