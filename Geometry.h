@@ -86,7 +86,7 @@ public:
 
   int getNLSources(double omega_, int objectIndex_, int nMax_,
                    std::complex<double> *sourceU,
-                   std::complex<double> *sourceV);
+                   std::complex<double> *sourceV) const;
 
   /**
    * Returns the relative vector R_lj between two objects.
@@ -113,11 +113,11 @@ public:
    * @param Q_SH_local_ the return value of the local SH source vector.
    * @return 0 if successful, 1 otherwise.
    */
-  int getSourceLocal(int objectIndex_, Excitation *incWave_,
+  int getSourceLocal(int objectIndex_, Excitation const *incWave_,
                      std::complex<double> *internalCoef_FF_, int nMax_,
-                     std::complex<double> *Q_SH_local_);
+                     std::complex<double> *Q_SH_local_) const;
 
-  int setSourcesSingle(Excitation *incWave_,
+  int setSourcesSingle(Excitation const *incWave_,
                        std::complex<double> *internalCoef_FF_, int nMax_);
 
   /**

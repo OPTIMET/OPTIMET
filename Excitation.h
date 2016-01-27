@@ -89,7 +89,7 @@ public:
    * @return 0 if successful, 1 otherwise.
    */
   int getIncLocal(Spherical<double> point_, std::complex<double> *Inc_local_,
-                  int nMax_);
+                  int nMax_) const;
 
   /**
    * Updates the wavelength of the current excitation object to a new value.

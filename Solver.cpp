@@ -11,24 +11,14 @@
 #include "scalapack/Matrix.h"
 #include <Eigen/Dense>
 
-Solver::Solver(Geometry *geometry_, Excitation *incWave_, int method_, long nMax_,
+Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long nMax,
                optimet::mpi::Communicator const &c)
-    : flagSH(false), communicator_(c) {
-  geometry = geometry_;
-  incWave = incWave_;
-  nMax = nMax_;
-
-  flagSH = false;
-
-  solverMethod = method_;
-
+    : geometry(geometry), incWave(incWave), flagSH(false), nMax(nMax), result_FF(nullptr),
+      solverMethod(method), communicator_(c) {
   CompoundIterator p;
 
   S.resize(2 * p.max(nMax) * geometry->objects.size(), 2 * p.max(nMax) * geometry->objects.size());
   Q.resize(2 * p.max(nMax) * geometry->objects.size());
-
-  result_FF = NULL;
-
   populate();
 }
 
@@ -348,7 +338,7 @@ int Solver::populateIndirect() {
   return 0;
 }
 
-void Solver::update(Geometry *geometry_, Excitation *incWave_, long nMax_) {
+void Solver::update(Geometry *geometry_, Excitation const *incWave_, long nMax_) {
   geometry = geometry_;
   incWave = incWave_;
   nMax = nMax_;

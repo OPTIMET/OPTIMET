@@ -17,7 +17,7 @@ private:
    * Returns the point in Cartesian format.
    * @return the Cartesian coordinate object.
    */
-  Cartesian<sphType> toCartesian() {
+  Cartesian<sphType> toCartesian() const {
     return Cartesian<sphType>(rrr * std::sin(the) * std::cos(phi),
                               rrr * std::sin(the) * std::sin(phi),
                               rrr * std::cos(the));
@@ -27,7 +27,7 @@ private:
    * Returns the point in spherical projection format.
    * @return the SphericalP coordinate object.
    */
-  SphericalP<sphType> toSphericalP() {
+  SphericalP<sphType> toSphericalP() const {
     return SphericalP<sphType>(rrr * std::sin(the) * std::cos(phi),
                                rrr * std::sin(the) * std::sin(phi),
                                rrr * std::cos(the));
@@ -38,7 +38,7 @@ private:
    * @param point the Cartesian vector to be converted.
    * @return the vector in Spherical format.
    */
-  Spherical<sphType> toSpherical(Cartesian<sphType> point) {
+  Spherical<sphType> toSpherical(Cartesian<sphType> point) const {
     double r_l =
         std::sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
     if (r_l > 0.0) {
@@ -132,7 +132,7 @@ public:
    * @param argument_ the vector to be subtracted.
    * @return a Spherical vector as the difference.
    */
-  Spherical<sphType> operator-(Spherical<sphType> argument_) {
+  Spherical<sphType> operator-(Spherical<sphType> argument_) const {
     return toSpherical(toCartesian() - argument_.toCartesian());
   }
 };

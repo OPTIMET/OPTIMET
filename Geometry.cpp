@@ -141,7 +141,7 @@ int Geometry::getTLocal(double omega_, int objectIndex_, int nMax_,
 // AJ
 // -----------------------------------------------------------------------------------------------------
 int Geometry::getNLSources(double omega_, int objectIndex_, int nMax_,
-                           std::complex<double> *sourceU, std::complex<double> *sourceV) {
+                           std::complex<double> *sourceU, std::complex<double> *sourceV) const {
   double R = objects[objectIndex_].radius;
 
   std::complex<double> mu_b = bground.mu;
@@ -331,7 +331,7 @@ int Geometry::checkInner(Spherical<double> R_) {
   return -1;
 }
 
-int Geometry::setSourcesSingle(Excitation *incWave_, std::complex<double> *internalCoef_FF_,
+int Geometry::setSourcesSingle(Excitation const *incWave_, std::complex<double> *internalCoef_FF_,
                                int nMax_) {
   CompoundIterator p;
   int pMax = p.max(nMax_);
@@ -368,8 +368,8 @@ int Geometry::setSourcesSingle(Excitation *incWave_, std::complex<double> *inter
   return 0;
 }
 
-int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, std::complex<double> *,
-                             int nMax_, std::complex<double> *Q_SH_local_) {
+int Geometry::getSourceLocal(int objectIndex_, Excitation const *incWave_, std::complex<double> *,
+                             int nMax_, std::complex<double> *Q_SH_local_) const {
   CompoundIterator p;
   CompoundIterator q;
 

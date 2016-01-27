@@ -14,19 +14,6 @@
  * The Solver class builds and solves the scattering matrix equation.
  */
 class Solver {
-private:
-  Geometry *geometry;  /**< Pointer to the geometry. */
-  Excitation *incWave; /**< Pointer to the incoming excitation. */
-  bool flagSH;         /**< Specifies if we have switched to the SH case. */
-  long nMax;           /**< The maximum n order. */
-  Result *result_FF;   /**< The fundamental frequency results. */
-  int solverMethod;    /**< Solver method: Direct = Mischenko1996, Indirect =
-                          Stout2002 */
-  //! \brief MPI commnunicator
-  //! \details Fake if not compiled with MPI
-  optimet::mpi::Communicator communicator_;
-  optimet::scalapack::Parameters parallel_params_;
-
 public:
   optimet::Matrix<optimet::t_complex> S; /**< The scattering matrix S = I - T*AB. */
   optimet::Vector<optimet::t_complex> Q; /**< The local field matrix Q = T*AB*a. */
@@ -38,7 +25,7 @@ public:
    * @param method_ the solver method to be used.
    * @param nMax_ the maximum value for the n iterator.
    */
-  Solver(Geometry *geometry_, Excitation *incWave_, int method_, long nMax_,
+  Solver(Geometry *geometry_, Excitation const *incWave_, int method_, long nMax_,
          optimet::mpi::Communicator const &communicator = optimet::mpi::Communicator());
 
   /**
@@ -71,7 +58,7 @@ public:
    * @param incWave_ the incoming wave excitation.
    * @param nMax_ the maximum value for the n iterator.
    */
-  void update(Geometry *geometry_, Excitation *incWave_, long nMax_);
+  void update(Geometry *geometry_, Excitation const *incWave_, long nMax_);
   //! \brief Update after internal parameters changed externally
   //! \details Because that's how the original implementation rocked.
   void update() { populate(); }
@@ -131,10 +118,22 @@ protected:
     return *this;
   }
 
-protected:
   //! Solves linear system of equations
   void solveLinearSystem(optimet::Matrix<optimet::t_complex> const &A,
                          optimet::Vector<optimet::t_complex> const &b, optimet::t_complex *x) const;
+private:
+  Geometry *geometry;  /**< Pointer to the geometry. */
+  Excitation const *incWave; /**< Pointer to the incoming excitation. */
+  bool flagSH;         /**< Specifies if we have switched to the SH case. */
+  long nMax;           /**< The maximum n order. */
+  Result *result_FF;   /**< The fundamental frequency results. */
+  int solverMethod;    /**< Solver method: Direct = Mischenko1996, Indirect =
+                          Stout2002 */
+  //! \brief MPI commnunicator
+  //! \details Fake if not compiled with MPI
+  optimet::mpi::Communicator communicator_;
+  optimet::scalapack::Parameters parallel_params_;
+
 };
 
 #endif /* SOLVER_H_ */

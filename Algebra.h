@@ -51,7 +51,7 @@ public:
    * @param beta_ the scalar beta.
    */
   static void multiplyVectorMatrix(std::complex<double> **A, int rows_A_,
-                                   int cols_A_, std::complex<double> *X,
+                                   int cols_A_, std::complex<double> const *X,
                                    std::complex<double> *Y,
                                    std::complex<double> alpha_,
                                    std::complex<double> beta_);
