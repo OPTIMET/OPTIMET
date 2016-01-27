@@ -53,8 +53,8 @@ void Simulation::field_simulation(Run &run, optimet::Solver &solver) {
   // Determine the simulation type and proceed accordingly
   Output oFile(caseFile + ".h5");
 
-  Result result(&(run.geometry), &(run.excitation), run.nMax);
-  solver.solve(result.scatter_coef, result.internal_coef);
+  optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
+  solver.solve(result.scatter_coef.data(), result.internal_coef.data());
 
   OutputGrid oEGrid(O3DCartesianRegular, run.params,
                     oFile.getHandle("Field_E"));
@@ -83,8 +83,6 @@ void Simulation::field_simulation(Run &run, optimet::Solver &solver) {
 }
 
 void Simulation::scan_wavelengths(Run &run, optimet::Solver &solver) {
-  Result result;
-
   std::ofstream outASec(caseFile + "_AbsorptionCS.dat");
   std::ofstream outESec(caseFile + "_ExtinctionCS.dat");
 
@@ -107,9 +105,8 @@ void Simulation::scan_wavelengths(Run &run, optimet::Solver &solver) {
     run.geometry.update(&(run.excitation));
     solver.update(&(run.geometry), &(run.excitation), run.nMax);
 
-    Result result;
-    result.init(&(run.geometry), &(run.excitation), run.nMax);
-    solver.solve(result.scatter_coef, result.internal_coef);
+    optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
+    solver.solve(result.scatter_coef.data(), result.internal_coef.data());
 
     outASec << lam << "\t" << result.getAbsorptionCrossSection() << std::endl;
     outESec << lam << "\t" << result.getExtinctionCrossSection() << std::endl;
@@ -120,8 +117,6 @@ void Simulation::scan_wavelengths(Run &run, optimet::Solver &solver) {
 }
 
 void Simulation::radius_scan(Run &run, optimet::Solver &solver) {
-  Result result;
-
   std::ofstream outASec(caseFile + "_AbsorptionCS.dat");
   std::ofstream outESec(caseFile + "_ExtinctionCS.dat");
 
@@ -155,9 +150,8 @@ void Simulation::radius_scan(Run &run, optimet::Solver &solver) {
 
     solver.update(&(run.geometry), &(run.excitation), run.nMax);
 
-    Result result;
-    result.init(&(run.geometry), &(run.excitation), run.nMax);
-    solver.solve(result.scatter_coef, result.internal_coef);
+    optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
+    solver.solve(result.scatter_coef.data(), result.internal_coef.data());
 
     outASec << rad << "\t" << result.getAbsorptionCrossSection() << std::endl;
     outESec << rad << "\t" << result.getExtinctionCrossSection() << std::endl;
@@ -168,8 +162,6 @@ void Simulation::radius_scan(Run &run, optimet::Solver &solver) {
 }
 
 void Simulation::radius_and_wavelength_scan(Run &run, optimet::Solver &solver) {
-  Result result;
-
   std::ofstream outASec(caseFile + "_AbsorptionCS.dat");
   std::ofstream outESec(caseFile + "_ExtinctionCS.dat");
   std::ofstream outParams(caseFile + "_RadiusLambda.dat");
@@ -214,9 +206,8 @@ void Simulation::radius_and_wavelength_scan(Run &run, optimet::Solver &solver) {
 
       solver.update(&(run.geometry), &(run.excitation), run.nMax);
 
-      Result result;
-      result.init(&(run.geometry), &(run.excitation), run.nMax);
-      solver.solve(result.scatter_coef, result.internal_coef);
+      optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
+      solver.solve(result.scatter_coef.data(), result.internal_coef.data());
 
       outASec << result.getAbsorptionCrossSection() << "\t";
       outESec << result.getExtinctionCrossSection() << "\t";
@@ -239,16 +230,16 @@ void Simulation::coefficients(Run &run, optimet::Solver &solver) {
   std::ofstream outPCoef(caseFile + "_pCoefficients.dat");
   std::ofstream outQCoef(caseFile + "_qCoefficients.dat");
 
-  Result result(&(run.geometry), &(run.excitation), run.nMax);
-  solver.solve(result.scatter_coef, result.internal_coef);
+  optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
+  solver.solve(result.scatter_coef.data(), result.internal_coef.data());
 
   CompoundIterator p;
 
   for (p = 0; p < p.max(run.nMax); p++) {
     outPCoef << p.first << "\t" << p.second << "\t"
-             << abs(result.scatter_coef[p]) << std::endl;
+             << abs(result.scatter_coef(static_cast<int>(p))) << std::endl;
     outQCoef << p.first << "\t" << p.second << "\t"
-             << abs(result.scatter_coef[p.compound + p.max(run.nMax)])
+             << abs(result.scatter_coef(static_cast<int>(p.compound) + p.max(run.nMax)))
              << std::endl;
   }
 

@@ -55,7 +55,7 @@ int Solver::populateDirect() {
 
   if(flagSH) // if SH simulation, set the local source first
   {
-    geometry->setSourcesSingle(incWave, result_FF->internal_coef, nMax);
+    geometry->setSourcesSingle(incWave, result_FF->internal_coef.data(), nMax);
   }
 
   for(size_t i = 0; i < geometry->objects.size(); i++) {
@@ -69,7 +69,7 @@ int Solver::populateDirect() {
     if(flagSH) // we are in the SH case -> get the local sources from the
                // geometry
     {
-      geometry->getSourceLocal(i, incWave, result_FF->internal_coef, nMax, Q_local);
+      geometry->getSourceLocal(i, incWave, result_FF->internal_coef.data(), nMax, Q_local);
     } else // we are in the FF case -> get the incoming excitation from the
            // geometry
     {
@@ -256,7 +256,7 @@ int Solver::populateIndirect() {
 
   if(flagSH) // if SH simulation, set the local source first
   {
-    geometry->setSourcesSingle(incWave, result_FF->internal_coef, nMax);
+    geometry->setSourcesSingle(incWave, result_FF->internal_coef.data(), nMax);
   }
 
   for(size_t i = 0; i < geometry->objects.size(); i++) {
@@ -271,7 +271,7 @@ int Solver::populateIndirect() {
     if(flagSH) // we are in the SH case -> get the local sources from the
                // geometry
     {
-      geometry->getSourceLocal(i, incWave, result_FF->internal_coef, nMax, Q_local.data());
+      geometry->getSourceLocal(i, incWave, result_FF->internal_coef.data(), nMax, Q_local.data());
     } else // we are in the FF case -> get the incoming excitation from the
            // geometry
     {
