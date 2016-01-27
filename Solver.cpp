@@ -15,10 +15,9 @@ Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long n
                optimet::mpi::Communicator const &c)
     : geometry(geometry), incWave(incWave), flagSH(false), nMax(nMax), result_FF(nullptr),
       solverMethod(method), communicator_(c) {
-  CompoundIterator p;
-
-  S.resize(2 * p.max(nMax) * geometry->objects.size(), 2 * p.max(nMax) * geometry->objects.size());
-  Q.resize(2 * p.max(nMax) * geometry->objects.size());
+  auto const flatMax = optimet::max_flat_index(nMax);
+  S.resize(2 * flatMax * geometry->objects.size(), 2 * flatMax * geometry->objects.size());
+  Q.resize(2 * flatMax * geometry->objects.size());
   populate();
 }
 
