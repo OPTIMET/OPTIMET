@@ -18,6 +18,7 @@ void OPTIMET_FC_GLOBAL_(blacs_gridinit, BLACS_GRIDINIT)(int *context, char *orde
 int OPTIMET_FC_GLOBAL(numroc, NUMROC)(int *n, int *nb, int *iproc, int *isrcproc, int *nprocs);
 void OPTIMET_FC_GLOBAL(blacs_gridmap, BLACS_GRIDMAP)(
     int *context, int *usermap, int *ldau, int *nprow, int *npcol);
+int OPTIMET_FC_GLOBAL_(blacs_pnum, BLACS_PNUM)(int *context, int *i, int *j);
 void Cpsgemr2d(int m, int n, float *ptrmyblock, int ia, int ja, int *ma, float *ptrmynewblock,
                int ib, int jb, int *mb, int globcontext);
 void Cpdgemr2d(int m, int n, double *ptrmyblock, int ia, int ja, int *ma, double *ptrmynewblock,

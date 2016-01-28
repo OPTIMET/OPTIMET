@@ -59,6 +59,16 @@ public:
   //! Check contexts are the same
   bool operator!=(Context const &c) const { return not operator==(c); }
 
+  //! Map from grid to rank
+  Matrix<t_uint> rank_map() const;
+  //! \brief Split into nrows * ncols smaller grids
+  //! \details Each axis of N points is split into n chunks of N / n + (rank < N % n ? 1: 0) points.
+  //! Doing this to both axis results in grids. If the  n > N for both axis, then the output grid is
+  //! equivalent to the input grid.
+  Context split(t_uint nrows, t_uint ncols) const;
+  //! Creates a subcontext
+  Context subcontext(Matrix<t_uint> map) const { return Context(*this, map); }
+
 private:
   //! Holds data associated with the context
   std::shared_ptr<Impl const> impl;

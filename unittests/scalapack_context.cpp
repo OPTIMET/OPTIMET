@@ -122,3 +122,30 @@ TEST_CASE("Explicit organisation") {
     }
   }
 }
+
+TEST_CASE("Splitting grid") {
+  if(scalapack::global_size() < 4)
+    return;
+
+  SECTION("Split 1 by n") {
+    scalapack::Context linear(1, scalapack::global_size());
+    auto const split = linear.split(1, 2);
+    CHECK(split.is_valid());
+    CHECK(split.rows() == 1);
+    if(linear.cols() % 2 == 0 or linear.col() >= linear.cols() / 2 + 1)
+      CHECK(split.cols() == linear.cols() / 2);
+    else
+      CHECK(split.cols() == linear.cols() / 2 + 1);
+  }
+
+  SECTION("Split n by 1") {
+    scalapack::Context linear(scalapack::global_size(), 1);
+    auto const split = linear.split(2, 1);
+    CHECK(split.is_valid());
+    CHECK(split.cols() == 1);
+    if(linear.rows() % 2 == 0 or linear.row() >= linear.rows() / 2 + 1)
+      CHECK(split.rows() == linear.rows() / 2);
+    else
+      CHECK(split.rows() == linear.rows() / 2 + 1);
+  }
+}
