@@ -15,7 +15,7 @@
 namespace optimet {
 Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long nMax,
                mpi::Communicator const &c)
-    : geometry(geometry), incWave(incWave), flagSH(false), nMax(nMax), result_FF(nullptr),
+    : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr),
       solverMethod(method), communicator_(c) {
   auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
   S.resize(2 * flatMax * geometry->objects.size(), 2 * flatMax * geometry->objects.size());
@@ -54,7 +54,7 @@ int Solver::populateDirect() {
     T_AB[p] = new std::complex<double>[2 * p.max(nMax)];
   }
 
-  if(flagSH) // if SH simulation, set the local source first
+  if(result_FF) // if SH simulation, set the local source first
   {
     geometry->setSourcesSingle(incWave, result_FF->internal_coef.data(), nMax);
   }
@@ -67,7 +67,7 @@ int Solver::populateDirect() {
 
     // Get the T and IncLocal matrices first
     geometry->getTLocal(incWave->omega, i, nMax, T);
-    if(flagSH) // we are in the SH case -> get the local sources from the
+    if(result_FF) // we are in the SH case -> get the local sources from the
                // geometry
     {
       geometry->getSourceLocal(i, incWave, result_FF->internal_coef.data(), nMax, Q_local);
@@ -200,10 +200,10 @@ int Solver::solveScatteredIndirect(Vector<t_complex> &X_sca_) {
   return 0;
 }
 
-Solver &Solver::SH(bool sh) {
+Solver &Solver::SH(Result *r) {
 
-  if(sh != flagSH) {
-    flagSH = sh;
+  if(r != result_FF) {
+    result_FF = r;
     populate();
   }
 
@@ -231,7 +231,50 @@ int Solver::solveInternal(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) 
   return 0;
 }
 
-int Solver::populateIndirect() {
+void Solver::populateIndirect() {
+  auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
+  Matrix<t_complex> T_AB(2 * flatMax, 2*flatMax);
+
+  if(result_FF) // if SH simulation, set the local source first
+    geometry->setSourcesSingle(incWave, result_FF->internal_coef.data(), nMax);
+
+  for(size_t i = 0; i < geometry->objects.size(); i++) {
+    Vector<t_complex> Q_local(2 * flatMax);
+
+    // Get the IncLocal matrices
+    // These correspond directly to the Beta*a in Stout2002 Eq. 10 as
+    // they are already translated.
+    // we are in the SH case -> get the local sources from the geometry
+    if(result_FF)
+      geometry->getSourceLocal(i, incWave, result_FF->internal_coef.data(), nMax, Q_local.data());
+    // we are in the FF case -> get the incoming excitation from the geometry
+    else
+      incWave->getIncLocal(geometry->objects[i].vR, Q_local.data(), nMax);
+
+    // Push Q_local into Q (direct equivalence)
+    Q.segment(i * 2 * flatMax, 2 * flatMax) = Q_local;
+
+    for(size_t j = 0; j < geometry->objects.size(); j++)
+      if(i == j)
+        S.block(i * 2 * flatMax, i * 2 * flatMax, 2 * flatMax, 2 * flatMax) =
+            Matrix<>::Identity(2 * flatMax, 2 * flatMax);
+      else {
+        // Build the T_AB matrix (non-regular corresponding to alpha(i,j))
+        Coupling const AB(geometry->objects[i].vR - geometry->objects[j].vR, incWave->waveK, nMax);
+
+        T_AB.topLeftCorner(flatMax, flatMax) = AB.diagonal.transpose();
+        T_AB.bottomRightCorner(flatMax, flatMax) = AB.diagonal.transpose();
+        T_AB.topRightCorner(flatMax, flatMax) = AB.offdiagonal.transpose();
+        T_AB.bottomLeftCorner(flatMax, flatMax) = AB.offdiagonal.transpose();
+
+        S.block(i * 2 * flatMax, j * 2 * flatMax, 2 * flatMax, 2 * flatMax)
+          = -T_AB * geometry->getTLocal(incWave->omega, j, nMax);
+      }
+  }
+}
+
+int Solver::populateIndirectOld() {
+  using namespace optimet;
   CompoundIterator p;
   CompoundIterator q;
 
@@ -251,10 +294,8 @@ int Solver::populateIndirect() {
     T_AB[p] = new std::complex<double>[2 * p.max(nMax)];
   }
 
-  if(flagSH) // if SH simulation, set the local source first
-  {
+  if(result_FF) // if SH simulation, set the local source first
     geometry->setSourcesSingle(incWave, result_FF->internal_coef.data(), nMax);
-  }
 
   for(size_t i = 0; i < geometry->objects.size(); i++) {
     int const pMax = p.max(nMax);
@@ -265,15 +306,12 @@ int Solver::populateIndirect() {
     // Get the IncLocal matrices
     // These correspond directly to the Beta*a in Stout2002 Eq. 10 as
     // they are already translated.
-    if(flagSH) // we are in the SH case -> get the local sources from the
-               // geometry
-    {
+    // we are in the SH case -> get the local sources from the geometry
+    if(result_FF)
       geometry->getSourceLocal(i, incWave, result_FF->internal_coef.data(), nMax, Q_local.data());
-    } else // we are in the FF case -> get the incoming excitation from the
-           // geometry
-    {
+    // we are in the FF case -> get the incoming excitation from the geometry
+    else
       incWave->getIncLocal(geometry->objects[i].vR, Q_local.data(), nMax);
-    }
 
     // Push Q_local into Q (direct equivalence) (NOTE: j is unused at this
     // point)
@@ -326,12 +364,13 @@ int Solver::populateIndirect() {
   return 0;
 }
 
+
 void Solver::update(Geometry *geometry_, Excitation const *incWave_, long nMax_) {
   geometry = geometry_;
   incWave = incWave_;
   nMax = nMax_;
 
-  result_FF = NULL;
+  result_FF = nullptr;
 
   populate();
 }

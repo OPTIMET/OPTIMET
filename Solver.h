@@ -42,8 +42,8 @@ public:
    * @param nMax_ the maximum value for the n iterator.
    * @return 0 if successful, 1 otherwise.
    */
-  Solver &SH(bool sh);
-  bool SH() const { return flagSH; }
+  Solver &SH(Result *r);
+  bool SH() const { return result_FF != nullptr; }
 
   /**
    * Solve the scattered and internal coefficients using the method specified by
@@ -82,7 +82,12 @@ protected:
    * Populate the S and Q matrices using the Indirect (Stout2002) method.
    * @return 0 if succesful, 1 otherwise.
    */
-  int populateIndirect();
+  void populateIndirect();
+  /**
+   * Populate the S and Q matrices using the Indirect (Stout2002) method.
+   * @return 0 if succesful, 1 otherwise.
+   */
+  int populateIndirectOld();
 
   /**
    * Solve the S*X=Q equation using the Direct (Mischenko1996) method.
@@ -125,7 +130,6 @@ protected:
 private:
   Geometry *geometry;        /**< Pointer to the geometry. */
   Excitation const *incWave; /**< Pointer to the incoming excitation. */
-  bool flagSH;               /**< Specifies if we have switched to the SH case. */
   long nMax;                 /**< The maximum n order. */
   Result *result_FF;         /**< The fundamental frequency results. */
   int solverMethod;          /**< Solver method: Direct = Mischenko1996, Indirect =
