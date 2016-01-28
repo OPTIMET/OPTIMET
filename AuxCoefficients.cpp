@@ -204,6 +204,10 @@ AuxCoefficients::VIGdVIG(t_uint nMax, t_int m, const Spherical<t_real> &R) {
     // obtain all other values in VIG_d[i] from recursive relationship
     //   - Based on 'n_min' value and 'n' value; total recursive steps == n -
     //   n_min
+    for (t_uint s = n_min; s < nMax; ++s)
+      Wigner[s + 1] = ((2 * s + 1) * vig_x * Wigner[s] -
+                       std::sqrt(s * s - m * m) * Wigner[s - 1]) /
+                      std::sqrt((s + 1) * (s + 1) - m * m);
     for (t_uint i = n_min + 1; i <= nMax + 1; ++i) {
       // evaluate from terms above
       const t_real d_temp = ((2 * i - 1) * vig_x * Wigner[i - 1] -
@@ -212,8 +216,8 @@ AuxCoefficients::VIGdVIG(t_uint nMax, t_int m, const Spherical<t_real> &R) {
                                  Wigner[i - 2]) /
                             std::sqrt(i * i - static_cast<t_uint>(m * m));
       // populate VIG_d[i] array
-      if (i <= nMax)
-        Wigner[i] = d_temp;
+      // if (i <= nMax)
+      // Wigner[i] = d_temp;
       // d_vig_d for the previous from current : d_VIG_d[i-1] = ...*VIG_d[i-2] +
       // ...*VIG_d[i-1] + ...*VIG_d[i]        - eqn(B.26)
       dWigner[i - 1] =
