@@ -2,6 +2,7 @@
 #define GEOMETRY_H_
 
 #include <vector>
+#include "Types.h"
 #include "Scatterer.h"
 #include "Excitation.h"
 
@@ -76,16 +77,15 @@ public:
    * @param T_local_ the return value as the local T_j scattering matrix.
    * @return 0 if successful, 1 otherwise.
    */
-  int getTLocal(double omega_, int objectIndex_, int nMax_,
-                std::complex<double> **T_local_);
+  optimet::Matrix<optimet::t_complex>
+  getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet::t_uint nMax_);
+  int getTLocal(double omega_, int objectIndex_, int nMax_, optimet::t_complex **T_local_);
 
-  int getIaux(double omega_, int objectIndex_, int nMax_,
-              std::complex<double> *I_aux_);
+  int getIaux(double omega_, int objectIndex_, int nMax_, std::complex<double> *I_aux_);
 
   int getCabsAux(double omega_, int objectIndex_, int nMax_, double *Cabs_aux_);
 
-  int getNLSources(double omega_, int objectIndex_, int nMax_,
-                   std::complex<double> *sourceU,
+  int getNLSources(double omega_, int objectIndex_, int nMax_, std::complex<double> *sourceU,
                    std::complex<double> *sourceV) const;
 
   /**
@@ -117,8 +117,8 @@ public:
                      std::complex<double> *internalCoef_FF_, int nMax_,
                      std::complex<double> *Q_SH_local_) const;
 
-  int setSourcesSingle(Excitation const *incWave_,
-                       std::complex<double> *internalCoef_FF_, int nMax_);
+  int setSourcesSingle(Excitation const *incWave_, std::complex<double> *internalCoef_FF_,
+                       int nMax_);
 
   /**
    * Updates the Geometry object to a new Excitation.
