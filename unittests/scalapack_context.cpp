@@ -45,8 +45,10 @@ void check_nxm(t_uint n, t_uint m) {
     CHECK(context.rows() == n);
     CHECK(context.cols() == m);
     // Fortran is column major
-    CHECK(context.col() == rank / n);
-    CHECK(context.row() == rank % n);
+    CAPTURE(rank);
+    CAPTURE(m);
+    CHECK(context.col() == rank % m);
+    CHECK(context.row() == rank / m);
   }
 }
 
@@ -56,4 +58,38 @@ TEST_CASE("Create different blacs context") {
   check_nxm(1, 2);
   check_nxm(2, 2);
   check_nxm(3, 2);
+}
+
+void check_matrix(Matrix<t_uint> const &mat) {
+  scalapack::Context context(mat);
+  auto const in_mat = std::find(mat.data(), mat.data() + mat.size(), scalapack::global_rank());
+  CHECK(context.is_valid() == (in_mat != mat.data() + mat.size()));
+  if(not context.is_valid())
+    return;
+  REQUIRE(context.is_valid());
+  REQUIRE(context.rows() == mat.rows());
+  REQUIRE(context.cols() == mat.cols());
+  CHECK(mat(context.row(), context.col()) == scalapack::global_rank());
+}
+
+TEST_CASE("Explicit organisation") {
+  Matrix<t_uint> mat;
+  SECTION("1x2") {
+    if(scalapack::global_size() < 2)
+      return;
+    mat.resize(1, 2);
+    mat << 1, 0;
+    check_matrix(mat);
+    if(scalapack::global_size() < 3)
+      return;
+    mat << 1, 2;
+    check_matrix(mat);
+  }
+  SECTION("At least 4") {
+    if(scalapack::global_size() < 4)
+      return;
+    mat.resize(2, 2);
+    mat << 1, 2, 0, 3;
+    check_matrix(mat);
+  }
 }

@@ -4,6 +4,7 @@
 
 #ifdef OPTIMET_MPI
 #include <memory>
+#include "scalapack/InitExit.h"
 
 namespace optimet {
 namespace scalapack {
@@ -27,6 +28,14 @@ class Context {
 public:
   //! Constructs a context
   Context(t_uint rows, t_uint cols);
+  //! Constructs using the default system context
+  Context() : Context(1, global_size()) {};
+  //! Constructs a context
+  Context(Sizes const &c) : Context(c.rows, c.cols) {}
+  //! Constructs a context from a gridmap
+  Context(Context const &system, Matrix<t_uint> const & gridmap);
+  //! Constructs a context from a gridmap
+  Context(Matrix<t_uint> const & gridmap) : Context(Context(), gridmap) {};
 
   virtual ~Context(){};
 
@@ -37,7 +46,7 @@ public:
   //! The number of cols
   decltype(Impl::cols) cols() const { return is_valid() ? impl->cols : 0; }
   //! Total number of processes
-  t_uint size() const { return is_valid() ? static_cast<t_uint>(cols() * rows()): 0; }
+  t_uint size() const { return is_valid() ? static_cast<t_uint>(cols() * rows()) : 0; }
   //! Index of this row
   decltype(Impl::row) row() const { return is_valid() ? impl->row : 0; }
   //! Index of this row
@@ -56,6 +65,9 @@ private:
 
   //! Deletes a blacs context
   static void delete_context(Impl *impl);
+  //! \brief Deletes the default system blacs context
+  //! \details Does not gridexit the context
+  static void delete_default_system_context(Impl *impl);
 };
 
 } /* scalapack */

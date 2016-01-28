@@ -4,18 +4,10 @@
 #include <array>
 #include "Types.h"
 #include "scalapack/Context.h"
+#include "scalapack/InitExit.h"
 
 namespace optimet {
 namespace scalapack {
-
-//! Rows and Colums of the local blocks
-struct Sizes {
-  t_uint rows, cols;
-};
-//! Indices of the process starting the distribution
-struct Index {
-  t_uint row, col;
-};
 
 #ifdef OPTIMET_MPI
 //! Wrapper around scalapack distributed matrix and eigen

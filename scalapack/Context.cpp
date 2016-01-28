@@ -1,4 +1,5 @@
 #include <exception>
+#include <iostream>
 #include "scalapack/Context.h"
 #include "scalapack/InitExit.h"
 #include "scalapack/Blacs.h"
@@ -12,6 +13,11 @@ void Context::delete_context(Context::Impl *const impl) {
       OPTIMET_FC_GLOBAL_(blacs_gridexit, BLACS_GRIDEXIT)(&impl->context);
     decrement_ref();
   }
+  delete impl;
+}
+void Context::delete_default_system_context(Context::Impl *const impl) {
+  if(impl->row >= 0 and impl->col >= 0)
+    decrement_ref();
   delete impl;
 }
 
@@ -39,7 +45,28 @@ Context::Context(t_uint rows, t_uint cols) : impl(nullptr) {
   Impl const data{context, static_cast<t_int>(nrows), static_cast<t_int>(ncols),
                   static_cast<t_int>(this_row), static_cast<t_int>(this_col)};
   impl = std::shared_ptr<Impl const>(new Impl(data), &Context::delete_context);
-  if(impl and this_row >= 0 and this_row <= 0)
+  if(impl and this_row >= 0 and this_col >= 0)
+    increment_ref();
+}
+
+Context::Context(Context const &system, Matrix<t_uint> const &gridmap) : impl(nullptr) {
+  if(not system.is_valid()) {
+    impl = std::shared_ptr<Impl const>(new Impl{-1, 0, 0, -1, -1}, &Context::delete_context);
+    return;
+  }
+  // convert to a type fortran can deal with
+  Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> procs = gridmap.cast<t_int>();
+  int context = *system, ldau = procs.rows(), nrows = procs.rows(), ncols = procs.cols();
+  // Creates the context
+  OPTIMET_FC_GLOBAL_(blacs_gridmap, BLACS_GRIDMAP)(&context, procs.data(), &ldau, &nrows, &ncols);
+  // Creates the matrix
+  int this_row, this_col;
+  OPTIMET_FC_GLOBAL_(
+      blacs_gridinfo, BLACS_GRIDINFO)(&context, &nrows, &ncols, &this_row, &this_col);
+  Impl const data{context, static_cast<t_int>(nrows), static_cast<t_int>(ncols),
+                  static_cast<t_int>(this_row), static_cast<t_int>(this_col)};
+  impl = std::shared_ptr<Impl const>(new Impl(data), &Context::delete_context);
+  if(impl and this_row >= 0 and this_col >= 0)
     increment_ref();
 }
 
