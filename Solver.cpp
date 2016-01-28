@@ -10,6 +10,7 @@
 #include "Aliases.h"
 #include "mpi/Communicator.h"
 #include "scalapack/Matrix.h"
+#include "scalapack/LinearSystemSolver.h"
 #include <Eigen/Dense>
 
 namespace optimet {
@@ -163,14 +164,36 @@ void Solver::update(Geometry *geometry_, Excitation const *incWave_, long nMax_)
 void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b,
                                Vector<t_complex> &x) const {
 #ifdef OPTIMET_MPI
-// scalapack::Sizes const size{static_cast<t_uint>(A.rows()), static_cast<t_uint>(A.cols())};
-// scalapack::Sizes const block{parallel_params().block_size, parallel_params().block_size};
-// scalapack::Sizes const grid = parallel_params().grid.rows * parallel_params().grid.cols != 0 ?
-//   parallel_params().grid: scalapack::squarest_largest_grid(communicator().size());
-// scalapack::Matrix<t_complex> Aserial({1, 1}, size, block);
-// scalapack::Matrix<t_complex> bserial({1, 1}, size, block);
-// Aserial.local() = A;
-// bserial.local() = b;
+  if(scalapack::global_size() > 1) {
+    throw std::runtime_error("Not tested yet");
+    // scalapack parameters: matrix size, grid of processors, block size
+    scalapack::Sizes const size{static_cast<t_uint>(A.rows()), static_cast<t_uint>(A.cols())};
+    scalapack::Sizes const grid = parallel_params().grid.rows * parallel_params().grid.cols != 0 ?
+      parallel_params().grid: scalapack::squarest_largest_grid(communicator().size());
+    scalapack::Sizes const blocks{parallel_params().block_size, parallel_params().block_size};
+
+    // "serial" version to distribute from A to root.
+    scalapack::Matrix<t_complex> Aserial({1, 1}, size, blocks);
+    scalapack::Matrix<t_complex> bserial(Aserial.context(), size, blocks);
+    if(Aserial.context().is_valid()) {
+      Aserial.local().swap(A);
+      bserial.local().swap(b);
+    }
+    // Transfer to grid
+    auto Aparallel = Aserial.transfer_to(grid, blocks);
+    auto bparallel = bserial.transfer_to(Aparallel.context(), blocks);
+
+    // Now the actual work
+    auto Xparallel = scalapack::general_linear_system(Aparallel, bparallel);
+
+    // And transfer back
+    Aparallel.transfer_to(Aserial);
+    bparallel.transfer_to(bserial);
+    if(Aserial.context().is_valid()) {
+      Aserial.local().swap(A);
+      bserial.local().swap(b);
+    }
+  } else
 #endif
   x = A.colPivHouseholderQr().solve(b);
 }
