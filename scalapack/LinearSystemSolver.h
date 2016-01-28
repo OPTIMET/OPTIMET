@@ -1,8 +1,10 @@
 #ifndef OPTIMET_SCALAPACK_LINEAR_SYSTEM_SOLVER_H_
 #define OPTIMET_SCALAPACK_LINEAR_SYSTEM_SOLVER_H_
 
-#include <tuple>
 #include "Types.h"
+#ifdef OPTIMET_MPI
+
+#include <tuple>
 #include "scalapack/Matrix.h"
 
 namespace optimet {
@@ -20,4 +22,5 @@ general_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b);
 }
 
 # include "scalapack/LinearSystemSolver.hpp"
+#endif
 #endif
