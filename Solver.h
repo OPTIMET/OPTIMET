@@ -91,13 +91,6 @@ protected:
   int populateIndirectOld();
 
   /**
-   * Solve the S*X=Q equation using the Direct (Mischenko1996) method.
-   * @param X_sca_ the return vector for the scattered coefficients.
-   * @return 0 if successful, 1 otherwise.
-   */
-  int solveScatteredDirect(Vector<t_complex> &X_sca_);
-
-  /**
    * Solve the S*X=Q equation using the Indirect (Stout2002) method.
    * @param X_sca_ the return vector for the scattered coefficients.
    * @return 0 if successful, 1 otherwise.

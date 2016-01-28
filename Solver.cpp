@@ -176,21 +176,12 @@ int Solver::populateDirectOld() {
 }
 
 int Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) {
-  if(solverMethod == O3DSolverDirect)
-    solveScatteredDirect(X_sca_);
-  else if(solverMethod == O3DSolverIndirect)
+  if(solverMethod == O3DSolverIndirect)
     solveScatteredIndirect(X_sca_);
   else // Default
-    solveScatteredDirect(X_sca_);
+    solveLinearSystem(S, Q, X_sca_);
 
   solveInternal(X_sca_, X_int_);
-
-  return 0;
-}
-
-int Solver::solveScatteredDirect(Vector<t_complex> &X_sca_) {
-  solveLinearSystem(S, Q, X_sca_);
-
   return 0;
 }
 
