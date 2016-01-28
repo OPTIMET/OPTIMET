@@ -158,72 +158,41 @@ AuxCoefficients::VIGdVIG(t_uint nMax, t_int m, const Spherical<t_real> &R) {
   // wigner function auxiliary variable   : x=cos(the)
   const t_real vig_x = std::cos(vig_the); // calculate in radians
 
-  // III - calculate VIG_d & d_VIG_d
-  // III.1 - check for singularity cases - i.e (m==0)
-  if (m == 0) {
-    // obtain the readily availble VIG_d[n_min] value
-    Wigner[0] = 1.0; // by definition
-    // d_vig_d for the previous from current : d_VIG_d[i] = 0.*VIG_d[i-1] +
-    // 0.*VIG_d[i] + ...*VIG_d[i+1]    - eqn(B.26)
-    dWigner[0] = 0.0; // == zero by definition
-    // obtain first term in recursive relationship eq(B.22) - from special case
-    Wigner[1] = vig_x;
-    // obtain all other values in VIG_d[i] from recursive relationship
-    for (t_uint i = 2; i <= nMax + 1; ++i) {
-      // evaluate from above
-      // vig_d        : VIG_d[i] = ...*VIG_d[i-1] + ...*VIG_d[i-2] - eqn(B.22)
-      const t_real d_temp =
-          ((2 * i - 1) * vig_x * Wigner[i - 1] - (i - 1) * Wigner[i - 2]) / i;
+  // obtain the readily availble VIG_d[n_min] value
+  using boost::math::factorial;
+  Wigner[n_min] =
+      std::pow(2.0, -m) *
+      (std::sqrt(factorial<t_real>(2 * static_cast<unsigned int>(m))) /
+       factorial<t_real>(static_cast<unsigned int>(m))) *
+      std::pow(1.0 - vig_x, m / 2.0) *
+      std::pow(1.0 + vig_x, m / 2.0); // by definition
 
-      if (i <= nMax)
-        Wigner[i] = d_temp;
-      // d_vig_d      : d_VIG_d[i-1] = ...*VIG_d[i-2] + ...*VIG_d[i-1] +
-      // ...*VIG_d[i]         - eqn(B.26)
-      dWigner[i - 1] =
-          ((i * i - i) * d_temp / (2 * i - 1) -
-           i * (i * i - 2 * i + 1) * Wigner[i - 2] / (2 * i * i - 3 * i + 1)) /
-          std::sin(vig_the);
-    }
-  }
-
-  // III.2 - else if (m!=0), no special case
-  else {
-    // obtain the readily availble VIG_d[n_min] value
-    using boost::math::factorial;
-    Wigner[n_min] =
-        std::pow(2.0, -m) *
-        (std::sqrt(factorial<t_real>(2 * static_cast<unsigned int>(m))) /
-         factorial<t_real>(static_cast<unsigned int>(m))) *
-        std::pow(1.0 - vig_x, m / 2.0) *
-        std::pow(1.0 + vig_x, m / 2.0); // by definition
-
-    // obtain all other values in VIG_d[i] from recursive relationship
-    //   - Based on 'n_min' value and 'n' value; total recursive steps == n -
-    //   n_min
-    t_uint s;
-    for (s = n_min; s < nMax; ++s) {
-      // Equation B.22
-      Wigner[s + 1] = ((2 * s + 1) * vig_x * Wigner[s] -
-                       std::sqrt(s * s - m * m) * Wigner[s - 1]) /
-                      std::sqrt((s + 1) * (s + 1) - m * m);
-      // Equation B.26
-      dWigner[s] =
-          (((s * std::sqrt((s + 1) * (s + 1) - m * m) * Wigner[s + 1]) /
-            (2 * s + 1)) -
-           (((s + 1) * std::sqrt(s * s * (s * s - m * m)) * Wigner[s - 1]) /
-            (s * (2 * s + 1)))) /
-          std::sin(vig_the);
-    }
-    // Calculate the final term in the dWigner recursion
-    const double Wn_max = ((2 * s + 1) * vig_x * Wigner[s] -
-                           std::sqrt(s * s - m * m) * Wigner[s - 1]) /
-                          std::sqrt((s + 1) * (s + 1) - m * m);
+  // obtain all other values in VIG_d[i] from recursive relationship
+  //   - Based on 'n_min' value and 'n' value; total recursive steps == n -
+  //   n_min
+  t_uint s;
+  for (s = n_min; s < nMax; ++s) {
+    // Equation B.22
+    Wigner[s + 1] = ((2 * s + 1) * vig_x * Wigner[s] -
+                     std::sqrt(s * s - m * m) * Wigner[s - 1]) /
+                    std::sqrt((s + 1) * (s + 1) - m * m);
+    // Equation B.26
     dWigner[s] =
-        (((s * std::sqrt((s + 1) * (s + 1) - m * m) * Wn_max) / (2 * s + 1)) -
+        (((s * std::sqrt((s + 1) * (s + 1) - m * m) * Wigner[s + 1]) /
+          (2 * s + 1)) -
          (((s + 1) * std::sqrt(s * s * (s * s - m * m)) * Wigner[s - 1]) /
           (s * (2 * s + 1)))) /
         std::sin(vig_the);
   }
+  // Calculate the final term in the dWigner recursion
+  const double Wn_max = ((2 * s + 1) * vig_x * Wigner[s] -
+                         std::sqrt(s * s - m * m) * Wigner[s - 1]) /
+                        std::sqrt((s + 1) * (s + 1) - m * m);
+  dWigner[s] =
+      (((s * std::sqrt((s + 1) * (s + 1) - m * m) * Wn_max) / (2 * s + 1)) -
+       (((s + 1) * std::sqrt(s * s * (s * s - m * m)) * Wigner[s - 1]) /
+        (s * (2 * s + 1)))) /
+      std::sin(vig_the);
 
   // IV - if (m<0) : apply symmetry property eq(B.7) to eqs(B.22-B.24)
   if (check_m_negative) {
