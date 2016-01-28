@@ -91,11 +91,13 @@ protected:
   int populateIndirectOld();
 
   /**
-   * Solve the S*X=Q equation using the Indirect (Stout2002) method.
+   * Converts back to the scattered result from the indirect calculation
    * @param X_sca_ the return vector for the scattered coefficients.
    * @return 0 if successful, 1 otherwise.
    */
-  int solveScatteredIndirect(Vector<t_complex> &X_sca_);
+  int convertIndirectOld(Vector<t_complex> &X_sca_);
+  //! Converts back to the scattered result from the indirect calculation
+  Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered);
 
   /**
    * Solve the internal coefficients.

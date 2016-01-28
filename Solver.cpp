@@ -15,8 +15,8 @@
 namespace optimet {
 Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long nMax,
                mpi::Communicator const &c)
-    : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr),
-      solverMethod(method), communicator_(c) {
+    : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
+      communicator_(c) {
   auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
   S.resize(2 * flatMax * geometry->objects.size(), 2 * flatMax * geometry->objects.size());
   Q.resize(2 * flatMax * geometry->objects.size());
@@ -40,7 +40,7 @@ void Solver::populateDirect() {
   // Also local matrix Q_local to be added to S.
 
   auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
-  Matrix<t_complex> T_AB(2 * flatMax, 2*flatMax);
+  Matrix<t_complex> T_AB(2 * flatMax, 2 * flatMax);
 
   if(result_FF) // if SH simulation, set the local source first
     geometry->setSourcesSingle(incWave, result_FF->internal_coef.data(), nMax);
@@ -50,7 +50,7 @@ void Solver::populateDirect() {
 
     // Get the T and IncLocal matrices first
     auto const T = geometry->getTLocal(incWave->omega, i, nMax);
-     // we are in the SH case -> get the local sources from the geometry
+    // we are in the SH case -> get the local sources from the geometry
     if(result_FF)
       geometry->getSourceLocal(i, incWave, result_FF->internal_coef.data(), nMax, Q_local.data());
     // we are in the FF case -> get the incoming excitation from the geometry
@@ -60,8 +60,8 @@ void Solver::populateDirect() {
 
     for(size_t j = 0; j < geometry->objects.size(); j++)
       if(i == j)
-        S.block(i * 2 * flatMax, i * 2 * flatMax, 2 * flatMax, 2 * flatMax)
-          = Matrix<t_complex>::Identity(2 * flatMax, 2 * flatMax);
+        S.block(i * 2 * flatMax, i * 2 * flatMax, 2 * flatMax, 2 * flatMax) =
+            Matrix<t_complex>::Identity(2 * flatMax, 2 * flatMax);
       else {
         // Build the T_AB matrix
         Coupling const AB(geometry->objects[i].vR - geometry->objects[j].vR, incWave->waveK, nMax);
@@ -110,7 +110,7 @@ int Solver::populateDirectOld() {
     // Get the T and IncLocal matrices first
     geometry->getTLocal(incWave->omega, i, nMax, T);
     if(result_FF) // we are in the SH case -> get the local sources from the
-               // geometry
+                  // geometry
     {
       geometry->getSourceLocal(i, incWave, result_FF->internal_coef.data(), nMax, Q_local);
     } else // we are in the FF case -> get the incoming excitation from the
@@ -179,13 +179,13 @@ int Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) {
 
   solveLinearSystem(S, Q, X_sca_);
   if(solverMethod == O3DSolverIndirect)
-    solveScatteredIndirect(X_sca_);
+    X_sca_ = convertIndirect(X_sca_);
 
   solveInternal(X_sca_, X_int_);
   return 0;
 }
 
-int Solver::solveScatteredIndirect(Vector<t_complex> &X_sca_) {
+int Solver::convertIndirectOld(Vector<t_complex> &X_sca_) {
   CompoundIterator p;
 
   Vector<t_complex> X_sca_local = X_sca_;
@@ -229,6 +229,15 @@ int Solver::solveScatteredIndirect(Vector<t_complex> &X_sca_) {
   return 0;
 }
 
+Vector<t_complex> Solver::convertIndirect(Vector<t_complex> const &scattered) {
+  auto const N = 2 * (HarmonicsIterator::max_flat(nMax) - 1);
+  Vector<t_complex> result(N * geometry->objects.size());
+  for(size_t i = 0; i < geometry->objects.size(); i++)
+    result.segment(i * N, N) =
+        geometry->getTLocal(incWave->omega, i, nMax) * scattered.segment(i * N, N);
+  return result;
+}
+
 Solver &Solver::SH(Result *r) {
 
   if(r != result_FF) {
@@ -262,7 +271,7 @@ int Solver::solveInternal(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) 
 
 void Solver::populateIndirect() {
   auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
-  Matrix<t_complex> T_AB(2 * flatMax, 2*flatMax);
+  Matrix<t_complex> T_AB(2 * flatMax, 2 * flatMax);
 
   if(result_FF) // if SH simulation, set the local source first
     geometry->setSourcesSingle(incWave, result_FF->internal_coef.data(), nMax);
@@ -296,8 +305,8 @@ void Solver::populateIndirect() {
         T_AB.topRightCorner(flatMax, flatMax) = AB.offdiagonal.transpose();
         T_AB.bottomLeftCorner(flatMax, flatMax) = AB.offdiagonal.transpose();
 
-        S.block(i * 2 * flatMax, j * 2 * flatMax, 2 * flatMax, 2 * flatMax)
-          = -T_AB * geometry->getTLocal(incWave->omega, j, nMax);
+        S.block(i * 2 * flatMax, j * 2 * flatMax, 2 * flatMax, 2 * flatMax) =
+            -T_AB * geometry->getTLocal(incWave->omega, j, nMax);
       }
   }
 }
@@ -392,7 +401,6 @@ int Solver::populateIndirectOld() {
 
   return 0;
 }
-
 
 void Solver::update(Geometry *geometry_, Excitation const *incWave_, long nMax_) {
   geometry = geometry_;
