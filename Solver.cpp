@@ -176,10 +176,10 @@ int Solver::populateDirectOld() {
 }
 
 int Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) {
+
+  solveLinearSystem(S, Q, X_sca_);
   if(solverMethod == O3DSolverIndirect)
     solveScatteredIndirect(X_sca_);
-  else // Default
-    solveLinearSystem(S, Q, X_sca_);
 
   solveInternal(X_sca_, X_int_);
   return 0;
@@ -188,7 +188,7 @@ int Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) {
 int Solver::solveScatteredIndirect(Vector<t_complex> &X_sca_) {
   CompoundIterator p;
 
-  Vector<t_complex> X_sca_local(2 * p.max(nMax) * geometry->objects.size());
+  Vector<t_complex> X_sca_local = X_sca_;
   std::complex<double> *X_sca_part =
       new std::complex<double>[2 * p.max(nMax) * geometry->objects.size()];
   std::complex<double> *X_sca_part_fin =
@@ -198,10 +198,6 @@ int Solver::solveScatteredIndirect(Vector<t_complex> &X_sca_) {
   for(p = 0; p < (int)(2 * p.max(nMax)); p++) {
     T[p] = new std::complex<double>[2 * p.max(nMax)];
   }
-
-  // Solve the equation, here Q and S correspond to Eq. 10 in (Stout2002). Store
-  // result in X_sca_local
-  solveLinearSystem(S, Q, X_sca_local);
 
   for(size_t i = 0; i < geometry->objects.size(); i++) {
     // Get the local scattering matrix for object i
