@@ -37,6 +37,9 @@ list(REMOVE_ITEM SRC main.cpp)
 
 # add a library that can be linked against in unittests as well
 add_library(optilib STATIC ${SRC})
+if(TARGET Boost::boost)
+  target_link_libraries(optilib Boost::boost)
+endif()
 add_dependencies(optilib lookup_dependencies)
 set(library_dependencies ${GSL_LIBRARIES} ${BOOST_LIBRARIES} ${HDF5_LIBRARIES} ${F2C_LIBRARIES})
 
