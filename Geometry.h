@@ -79,7 +79,6 @@ public:
    */
   optimet::Matrix<optimet::t_complex>
   getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet::t_uint nMax_);
-  int getTLocal(double omega_, int objectIndex_, int nMax_, optimet::t_complex **T_local_);
 
   int getIaux(double omega_, int objectIndex_, int nMax_, std::complex<double> *I_aux_);
 

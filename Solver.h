@@ -65,48 +65,21 @@ public:
   void update() { populate(); }
 
 protected:
-  /**
-   * Populate the S and Q matrices using the solverMethod option.
-    @return 0 if successful, 1 otherwise.
-   */
-  int populate();
+  //! Populate the S and Q matrices using the solverMethod option
+  void populate();
 
-  /**
-   * Populate the S and Q matrices using the Direct (Mischenko1996) method.
-   * Default to Direct (Mischenko1996).
-   * @return 0 if succesful, 1 otherwise.
-   */
+  //! Populate the S and Q matrices using the Direct (Mischenko1996) method.
   void populateDirect();
-  int populateDirectOld();
 
   /**
    * Populate the S and Q matrices using the Indirect (Stout2002) method.
    * @return 0 if succesful, 1 otherwise.
    */
   void populateIndirect();
-  /**
-   * Populate the S and Q matrices using the Indirect (Stout2002) method.
-   * @return 0 if succesful, 1 otherwise.
-   */
-  int populateIndirectOld();
 
-  /**
-   * Converts back to the scattered result from the indirect calculation
-   * @param X_sca_ the return vector for the scattered coefficients.
-   * @return 0 if successful, 1 otherwise.
-   */
-  int convertIndirectOld(Vector<t_complex> &X_sca_);
   //! Converts back to the scattered result from the indirect calculation
   Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered);
 
-  /**
-   * Solve the internal coefficients.
-   * @warning Must be called AFTER the solveScattered.
-   * @param X_sca_ the input vector for the scattered coefficients.
-   * @param X_int_ the return vector for the internal coefficients.
-   * @return 0 if successful, 1 otherwise.
-   */
-  int solveInternal(Vector<t_complex> const &X_sca_, Vector<t_complex> &X_int_);
   //! Solves for the internal coefficients.
   Vector<t_complex> solveInternal(Vector<t_complex> const &X_sca_);
 
