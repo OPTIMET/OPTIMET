@@ -34,7 +34,49 @@ int Solver::populate() {
   return 0;
 }
 
-int Solver::populateDirect() {
+void Solver::populateDirect() {
+  // Local matrices for storing T, T_fin = -T*A and T_AB = AB to be multiplied
+  // by BLAS.
+  // Also local matrix Q_local to be added to S.
+
+  auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
+  Matrix<t_complex> T_AB(2 * flatMax, 2*flatMax);
+
+  if(result_FF) // if SH simulation, set the local source first
+    geometry->setSourcesSingle(incWave, result_FF->internal_coef.data(), nMax);
+
+  for(size_t i = 0; i < geometry->objects.size(); i++) {
+    Vector<t_complex> Q_local(2 * flatMax);
+
+    // Get the T and IncLocal matrices first
+    auto const T = geometry->getTLocal(incWave->omega, i, nMax);
+     // we are in the SH case -> get the local sources from the geometry
+    if(result_FF)
+      geometry->getSourceLocal(i, incWave, result_FF->internal_coef.data(), nMax, Q_local.data());
+    // we are in the FF case -> get the incoming excitation from the geometry
+    else
+      incWave->getIncLocal(geometry->objects[i].vR, Q_local.data(), nMax);
+    Q.segment(i * 2 * flatMax, 2 * flatMax) = T * Q_local;
+
+    for(size_t j = 0; j < geometry->objects.size(); j++)
+      if(i == j)
+        S.block(i * 2 * flatMax, i * 2 * flatMax, 2 * flatMax, 2 * flatMax)
+          = Matrix<t_complex>::Identity(2 * flatMax, 2 * flatMax);
+      else {
+        // Build the T_AB matrix
+        Coupling const AB(geometry->objects[i].vR - geometry->objects[j].vR, incWave->waveK, nMax);
+
+        T_AB.topLeftCorner(flatMax, flatMax) = AB.diagonal.transpose();
+        T_AB.bottomRightCorner(flatMax, flatMax) = AB.diagonal.transpose();
+        T_AB.topRightCorner(flatMax, flatMax) = AB.offdiagonal.transpose();
+        T_AB.bottomLeftCorner(flatMax, flatMax) = AB.offdiagonal.transpose();
+
+        S.block(i * 2 * flatMax, j * 2 * flatMax, 2 * flatMax, 2 * flatMax) = -T * T_AB;
+      }
+  }
+}
+
+int Solver::populateDirectOld() {
   CompoundIterator p;
   CompoundIterator q;
 

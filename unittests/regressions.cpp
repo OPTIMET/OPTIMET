@@ -55,10 +55,12 @@ class OpenedSolver: public Solver {
   public:
     using Solver::populateIndirect;
     using Solver::populateIndirectOld;
+    using Solver::populateDirect;
+    using Solver::populateDirectOld;
     using Solver::Solver;
 };
 
-TEST_CASE("Regression for populate indirect") {
+TEST_CASE("Regression for populate") {
   auto const nMax = 7;
   auto const flatMax = HarmonicsIterator::max_flat(nMax);
   Geometry geometry;
@@ -75,13 +77,27 @@ TEST_CASE("Regression for populate indirect") {
 
   OpenedSolver solver(&geometry, &excitation, O3DSolverIndirect, nMax);
 
-  solver.populateIndirectOld();
-  auto const Sold = solver.S;
-  auto const Qold = solver.Q;
-  solver.populateIndirect();
-  auto const Snew = solver.S;
-  auto const Qnew = solver.Q;
+  SECTION("Indirect") {
+    solver.populateIndirectOld();
+    auto const Sold = solver.S;
+    auto const Qold = solver.Q;
+    solver.populateIndirect();
+    auto const Snew = solver.S;
+    auto const Qnew = solver.Q;
 
-  CHECK(Snew.isApprox(Sold, 1e-12));
-  CHECK(Qnew.isApprox(Qold, 1e-12));
+    CHECK(Snew.isApprox(Sold, 1e-12));
+    CHECK(Qnew.isApprox(Qold, 1e-12));
+  }
+
+  SECTION("Direct") {
+    solver.populateDirectOld();
+    auto const Sold = solver.S;
+    auto const Qold = solver.Q;
+    solver.populateDirect();
+    auto const Snew = solver.S;
+    auto const Qnew = solver.Q;
+
+    CHECK(Snew.isApprox(Sold, 1e-12));
+    CHECK(Qnew.isApprox(Qold, 1e-12));
+  }
 }

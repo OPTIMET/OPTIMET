@@ -76,7 +76,8 @@ protected:
    * Default to Direct (Mischenko1996).
    * @return 0 if succesful, 1 otherwise.
    */
-  int populateDirect();
+  void populateDirect();
+  int populateDirectOld();
 
   /**
    * Populate the S and Q matrices using the Indirect (Stout2002) method.
