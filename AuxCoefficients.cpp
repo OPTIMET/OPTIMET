@@ -197,37 +197,32 @@ AuxCoefficients::VIGdVIG(t_uint nMax, t_int m, const Spherical<t_real> &R) {
         std::pow(1.0 - vig_x, m / 2.0) *
         std::pow(1.0 + vig_x, m / 2.0); // by definition
 
-    // d_vig_d for the previous from current : d_VIG_d[i] = 0.*VIG_d[i-1] +
-    // 0.*VIG_d[i] + ...*VIG_d[i+1]    - eqn(B.26)
-    dWigner[n_min - 1] = 0.0; // == zero by definition
-
     // obtain all other values in VIG_d[i] from recursive relationship
     //   - Based on 'n_min' value and 'n' value; total recursive steps == n -
     //   n_min
-    for (t_uint s = n_min; s < nMax; ++s)
+    t_uint s;
+    for (s = n_min; s < nMax; ++s) {
+      // Equation B.22
       Wigner[s + 1] = ((2 * s + 1) * vig_x * Wigner[s] -
                        std::sqrt(s * s - m * m) * Wigner[s - 1]) /
                       std::sqrt((s + 1) * (s + 1) - m * m);
-    for (t_uint i = n_min + 1; i <= nMax + 1; ++i) {
-      // evaluate from terms above
-      const t_real d_temp = ((2 * i - 1) * vig_x * Wigner[i - 1] -
-                             std::sqrt((i - static_cast<t_uint>(m) - 1) *
-                                       (i + static_cast<t_uint>(m) - 1)) *
-                                 Wigner[i - 2]) /
-                            std::sqrt(i * i - static_cast<t_uint>(m * m));
-      // populate VIG_d[i] array
-      // if (i <= nMax)
-      // Wigner[i] = d_temp;
-      // d_vig_d for the previous from current : d_VIG_d[i-1] = ...*VIG_d[i-2] +
-      // ...*VIG_d[i-1] + ...*VIG_d[i]        - eqn(B.26)
-      dWigner[i - 1] =
-          ((i - 1) * std::sqrt(i * i - static_cast<t_uint>(m * m)) * d_temp /
-               (2 * i - 1) -
-           i * std::sqrt((i - static_cast<t_uint>(m) - 1) *
-                         (i + static_cast<t_uint>(m) - 1)) *
-               Wigner[i - 2] / (2 * i - 1)) /
+      // Equation B.26
+      dWigner[s] =
+          (((s * std::sqrt((s + 1) * (s + 1) - m * m) * Wigner[s + 1]) /
+            (2 * s + 1)) -
+           (((s + 1) * std::sqrt(s * s * (s * s - m * m)) * Wigner[s - 1]) /
+            (s * (2 * s + 1)))) /
           std::sin(vig_the);
     }
+    // Calculate the final term in the dWigner recursion
+    const double Wn_max = ((2 * s + 1) * vig_x * Wigner[s] -
+                           std::sqrt(s * s - m * m) * Wigner[s - 1]) /
+                          std::sqrt((s + 1) * (s + 1) - m * m);
+    dWigner[s] =
+        (((s * std::sqrt((s + 1) * (s + 1) - m * m) * Wn_max) / (2 * s + 1)) -
+         (((s + 1) * std::sqrt(s * s * (s * s - m * m)) * Wigner[s - 1]) /
+          (s * (2 * s + 1)))) /
+        std::sin(vig_the);
   }
 
   // IV - if (m<0) : apply symmetry property eq(B.7) to eqs(B.22-B.24)
