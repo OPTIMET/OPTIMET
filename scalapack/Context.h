@@ -64,10 +64,10 @@ private:
   std::shared_ptr<Impl const> impl;
 
   //! Deletes a blacs context
-  static void delete_context(Impl *impl);
+  static void delete_with_finalize(Impl *impl);
   //! \brief Deletes the default system blacs context
   //! \details Does not gridexit the context
-  static void delete_default_system_context(Impl *impl);
+  static void delete_without_finalize(Impl *impl);
 };
 
 } /* scalapack */

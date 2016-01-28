@@ -60,16 +60,21 @@ TEST_CASE("Create different blacs context") {
   check_nxm(3, 2);
 }
 
-void check_matrix(Matrix<t_uint> const &mat) {
-  scalapack::Context context(mat);
+void check_matrix(scalapack::Context const &base, Matrix<t_uint> const &mat) {
+  scalapack::Context context(base, mat);
+  if(not base.is_valid())
+    CHECK(not context.is_valid());
   auto const in_mat = std::find(mat.data(), mat.data() + mat.size(), scalapack::global_rank());
-  CHECK(context.is_valid() == (in_mat != mat.data() + mat.size()));
+  CHECK(context.is_valid() == (in_mat != (mat.data() + mat.size())));
   if(not context.is_valid())
     return;
   REQUIRE(context.is_valid());
   REQUIRE(context.rows() == mat.rows());
   REQUIRE(context.cols() == mat.cols());
   CHECK(mat(context.row(), context.col()) == scalapack::global_rank());
+}
+void check_matrix(Matrix<t_uint> const &mat) {
+  check_matrix(scalapack::Context(), mat);
 }
 
 TEST_CASE("Explicit organisation") {
@@ -91,5 +96,29 @@ TEST_CASE("Explicit organisation") {
     mat.resize(2, 2);
     mat << 1, 2, 0, 3;
     check_matrix(mat);
+  }
+  SECTION("Sub-context") {
+    // checks we can use one context to create another
+    // this is more interesting if there are more than 4 procs
+    if(scalapack::global_size() < 4)
+      return;
+    mat.resize(2, 2);
+    mat << 1, 2, 0, 3;
+    scalapack::Context base(mat);
+
+    if(not base.is_valid())
+      return;
+
+    Matrix<t_uint> other;
+    other.resize(2, 1);
+    other << 1, 2;
+    scalapack::Context context(base, other);
+    bool is_valid = (scalapack::global_rank() == 0) or (scalapack::global_rank() == 2);
+    CHECK(context.is_valid() == is_valid);
+    if(context.is_valid()) {
+      mat.resize(1, mat.size());
+      CHECK(context.rows() == other.rows());
+      CHECK(context.cols() == other.cols());
+    }
   }
 }
