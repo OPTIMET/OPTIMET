@@ -59,6 +59,7 @@ class OpenedSolver: public Solver {
     using Solver::populateDirectOld;
     using Solver::convertIndirectOld;
     using Solver::convertIndirect;
+    using Solver::solveInternal;
 };
 
 TEST_CASE("Regression for populate") {
@@ -122,6 +123,31 @@ TEST_CASE("Regression for convertIndirect") {
   Vector<t_complex> Xold = Vector<t_complex>::Random(2 * flatMax * geometry.objects.size());
   auto const Xnew = solver.convertIndirect(Xold);
   solver.convertIndirectOld(Xold);
+
+  CHECK(Xnew.isApprox(Xold, 1e-12));
+}
+
+TEST_CASE("Regression for solveInternal") {
+  auto const nMax = 7;
+  auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
+  Geometry geometry;
+  geometry.pushObject({{0, 0, 0}, {0.9e0, 1.1e0}, 0.7, nMax});
+  geometry.pushObject({{1.5, 0, 0}, {0.8e0, 0.7e0}, 0.5, nMax});
+
+  auto const wavelength = 14960e-9;
+  Spherical<t_real> const vKinc{2 * constant::pi / wavelength, 90 * constant::pi / 180.0,
+                                90 * constant::pi / 180.0};
+  SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
+  Excitation excitation{0, Tools::toProjection(vKinc, Eaux), vKinc, nMax};
+  excitation.populate();
+  geometry.update(&excitation);
+
+  OpenedSolver solver(&geometry, &excitation, O3DSolverIndirect, nMax);
+
+  Vector<t_complex> const input = Vector<t_complex>::Random(2 * flatMax * geometry.objects.size());
+  Vector<t_complex> Xold = Vector<t_complex>::Random(2 * flatMax * geometry.objects.size());
+  auto const Xnew = solver.solveInternal(input);
+  solver.solveInternal(input, Xold);
 
   CHECK(Xnew.isApprox(Xold, 1e-12));
 }

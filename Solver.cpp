@@ -269,6 +269,18 @@ int Solver::solveInternal(Vector<t_complex> const &X_sca_, Vector<t_complex> &X_
   return 0;
 }
 
+Vector<t_complex> Solver::solveInternal(Vector<t_complex> const &scattered) {
+  auto const N = 2 * (HarmonicsIterator::max_flat(nMax) - 1);
+  Vector<t_complex> result(scattered.size());
+  // sets each result.segment(j * N, N) to something
+  for(size_t j = 0; j < geometry->objects.size(); j++)
+    geometry->getIaux(incWave->omega, j, nMax, result.data() + j * N);
+  // then multiply by incomming array
+  result.array() *= scattered.array();
+  return result;
+}
+
+
 void Solver::populateIndirect() {
   auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
   Matrix<t_complex> T_AB(2 * flatMax, 2 * flatMax);
