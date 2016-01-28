@@ -106,7 +106,7 @@ protected:
    * @param X_int_ the return vector for the internal coefficients.
    * @return 0 if successful, 1 otherwise.
    */
-  int solveInternal(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_);
+  int solveInternal(Vector<t_complex> const &X_sca_, Vector<t_complex> &X_int_);
 
   mpi::Communicator const &communicator() const { return communicator_; }
   Solver &communicator(mpi::Communicator const &c) {

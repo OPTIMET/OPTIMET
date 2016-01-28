@@ -248,7 +248,7 @@ Solver &Solver::SH(Result *r) {
   return *this;
 }
 
-int Solver::solveInternal(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) {
+int Solver::solveInternal(Vector<t_complex> const &X_sca_, Vector<t_complex> &X_int_) {
 
   CompoundIterator p, q;
 
