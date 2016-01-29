@@ -1,27 +1,19 @@
 #include "Solver.h"
 
+#include <iostream>
+#include <cstdlib>
 #include "CompoundIterator.h"
 #include "Tools.h"
-#include "AlgebraS.h"
 #include "Algebra.h"
 #include "constants.h"
 #include "Aliases.h"
-#include <iostream>
-#include <cstdlib>
+#include "mpi/Communicator.h"
+#include "scalapack/Matrix.h"
+#include <Eigen/Dense>
 
-Solver::Solver() : initDone(false), flagSH(false) {}
-
-Solver::Solver(Geometry *geometry_, Excitation *incWave_, int method_, long nMax_)
-    : initDone(false), flagSH(false) {
-  init(geometry_, incWave_, method_, nMax_);
-}
-
-void Solver::init(Geometry *geometry_, Excitation *incWave_, int method_, long nMax_) {
-  if(initDone) {
-    std::cerr << "Solver object initialized previously! Use update()!";
-    exit(1);
-  }
-
+Solver::Solver(Geometry *geometry_, Excitation *incWave_, int method_, long nMax_,
+               optimet::mpi::Communicator const &c)
+    : flagSH(false), communicator_(c) {
   geometry = geometry_;
   incWave = incWave_;
   nMax = nMax_;
@@ -37,15 +29,10 @@ void Solver::init(Geometry *geometry_, Excitation *incWave_, int method_, long n
 
   result_FF = NULL;
 
-  initDone = true;
+  populate();
 }
 
 int Solver::populate() {
-  if(!initDone) {
-    std::cerr << "Solver not initialized!";
-    return 1;
-  }
-
   if(solverMethod == O3DSolverDirect)
     populateDirect();
   else if(solverMethod == O3DSolverIndirect)
@@ -56,12 +43,9 @@ int Solver::populate() {
   return 0;
 }
 
+
 int Solver::populateDirect() {
   using namespace optimet;
-  if(!initDone) {
-    std::cerr << "Solver not initialized!";
-    return 1;
-  }
 
   CompoundIterator p;
   CompoundIterator q;
@@ -176,22 +160,14 @@ int Solver::solve(std::complex<double> *X_sca_, std::complex<double> *X_int_) {
 
 int Solver::solveScatteredDirect(std::complex<double> *X_sca_) {
   using namespace optimet;
-  if(!initDone) {
-    std::cerr << "Solver object not initialized!";
-    return 1;
-  }
 
-  optimet::algebra::solveMatrixVector(S, Q, X_sca_);
+  solveLinearSystem(S, Q, X_sca_);
 
   return 0;
 }
 
 int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
   using namespace optimet;
-  if(!initDone) {
-    std::cerr << "Solver object not initialized!";
-    return 1;
-  }
 
   CompoundIterator p;
 
@@ -209,7 +185,7 @@ int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
 
   // Solve the equation, here Q and S correspond to Eq. 10 in (Stout2002). Store
   // result in X_sca_local
-  optimet::algebra::solveMatrixVector(S, Q, X_sca_local);
+  solveLinearSystem(S, Q, X_sca_local);
 
   for(size_t i = 0; i < geometry->objects.size(); i++) {
     // Get the local scattering matrix for object i
@@ -243,10 +219,6 @@ int Solver::solveScatteredIndirect(std::complex<double> *X_sca_) {
 }
 
 int Solver::switchSH(Excitation *incWave_, Result *result_FF_, long nMax_) {
-  if(!initDone) {
-    std::cerr << "Solver object was not created and initialized in the FF case!";
-    return 1;
-  }
 
   incWave = incWave_;
   nMax = nMax_;
@@ -259,10 +231,6 @@ int Solver::switchSH(Excitation *incWave_, Result *result_FF_, long nMax_) {
 }
 
 int Solver::solveInternal(std::complex<double> *X_sca_, std::complex<double> *X_int_) {
-  if(!initDone) {
-    std::cerr << "Solver object not initialized!";
-    return 1;
-  }
 
   CompoundIterator p, q;
 
@@ -287,10 +255,6 @@ int Solver::solveInternal(std::complex<double> *X_sca_, std::complex<double> *X_
 
 int Solver::populateIndirect() {
   using namespace optimet;
-  if(!initDone) {
-    std::cerr << "Geometry not initialized!";
-    return 1;
-  }
 
   CompoundIterator p;
   CompoundIterator q;
@@ -394,4 +358,21 @@ void Solver::update(Geometry *geometry_, Excitation *incWave_, long nMax_) {
   result_FF = NULL;
 
   populate();
+}
+
+void Solver::solveLinearSystem(optimet::Matrix<optimet::t_complex> const &A,
+                               optimet::Vector<optimet::t_complex> const &b,
+                               optimet::t_complex *x) const {
+  using namespace optimet;
+#ifdef OPTIMET_MPI
+// scalapack::Sizes const size{static_cast<t_uint>(A.rows()), static_cast<t_uint>(A.cols())};
+// scalapack::Sizes const block{parallel_params().block_size, parallel_params().block_size};
+// scalapack::Sizes const grid = parallel_params().grid.rows * parallel_params().grid.cols != 0 ?
+//   parallel_params().grid: scalapack::squarest_largest_grid(communicator().size());
+// scalapack::Matrix<t_complex> Aserial({1, 1}, size, block);
+// scalapack::Matrix<t_complex> bserial({1, 1}, size, block);
+// Aserial.local() = A;
+// bserial.local() = b;
+#endif
+  Vector<t_complex>::Map(x, A.cols()) = A.colPivHouseholderQr().solve(b);
 }

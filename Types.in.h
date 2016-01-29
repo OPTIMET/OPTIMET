@@ -5,8 +5,9 @@
 #include <functional>
 #include <Eigen/Core>
 
-namespace optimet {
+#cmakedefine OPTIMET_MPI
 
+namespace optimet {
 //! Root of the type hierarchy for signed integers
 typedef int t_int;
 //! Root of the type hierarchy for unsigned integers
@@ -18,9 +19,13 @@ typedef std::complex<t_real> t_complex;
 
 //! \brief A vector of a given type
 //! \details Operates as mathematical vector.
-template <class T = t_complex> using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+//! \note Scalapack probably expects column-major. Best not to offend it.
+template <class T = t_complex>
+using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
 //! \brief A matrix of a given type
 //! \details Operates as mathematical matrix.
-template <class T = t_complex> using Matrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+//! \note Scalapack probably expects column-major. Best not to offend it.
+template <class T = t_complex>
+using Matrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
 }
 #endif

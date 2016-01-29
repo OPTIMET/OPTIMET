@@ -4,10 +4,12 @@
 //
 
 #include "Simulation.h"
+#include "mpi/Session.h"
 #include <iostream>
 
 int main(int argc, char *argv[]) {
-  if (argc < 1) {
+  optimet::mpi::init(argc, argv);
+  if (argc <= 1) {
     std::cerr << "Usage: " << argv[0] << " <path/to/xml/file/without/extension>"
               << std::endl;
     return 1;

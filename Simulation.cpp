@@ -25,7 +25,6 @@ int Simulation::run() {
   // Initialize the solver
   Solver solver(&(run.geometry), &(run.excitation), O3DSolverIndirect,
                 run.nMax);
-  solver.populate();
 
   switch (run.outputType) {
   case 0:

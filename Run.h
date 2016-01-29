@@ -4,6 +4,7 @@
 #include "Geometry.h"
 #include "CompoundIterator.h"
 #include "Excitation.h"
+#include "scalapack/Parameters.h"
 
 /**
  * The Run class implements a single instance of a run.
@@ -18,6 +19,8 @@ class Run {
 public:
   Geometry geometry;     /**< The Geometry of the case. */
   Excitation excitation; /**< The Excitation of the case. */
+  //! Parameters needed to setup parallel computations
+  optimet::scalapack::Parameters parallel_params;
 
   int nMax; /**< The maximum value of the n iterator. */
 
