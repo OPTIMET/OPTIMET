@@ -7,7 +7,7 @@
 #include "Excitation.h"
 #include "Coupling.h"
 #include "Result.h"
-#include "mpi/Communicator.h"
+#include "scalapack/Context.h"
 #include "scalapack/Parameters.h"
 
 namespace optimet {
@@ -27,7 +27,7 @@ public:
    * @param nMax_ the maximum value for the n iterator.
    */
   Solver(Geometry *geometry_, Excitation const *incWave_, int method_, long nMax_,
-         mpi::Communicator const &communicator = mpi::Communicator());
+         scalapack::Context const &context = scalapack::Context::Squarest());
 
   /**
    * Default destructor for the Solver class.
@@ -64,6 +64,24 @@ public:
   //! \details Because that's how the original implementation rocked.
   void update() { populate(); }
 
+  //! Converts back to the scattered result from the indirect calculation
+  Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered);
+
+  //! Solves for the internal coefficients.
+  Vector<t_complex> solveInternal(Vector<t_complex> const &X_sca_);
+
+  scalapack::Context context() const { return context_; }
+  Solver &context(scalapack::Context const &c) {
+    context_ = c;
+    return *this;
+  }
+  scalapack::Sizes const &block_size() const { return block_size_; }
+  Solver &block_size(scalapack::Sizes const &c) {
+    block_size_ = c;
+    return *this;
+  }
+
+
 protected:
   //! Populate the S and Q matrices using the solverMethod option
   void populate();
@@ -76,24 +94,6 @@ protected:
    * @return 0 if succesful, 1 otherwise.
    */
   void populateIndirect();
-
-  //! Converts back to the scattered result from the indirect calculation
-  Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered);
-
-  //! Solves for the internal coefficients.
-  Vector<t_complex> solveInternal(Vector<t_complex> const &X_sca_);
-
-  mpi::Communicator const &communicator() const { return communicator_; }
-  Solver &communicator(mpi::Communicator const &c) {
-    communicator_ = c;
-    return *this;
-  }
-  scalapack::Parameters const &parallel_params() const { return parallel_params_; }
-  Solver &parallel_params(scalapack::Parameters const &c) {
-    parallel_params_ = c;
-    return *this;
-  }
-
   //! Solves linear system of equations
   void solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b,
                          Vector<t_complex> &x) const;
@@ -107,8 +107,8 @@ private:
                                 Stout2002 */
   //! \brief MPI commnunicator
   //! \details Fake if not compiled with MPI
-  mpi::Communicator communicator_;
-  scalapack::Parameters parallel_params_;
+  scalapack::Context context_;
+  scalapack::Sizes block_size_;
 };
 } // namespace optimet
 #endif /* SOLVER_H_ */

@@ -18,14 +18,14 @@ public:
   //! Underlying eigen matrix type
   typedef optimet::Matrix<Scalar> EigenMatrix;
   //! Constructs from any eigen matrix
-  Matrix(Context const &context, Sizes size, Sizes blocks, Index index = {0, 0})
+  Matrix(Context const &context, Sizes sizes, Sizes blocks, Index index = {0, 0})
       : context_(context),
 
-        matrix_(EigenMatrix::Zero(rows(context, size, blocks, index),
-                                  cols(context, size, blocks, index))),
+        matrix_(EigenMatrix::Zero(rows(context, sizes, blocks, index),
+                                  cols(context, sizes, blocks, index))),
 
-        blacs_{{1, context.is_valid() ? *context : -1, static_cast<int>(size.rows),
-                static_cast<int>(size.cols), static_cast<int>(blocks.rows),
+        blacs_{{1, context.is_valid() ? *context : -1, static_cast<int>(sizes.rows),
+                static_cast<int>(sizes.cols), static_cast<int>(blocks.rows),
                 static_cast<int>(blocks.cols), static_cast<int>(index.row),
                 static_cast<int>(index.col), static_cast<int>(local_leading())}} {}
 

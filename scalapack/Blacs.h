@@ -19,6 +19,16 @@ int OPTIMET_FC_GLOBAL(numroc, NUMROC)(int *n, int *nb, int *iproc, int *isrcproc
 void OPTIMET_FC_GLOBAL(blacs_gridmap, BLACS_GRIDMAP)(
     int *context, int *usermap, int *ldau, int *nprow, int *npcol);
 int OPTIMET_FC_GLOBAL_(blacs_pnum, BLACS_PNUM)(int *context, int *i, int *j);
+
+#define OPTIMET_MACRO(letter, LETTER, TYPE)                             \
+  void OPTIMET_FC_GLOBAL(letter ## gebs2d, LETTER ## GEBS2D)(           \
+      int *context, char *, char *, int *m, int *n, TYPE*, int *lda);
+OPTIMET_MACRO(i, I, int);
+OPTIMET_MACRO(s, S, float);
+OPTIMET_MACRO(d, D, double);
+OPTIMET_MACRO(c, C, std::complex<float>);
+OPTIMET_MACRO(z, Z, std::complex<double>);
+#undef OPTIMET_MACRO
 void Cpsgemr2d(int m, int n, float *ptrmyblock, int ia, int ja, int *ma, float *ptrmynewblock,
                int ib, int jb, int *mb, int globcontext);
 void Cpdgemr2d(int m, int n, double *ptrmyblock, int ia, int ja, int *ma, double *ptrmynewblock,

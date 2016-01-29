@@ -15,9 +15,9 @@
 
 namespace optimet {
 Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long nMax,
-               mpi::Communicator const &c)
+               scalapack::Context const &context)
     : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
-      communicator_(c) {
+      context_(context), block_size_{64, 64} {
   populate();
 }
 
@@ -168,20 +168,17 @@ void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> con
     throw std::runtime_error("Not tested yet");
     // scalapack parameters: matrix size, grid of processors, block size
     scalapack::Sizes const size{static_cast<t_uint>(A.rows()), static_cast<t_uint>(A.cols())};
-    scalapack::Sizes const grid = parallel_params().grid.rows * parallel_params().grid.cols != 0 ?
-      parallel_params().grid: scalapack::squarest_largest_grid(communicator().size());
-    scalapack::Sizes const blocks{parallel_params().block_size, parallel_params().block_size};
 
     // "serial" version to distribute from A to root.
-    scalapack::Matrix<t_complex> Aserial({1, 1}, size, blocks);
-    scalapack::Matrix<t_complex> bserial(Aserial.context(), size, blocks);
+    scalapack::Matrix<t_complex> Aserial({1, 1}, size, block_size());
+    scalapack::Matrix<t_complex> bserial(Aserial.context(), size, block_size());
     if(Aserial.context().is_valid()) {
       Aserial.local().swap(A);
       bserial.local().swap(b);
     }
     // Transfer to grid
-    auto Aparallel = Aserial.transfer_to(grid, blocks);
-    auto bparallel = bserial.transfer_to(Aparallel.context(), blocks);
+    auto Aparallel = Aserial.transfer_to(context(), block_size());
+    auto bparallel = bserial.transfer_to(context(), block_size());
 
     // Now the actual work
     auto Xparallel = scalapack::general_linear_system(Aparallel, bparallel);
@@ -193,6 +190,8 @@ void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> con
       Aserial.local().swap(A);
       bserial.local().swap(b);
     }
+
+
   } else
 #endif
   x = A.colPivHouseholderQr().solve(b);

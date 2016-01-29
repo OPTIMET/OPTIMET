@@ -4,6 +4,7 @@
 
 #ifdef OPTIMET_MPI
 #include <memory>
+#include "scalapack/Parameters.h"
 #include "scalapack/InitExit.h"
 
 namespace optimet {
@@ -31,7 +32,7 @@ public:
   //! Constructs using the default system context
   Context() : Context(1, global_size()) {};
   //! Constructs a context
-  Context(Sizes const &c) : Context(c.rows, c.cols) {}
+  Context(scalapack::Sizes const &c) : Context(c.rows, c.cols) {}
   //! Constructs a context from a gridmap
   Context(Context const &system, Matrix<t_uint> const & gridmap);
   //! Constructs a context from a gridmap
@@ -69,6 +70,16 @@ public:
   //! Creates a subcontext
   Context subcontext(Matrix<t_uint> map) const { return Context(*this, map); }
 
+  //! \brief Creates the largest squarest context
+  //! \see optimet::scalapack::squarest_largest_grid()
+  static Context Squarest(t_uint n, t_real skew) { return Context(squarest_largest_grid(n, skew)); }
+  //! \brief Creates the largest squarest context
+  //! \see optimet::scalapack::squarest_largest_grid()
+  static Context Squarest(t_uint n) { return Context(squarest_largest_grid(n)); }
+  //! \brief Creates the largest squarest context
+  //! \see optimet::scalapack::squarest_largest_grid()
+  static Context Squarest() { return Context(squarest_largest_grid(global_size())); }
+
 private:
   //! Holds data associated with the context
   std::shared_ptr<Impl const> impl;
@@ -79,6 +90,7 @@ private:
   //! \details Does not gridexit the context
   static void delete_without_finalize(Impl *impl);
 };
+
 
 } /* scalapack */
 } /* optimet */
