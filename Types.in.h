@@ -11,7 +11,7 @@ namespace optimet {
 //! Root of the type hierarchy for signed integers
 typedef int t_int;
 //! Root of the type hierarchy for unsigned integers
-typedef size_t t_uint;
+typedef std::size_t t_uint;
 //! Root of the type hierarchy for real numbers
 typedef double t_real;
 //! Root of the type hierarchy for (real) complex numbers

@@ -14,7 +14,7 @@ if(HDF5_DIFF_EXECUTABLE)
   add_regression_test(OneParticle
     BLESSED ${CMAKE_SOURCE_DIR}/test-data/OneParticle.h5
     OUTPUTS ${CMAKE_BINARY_DIR}/examples/OneParticle.h5
-    HDF5_PRECISION 1.8e-12
+    HDF5_PRECISION 2.3e-12
     LABELS "slow"
   )
   add_regression_test(ThreeParticles
@@ -49,5 +49,5 @@ if(HDF5_DIFF_EXECUTABLE)
     LABELS "fast"
   )
 else()
-  message(WARNING "The hdf5 diff executable was not found: some regression tests will not br run.")
+  message(WARNING "The hdf5 diff executable was not found: some regression tests will not be run.")
 endif()

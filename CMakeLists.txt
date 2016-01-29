@@ -25,10 +25,11 @@ include(dependencies)
 # adds flags for compiling with c++11
 include(AddCPP11Flags)
 
-include_directories(${PROJECT_SOURCE_DIR} ${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS}
+include_directories(${PROJECT_SOURCE_DIR})
+include_directories(SYSTEM ${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS}
   ${F2C_INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
 if(EIGEN3_INCLUDE_DIR)
-  include_directories(${EIGEN3_INCLUDE_DIR})
+  include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 endif()
 
 # list all object files
@@ -50,8 +51,11 @@ configure_file(Types.in.h "${PROJECT_BINARY_DIR}/include/optimet/Types.h")
 
 # add a library that can be linked against in unittests as well
 add_library(optilib STATIC ${SRC})
+if(TARGET Boost::boost)
+  target_link_libraries(optilib Boost::boost)
+endif()
 add_dependencies(optilib lookup_dependencies)
-set(library_dependencies ${GSL_LIBRARIES} ${HDF5_LIBRARIES})
+set(library_dependencies ${GSL_LIBRARIES} ${BOOST_LIBRARIES} ${HDF5_LIBRARIES} ${F2C_LIBRARIES})
 if(dompi)
   list(APPEND library_dependencies ${MPI_LIBRARIES} scalapack)
 endif()
