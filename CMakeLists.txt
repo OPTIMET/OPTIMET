@@ -26,10 +26,9 @@ include(dependencies)
 # adds flags for compiling with c++11
 include(AddCPP11Flags)
 
-include_directories(${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${F2C_INCLUDE_DIRS}
-  ${Boost_INCLUDE_DIR})
+include_directories(SYSTEM ${GSL_INCLUDE_DIRS} ${BOOST_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${F2C_INCLUDE_DIRS})
 if(EIGEN3_INCLUDE_DIR)
-  include_directories(${EIGEN3_INCLUDE_DIR})
+  include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 endif()
 
 # list all object files
@@ -38,8 +37,11 @@ list(REMOVE_ITEM SRC main.cpp)
 
 # add a library that can be linked against in unittests as well
 add_library(optilib STATIC ${SRC})
+if(TARGET Boost::boost)
+  target_link_libraries(optilib Boost::boost)
+endif()
 add_dependencies(optilib lookup_dependencies)
-set(library_dependencies ${GSL_LIBRARIES} ${HDF5_LIBRARIES} ${F2C_LIBRARIES})
+set(library_dependencies ${GSL_LIBRARIES} ${BOOST_LIBRARIES} ${HDF5_LIBRARIES} ${F2C_LIBRARIES})
 
 # main executable
 add_executable(Optimet3D main.cpp)

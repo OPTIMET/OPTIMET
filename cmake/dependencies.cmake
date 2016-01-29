@@ -1,3 +1,5 @@
+find_package(GSL REQUIRED)
+find_package(HDF5 REQUIRED)
 find_package(F2C REQUIRED)
 
 find_package(Doxygen)
