@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <iostream>
 
+#include <stddef.h>
 #include "gsl/gsl_sf_gamma.h"
 
 int AuxCoefficients::compute_dn(int nMax, double *dn) {
