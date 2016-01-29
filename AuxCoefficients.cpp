@@ -2,7 +2,6 @@
 
 #include "constants.h"
 #include "Tools.h"
-#include "Legendre.h"
 #include "CompoundIterator.h"
 
 #include <cmath>
