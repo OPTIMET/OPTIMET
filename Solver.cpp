@@ -71,6 +71,8 @@ void Solver::populateDirect() {
 }
 
 int Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) {
+  if(not context().is_valid())
+    throw std::runtime_error("Scalapack context is invalid");
   solveLinearSystem(S, Q, X_sca_);
   if(solverMethod == O3DSolverIndirect)
     X_sca_ = convertIndirect(X_sca_);
@@ -165,33 +167,27 @@ void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> con
                                Vector<t_complex> &x) const {
 #ifdef OPTIMET_MPI
   if(scalapack::global_size() > 1) {
-    throw std::runtime_error("Not tested yet");
     // scalapack parameters: matrix size, grid of processors, block size
     scalapack::Sizes const size{static_cast<t_uint>(A.rows()), static_cast<t_uint>(A.cols())};
 
     // "serial" version to distribute from A to root.
-    scalapack::Matrix<t_complex> Aserial({1, 1}, size, block_size());
-    scalapack::Matrix<t_complex> bserial(Aserial.context(), size, block_size());
+    scalapack::Matrix<t_complex> Aserial(context().serial(), size, block_size());
+    scalapack::Matrix<t_complex> bserial(Aserial.context(), {size.rows, 1}, block_size());
     if(Aserial.context().is_valid()) {
-      Aserial.local().swap(A);
-      bserial.local().swap(b);
+      Aserial.local() = A;
+      bserial.local() = b;
     }
     // Transfer to grid
     auto Aparallel = Aserial.transfer_to(context(), block_size());
     auto bparallel = bserial.transfer_to(context(), block_size());
 
     // Now the actual work
-    auto Xparallel = scalapack::general_linear_system(Aparallel, bparallel);
+    auto Xparallel = std::get<0>(scalapack::general_linear_system(Aparallel, bparallel));
 
-    // And transfer back
-    Aparallel.transfer_to(Aserial);
-    bparallel.transfer_to(bserial);
-    if(Aserial.context().is_valid()) {
-      Aserial.local().swap(A);
-      bserial.local().swap(b);
-    }
-
-
+    // Transfer back to root
+    auto Xserial = Xparallel.transfer_to(Aserial.context(), block_size());
+    // Broadcast from root
+    x = context().broadcast(Xserial.local(), 0, 0);
   } else
 #endif
   x = A.colPivHouseholderQr().solve(b);
