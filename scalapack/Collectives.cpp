@@ -82,6 +82,28 @@ tm_broadcast(Matrix<T> const &value, Context const &context, t_uint row, t_uint 
     return result;
   }
 }
+
+template <class T>
+typename std::enable_if<details::is_fundamental<T>::value, Vector<T>>::type
+tm_broadcast(Vector<T> const &value, Context const &context, t_uint row, t_uint col) {
+  if(not context.is_valid())
+    return value;
+  assert(context.rows() > row);
+  assert(context.cols() > cols);
+  auto const is_root =
+      static_cast<t_uint>(context.row()) == row and static_cast<t_uint>(context.col()) == col;
+  if(is_root) {
+    gebs2d(*context, static_cast<int>(value.size()));
+    gebs2d(*context, value.size(), 1, value.data());
+    return value;
+  } else {
+    int vector_size;
+    gebr2d(*context, vector_size, row, col);
+    Vector<T> result(vector_size);
+    gebr2d(*context, vector_size, 1, result.data(), row, col);
+    return result;
+  }
+}
 } // anonymous namespace
 
 #define OPTIMET_MACRO(TYPE)                                                                        \
@@ -89,6 +111,10 @@ tm_broadcast(Matrix<T> const &value, Context const &context, t_uint row, t_uint 
     return tm_broadcast(value, context, row, col);                                                 \
   }                                                                                                \
   Matrix<TYPE> broadcast(Matrix<TYPE> const &value, Context const &context,                        \
+      t_uint row, t_uint col) {                                                                    \
+    return tm_broadcast(value, context, row, col);                                                 \
+  }                                                                                                \
+  Vector<TYPE> broadcast(Vector<TYPE> const &value, Context const &context,                        \
       t_uint row, t_uint col) {                                                                    \
     return tm_broadcast(value, context, row, col);                                                 \
   }

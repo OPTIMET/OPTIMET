@@ -20,9 +20,10 @@ struct is_fundamental
 
 class Context;
 #define OPTIMET_MACRO(TYPE) \
-  /** Broadcasts from given process to all others **/                            \
-  TYPE broadcast(TYPE const&, Context const &context, t_uint row, t_uint col);   \
-  Matrix<TYPE> broadcast(Matrix<TYPE> const&, Context const &context, t_uint row, t_uint col);
+  /** Broadcasts from given process to all others **/                                          \
+  TYPE broadcast(TYPE const&, Context const &context, t_uint row, t_uint col);                 \
+  Matrix<TYPE> broadcast(Matrix<TYPE> const&, Context const &context, t_uint row, t_uint col); \
+  Vector<TYPE> broadcast(Vector<TYPE> const&, Context const &context, t_uint row, t_uint col);
 OPTIMET_MACRO(int);
 OPTIMET_MACRO(float);
 OPTIMET_MACRO(double);

@@ -70,7 +70,13 @@ public:
   Context split(t_uint nrows, t_uint ncols) const;
   //! Creates a subcontext
   Context subcontext(Matrix<t_uint> map) const { return Context(*this, map); }
-
+  //! Creates a serial process for given process
+  Context serial(t_uint row, t_uint col) const {
+    assert(n < size());
+    return subcontext(Matrix<t_uint>::Ones(1, 1) * process_number(row, col));
+  }
+  //! Creates a serial process for process (0, 0)
+  Context serial() const { return serial(0, 0); }
   //! System process number for this context
   t_uint process_number() const { return process_number(row(), col()); }
   //! System process number for given row and colum
@@ -93,16 +99,10 @@ public:
   static Context Squarest() { return Context(squarest_largest_grid(global_size())); }
 
   //! Broadcast to other processes
-  template <class T>
-  typename std::enable_if<details::is_fundamental<T>::value, T>::type
-  broadcast(T const &value, t_uint row, t_uint col) const {
+  template <class T> T broadcast(T const &value, t_uint row, t_uint col) const {
     return optimet::scalapack::broadcast(value, *this, row, col);
   }
-  template <class T>
-  typename std::enable_if<details::is_fundamental<T>::value, T>::type
-  broadcast(T const &value) const {
-    return broadcast(value, row(), col());
-  }
+  template <class T> T broadcast(T const &value) const { return broadcast(value, row(), col()); }
   //! Broadcast to/from other processes
   template <class T>
   typename std::enable_if<details::is_fundamental<T>::value, T>::type
@@ -113,20 +113,21 @@ public:
 
   //! Broadcast to other processes
   template <class T>
-  typename std::enable_if<details::is_fundamental<T>::value, Matrix<T>>::type
-  broadcast(Matrix<T> const &value, t_uint row, t_uint col) const {
-    return optimet::scalapack::broadcast(value, *this, row, col);
-  }
-  template <class T>
-  typename std::enable_if<details::is_fundamental<T>::value, Matrix<T>>::type
-  broadcast(Matrix<T> const &value) const {
-    return broadcast(value, row(), col());
-  }
-  //! Broadcast to/from other processes
-  template <class T>
-  typename std::enable_if<details::is_fundamental<typename T::Scalar>::value, T>::type
+  typename std::enable_if<std::is_same<T, Matrix<typename T::Scalar>>::value and
+                              details::is_fundamental<typename T::Scalar>::value,
+                          T>::type
   broadcast(t_uint row, t_uint col) const {
     Matrix<T> value(1, 1);
+    return broadcast(value, row, col);
+  }
+
+  //! Broadcast to other processes
+  template <class T>
+  typename std::enable_if<std::is_same<T, Vector<typename T::Scalar>>::value and
+                              details::is_fundamental<typename T::Scalar>::value,
+                          T>::type
+  broadcast(t_uint row, t_uint col) const {
+    Vector<T> value(1, 1);
     return broadcast(value, row, col);
   }
 
