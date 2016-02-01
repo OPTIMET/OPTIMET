@@ -23,7 +23,7 @@ void Geometry::pushObject(Scatterer const &object_) {
   if(not no_overlap(object_)) {
     std::ostringstream sstr;
     sstr << "The sphere at (" << object_.vR.rrr << ", " << object_.vR.the << ", " << object_.vR.phi
-         << " overlap";
+         << ") overlap";
     throw std::runtime_error(sstr.str());
   }
   objects.emplace_back(object_);
