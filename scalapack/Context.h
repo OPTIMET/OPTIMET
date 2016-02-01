@@ -5,6 +5,7 @@
 #include <memory>
 #include "scalapack/Parameters.h"
 #include "scalapack/InitExit.h"
+#include "scalapack/Collectives.h"
 
 namespace optimet {
 namespace scalapack {
@@ -90,6 +91,25 @@ public:
   //! \brief Creates the largest squarest context
   //! \see optimet::scalapack::squarest_largest_grid()
   static Context Squarest() { return Context(squarest_largest_grid(global_size())); }
+
+  //! Broadcast to other processes
+  template <class T>
+  typename std::enable_if<details::is_fundamental<T>::value, T>::type
+  broadcast(T const &value, t_uint row, t_uint col) const {
+    return optimet::scalapack::broadcast(value, *this, row, col);
+  }
+  template <class T>
+  typename std::enable_if<details::is_fundamental<T>::value, T>::type
+  broadcast(T const &value) const {
+    return broadcast(value, row(), col());
+  }
+  //! Broadcast to/from other processes
+  template <class T>
+  typename std::enable_if<details::is_fundamental<T>::value, T>::type
+  broadcast(t_uint row, t_uint col) const {
+    T value(0);
+    return broadcast(value, row, col);
+  }
 
 private:
   //! Holds data associated with the context

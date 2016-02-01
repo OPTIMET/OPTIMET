@@ -23,9 +23,10 @@ void OPTIMET_FC_GLOBAL_(blacs_pcoord, BLACS_PCOORD)(int *context, int *pnum, int
 
 #define OPTIMET_MACRO(letter, LETTER, TYPE)                                                   \
   void OPTIMET_FC_GLOBAL(letter ## gebs2d, LETTER ## GEBS2D)(                                 \
-      int *context, char *, char *, int *m, int *n, TYPE*, int *lda);                         \
+      int *context, char const *, char const *, int *m, int *n, TYPE const*, int *lda);       \
   void OPTIMET_FC_GLOBAL(letter ## gebr2d, LETTER ## GEBR2D)(                                 \
-      int *context, char *, char *, int *m, int *n, TYPE*, int *lda, int *rsrc, int *csrc);   \
+      int *context, char const *, char const *, int *m, int *n, TYPE*,                        \
+      int *lda, int *rsrc, int *csrc);                                                        \
   void Cp ## letter ## gemr2d(int m, int n, TYPE *ptrmyblock, int ia, int ja, int *ma, TYPE   \
       *ptrmynewblock, int ib, int jb, int *mb, int globcontext);                              \
   void OPTIMET_FC_GLOBAL(p ## letter ## gesv, P ## LETTER ## GESV)(int *n, int *nrhs,         \
