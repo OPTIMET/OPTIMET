@@ -7,7 +7,7 @@
 
 using namespace optimet;
 
-TEST_CASE("broadcast single value") {
+TEST_CASE("broadcasting") {
   auto const world = scalapack::Context::Squarest();
 
   SECTION("integer") {
@@ -21,6 +21,7 @@ TEST_CASE("broadcast single value") {
         }
       }
   }
+
   SECTION("complex") {
     for(t_int i(0); i < world.rows(); ++i)
       for(t_int j(0); j < world.cols(); ++j) {
@@ -29,6 +30,18 @@ TEST_CASE("broadcast single value") {
           CHECK(value.real() == Approx(i));
           CHECK(value.imag() == Approx(j));
         }
+      }
+  }
+
+  SECTION("matrix") {
+    auto matrix = [](t_uint i, t_uint j) -> Matrix<t_real> {
+      return Matrix<t_real>::Ones(1 + i, 3 + j) * (i * j);
+    };
+    for(t_int i(0); i < world.rows(); ++i)
+      for(t_int j(0); j < world.cols(); ++j) {
+        auto const value = world.broadcast(matrix(world.row(), world.col()), i, j);
+        if(world.is_valid())
+          CHECK(value.isApprox(matrix(i, j)));
       }
   }
 }

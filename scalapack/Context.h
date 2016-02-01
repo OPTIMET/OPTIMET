@@ -111,6 +111,25 @@ public:
     return broadcast(value, row, col);
   }
 
+  //! Broadcast to other processes
+  template <class T>
+  typename std::enable_if<details::is_fundamental<T>::value, Matrix<T>>::type
+  broadcast(Matrix<T> const &value, t_uint row, t_uint col) const {
+    return optimet::scalapack::broadcast(value, *this, row, col);
+  }
+  template <class T>
+  typename std::enable_if<details::is_fundamental<T>::value, Matrix<T>>::type
+  broadcast(Matrix<T> const &value) const {
+    return broadcast(value, row(), col());
+  }
+  //! Broadcast to/from other processes
+  template <class T>
+  typename std::enable_if<details::is_fundamental<typename T::Scalar>::value, T>::type
+  broadcast(t_uint row, t_uint col) const {
+    Matrix<T> value(1, 1);
+    return broadcast(value, row, col);
+  }
+
 private:
   //! Holds data associated with the context
   std::shared_ptr<Impl const> impl;
