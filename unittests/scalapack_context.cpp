@@ -149,3 +149,32 @@ TEST_CASE("Splitting grid") {
       CHECK(split.rows() == linear.rows() / 2 + 1);
   }
 }
+
+TEST_CASE("Process number and coords") {
+  scalapack::Context context(scalapack::squarest_largest_grid(scalapack::global_size()));
+  mpi::Communicator split(mpi::Communicator().split(context.is_valid()));
+
+  if(not context.is_valid())
+    return;
+
+  auto const rows = split.all_gather(context.row());
+  auto const cols = split.all_gather(context.col());
+  auto const pnum = split.all_gather(context.process_number());
+  auto mpi_rank = [&rows, &cols](t_int row, t_int col) {
+    for(std::size_t i(0); i < rows.size(); ++i)
+      if(rows[i] == row and cols[i] == col)
+        return i;
+    return rows.size() + 1;
+  };
+
+  for(t_int i(0); i < context.rows(); ++i) {
+    CHECK(std::find(rows.begin(), rows.end(), i) != rows.end());
+    for(t_int j(0); j < context.cols(); ++j) {
+      CHECK(std::find(cols.begin(), cols.end(), j) != cols.end());
+      auto const r = mpi_rank(i, j);
+      CHECK(pnum[r] == context.process_number(i, j));
+      CHECK(i == context.process_coordinates(pnum[r]).row);
+      CHECK(j == context.process_coordinates(pnum[r]).col);
+    }
+  }
+}

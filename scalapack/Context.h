@@ -30,13 +30,13 @@ public:
   //! Constructs a context
   Context(t_uint rows, t_uint cols);
   //! Constructs using the default system context
-  Context() : Context(1, global_size()) {};
+  Context() : Context(1, global_size()){};
   //! Constructs a context
   Context(scalapack::Sizes const &c) : Context(c.rows, c.cols) {}
   //! Constructs a context from a gridmap
-  Context(Context const &system, Matrix<t_uint> const & gridmap);
+  Context(Context const &system, Matrix<t_uint> const &gridmap);
   //! Constructs a context from a gridmap
-  Context(Matrix<t_uint> const & gridmap) : Context(Context(), gridmap) {};
+  Context(Matrix<t_uint> const &gridmap) : Context(Context(), gridmap){};
 
   virtual ~Context(){};
 
@@ -69,6 +69,17 @@ public:
   Context split(t_uint nrows, t_uint ncols) const;
   //! Creates a subcontext
   Context subcontext(Matrix<t_uint> map) const { return Context(*this, map); }
+
+  //! System process number for this context
+  t_uint process_number() const { return process_number(row(), col()); }
+  //! System process number for given row and colum
+  t_uint process_number(t_uint row, t_uint col) const;
+  //! Row and column of process with given number
+  Index process_coordinates(t_uint pnum) const;
+  //! Row and column of process with given number
+  Index process_coordinates() const {
+    return {static_cast<t_uint>(row()), static_cast<t_uint>(col())};
+  }
 
   //! \brief Creates the largest squarest context
   //! \see optimet::scalapack::squarest_largest_grid()
@@ -130,5 +141,4 @@ public:
 
 } /* scalapack */
 } /* optimet */
-#endif /* ifdef OPTIMET_MPI */
 #endif /* ifndef OPTIMET_BLACS_CONTEXT */

@@ -107,5 +107,24 @@ Context Context::split(t_uint nrows, t_uint ncols) const {
   return result;
 }
 
+t_uint Context::process_number(t_uint row, t_uint col) const {
+  if(not is_valid())
+    throw std::runtime_error("Invalid context");
+  int context = **this;
+  int prow = static_cast<int>(row);
+  int pcol = static_cast<int>(col);
+  return OPTIMET_FC_GLOBAL_(blacs_pnum, BLACS_PNUM)(&context, &prow, &pcol);
+}
+
+Index Context::process_coordinates(t_uint pnum) const {
+  if(not is_valid())
+    throw std::runtime_error("Invalid context");
+  int context = **this;
+  int num = static_cast<int>(pnum);
+  int prow, pcol;
+  OPTIMET_FC_GLOBAL_(blacs_pcoord, BLACS_PCOORD)(&context, &num, &prow, &pcol);
+  return {static_cast<t_uint>(prow), static_cast<t_uint>(pcol)};
+}
+
 } /* scalapack  */
 } /* optimet  */
