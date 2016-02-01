@@ -2,7 +2,6 @@
 #define OPTIMET_SCALAPACK_CONTEXT_H
 #include "Types.h"
 
-#ifdef OPTIMET_MPI
 #include <memory>
 #include "scalapack/Parameters.h"
 #include "scalapack/InitExit.h"
@@ -10,6 +9,7 @@
 namespace optimet {
 namespace scalapack {
 
+#ifdef OPTIMET_MPI
 //! A context for a distributed array
 class Context {
   //! Holds actual data associated with the context
@@ -90,7 +90,43 @@ private:
   //! \details Does not gridexit the context
   static void delete_without_finalize(Impl *impl);
 };
+#else
+//! A fake scalapack context when compiled without scalapack
+class Context {
+public:
+  //! Constructs a context
+  Context(t_uint, t_uint) {}
+  Context(t_uint) {}
+  Context() {}
 
+  //! Whether this is a valid context for this process
+  bool is_valid() const { return true; }
+  //! The number of rows
+  t_int rows() const { return 0; }
+  //! The number of cols
+  t_int cols() const { return 0; }
+  //! Total number of processes
+  t_uint size() const { return 1; }
+  //! Index of this row
+  t_int row() const { return 0; }
+  //! Index of this row
+  t_int col() const { return 0; }
+  //! Returns the Blacs context in a way blacs undersands
+  t_int operator*() const {
+    throw std::runtime_error("No context since compiled without scalapack");
+  }
+
+  //! \brief Creates the largest squarest context
+  //! \see optimet::scalapack::squarest_largest_grid()
+  static Context Squarest(t_uint, t_real) { return Context(); }
+  //! \brief Creates the largest squarest context
+  //! \see optimet::scalapack::squarest_largest_grid()
+  static Context Squarest(t_uint) { return Context(); }
+  //! \brief Creates the largest squarest context
+  //! \see optimet::scalapack::squarest_largest_grid()
+  static Context Squarest() { return Context(); }
+};
+#endif
 
 } /* scalapack */
 } /* optimet */
