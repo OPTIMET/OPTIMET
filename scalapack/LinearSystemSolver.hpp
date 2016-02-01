@@ -11,11 +11,11 @@ template <class SCALAR>
 std::tuple<Matrix<SCALAR>, int>
 general_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b) {
   if(not(A.context().is_valid() and b.context().is_valid()))
-    return {b, 0};
+    return std::tuple<Matrix<SCALAR>, int>{b, 0};
   Matrix<SCALAR> result = b;
   Matrix<SCALAR> Acopy = A;
   auto info = general_linear_system_inplace(Acopy, result);
-  return {std::move(result), std::move(info)};
+  return std::tuple<Matrix<SCALAR>, int>{std::move(result), std::move(info)};
 }
 
 namespace {
