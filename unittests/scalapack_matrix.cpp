@@ -34,6 +34,8 @@ TEST_CASE("Creates a matrix in 1x1 context") {
 }
 
 TEST_CASE("Creates a matrix in 1x2 context") {
+  if(scalapack::global_size() < 2)
+    return;
   auto const rank = scalapack::global_rank();
   scalapack::Context const context(1, 2);
   CAPTURE(context.is_valid());
@@ -105,6 +107,8 @@ TEST_CASE("Creates a matrice in nxm context") {
 }
 
 TEST_CASE("Transfer from 1x1 to 2x1") {
+  if(scalapack::global_size() < 2)
+    return;
   mpi::Communicator const world;
   auto const ranks = world.all_gather(scalapack::global_rank());
   auto const root = std::find(ranks.begin(), ranks.end(), 0) - ranks.begin();
