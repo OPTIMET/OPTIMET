@@ -25,11 +25,10 @@ include(dependencies)
 # adds flags for compiling with c++11
 include(AddCPP11Flags)
 
-include_directories(${PROJECT_SOURCE_DIR} ${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS}
-  ${F2C_INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
-if(EIGEN3_INCLUDE_DIR)
-  include_directories(${EIGEN3_INCLUDE_DIR})
-endif()
+include_directories(${PROJECT_SOURCE_DIR})
+include_directories(SYSTEM
+  ${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS}
+  ${F2C_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR})
 
 # list all object files
 file(GLOB SRC *.c*  pugi/*.c*)
@@ -41,7 +40,7 @@ if(dompi)
   # Add fortran interface for blacs and scalapack
   include(DetectFortran)
   DetectFortran("${PROJECT_BINARY_DIR}/include/optimet/OptimetFC.h")
-  include_directories(${MPI_CXX_INCLUDE_PATH})
+  include_directories(SYSTEM ${MPI_CXX_INCLUDE_PATH})
 endif()
 
 # configure a file with some build defaults
