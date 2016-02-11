@@ -16,10 +16,10 @@ t_uint &global_reference() {
 }
 } // anonymous namespace
 
-void init(int argc, char **argv) {
-  if(did_done_do_init())
+void init(int argc, const char **argv) {
+  if (did_done_do_init())
     return;
-  MPI_Init(&argc, &argv);
+  MPI_Init(&argc, const_cast<char ***>(&argv));
   did_done_do_init() = true;
 }
 
@@ -32,7 +32,7 @@ bool finalized() {
 }
 
 void finalize() {
-  if(finalized() or not initialized())
+  if (finalized() or not initialized())
     return;
   MPI_Finalize();
 }
