@@ -48,7 +48,7 @@ tm_broadcast(T const &value, Context const &context, t_uint row, t_uint col) {
   if(not context.is_valid())
     return value;
   assert(context.rows() > row);
-  assert(context.cols() > cols);
+  assert(context.cols() > col);
   auto const is_root =
       static_cast<t_uint>(context.row()) == row and static_cast<t_uint>(context.col()) == col;
   T result(value);
@@ -65,7 +65,7 @@ tm_broadcast(Matrix<T> const &value, Context const &context, t_uint row, t_uint 
   if(not context.is_valid())
     return value;
   assert(context.rows() > row);
-  assert(context.cols() > cols);
+  assert(context.cols() > col);
   auto const is_root =
       static_cast<t_uint>(context.row()) == row and static_cast<t_uint>(context.col()) == col;
   if(is_root) {
@@ -89,7 +89,7 @@ tm_broadcast(Vector<T> const &value, Context const &context, t_uint row, t_uint 
   if(not context.is_valid())
     return value;
   assert(context.rows() > row);
-  assert(context.cols() > cols);
+  assert(context.cols() > col);
   auto const is_root =
       static_cast<t_uint>(context.row()) == row and static_cast<t_uint>(context.col()) == col;
   if(is_root) {

@@ -72,7 +72,8 @@ public:
   Context subcontext(Matrix<t_uint> map) const { return Context(*this, map); }
   //! Creates a serial process for given process
   Context serial(t_uint row, t_uint col) const {
-    assert(n < size());
+    assert(row < rows());
+    assert(col < cols());
     return subcontext(Matrix<t_uint>::Ones(1, 1) * process_number(row, col));
   }
   //! Creates a serial process for process (0, 0)
