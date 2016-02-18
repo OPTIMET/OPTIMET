@@ -1,6 +1,8 @@
 #ifndef SPHERICALP_H_
 #define SPHERICALP_H_
 
+#include <complex>
+
 /**
  * The SphericalP class implements shpherical projection coordinates.
  * This is a template class so any standard type may be used to create
@@ -75,5 +77,11 @@ public:
                                phi * argument_);
   }
 };
+
+template <class carType>
+SphericalP<carType> conj(const SphericalP<carType> &sp) {
+  using std::conj;
+  return SphericalP<carType>(conj(sp.rrr), conj(sp.the), conj(sp.phi));
+}
 
 #endif /* SPHERICALP_H_ */
