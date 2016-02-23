@@ -421,7 +421,19 @@ int Reader::readSimulation(std::string const &fileName_) {
     return 1;
   }
 
+  readParallel(inputFile.child("parallel"), run->parallel_params);
+
   return 0;
+}
+
+void Reader::readParallel(const pugi::xml_node &node,
+                          optimet::scalapack::Parameters &parallel_params) {
+  parallel_params.block_size =
+      node.attribute("block_size").as_uint(parallel_params.block_size);
+  parallel_params.grid.rows =
+      node.child("grid").attribute("rows").as_uint(parallel_params.grid.rows);
+  parallel_params.grid.cols =
+      node.child("grid").attribute("cols").as_uint(parallel_params.grid.cols);
 }
 
 Scatterer Reader::readSphericalScatterer(pugi::xml_node const &node) {
