@@ -93,9 +93,9 @@ int Excitation::populate() {
   return 0;
 }
 
-int Excitation::getIncLocal(Spherical<double> point_,
-                            std::complex<double> *Inc_local_, int nMax_) {
-  if (!initDone) {
+int Excitation::getIncLocal(Spherical<double> point_, std::complex<double> *Inc_local_,
+                            int nMax_) const {
+  if(!initDone) {
     std::cerr << "Excitation was not initialized!";
     return 1;
   }

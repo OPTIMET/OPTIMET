@@ -10,6 +10,7 @@
 
 #include <complex>
 
+namespace optimet {
 /**
  * The Result class is used to provide post simulation
  * output functions including field profiles, absorbption
@@ -23,20 +24,12 @@ private:
   Geometry *geometry;         /**< Pointer to the Geometry. */
   Excitation *excitation;     /**< Pointer to the Excitation. */
   std::complex<double> waveK; /**< The std::complex wave number. */
-  bool initDone;              /**< Specifies if object was initialized. */
   bool flagSH;       /**< Specifies if handling Second Harmonic results. */
   Result *result_FF; /**< The Fundamental Frequency results vector. */
 public:
-  std::complex<double> *scatter_coef;  /**< The scattering coefficients. */
-  std::complex<double> *internal_coef; /**< The internal coefficients. */
-  std::complex<double>
-      *c_scatter_coef; /**< The cluster centered scattering coefficients. */
-
-  /**
-   * Default constructor for the Result class.
-   * Does NOT initialize the object.
-   */
-  Result();
+  Vector<t_complex> scatter_coef;  /**< The scattering coefficients. */
+  Vector<t_complex> internal_coef; /**< The internal coefficients. */
+  Vector<t_complex> c_scatter_coef; /**< The cluster centered scattering coefficients. */
 
   /**
    * Initialization constructor for the Result class.
@@ -61,7 +54,7 @@ public:
   /**
    * Default destructor for the Result class.
    */
-  virtual ~Result();
+  virtual ~Result() {};
 
   /**
    * Initialization method for the Result class.
@@ -197,5 +190,5 @@ public:
    */
   void writeContinuityCheck(int objectIndex_);
 };
-
+}
 #endif /* RESULT_H_ */

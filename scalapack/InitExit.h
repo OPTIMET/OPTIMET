@@ -3,6 +3,7 @@
 
 #include "Types.h"
 
+#ifdef OPTIMET_MPI
 namespace optimet {
 namespace scalapack {
 //! Rank of this proc
@@ -19,4 +20,5 @@ void increment_ref();
 void decrement_ref();
 } /* scalapack */
 } /* optime */
+#endif
 #endif /* ifndef OPTIMET_BLACS_CONTEXT */

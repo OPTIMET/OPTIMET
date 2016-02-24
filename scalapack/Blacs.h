@@ -16,25 +16,28 @@ void OPTIMET_FC_GLOBAL_(blacs_get, BLACS_GET)(int *context, int *what, int *outp
 void OPTIMET_FC_GLOBAL_(blacs_gridinit, BLACS_GRIDINIT)(int *context, char *order, int *rows,
                                                         int *cols);
 int OPTIMET_FC_GLOBAL(numroc, NUMROC)(int *n, int *nb, int *iproc, int *isrcproc, int *nprocs);
-void Cpsgemr2d(int m, int n, float *ptrmyblock, int ia, int ja, int *ma, float *ptrmynewblock,
-               int ib, int jb, int *mb, int globcontext);
-void Cpdgemr2d(int m, int n, double *ptrmyblock, int ia, int ja, int *ma, double *ptrmynewblock,
-               int ib, int jb, int *mb, int globcontext);
-void Cpcgemr2d(int m, int n, std::complex<float> *ptrmyblock, int ia, int ja, int *ma,
-               std::complex<float> *ptrmynewblock, int ib, int jb, int *mb, int globcontext);
-void Cpzgemr2d(int m, int n, std::complex<double> *ptrmyblock, int ia, int ja, int *ma,
-               std::complex<double> *ptrmynewblock, int ib, int jb, int *mb, int globcontext);
-void OPTIMET_FC_GLOBAL(psgesv, PSGESV)(int *n, int *nrhs, float *a, int *ia, int *ja, int *desca,
-                                       int *ipiv, float *b, int *ib, int *jb, int *descb,
-                                       int *info);
-void OPTIMET_FC_GLOBAL(pdgesv, PDGESV)(int *n, int *nrhs, double *a, int *ia, int *ja, int *desca,
-                                       int *ipiv, double *b, int *ib, int *jb, int *descb,
-                                       int *info);
-void OPTIMET_FC_GLOBAL(pcgesv, PCGESV)(int *n, int *nrhs, std::complex<float> *a, int *ia, int *ja,
-                                       int *desca, int *ipiv, std::complex<float> *b, int *ib,
-                                       int *jb, int *descb, int *info);
-void OPTIMET_FC_GLOBAL(pzgesv, PZGESV)(int *n, int *nrhs, std::complex<double> *a, int *ia, int *ja,
-                                       int *desca, int *ipiv, std::complex<double> *b, int *ib,
-                                       int *jb, int *descb, int *info);
+void OPTIMET_FC_GLOBAL(blacs_gridmap, BLACS_GRIDMAP)(
+    int *context, int *usermap, int *ldau, int *nprow, int *npcol);
+int OPTIMET_FC_GLOBAL_(blacs_pnum, BLACS_PNUM)(int *context, int *i, int *j);
+void OPTIMET_FC_GLOBAL_(blacs_pcoord, BLACS_PCOORD)(int *context, int *pnum, int *row, int *col);
+
+#define OPTIMET_MACRO(letter, LETTER, TYPE)                                                   \
+  void OPTIMET_FC_GLOBAL(letter ## gebs2d, LETTER ## GEBS2D)(                                 \
+      int *context, char const *, char const *, int *m, int *n, TYPE const*, int *lda);       \
+  void OPTIMET_FC_GLOBAL(letter ## gebr2d, LETTER ## GEBR2D)(                                 \
+      int *context, char const *, char const *, int *m, int *n, TYPE*,                        \
+      int *lda, int *rsrc, int *csrc);                                                        \
+  void Cp ## letter ## gemr2d(int m, int n, TYPE *ptrmyblock, int ia, int ja, int *ma, TYPE   \
+      *ptrmynewblock, int ib, int jb, int *mb, int globcontext);                              \
+  void OPTIMET_FC_GLOBAL(p ## letter ## gesv, P ## LETTER ## GESV)(int *n, int *nrhs,         \
+      TYPE *a, int *ia, int *ja, int *desca, int *ipiv, TYPE *b, int *ib, int *jb,            \
+      int *descb, int *info);
+
+OPTIMET_MACRO(i, I, int);
+OPTIMET_MACRO(s, S, float);
+OPTIMET_MACRO(d, D, double);
+OPTIMET_MACRO(c, C, std::complex<float>);
+OPTIMET_MACRO(z, Z, std::complex<double>);
+#undef OPTIMET_MACRO
 } /* optimet */
 #endif

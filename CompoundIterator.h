@@ -4,8 +4,14 @@
 #include "Types.h"
 
 namespace optimet {
+//! Harmonic index n, m but flat
 inline constexpr t_int flatten_indices(t_int first, t_int second) {
   return first * (first + 1) - second - 1;
+}
+
+//! Maximum flat harmonic index
+inline constexpr t_int max_flat_index(t_int first) {
+  return first * (first + 2);
 }
 }
 

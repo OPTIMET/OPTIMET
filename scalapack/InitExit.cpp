@@ -18,7 +18,7 @@ std::tuple<t_uint, t_uint> blacs_pinfo() {
     first_call = false;
     int rank, size;
     OPTIMET_FC_GLOBAL_(blacs_pinfo, BLACS_PINFO)(&rank, &size);
-    result = {static_cast<t_uint>(rank), static_cast<t_uint>(size)};
+    result = std::tuple<t_uint, t_uint>{static_cast<t_uint>(rank), static_cast<t_uint>(size)};
   }
   return result;
 }

@@ -4,6 +4,7 @@
 #include "Tools.h"
 #include "Bessel.h"
 #include "CompoundIterator.h"
+#include "HarmonicsIterator.h"
 #include "Symbol.h"
 #include "Algebra.h"
 #include "constants.h"
@@ -22,7 +23,7 @@ void Geometry::pushObject(Scatterer const &object_) {
   if(not no_overlap(object_)) {
     std::ostringstream sstr;
     sstr << "The sphere at (" << object_.vR.rrr << ", " << object_.vR.the << ", " << object_.vR.phi
-         << " overlap";
+         << ") overlap";
     throw std::runtime_error(sstr.str());
   }
   objects.emplace_back(object_);
@@ -52,96 +53,10 @@ bool Geometry::no_overlap(Scatterer const &object_) {
   return true;
 }
 
-int Geometry::getTLocal(double omega_, int objectIndex_, int nMax_,
-                        std::complex<double> **T_local_) {
-  if(objectIndex_ >= static_cast<int>(objects.size())) {
-    std::cerr << "Object index " << objectIndex_ << " is out of range. Only " << objects.size()
-              << " objects exist!";
-    return 1;
-  }
-
-  std::complex<double> k_s =
-      omega_ * std::sqrt(objects[objectIndex_].elmag.epsilon * objects[objectIndex_].elmag.mu);
-  std::complex<double> k_b = omega_ * std::sqrt(bground.epsilon * bground.mu);
-
-  std::complex<double> rho = k_s / k_b;
-  std::complex<double> r_0 = k_b * objects[objectIndex_].radius;
-  std::complex<double> mu_sob = objects[objectIndex_].elmag.mu / bground.mu;
-
-  std::complex<double> psi(0., 0.), ksi(0., 0.);
-  std::complex<double> dpsi(0., 0.), dksi(0., 0.);
-
-  std::complex<double> psirho(0., 0.), ksirho(0., 0.);
-  std::complex<double> dpsirho(0., 0.), dksirho(0., 0.);
-  // AJ
-  // -----------------------------------------------------------------------------------------------------
-
-  std::vector<std::complex<double>> J_n_data, J_n_ddata;
-  std::vector<std::complex<double>> Jrho_n_data, Jrho_n_ddata;
-  std::vector<std::complex<double>> H_n_data, H_n_ddata;
-  std::vector<std::complex<double>> Hrho_n_data, Hrho_n_ddata;
-
-  try {
-    std::tie(J_n_data, J_n_ddata) = optimet::bessel<optimet::Bessel>(r_0, nMax_);
-    std::tie(Jrho_n_data, Jrho_n_ddata) = optimet::bessel<optimet::Bessel>(rho * r_0, nMax_);
-    std::tie(H_n_data, H_n_ddata) = optimet::bessel<optimet::Hankel1>(r_0, nMax_);
-    std::tie(Hrho_n_data, Hrho_n_ddata) = optimet::bessel<optimet::Hankel1>(rho * r_0, nMax_);
-  } catch(std::range_error &e) {
-    std::cerr << e.what() << std::endl;
-    return 1;
-  }
-
-  CompoundIterator p;
-  CompoundIterator q;
-
-  int pMax = p.max(nMax_); // Recalculating these would be pointless.
-  int qMax = q.max(nMax_);
-
-  for(p = 0; (int)p < pMax; p++)
-    for(q = 0; (int)q < qMax; q++) {
-      if((p.first == q.first) && (p.second == q.second)) // Kronicker symbols
-      {
-
-        // AJ ------------------------------------------------------------
-        // obtain aux functions
-        psi = r_0 * J_n_data[p.first];
-        dpsi = r_0 * J_n_ddata[p.first] + J_n_data[p.first];
-
-        ksi = r_0 * H_n_data[p.first];
-        dksi = r_0 * H_n_ddata[p.first] + H_n_data[p.first];
-
-        psirho = r_0 * rho * Jrho_n_data[p.first];
-        dpsirho = r_0 * rho * Jrho_n_ddata[p.first] + Jrho_n_data[p.first];
-
-        ksirho = r_0 * rho * Hrho_n_data[p.first];
-        dksirho = r_0 * rho * Hrho_n_ddata[p.first] + Hrho_n_data[p.first];
-
-        // TE Part
-        T_local_[p][q] = (psi / ksi) * (mu_sob * dpsi / psi - rho * dpsirho / psirho) /
-                         (rho * dpsirho / psirho - mu_sob * dksi / ksi);
-
-        // TM part
-        T_local_[(int)p + pMax][(int)q + qMax] = (psi / ksi) *
-                                                 (mu_sob * dpsirho / psirho - rho * dpsi / psi) /
-                                                 (rho * dksi / ksi - mu_sob * dpsirho / psirho);
-        // AJ ------------------------------------------------------------
-      } else {
-        T_local_[p][q] = std::complex<double>(0.0, 0.0);
-        T_local_[(int)p + pMax][(int)q + qMax] = std::complex<double>(0.0, 0.0);
-      }
-
-      // Set the rest of the matrix to (0.0, 0.0)
-      T_local_[(int)p + pMax][q] = std::complex<double>(0.0, 0.0);
-      T_local_[p][(int)q + qMax] = std::complex<double>(0.0, 0.0);
-    }
-
-  return 0;
-}
-
 // AJ
 // -----------------------------------------------------------------------------------------------------
 int Geometry::getNLSources(double omega_, int objectIndex_, int nMax_,
-                           std::complex<double> *sourceU, std::complex<double> *sourceV) {
+                           std::complex<double> *sourceU, std::complex<double> *sourceV) const {
   double R = objects[objectIndex_].radius;
 
   std::complex<double> mu_b = bground.mu;
@@ -331,7 +246,7 @@ int Geometry::checkInner(Spherical<double> R_) {
   return -1;
 }
 
-int Geometry::setSourcesSingle(Excitation *incWave_, std::complex<double> *internalCoef_FF_,
+int Geometry::setSourcesSingle(Excitation const *incWave_, std::complex<double> *internalCoef_FF_,
                                int nMax_) {
   CompoundIterator p;
   int pMax = p.max(nMax_);
@@ -368,8 +283,52 @@ int Geometry::setSourcesSingle(Excitation *incWave_, std::complex<double> *inter
   return 0;
 }
 
-int Geometry::getSourceLocal(int objectIndex_, Excitation *incWave_, std::complex<double> *,
-                             int nMax_, std::complex<double> *Q_SH_local_) {
+optimet::Matrix<optimet::t_complex>
+Geometry::getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet::t_uint nMax_) {
+  using namespace optimet;
+  if(objectIndex_ >= static_cast<int>(objects.size()))
+    std::out_of_range("Object index out of range");
+
+  auto const k_s =
+      omega_ * std::sqrt(objects[objectIndex_].elmag.epsilon * objects[objectIndex_].elmag.mu);
+  auto const k_b = omega_ * std::sqrt(bground.epsilon * bground.mu);
+
+  auto const rho = k_s / k_b;
+  auto const r_0 = k_b * objects[objectIndex_].radius;
+  auto const mu_sob = objects[objectIndex_].elmag.mu / bground.mu;
+
+  auto const Jn = optimet::bessel<optimet::Bessel>(r_0, nMax_);
+  auto const Jrho = optimet::bessel<optimet::Bessel>(rho * r_0, nMax_);
+  auto const Hn = optimet::bessel<optimet::Hankel1>(r_0, nMax_);
+
+  auto const N = HarmonicsIterator::max_flat(nMax_) - 1;
+  Matrix<t_complex> result = Matrix<t_complex>::Zero(2 * N, 2 * N);
+  for(t_uint n(1), current(0); n <= nMax_; current += 2 * n + 1, ++n) {
+    auto const psi = r_0 * std::get<0>(Jn)[n];
+    auto const dpsi = r_0 * std::get<1>(Jn)[n] + std::get<0>(Jn)[n];
+
+    auto const ksi = r_0 * std::get<0>(Hn)[n];
+    auto const dksi = r_0 * std::get<1>(Hn)[n] + std::get<0>(Hn)[n];
+
+    auto const psirho = r_0 * rho * std::get<0>(Jrho)[n];
+    auto const dpsirho = r_0 * rho * std::get<1>(Jrho)[n] + std::get<0>(Jrho)[n];
+
+    // TE Part
+    auto const TE = (psi / ksi) * (mu_sob * dpsi / psi - rho * dpsirho / psirho) /
+                    (rho * dpsirho / psirho - mu_sob * dksi / ksi);
+    result.diagonal().segment(current, 2 * n + 1).fill(TE);
+
+    // TM part
+    auto const TM = (psi / ksi) * (mu_sob * dpsirho / psirho - rho * dpsi / psi) /
+                    (rho * dksi / ksi - mu_sob * dpsirho / psirho);
+    result.diagonal().segment(current + N, 2 * n + 1).fill(TM);
+  }
+
+  return result;
+}
+
+int Geometry::getSourceLocal(int objectIndex_, Excitation const *incWave_, std::complex<double> *,
+                             int nMax_, std::complex<double> *Q_SH_local_) const {
   CompoundIterator p;
   CompoundIterator q;
 

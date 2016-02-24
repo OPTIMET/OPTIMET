@@ -10,10 +10,9 @@
 #include <complex>
 #include <cstdlib>
 
-Result::Result() : initDone(false), flagSH(false), result_FF(NULL) {}
-
+namespace optimet {
 Result::Result(Geometry *geometry_, Excitation *excitation_, int nMax_)
-    : Result() {
+  : flagSH(false), result_FF(nullptr) {
   init(geometry_, excitation_, nMax_);
 }
 
@@ -22,20 +21,7 @@ Result::Result(Geometry *geometry_, Excitation *excitation_, Result *result_FF_,
   init(geometry_, excitation_, result_FF_, nMax_);
 }
 
-Result::~Result() {
-  if (initDone) {
-    delete[] scatter_coef;
-    delete[] internal_coef;
-    delete[] c_scatter_coef;
-  }
-}
-
 void Result::init(Geometry *geometry_, Excitation *excitation_, int nMax_) {
-  if (initDone) {
-    std::cerr << "Result object initialized previously! Use update()!";
-    exit(1);
-  }
-
   geometry = geometry_;
   nMax = nMax_;
   excitation = excitation_;
@@ -43,13 +29,9 @@ void Result::init(Geometry *geometry_, Excitation *excitation_, int nMax_) {
   flagSH = false;
   result_FF = NULL;
 
-  scatter_coef = new std::complex<double>[2 * Tools::iteratorMax(nMax) *
-                                          geometry->objects.size()];
-  internal_coef = new std::complex<double>[2 * Tools::iteratorMax(nMax) *
-                                           geometry->objects.size()];
-  c_scatter_coef = new std::complex<double>[2 * Tools::iteratorMax(nMax)];
-
-  initDone = true;
+  scatter_coef.resize(2 * Tools::iteratorMax(nMax) * geometry->objects.size());
+  internal_coef.resize(2 * Tools::iteratorMax(nMax) * geometry->objects.size());
+  c_scatter_coef.resize(2 * Tools::iteratorMax(nMax));
 }
 
 void Result::update(Geometry *geometry_, Excitation *excitation_, int nMax_) {
@@ -68,15 +50,9 @@ void Result::init(Geometry *geometry_, Excitation *excitation_,
   flagSH = true;
   result_FF = result_FF_;
 
-  if (!initDone) {
-    scatter_coef = new std::complex<double>[2 * Tools::iteratorMax(nMax) *
-                                            geometry->objects.size()];
-    internal_coef = new std::complex<double>[2 * Tools::iteratorMax(nMax) *
-                                             geometry->objects.size()];
-    c_scatter_coef = new std::complex<double>[2 * Tools::iteratorMax(nMax)];
-  }
-
-  initDone = true;
+  scatter_coef.resize(2 * Tools::iteratorMax(nMax) * geometry->objects.size());
+  internal_coef.resize(2 * Tools::iteratorMax(nMax) * geometry->objects.size());
+  c_scatter_coef.resize(2 * Tools::iteratorMax(nMax));
 }
 
 void Result::getEHFieldsModal(Spherical<double> R_,
@@ -547,13 +523,7 @@ double Result::getAbsorptionCrossSection() {
   return (1 / (std::real(waveK) * std::real(waveK))) * Cabs;
 }
 
-int Result::setFields(OutputGrid &oEGrid_, OutputGrid &oHGrid_,
-                      int projection_) {
-  if (!initDone) {
-    std::cerr << "Result object not initialized!";
-    return -1;
-  }
-
+int Result::setFields(OutputGrid &oEGrid_, OutputGrid &oHGrid_, int projection_) {
   Spherical<double> Rloc;
 
   // centerScattering();
@@ -577,14 +547,8 @@ int Result::setFields(OutputGrid &oEGrid_, OutputGrid &oHGrid_,
   return 0;
 }
 
-int Result::setFieldsModal(OutputGrid &oEGrid_, OutputGrid &oHGrid_,
-                           int projection_, CompoundIterator p_,
-                           int singleComponent_) {
-  if (!initDone) {
-    std::cerr << "Result object not initialized!";
-    return -1;
-  }
-
+int Result::setFieldsModal(OutputGrid &oEGrid_, OutputGrid &oHGrid_, int projection_,
+                           CompoundIterator p_, int singleComponent_) {
   Spherical<double> Rloc;
 
   // Calculate the fields
@@ -892,4 +856,5 @@ void Result::writeContinuityCheck(int objectIndex_) {
   H1_err_mag.close();
   H2_err_mag.close();
   H3_err_mag.close();
+}
 }

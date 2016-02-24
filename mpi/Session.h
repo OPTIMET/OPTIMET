@@ -7,7 +7,7 @@ namespace optimet {
 namespace mpi {
 #ifdef OPTIMET_MPI
 //! Calls mpi init
-void init(int argc, char **argv);
+void init(int argc, const char **argv);
 //! True if mpi has been initialized
 bool initialized();
 //! True if mpi has been finalized
@@ -19,7 +19,7 @@ void increment_ref();
 //! Decrements number of mpi objects
 void decrement_ref();
 #else
-inline void init(int argc, char **argv) {}
+inline void init(int argc, const char **argv) {}
 #endif
 } /* optimet::mpi */
 } /* optimet */
