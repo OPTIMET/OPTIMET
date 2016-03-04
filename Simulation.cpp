@@ -22,9 +22,22 @@ int Simulation::run() {
   if (reader.readSimulation(caseFile + ".xml"))
     return 1;
 
-  // Initialize the solver
+// Initialize the solver
+#ifdef OPTIMET_MPI
+  optimet::scalapack::Context context(run.parallel_params.grid);
+
   optimet::Solver solver(&(run.geometry), &(run.excitation), O3DSolverIndirect,
-                run.nMax);
+                         run.nMax, context);
+
+  solver.block_size(
+      {run.parallel_params.block_size, run.parallel_params.block_size});
+#else
+  optimet::Solver solver(&(run.geometry), &(run.excitation), O3DSolverIndirect,
+                         run.nMax);
+#endif
+
+  solver.block_size(
+      {run.parallel_params.block_size, run.parallel_params.block_size});
 
   switch (run.outputType) {
   case 0:
@@ -239,7 +252,8 @@ void Simulation::coefficients(Run &run, optimet::Solver &solver) {
     outPCoef << p.first << "\t" << p.second << "\t"
              << abs(result.scatter_coef(static_cast<int>(p))) << std::endl;
     outQCoef << p.first << "\t" << p.second << "\t"
-             << abs(result.scatter_coef(static_cast<int>(p.compound) + p.max(run.nMax)))
+             << abs(result.scatter_coef(static_cast<int>(p.compound) +
+                                        p.max(run.nMax)))
              << std::endl;
   }
 
