@@ -1,6 +1,7 @@
 #ifndef SOLVER_H_
 #define SOLVER_H_
 
+#include <exception>
 #include <complex>
 #include "Types.h"
 #include "Geometry.h"
@@ -26,7 +27,8 @@ public:
    * @param method_ the solver method to be used.
    * @param nMax_ the maximum value for the n iterator.
    */
-  Solver(Geometry *geometry_, Excitation const *incWave_, int method_, long nMax_,
+  Solver(Geometry *geometry_, Excitation const *incWave_, int method_,
+         long nMax_,
          scalapack::Context const &context = scalapack::Context::Squarest());
 
   /**
@@ -77,10 +79,12 @@ public:
   }
   scalapack::Sizes const &block_size() const { return block_size_; }
   Solver &block_size(scalapack::Sizes const &c) {
+    if (c.rows != c.cols)
+      throw std::invalid_argument(
+          "ScaLAPACK solvers require a square block size");
     block_size_ = c;
     return *this;
   }
-
 
 protected:
   //! Populate the S and Q matrices using the solverMethod option
@@ -103,8 +107,8 @@ private:
   Excitation const *incWave; /**< Pointer to the incoming excitation. */
   long nMax;                 /**< The maximum n order. */
   Result *result_FF;         /**< The fundamental frequency results. */
-  int solverMethod;          /**< Solver method: Direct = Mischenko1996, Indirect =
-                                Stout2002 */
+  int solverMethod; /**< Solver method: Direct = Mischenko1996, Indirect =
+                       Stout2002 */
   //! \brief MPI commnunicator
   //! \details Fake if not compiled with MPI
   scalapack::Context context_;
