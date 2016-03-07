@@ -17,6 +17,10 @@ int Simulation::run() {
 
   // Read the case file
   Run run;
+#ifdef OPTIMET_MPI
+  run.parallel_params.grid =
+      optimet::scalapack::squarest_largest_grid(communicator().size());
+#endif
 
   Reader reader(&run);
   if (reader.readSimulation(caseFile + ".xml"))
@@ -35,9 +39,6 @@ int Simulation::run() {
   optimet::Solver solver(&(run.geometry), &(run.excitation), O3DSolverIndirect,
                          run.nMax);
 #endif
-
-  solver.block_size(
-      {run.parallel_params.block_size, run.parallel_params.block_size});
 
   switch (run.outputType) {
   case 0:
