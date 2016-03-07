@@ -6,6 +6,7 @@
 #include "Cartesian.h"
 #include "constants.h"
 #include "Tools.h"
+#include "mpi/Communicator.h"
 #include <iostream>
 #include <cstring>
 #include <vector>
