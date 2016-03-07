@@ -106,8 +106,8 @@ private:
 namespace optimet {
 namespace mpi {
 class Communicator {
-  public:
-    static t_uint size() { return 1; }
+public:
+  t_uint size() { return 1; }
 };
 }
 }
