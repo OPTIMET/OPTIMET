@@ -16,7 +16,8 @@ namespace optimet {
 namespace mpi {
 
 //! \brief A C++ wrapper for an mpi communicator
-//! \details All copies made of this communicator are shallow: they reference the same communicator.
+//! \details All copies made of this communicator are shallow: they reference
+//! the same communicator.
 class Communicator {
   //! Holds actual data associated with mpi
   struct Impl {
@@ -95,7 +96,8 @@ private:
 
   //! \brief Constructs a communicator
   //! \details Takes ownership of the communicator, unless it is MPI_COMM_WORLD.
-  //! This means that once all the shared pointer to the impl are delete, the communicator will be
+  //! This means that once all the shared pointer to the impl are delete, the
+  //! communicator will be
   //! released.
   Communicator(MPI_Comm const &comm);
 };
@@ -107,7 +109,9 @@ namespace optimet {
 namespace mpi {
 class Communicator {
 public:
-  t_uint size() { return 1; }
+  constexpr t_uint size() const { return 1; }
+  constexpr t_uint rank() const { return 0; }
+  constexpr t_uint root_id() const { return 0; }
 };
 }
 }
