@@ -20,6 +20,7 @@ void increment_ref();
 void decrement_ref();
 #else
 inline void init(int argc, const char **argv) {}
+inline void finalize() {}
 #endif
 } /* optimet::mpi */
 } /* optimet */
