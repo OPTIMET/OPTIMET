@@ -39,5 +39,16 @@ OPTIMET_MACRO(d, D, double);
 OPTIMET_MACRO(c, C, std::complex<float>);
 OPTIMET_MACRO(z, Z, std::complex<double>);
 #undef OPTIMET_MACRO
+
+#define OPTIMET_MACRO(func, FUNC)                                                             \
+  int OPTIMET_FC_GLOBAL(indx ## func, INDX ## FUNC)(int*, int*, int*, int*, int*)
+OPTIMET_MACRO(g2l, G2L);
+OPTIMET_MACRO(l2g, L2G);
+OPTIMET_MACRO(g2p, G2P);
+#undef OPTIMET_MACRO
+
+void OPTIMET_FC_GLOBAL(pdgemm, PDGEMM)(char* TRANSA, char* TRANSB, int * M, int * N, int * K,
+  double * ALPHA, double * A, int * IA, int * JA, int * DESCA, double * B, int * IB, int * JB, int *
+  DESCB, double * BETA, double * C, int * IC, int * JC, int * DESCC);
 } /* optimet */
 #endif

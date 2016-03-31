@@ -242,3 +242,51 @@ TEST_CASE("Assignement") {
   SECTION("2x2") { check_assignement({2, 2}, {1024, 2048}, {32, 65}); }
   SECTION("3x2") { check_assignement({3, 2}, {1024, 2048}, {32, 65}); }
 }
+
+void check_multiply(optimet::scalapack::Sizes const &grid, optimet::scalapack::Sizes const &size,
+                    optimet::scalapack::Sizes const &blocks) {
+  mpi::Communicator const world;
+  if(world.size() < grid.rows * grid.cols) {
+    WARN("Not enough processes to run test: " << grid.rows << "x" << grid.cols << " < "
+                                              << world.size());
+    return;
+  }
+
+  auto const ranks = world.all_gather(scalapack::global_rank());
+  auto const root = std::find(ranks.begin(), ranks.end(), 0) - ranks.begin();
+  scalapack::Context const single(1, 1);
+  scalapack::Context const matrix_context(grid.rows, grid.cols);
+  scalapack::Context const vector_context(grid.rows, 1);
+
+  auto const condition =
+      single.is_valid() or matrix_context.is_valid() or vector_context.is_valid();
+  auto const split = mpi::Communicator().split(condition);
+  if(not condition)
+    return;
+  scalapack::Matrix<> Aserial(single, size, blocks);
+  scalapack::Matrix<> xserial(single, {Aserial.cols(), static_cast<t_uint>(1)}, blocks);
+  if(single.is_valid()) {
+    Aserial.local() = optimet::Matrix<t_real>::Random(Aserial.rows(), Aserial.cols());
+    xserial.local() = optimet::Matrix<t_real>::Random(xserial.rows(), xserial.cols());
+  }
+
+  // perform transfer
+  auto Aparallel = Aserial.transfer_to(matrix_context);
+  auto xparallel = xserial.transfer_to(vector_context);
+  // Do multiplication
+  scalapack::Matrix<> result(single, {Aserial.rows(), 1}, blocks);
+  result.local().fill(0);
+  pdgemm(1.5e0, Aparallel, xparallel, 0.0, result);
+
+  if(single.is_valid()) {
+    auto const expected = (1.5 * Aserial.local() * xserial.local()).eval();
+    CHECK(expected.isApprox(result.local()));
+  }
+}
+
+TEST_CASE("Matrix multiplication") {
+  SECTION("1x1") { check_multiply({1, 1}, {1024, 2048}, {32, 65}); }
+  SECTION("1x2") { check_multiply({1, 2}, {1024, 2048}, {32, 65}); }
+  SECTION("2x1") { check_multiply({2, 1}, {1024, 2048}, {32, 65}); }
+  SECTION("2x3") { check_multiply({2, 3}, {1024, 2048}, {32, 65}); }
+}

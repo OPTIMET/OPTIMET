@@ -105,6 +105,12 @@ protected:
   static typename EigenMatrix::Index
   cols(Context const &context, Sizes size, Sizes blocks, Index index);
 };
+
+//! Multiplies two matrices
+template <class SCALAR>
+void pdgemm(SCALAR alpha, Matrix<SCALAR> const &a, Matrix<SCALAR> const &b, SCALAR beta,
+            Matrix<SCALAR> &c, char opa = 'N', char opb = 'N');
+
 #endif
 }
 }

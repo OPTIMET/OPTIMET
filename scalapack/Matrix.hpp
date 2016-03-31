@@ -76,5 +76,9 @@ void Matrix<SCALAR>::operator=(Matrix<SCALAR> && other) {
     local().swap(other.local());
 }
 
+// Explicit declaration of full specialization
+template <>
+void pdgemm<double>(double alpha, Matrix<double> const &a, Matrix<double> const &b, double beta,
+                    Matrix<double> &c, char opa, char opb);
 } // scalapack
 } // optimet
