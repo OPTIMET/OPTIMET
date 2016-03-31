@@ -1,14 +1,14 @@
 #ifndef SOLVER_H_
 #define SOLVER_H_
 
-#include <complex>
-#include "Types.h"
-#include "Geometry.h"
-#include "Excitation.h"
 #include "Coupling.h"
+#include "Excitation.h"
+#include "Geometry.h"
 #include "Result.h"
+#include "Types.h"
 #include "scalapack/Context.h"
 #include "scalapack/Parameters.h"
+#include <complex>
 
 namespace optimet {
 /**
@@ -81,7 +81,6 @@ public:
     return *this;
   }
 
-
 protected:
   //! Populate the S and Q matrices using the solverMethod option
   void populate();
@@ -99,6 +98,11 @@ protected:
                          Vector<t_complex> &x) const;
 
 private:
+#ifdef OPTIMET_MPI
+  static void solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_complex> const &b,
+                                         Vector<t_complex> &x, scalapack::Context const &context,
+                                         scalapack::Sizes const &block_size);
+#endif
   Geometry *geometry;        /**< Pointer to the geometry. */
   Excitation const *incWave; /**< Pointer to the incoming excitation. */
   long nMax;                 /**< The maximum n order. */

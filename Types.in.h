@@ -6,6 +6,7 @@
 #include <Eigen/Core>
 
 #cmakedefine OPTIMET_MPI
+#cmakedefine OPTIMET_BELOS
 
 namespace optimet {
 //! Root of the type hierarchy for signed integers

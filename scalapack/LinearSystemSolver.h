@@ -18,6 +18,11 @@ template <class SCALAR> int general_linear_system_inplace(Matrix<SCALAR> &A, Mat
 template <class SCALAR>
 std::tuple<Matrix<SCALAR>, int>
 general_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b);
+
+//! Solve a system of linear equations using Belos
+template <class SCALAR>
+std::tuple<Matrix<SCALAR>, int>
+gmres_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b);
 }
 }
 

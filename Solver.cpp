@@ -165,12 +165,10 @@ void Solver::update(Geometry *geometry_, Excitation const *incWave_, long nMax_)
 
 void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b,
                                Vector<t_complex> &x) const {
-#ifdef OPTIMET_MPI
   if(scalapack::global_size() > 1)
     solveLinearSystemScalapack(A, b, x, context(), block_size());
   else
-#endif
-    x = A.colPivHouseholderQr().solve(b);
+  x = A.colPivHouseholderQr().solve(b);
 }
 
 #ifdef OPTIMET_MPI
@@ -192,7 +190,12 @@ void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_com
   auto bparallel = bserial.transfer_to(context, block_size);
 
   // Now the actual work
-  auto Xparallel = std::get<0>(scalapack::general_linear_system(Aparallel, bparallel));
+  auto Xparallel =
+# ifdef OPTIMET_BELOS
+    std::get<0>(scalapack::gmres_linear_system(Aparallel, bparallel));
+# else
+    std::get<0>(scalapack::general_linear_system(Aparallel, bparallel));
+# endif
 
   // Transfer back to root
   auto Xserial = Xparallel.transfer_to(Aserial.context(), block_size);
