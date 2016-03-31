@@ -92,6 +92,30 @@ public:
   //! Local leading dimension
   t_uint local_leading() const { return EigenMatrix::IsRowMajor ? local().cols() : local().rows(); }
 
+  //! Global to local indices
+  std::tuple<t_uint, t_uint, t_uint, t_uint> local_indices(t_uint i, t_uint j) const {
+    return local_indices(std::make_tuple(i, j));
+  }
+  //! Global to local indices
+  std::tuple<t_uint, t_uint, t_uint, t_uint>
+  local_indices(std::tuple<t_uint, t_uint> const &i) const;
+
+  //! Local to global indices
+  //! \param[in] i: local row index
+  //! \param[in] j: local column index
+  //! \param[in] proc_i: process row index
+  //! \param[in] proc_j: process column index
+  std::tuple<t_uint, t_uint>
+  global_indices(t_uint i, t_uint j, t_uint proc_i, t_uint proc_j) const {
+    return global_indices(std::make_tuple(i, j, proc_i, proc_j));
+  }
+  std::tuple<t_uint, t_uint> global_indices(t_uint i, t_uint j) const {
+    return global_indices(std::make_tuple(i, j, context().row(), context().col()));
+  }
+  // Local to global indices
+  std::tuple<t_uint, t_uint>
+  global_indices(std::tuple<t_uint, t_uint, t_uint, t_uint> const &i) const;
+
 protected:
   //! Associated blacs context
   Context context_;
@@ -104,6 +128,11 @@ protected:
   rows(Context const &context, Sizes size, Sizes blocks, Index index);
   static typename EigenMatrix::Index
   cols(Context const &context, Sizes size, Sizes blocks, Index index);
+
+  //! Process row index over which the first row of the matrix is distributed
+  t_uint first_row() const { return static_cast<t_uint>(blacs_[6]); }
+  //! Process column index over which the first column of the matrix is distributed
+  t_uint first_col() const { return static_cast<t_uint>(blacs_[7]); }
 };
 
 //! Multiplies two matrices

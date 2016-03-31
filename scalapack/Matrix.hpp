@@ -38,10 +38,14 @@ OPTIMET_MACRO(z, std::complex<double>);
 }
 
 template <class SCALAR> void Matrix<SCALAR>::transfer_to(Context const &un, Matrix &other) const {
-  if(context().is_valid() or un.is_valid() or other.context().is_valid())
-    gemr2d(rows(), cols(), const_cast<SCALAR *>(local().data()), 1, 1,
-           const_cast<int *>(blacs().data()), other.local().data(), 1, 1,
+  if(context().is_valid() or un.is_valid() or other.context().is_valid()) {
+    SCALAR dummy;
+    SCALAR const * input = local().size() > 0 ? local().data(): &dummy;
+    SCALAR * output = other.local().size() > 0 ? other.local().data(): &dummy;
+    gemr2d(rows(), cols(), const_cast<SCALAR *>(input), 1, 1,
+           const_cast<int *>(blacs().data()), output, 1, 1,
            const_cast<int *>(other.blacs().data()), *un);
+  }
 }
 template <class SCALAR>
 Matrix<SCALAR> Matrix<SCALAR>::transfer_to(Context const &un, Context const &other,
@@ -54,6 +58,21 @@ Matrix<SCALAR> Matrix<SCALAR>::transfer_to(Context const &un, Context const &oth
        _index.col == std::numeric_limits<t_uint>::max() ? index().col : _index.col});
   transfer_to(un, result);
   return result;
+}
+
+template <class SCALAR>
+std::tuple<t_uint, t_uint, t_uint, t_uint>
+Matrix<SCALAR>::local_indices(std::tuple<t_uint, t_uint> const &i) const {
+  int np_row(context().rows()), np_col(context().cols());
+  int nb_row(blocks().rows), nb_col(blocks().cols);
+  int i_row(std::get<0>(i)), i_col(std::get<1>(i));
+  int f_row(first_row()), f_col(first_col());
+  int dummy = 0;
+  return std::tuple<t_uint, t_uint, t_uint, t_uint>(
+      OPTIMET_FC_GLOBAL(indxg2l, INDXG2L)(&i_row, &nb_row, &dummy, &f_row, &np_row),
+      OPTIMET_FC_GLOBAL(indxg2l, INDXG2L)(&i_col, &nb_col, &dummy, &f_col, &np_col),
+      OPTIMET_FC_GLOBAL(indxg2p, INDXG2P)(&i_row, &nb_row, &dummy, &f_row, &np_row),
+      OPTIMET_FC_GLOBAL(indxg2p, INDXG2P)(&i_col, &nb_col, &dummy, &f_col, &np_col));
 }
 
 template<class SCALAR>
