@@ -1,10 +1,10 @@
 #ifndef OPTIMET_SCALAPACK_MATRIX_H_
 #define OPTIMET_SCALAPACK_MATRIX_H_
 
-#include <array>
 #include "Types.h"
 #include "scalapack/Context.h"
 #include "scalapack/InitExit.h"
+#include <array>
 
 namespace optimet {
 namespace scalapack {

@@ -1,13 +1,12 @@
 #include <iostream>
 #include <numeric>
-#include "catch.hpp"
 
 #include "Types.h"
+#include "mpi/Collectives.h"
+#include "mpi/Communicator.h"
 #include "scalapack/Context.h"
 #include "scalapack/InitExit.h"
 #include "scalapack/Matrix.h"
-#include "mpi/Communicator.h"
-#include "mpi/Collectives.h"
 
 using namespace optimet;
 
@@ -154,8 +153,7 @@ TEST_CASE("Transfer from 1x1 to 2x1") {
   }
 }
 
-void check_distribute(optimet::scalapack::Sizes const &grid,
-                      optimet::scalapack::Sizes const &size,
+void check_distribute(optimet::scalapack::Sizes const &grid, optimet::scalapack::Sizes const &size,
                       optimet::scalapack::Sizes const &blocks) {
   mpi::Communicator const world;
   if(world.size() < grid.rows * grid.cols) {

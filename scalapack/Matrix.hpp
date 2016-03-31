@@ -1,7 +1,7 @@
-#include <iostream>
-#include "scalapack/Matrix.h"
-#include "scalapack/InitExit.h"
 #include "scalapack/Blacs.h"
+#include "scalapack/InitExit.h"
+#include "scalapack/Matrix.h"
+#include <iostream>
 
 namespace optimet {
 namespace scalapack {
