@@ -1,3 +1,4 @@
+#include "catch.hpp"
 #include <iostream>
 #include <numeric>
 
@@ -192,7 +193,52 @@ void check_distribute(optimet::scalapack::Sizes const &grid, optimet::scalapack:
 
 TEST_CASE("Transfer from 1x1 to nxm to mxn to 1x1") {
   SECTION("1x2") { check_distribute({1, 2}, {1024, 2048}, {32, 65}); }
+  SECTION("2x1") { check_distribute({1, 2}, {1024, 2048}, {32, 65}); }
   SECTION("3x1") { check_distribute({3, 1}, {1024, 2048}, {32, 65}); }
   SECTION("2x2") { check_distribute({2, 2}, {1024, 2048}, {32, 65}); }
   SECTION("3x2") { check_distribute({3, 2}, {1024, 2048}, {32, 65}); }
+}
+
+void check_assignement(optimet::scalapack::Sizes const &grid, optimet::scalapack::Sizes const &size,
+                       optimet::scalapack::Sizes const &blocks) {
+  mpi::Communicator const world;
+  if(world.size() < grid.rows * grid.cols) {
+    WARN("Not enough processes to run test: " << grid.rows << "x" << grid.cols << " < "
+                                              << world.size());
+    return;
+  }
+
+  auto const ranks = world.all_gather(scalapack::global_rank());
+  auto const root = std::find(ranks.begin(), ranks.end(), 0) - ranks.begin();
+  scalapack::Context const single(1, 1);
+  scalapack::Context const parallel(grid.rows, grid.cols);
+
+  auto const split = mpi::Communicator().split(single.is_valid() or parallel.is_valid());
+  scalapack::Matrix<> input(single, size, blocks);
+  if(single.is_valid())
+    input.local() = optimet::Matrix<t_real>::Random(size.rows, size.cols);
+  auto const input_matrix = split.broadcast(input.local(), root);
+
+  // Perform transfer to parallel matrix
+  scalapack::Matrix<> mid(parallel, size, blocks);
+  scalapack::Matrix<> output(single, size, blocks);
+  mid = input;
+  output = mid;
+
+  if(single.is_valid())
+    CHECK(output.local().isApprox(input.local()));
+
+  output.local().fill(0);
+  output = input;
+  if(single.is_valid())
+    CHECK(output.local().isApprox(input.local()));
+}
+
+TEST_CASE("Assignement") {
+  SECTION("1x1") { check_assignement({1, 1}, {1024, 2048}, {32, 65}); }
+  SECTION("1x2") { check_assignement({1, 2}, {1024, 2048}, {32, 65}); }
+  SECTION("2x1") { check_assignement({2, 1}, {1024, 2048}, {32, 65}); }
+  SECTION("3x1") { check_assignement({3, 1}, {1024, 2048}, {32, 65}); }
+  SECTION("2x2") { check_assignement({2, 2}, {1024, 2048}, {32, 65}); }
+  SECTION("3x2") { check_assignement({3, 2}, {1024, 2048}, {32, 65}); }
 }

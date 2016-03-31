@@ -28,6 +28,13 @@ public:
                 static_cast<int>(sizes.cols), static_cast<int>(blocks.rows),
                 static_cast<int>(blocks.cols), static_cast<int>(index.row),
                 static_cast<int>(index.col), static_cast<int>(local_leading())}} {}
+  //! Copy constructor
+  Matrix(Matrix const &other)
+      : context_(other.context_), matrix_(other.matrix_), blacs_(other.blacs_) {}
+  //! Move Copy constructor
+  Matrix(Matrix &&other)
+      : context_(std::move(other.context_)), matrix_(std::move(other.matrix_)),
+        blacs_(std::move(other.blacs_)) {}
 
   //! Gets the underlying local eigen matrix
   EigenMatrix &local() { return matrix_; }
@@ -59,6 +66,13 @@ public:
                                            std::numeric_limits<t_uint>::max()}) const {
     return transfer_to(context().size() > other.size() ? context() : other, other, blocks, index);
   }
+
+  //! \brief Assigns matrix
+  //! \details Copies from other to current. The two matrices must have the same size.
+  //! They may have different contexts.
+  void operator=(Matrix<SCALAR> const &other);
+  //! Move assignment
+  void operator=(Matrix<SCALAR> &&other);
 
   //! Index of the process with th upper left element
   Index index() const { return {static_cast<t_uint>(blacs()[6]), static_cast<t_uint>(blacs()[7])}; }

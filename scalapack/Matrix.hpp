@@ -55,5 +55,26 @@ Matrix<SCALAR> Matrix<SCALAR>::transfer_to(Context const &un, Context const &oth
   transfer_to(un, result);
   return result;
 }
+
+template<class SCALAR>
+void Matrix<SCALAR>::operator=(Matrix<SCALAR> const &other) {
+  if(rows() != other.rows() or cols() != other.cols())
+    throw std::runtime_error("Matrices have different sizes.");
+  if(context() != other.context())
+    *this = other.transfer_to(context());
+  else
+    local() = other.local();
+}
+
+template<class SCALAR>
+void Matrix<SCALAR>::operator=(Matrix<SCALAR> && other) {
+  if(rows() != other.rows() or cols() != other.cols())
+    throw std::runtime_error("Matrices have different sizes.");
+  if(context() != other.context())
+    *this = other.transfer_to(context());
+  else
+    local().swap(other.local());
+}
+
 } // scalapack
 } // optimet
