@@ -42,6 +42,37 @@ TEST_CASE("Map a matrix") {
   SECTION("2x3") { check_map<double>({2, 3}, {1024, 2048}, {32, 64}); }
 }
 
+template <class SCALAR>
+void check_vector(scalapack::Sizes const &grid, scalapack::Sizes const &size,
+                  scalapack::Sizes const &blocks) {
+  if(mpi::Communicator().size() < grid.rows * grid.cols) {
+    WARN("Not enough processes to run test: " << grid.rows << "x" << grid.cols << " < "
+                                              << mpi::Communicator().size());
+    return;
+  }
+  scalapack::Context const context(grid.rows, grid.cols);
+  scalapack::Matrix<SCALAR> A(context, size, blocks);
+  auto const split = mpi::Communicator().split(context.is_valid());
+  if(not context.is_valid())
+    return;
+  A.local() = Matrix<SCALAR>::Ones(size.rows, size.cols);
+  auto const vector = tpetra_vector(A, split);
+  CHECK(vector.getNumVectors() == 1);
+  CHECK(vector.getGlobalLength() == A.size());
+  CHECK(vector.getLocalLength() == A.local().size());
+
+  CHECK(vector.norm1() == A.size());
+  A.local() *= 2;
+  CHECK(vector.norm1() == A.size());
+}
+
+TEST_CASE("Tpetra vector from a matrix") {
+  SECTION("1x1") { check_vector<double>({1, 1}, {1024, 2048}, {32, 64}); }
+  SECTION("1x2") { check_vector<double>({1, 2}, {1024, 2048}, {32, 64}); }
+  SECTION("2x1") { check_vector<double>({2, 1}, {1024, 2048}, {32, 64}); }
+  SECTION("2x3") { check_vector<double>({2, 3}, {1024, 2048}, {32, 64}); }
+}
+
 template <class SCALAR> void check_gmres(scalapack::Sizes const &grid, t_uint n, t_uint nb) {
   scalapack::Sizes const size = {n, n};
   scalapack::Sizes const blocks = {nb, nb};

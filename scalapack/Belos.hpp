@@ -10,16 +10,12 @@
 
 namespace optimet {
 namespace scalapack {
-template <class SCALAR> KokkosView<SCALAR> view(Matrix<SCALAR> &A) {
-  if(A.cols() != 1)
-    throw std::runtime_error("Matrix must be a row vector");
-  return {A.local().data(), A.local().rows()};
+template <class SCALAR> TeuchosArrayView<SCALAR> view(Matrix<SCALAR> &A) {
+  return TeuchosArrayView<SCALAR>(A.local().data(), A.local().size());
 }
 
-template <class SCALAR> KokkosView<SCALAR const> view(Matrix<SCALAR> const &A) {
-  if(A.cols() != 1)
-    throw std::runtime_error("Matrix must be a row vector");
-  return {A.local().data(), A.local().rows()};
+template <class SCALAR> TeuchosArrayView<SCALAR const> view(Matrix<SCALAR> const &A) {
+  return TeuchosArrayView<SCALAR const>(A.local().data(), A.local().size());
 }
 
 template <class SCALAR>
@@ -41,6 +37,11 @@ matrix_map(Matrix<SCALAR> const &A, mpi::Communicator const &comm) {
 
   // And populate it
   return result;
+}
+
+template <class SCALAR>
+TpetraVector<SCALAR> tpetra_vector(Matrix<SCALAR> const &A, mpi::Communicator const &comm) {
+  return TpetraVector<SCALAR>(matrix_map(A, comm), view<SCALAR>(A));
 }
 }
 }
