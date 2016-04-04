@@ -12,7 +12,6 @@ if(dompi)
     return()
   elseif(MPIEXEC_MAX_NUMPROCS LESS 4)
     message(STATUS "Some MPI tests are disabled: MPIEXEC_MAX_NUMPROCS < 4")
-    return()
   endif()
 
   add_library(common_mpi_catch_main_object OBJECT common_mpi_catch_main.cpp)
