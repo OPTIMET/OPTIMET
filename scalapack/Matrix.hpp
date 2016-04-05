@@ -8,7 +8,7 @@ namespace scalapack {
 
 #define OPTIMET_MACRO(NAME)                                                                        \
   template <class SCALAR>                                                                          \
-  typename Matrix<SCALAR>::EigenMatrix::Index Matrix<SCALAR>::NAME##s(                             \
+  typename Matrix<SCALAR>::EigenMatrix::Index Matrix<SCALAR>::local_##NAME##s(                     \
       Context const &context, Sizes size, Sizes blocks, Index index) {                             \
     if(not context.is_valid())                                                                     \
       return 0;                                                                                    \
@@ -37,20 +37,31 @@ OPTIMET_MACRO(z, std::complex<double>);
 #undef OPTIMET_MACRO
 }
 
-template <class SCALAR> void Matrix<SCALAR>::transfer_to(Context const &un, Matrix &other) const {
+template <class SCALAR>
+void Matrix<SCALAR>::transfer_to(Context const &un, MapMatrix &other) const {
   if(context().is_valid() or un.is_valid() or other.context().is_valid()) {
-    SCALAR dummy;
-    SCALAR const * input = local().size() > 0 ? local().data(): &dummy;
-    SCALAR * output = other.local().size() > 0 ? other.local().data(): &dummy;
-    gemr2d(rows(), cols(), const_cast<SCALAR *>(input), 1, 1,
-           const_cast<int *>(blacs().data()), output, 1, 1,
-           const_cast<int *>(other.blacs().data()), *un);
+    Scalar dummy;
+    Scalar const *input = local().size() > 0 ? local().data() : &dummy;
+    Scalar *output = other.local().size() > 0 ? other.local().data() : &dummy;
+    gemr2d(rows(), cols(), const_cast<Scalar *>(input), 1, 1, const_cast<int *>(blacs().data()),
+           output, 1, 1, const_cast<int *>(other.blacs().data()), *un);
   }
 }
 template <class SCALAR>
-Matrix<SCALAR> Matrix<SCALAR>::transfer_to(Context const &un, Context const &other,
-                                           Sizes const &_blocks, Index const &_index) const {
-  Matrix<SCALAR> result(
+void Matrix<SCALAR>::transfer_to(Context const &un, ConcreteMatrix &other) const {
+  if(context().is_valid() or un.is_valid() or other.context().is_valid()) {
+    Scalar dummy;
+    Scalar const *input = local().size() > 0 ? local().data() : &dummy;
+    Scalar *output = other.local().size() > 0 ? other.local().data() : &dummy;
+    gemr2d(rows(), cols(), const_cast<Scalar *>(input), 1, 1, const_cast<int *>(blacs().data()),
+           output, 1, 1, const_cast<int *>(other.blacs().data()), *un);
+  }
+}
+template <class SCALAR>
+typename Matrix<SCALAR>::ConcreteMatrix
+Matrix<SCALAR>::transfer_to(Context const &un, Context const &other, Sizes const &_blocks,
+                            Index const &_index) const {
+  ConcreteMatrix result(
       other, sizes(),
       {_blocks.rows == std::numeric_limits<t_uint>::max() ? blocks().rows : _blocks.rows,
        _blocks.cols == std::numeric_limits<t_uint>::max() ? blocks().cols : _blocks.cols},
@@ -75,8 +86,7 @@ Matrix<SCALAR>::local_indices(std::tuple<t_uint, t_uint> const &i) const {
       OPTIMET_FC_GLOBAL(indxg2p, INDXG2P)(&i_col, &nb_col, &dummy, &f_col, &np_col));
 }
 
-template<class SCALAR>
-void Matrix<SCALAR>::operator=(Matrix<SCALAR> const &other) {
+template <class SCALAR> void Matrix<SCALAR>::operator=(Matrix<SCALAR> const &other) {
   if(rows() != other.rows() or cols() != other.cols())
     throw std::runtime_error("Matrices have different sizes.");
   if(context() != other.context())
@@ -85,8 +95,7 @@ void Matrix<SCALAR>::operator=(Matrix<SCALAR> const &other) {
     local() = other.local();
 }
 
-template<class SCALAR>
-void Matrix<SCALAR>::operator=(Matrix<SCALAR> && other) {
+template <class SCALAR> void Matrix<SCALAR>::operator=(Matrix<SCALAR> &&other) {
   if(rows() != other.rows() or cols() != other.cols())
     throw std::runtime_error("Matrices have different sizes.");
   if(context() != other.context())
@@ -99,5 +108,17 @@ void Matrix<SCALAR>::operator=(Matrix<SCALAR> && other) {
 template <>
 void pdgemm<double>(double alpha, Matrix<double> const &a, Matrix<double> const &b, double beta,
                     Matrix<double> &c, char opa, char opb);
+template <>
+void pdgemm<double>(double alpha, Matrix<double> const &a, Matrix<double const *> const &b,
+                    double beta, Matrix<double *> &c, char opa, char opb);
+template <>
+void pdgemm<std::complex<double>>(std::complex<double> alpha, Matrix<std::complex<double>> const &a,
+                                  Matrix<std::complex<double>> const &b, std::complex<double> beta,
+                                  Matrix<std::complex<double>> &c, char opa, char opb);
+template <>
+void pdgemm<std::complex<double>>(std::complex<double> alpha, Matrix<std::complex<double>> const &a,
+                                  Matrix<std::complex<double> const *> const &b,
+                                  std::complex<double> beta, Matrix<std::complex<double> *> &c,
+                                  char opa, char opb);
 } // scalapack
 } // optimet
