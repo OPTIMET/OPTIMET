@@ -1,6 +1,9 @@
-#include <exception>
 #include "mpi/Session.h"
+#include <exception>
 #include <mpi.h>
+#ifdef OPTIMET_BELOS
+#include <Tpetra_Core.hpp>
+#endif
 
 namespace optimet {
 namespace mpi {
@@ -17,9 +20,13 @@ t_uint &global_reference() {
 } // anonymous namespace
 
 void init(int argc, const char **argv) {
-  if (did_done_do_init())
+  if(did_done_do_init())
     return;
+#ifdef OPTIMET_BELOS
+  Tpetra::initialize(&argc, const_cast<char ***>(&argv));
+#else
   MPI_Init(&argc, const_cast<char ***>(&argv));
+#endif
   did_done_do_init() = true;
 }
 
@@ -32,8 +39,11 @@ bool finalized() {
 }
 
 void finalize() {
-  if (finalized() or not initialized())
+  if(finalized() or not initialized())
     return;
+#ifdef OPTIMET_BELOS
+  Kokkos::finalize();
+# endif
   MPI_Finalize();
 }
 
