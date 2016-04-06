@@ -127,38 +127,38 @@ template <class SCALAR> void check_gmres(scalapack::Sizes const &grid, t_uint n,
                                               << mpi::Communicator().size());
     return;
   }
-  scalapack::Context const parallel_context(grid.rows, grid.cols);
+  scalapack::Context const context(grid.rows, grid.cols);
+  scalapack::Matrix<SCALAR> b(context, {size.cols, 1}, blocks);
+
+  // create a simple matrix to diagonalize
   scalapack::Context const serial_context(1, 1);
   scalapack::Matrix<SCALAR> Aserial(serial_context, size, blocks);
-  scalapack::Matrix<SCALAR> bserial(serial_context, {size.cols, 1}, blocks);
-  if(serial_context.is_valid()) {
-    Aserial.local() = Matrix<SCALAR>::Random(size.rows, size.cols) -
-                      0.5 * Matrix<SCALAR>::Ones(size.rows, size.cols) +
-                      10e0 * Matrix<SCALAR>::Identity(size.rows, size.cols);
-    bserial.local() = Matrix<SCALAR>::Random(size.rows, 1).array() - 0.5;
-  }
-
-  auto const Aparallel = Aserial.transfer_to(parallel_context);
-  auto const bparallel = bserial.transfer_to(parallel_context);
-
-  auto const result = gmres_linear_system(Aparallel, bparallel);
-  REQUIRE(std::get<1>(result) == 0);
-  auto const x = std::get<0>(result).transfer_to(serial_context);
   if(serial_context.is_valid())
-    CHECK((Aserial.local() * x.local()).isApprox(bserial.local(), 1e-8));
+    Aserial.local() =
+        (Matrix<SCALAR>::Random(Aserial.local().rows(), Aserial.local().cols()).array() - 0.5)
+            .matrix() +
+        Matrix<SCALAR>::Identity(Aserial.local().rows(), Aserial.local().cols()) * 5;
+  auto const A = Aserial.transfer_to(context);
+  b.local() = Matrix<SCALAR>::Random(b.local().rows(), b.local().cols()).array() - 0.5;
+
+  auto const result = gmres_linear_system(A, b);
+  REQUIRE(std::get<1>(result) == 0);
+  if(context.is_valid()) {
+    scalapack::Matrix<SCALAR> x = b;
+    scalapack::pdgemm(1e0, A, std::get<0>(result), -1e0, x);
+    CHECK(x.local().isZero(1e-4));
+  }
 }
 
-// TEST_CASE("Compute solver in parallel, check result in serial") {
-//   SECTION("double") {
-//     SECTION("1x1") { check_gmres<double>({1, 1}, 1024, 64); }
-//     SECTION("1x3") { check_gmres<double>({1, 3}, 1024, 64); }
-//     SECTION("3x1") { check_gmres<double>({3, 1}, 1024, 64); }
-//     SECTION("3x2") { check_gmres<double>({3, 2}, 1024, 64); }
-//   }
-//   SECTION("complex double") {
-//     SECTION("1x1") { check_gmres<std::complex<double>>({1, 1}, 1024, 64); }
-//     SECTION("1x3") { check_gmres<std::complex<double>>({1, 3}, 1024, 64); }
-//     SECTION("3x1") { check_gmres<std::complex<double>>({3, 1}, 1024, 64); }
-//     SECTION("3x2") { check_gmres<std::complex<double>>({3, 2}, 1024, 64); }
-//   }
-// }
+TEST_CASE("Compute solver in parallel, check result in serial") {
+  SECTION("double") {
+    SECTION("1x1") { check_gmres<double>({1, 1}, 500, 64); }
+    SECTION("2x1") { check_gmres<double>({2, 1}, 500, 64); }
+    SECTION("3x2") { check_gmres<double>({3, 2}, 1024, 64); }
+  }
+  SECTION("complex double") {
+    SECTION("1x1") { check_gmres<std::complex<double>>({1, 1}, 560, 64); }
+    SECTION("3x1") { check_gmres<std::complex<double>>({3, 1}, 560, 64); }
+    SECTION("3x2") { check_gmres<std::complex<double>>({3, 2}, 560, 64); }
+  }
+}

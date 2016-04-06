@@ -4,8 +4,10 @@
 #include "Types.h"
 #ifdef OPTIMET_MPI
 
-#include <tuple>
+#include "mpi/Communicator.h"
+#include "scalapack/Belos.h"
 #include "scalapack/Matrix.h"
+#include <tuple>
 
 namespace optimet {
 namespace scalapack {
@@ -22,10 +24,11 @@ general_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b);
 //! Solve a system of linear equations using Belos
 template <class SCALAR>
 std::tuple<Matrix<SCALAR>, int>
-gmres_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b);
+gmres_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b,
+                    mpi::Communicator const &comm = mpi::Communicator());
 }
 }
 
-# include "scalapack/LinearSystemSolver.hpp"
+#include "scalapack/LinearSystemSolver.hpp"
 #endif
 #endif
