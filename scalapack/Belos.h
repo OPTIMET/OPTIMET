@@ -101,7 +101,7 @@ public:
     optimet::scalapack::matrix_vector_operator(Op.get(), X, Y, trans);
   }
 
-  static bool HasApplyTranspose(optimet::scalapack::Matrix<SCALAR const *> const &) { return true; }
+  static bool HasApplyTranspose(optimet::scalapack::BelosOperator<SCALAR> const &) { return true; }
 };
 
 // namespace Belos
