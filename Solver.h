@@ -10,6 +10,10 @@
 #include "scalapack/Parameters.h"
 #include <complex>
 
+#ifdef OPTIMET_BELOS
+#include <Teuchos_ParameterList.hpp>
+#endif
+
 namespace optimet {
 /**
  * The Solver class builds and solves the scattering matrix equation.
@@ -26,8 +30,12 @@ public:
    * @param method_ the solver method to be used.
    * @param nMax_ the maximum value for the n iterator.
    */
-  Solver(Geometry *geometry_, Excitation const *incWave_, int method_, long nMax_,
-         scalapack::Context const &context = scalapack::Context::Squarest());
+  Solver(
+      Geometry *geometry_, Excitation const *incWave_, int method_, long nMax_,
+#ifdef OPTIMET_BELOS
+      Teuchos::RCP<Teuchos::ParameterList> belos_params = Teuchos::rcp(new Teuchos::ParameterList),
+#endif
+      scalapack::Context const &context = scalapack::Context::Squarest());
 
   /**
    * Default destructor for the Solver class.
@@ -81,6 +89,15 @@ public:
     return *this;
   }
 
+# ifdef OPTIMET_BELOS
+  //! \brief Parameters for Belos/Trilinos solvers
+  //! \note Mere access to the parameters requires the Teuchos::ParameterList to be modifiable. So
+  //! the constness is not quite respected here.
+  Teuchos::RCP<Teuchos::ParameterList> belos_parameters() const {
+    return belos_params_;
+  }
+# endif
+
 protected:
   //! Populate the S and Q matrices using the solverMethod option
   void populate();
@@ -99,9 +116,8 @@ protected:
 
 private:
 #ifdef OPTIMET_MPI
-  static void solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_complex> const &b,
-                                         Vector<t_complex> &x, scalapack::Context const &context,
-                                         scalapack::Sizes const &block_size);
+  void solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_complex> const &b,
+                                  Vector<t_complex> &x) const;
 #endif
   Geometry *geometry;        /**< Pointer to the geometry. */
   Excitation const *incWave; /**< Pointer to the incoming excitation. */
@@ -109,6 +125,9 @@ private:
   Result *result_FF;         /**< The fundamental frequency results. */
   int solverMethod;          /**< Solver method: Direct = Mischenko1996, Indirect =
                                 Stout2002 */
+#ifdef OPTIMET_BELOS
+  Teuchos::RCP<Teuchos::ParameterList> belos_params_;
+#endif
   //! \brief MPI commnunicator
   //! \details Fake if not compiled with MPI
   scalapack::Context context_;

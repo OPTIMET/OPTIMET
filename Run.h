@@ -5,7 +5,11 @@
 #include "CompoundIterator.h"
 #include "Excitation.h"
 #include "scalapack/Parameters.h"
+#include "Teuchos_ParameterListExceptions.hpp"
 
+#ifdef OPTIMET_BELOS
+#include <Teuchos_ParameterList.hpp>
+#endif
 /**
  * The Run class implements a single instance of a run.
  * Run has several components:
@@ -21,6 +25,9 @@ public:
   Excitation excitation; /**< The Excitation of the case. */
   //! Parameters needed to setup parallel computations
   optimet::scalapack::Parameters parallel_params;
+#ifdef OPTIMET_BELOS
+  Teuchos::RCP<Teuchos::ParameterList> belos_params;
+#endif
 
   int nMax; /**< The maximum value of the n iterator. */
 

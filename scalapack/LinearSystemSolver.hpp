@@ -45,7 +45,7 @@ OPTIMET_MACRO(c, C, std::complex<float>);
 OPTIMET_MACRO(z, Z, std::complex<double>);
 #undef OPTIMET_MACRO
 
-template <class SCALAR> void sane_input(Matrix<SCALAR> &A, Matrix<SCALAR> &b) {
+template <class SCALAR> void sane_input(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b) {
   if(A.rows() != A.cols())
     throw std::runtime_error("Matrix should be square");
   if(A.cols() != b.rows())
@@ -70,40 +70,23 @@ template <class SCALAR> int general_linear_system_inplace(Matrix<SCALAR> &A, Mat
   return info;
 }
 
-#ifndef OPTIMET_BELOS
-template <class SCALAR>
-std::tuple<Matrix<SCALAR>, int>
-gmres_linear_system(Matrix<SCALAR> const &, Matrix<SCALAR> const &) {
-  throw std::runtime_error("Belos was not compiled into. Cannot use GMRES.");
-}
-#else
+#ifdef OPTIMET_BELOS
 template <class SCALAR>
 std::tuple<Matrix<SCALAR>, int>
 gmres_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b,
+                    Teuchos::RCP<Teuchos::ParameterList> const &parameters,
                     mpi::Communicator const &comm) {
+  sane_input(A, b);
   if(b.context() != A.context()) {
     auto const b_in_A = b.transfer_to(A.context());
-    return gmres_linear_system(A, b_in_A, comm);
+    return gmres_linear_system(A, b_in_A, parameters, comm);
   }
   auto const splitcomm = comm.split(A.context().is_valid());
   if(not A.context().is_valid())
     return std::tuple<Matrix<SCALAR>, int>{b, 0};
-
-  // Make an empty new parameter list.
-  Teuchos::RCP<Teuchos::ParameterList> solverParams = Teuchos::parameterList();
-  // Set some GMRES parameters.
-  //
-  // "Num Blocks" = Maximum number of Krylov vectors to store.  This
-  // is also the restart length.  "Block" here refers to the ability
-  // of this particular solver (and many other Belos solvers) to solve
-  // multiple linear systems at a time, even though we are only solving
-  // one linear system in this example.
-  solverParams->set("Num Blocks", 1000);
-  solverParams->set("Maximum Iterations", 4000);
-  solverParams->set("Convergence Tolerance", 1.0e-10);
   // Create the GMRES solver.
   BelosSolverFactory<SCALAR> factory;
-  auto solver = factory.create("GMRES", solverParams);
+  auto solver = factory.create("GMRES", parameters);
   // Create a LinearProblem struct with the problem to solve.
   // A, X, B, and M are passed by (smart) pointer, not copied.
   Teuchos::RCP<BelosOperator<SCALAR>> Aptr = Teuchos::rcp(new BelosOperator<SCALAR>(A));
@@ -125,6 +108,25 @@ gmres_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b,
   Matrix<SCALAR> result(b.context(), b.sizes(), b.blocks());
   result.local() = view.local();
   return std::tuple<Matrix<SCALAR>, int>{std::move(result), std::move(info)};
+} // anonymous namespace
+
+template <class SCALAR>
+std::tuple<Matrix<SCALAR>, int>
+gmres_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b,
+                    mpi::Communicator const &comm) {
+  // Make an empty new parameter list.
+  Teuchos::RCP<Teuchos::ParameterList> solverParams = Teuchos::parameterList();
+  // Set some GMRES parameters.
+  //
+  // "Num Blocks" = Maximum number of Krylov vectors to store.  This
+  // is also the restart length.  "Block" here refers to the ability
+  // of this particular solver (and many other Belos solvers) to solve
+  // multiple linear systems at a time, even though we are only solving
+  // one linear system in this example.
+  solverParams->set("Num Blocks", 1000);
+  solverParams->set("Maximum Iterations", 4000);
+  solverParams->set("Convergence Tolerance", 1.0e-10);
+  return gmres_linear_system(A, b, solverParams, comm);
 }
 #endif
 

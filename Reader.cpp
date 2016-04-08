@@ -11,6 +11,11 @@
 #include <vector>
 #include <stdexcept>
 
+#ifdef OPTIMET_BELOS
+#include <Teuchos_ParameterList.hpp>
+#include <Teuchos_XMLParameterListCoreHelpers.hpp>
+#endif
+
 using namespace pugi;
 
 Reader::Reader() { initDone = false; }
@@ -421,6 +426,8 @@ int Reader::readSimulation(std::string const &fileName_) {
     return 1;
   }
 
+  readParameterList(inputFile);
+
   return 0;
 }
 
@@ -511,3 +518,15 @@ Scatterer Reader::readSphericalScatterer(pugi::xml_node const &node) {
   }
   return result;
 };
+
+
+void Reader::readParameterList(pugi::xml_document const &root_node) {
+#ifdef OPTIMET_BELOS
+  auto const xml_params = root_node.child("ParameterList");
+  std::ostringstream str_params;
+  xml_params.print(str_params);
+  run->belos_params = Teuchos::getParametersFromXmlString(str_params.str());
+  if(not run->belos_params->isParameter("Solver"))
+    run->belos_params->set("Solver", "scalapack");
+#endif
+}

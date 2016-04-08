@@ -24,7 +24,11 @@ int Simulation::run() {
 
   // Initialize the solver
   optimet::Solver solver(&(run.geometry), &(run.excitation), O3DSolverIndirect,
+#ifdef OPTIMET_BELOS
+                run.nMax, run.belos_params);
+#else
                 run.nMax);
+#endif
 
   switch (run.outputType) {
   case 0:
