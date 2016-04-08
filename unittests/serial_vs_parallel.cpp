@@ -11,11 +11,12 @@
 
 using namespace optimet;
 
-TEST_CASE("Two spheres") {
+TEST_CASE("N spheres") {
   Geometry geometry;
   // spherical coords, ε, μ, radius, nmax
   auto const nHarmonics = 10;
-  for(t_uint i(0); i < 10; ++i)
+  auto const nSpheres = 10;
+  for(t_uint i(0); i < nSpheres; ++i)
     geometry.pushObject({{static_cast<t_real>(i) * 1.5, 0, 0}, {0.45e0, 1.1e0}, 0.5, nHarmonics});
 
   // Create excitation
