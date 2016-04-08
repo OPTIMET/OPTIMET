@@ -2,12 +2,15 @@
 #include <iostream>
 #include <numeric>
 
+#include "Reader.h"
+#include "Run.h"
 #include "Types.h"
 #include "mpi/Collectives.h"
 #include "mpi/Communicator.h"
 #include "scalapack/Belos.h"
 #include "scalapack/InitExit.h"
 #include "scalapack/LinearSystemSolver.h"
+#include "unittests/TmpFile.h"
 
 using namespace optimet;
 
@@ -161,4 +164,44 @@ TEST_CASE("Compute solver in parallel, check result in serial") {
     SECTION("3x1") { check_gmres<std::complex<double>>({3, 1}, 560, 64); }
     SECTION("3x2") { check_gmres<std::complex<double>>({3, 2}, 560, 64); }
   }
+}
+
+TEST_CASE("Read XML") {
+  TmpFile file;
+  file.write("<simulation>\n"
+             "  <harmonics nmax=\"6\" />\n"
+             "</simulation>\n"
+             "<source type=\"planewave\">\n"
+             "  <wavelength value=\"1460\" />\n"
+             "  <propagation theta=\"90\" phi=\"90\" />\n"
+             "  <polarization Etheta.real=\"1.0\" Etheta.imag=\"0.0\" Ephi.real=\"0.0\" "
+             "Ephi.imag=\"0.0\" />\n"
+             "</source>\n"
+             "<geometry>\n"
+             "  <object type=\"sphere\">\n"
+             "    <cartesian x=\"0.0\" y=\"0.0\" z=\"0.0\" />\n"
+             "    <properties radius=\"500.0\" />\n"
+             "    <epsilon type=\"relative\" value.real=\"13.0\" value.imag=\"0.0\" />\n"
+             "    <mu type=\"relative\" value.real=\"1.0\" value.imag=\"0.0\" />\n"
+             "  </object>\n"
+             "</geometry>\n"
+             "<output type=\"field\">\n"
+             "  <grid type=\"cartesian\">\n"
+             "    <x min=\"-1000\" max=\"1000\" steps=\"21\" />\n"
+             "    <y min=\"-0.1\" max=\"0.1\" steps=\"2\" />\n"
+             "    <z min=\"-1000\" max=\"1000\" steps=\"21\" />\n"
+             "  </grid>\n"
+             "</output>\n"
+             "<ParameterList name=\"Belos\">\n"
+             "  <Parameter name=\"Solver\" type=\"string\" value=\"GMRES\"/>\n"
+             "  <Parameter name=\"Maximum Iterations\" type=\"int\" value=\"4000\"/>\n"
+             "  <Parameter name=\"Output Frequency\" type=\"int\" value=\"20\"/>\n"
+             "</ParameterList>\n");
+
+  Run run;
+  Reader reader(&run);
+  CHECK(reader.readSimulation(file.filename()) == 0);
+  CHECK(run.belos_params->get<std::string>("Solver") == "GMRES");
+  CHECK(run.belos_params->get<int>("Maximum Iterations") == 4000);
+  CHECK(run.belos_params->get<int>("Output Frequency") == 20);
 }
