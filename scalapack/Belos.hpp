@@ -1,6 +1,10 @@
 #ifndef OPTIMET_SCALAPACK_BELOS_HPP_
 #define OPTIMET_SCALAPACK_BELOS_HPP_
 
+#ifndef OPTIMET_SCALAPACK_BELOS_H_
+#error This file should not be included explicitly. Use Belos.h instead.
+#endif
+
 #include "Types.h"
 #ifdef OPTIMET_BELOS
 
