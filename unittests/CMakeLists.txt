@@ -25,5 +25,9 @@ if(dompi)
   if(OPTIMET_BELOS)
     add_mpi_test(belos LIBRARIES optilib ${library_dependencies})
     add_mpi_test(scalapack_vs_belos LIBRARIES optilib ${library_dependencies})
+
+    # Prints all available solvers and their parameters
+    add_executable(print_belos_params print_belos_params.cpp)
+    target_link_libraries(print_belos_params optilib ${library_dependencies})
   endif()
 endif()
