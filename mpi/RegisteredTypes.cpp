@@ -2,18 +2,24 @@
 
 namespace optimet {
 namespace mpi {
-MPIType const Type<int8_t>::value   = MPI_INT8_T;
-MPIType const Type<int16_t>::value  = MPI_INT16_T;
-MPIType const Type<int32_t>::value  = MPI_INT32_T;
-MPIType const Type<int64_t>::value  = MPI_INT64_T;
-MPIType const Type<uint8_t>::value   = MPI_UINT8_T;
-MPIType const Type<uint16_t>::value  = MPI_UINT16_T;
-MPIType const Type<uint32_t>::value  = MPI_UINT32_T;
-MPIType const Type<uint64_t>::value  = MPI_UINT64_T;
+MPIType const Type<std::int8_t>::value   = MPI_INT8_T;
+MPIType const Type<std::int16_t>::value  = MPI_INT16_T;
+MPIType const Type<std::int32_t>::value  = MPI_INT32_T;
+MPIType const Type<std::int64_t>::value  = MPI_INT64_T;
+MPIType const Type<std::uint8_t>::value   = MPI_UINT8_T;
+MPIType const Type<std::uint16_t>::value  = MPI_UINT16_T;
+MPIType const Type<std::uint32_t>::value  = MPI_UINT32_T;
+MPIType const Type<std::uint64_t>::value  = MPI_UINT64_T;
 
+#ifndef OPTIMET_CHAR_ARCH
 MPIType const Type<char>::value           = MPI_CHAR;
+#endif
+#ifndef OPTIMET_LONG_ARCH
 MPIType const Type<signed long>::value    = MPI_LONG;
+#endif
+#ifndef OPTIMET_ULONG_ARCH
 MPIType const Type<unsigned long>::value  = MPI_UNSIGNED_LONG;
+#endif
 
 MPIType const Type<float>::value        = MPI_FLOAT;
 MPIType const Type<double>::value       = MPI_DOUBLE;

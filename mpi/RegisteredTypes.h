@@ -13,20 +13,27 @@ typedef decltype(MPI_CHAR) MPIType;
 //! MPI type associated with a c++ type
 template <class T> struct Type;
 
+static_assert(not std::is_same<char, std::int8_t>::value, "");
 #define OPTIMET_MACRO(TYPE) \
     template <> struct Type<TYPE> { static const MPIType value; };
-  OPTIMET_MACRO(int8_t);
-  OPTIMET_MACRO(int16_t);
-  OPTIMET_MACRO(int32_t);
-  OPTIMET_MACRO(int64_t);
-  OPTIMET_MACRO(uint8_t);
-  OPTIMET_MACRO(uint16_t);
-  OPTIMET_MACRO(uint32_t);
-  OPTIMET_MACRO(uint64_t);
+  OPTIMET_MACRO(std::int8_t);
+  OPTIMET_MACRO(std::int16_t);
+  OPTIMET_MACRO(std::int32_t);
+  OPTIMET_MACRO(std::int64_t);
+  OPTIMET_MACRO(std::uint8_t);
+  OPTIMET_MACRO(std::uint16_t);
+  OPTIMET_MACRO(std::uint32_t);
+  OPTIMET_MACRO(std::uint64_t);
 
+#ifndef OPTIMET_CHAR_ARCH
   OPTIMET_MACRO(char);
+#endif
+#ifndef OPTIMET_LONG_ARCH
   OPTIMET_MACRO(signed long);
+#endif
+#ifndef OPTIMET_ULONG_ARCH
   OPTIMET_MACRO(unsigned long);
+#endif
 
   OPTIMET_MACRO(float);
   OPTIMET_MACRO(double);

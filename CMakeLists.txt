@@ -41,6 +41,9 @@ if(dompi)
   include(DetectFortran)
   DetectFortran("${PROJECT_BINARY_DIR}/include/optimet/OptimetFC.h")
   include_directories(SYSTEM ${MPI_CXX_INCLUDE_PATH})
+  # We need to check integer architecture
+  include(DetectIntegerArchitecture)
+  DetectIntegerArchitecture(OPTIMET)
 endif()
 
 # configure a file with some build defaults
@@ -52,7 +55,7 @@ add_library(optilib STATIC ${SRC})
 add_dependencies(optilib lookup_dependencies)
 set(library_dependencies ${GSL_LIBRARIES} ${HDF5_LIBRARIES})
 if(dompi)
-  list(APPEND library_dependencies ${MPI_LIBRARIES} scalapack)
+  list(APPEND library_dependencies ${MPI_LIBRARIES} ${SCALAPACK_LIBRARIES})
 endif()
 list(APPEND library_dependencies ${F2C_LIBRARIES})
 

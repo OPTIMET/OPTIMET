@@ -6,7 +6,7 @@ function(DetectFortran OUTFILE)
   if(FORTRAN_MANGLING AND FORTRAN_MANGLING_)
     return()
   endif()
-  if(NOT scalapack_FOUND)
+  if(NOT scalapack_FOUND AND $ENV{CRAYOS_VERSION} STREQUAL "")
     message(FATAL_ERROR "Please find package scalapack before calling this function")
   endif()
   file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/DetectFortran")
@@ -45,7 +45,7 @@ function(DetectFortran OUTFILE)
       try_compile(result
         "${PROJECT_BINARY_DIR}/DetectFortran"
         "${PROJECT_BINARY_DIR}/DetectFortran/main.cpp"
-        LINK_LIBRARIES scalapack ${MPI_LIBRARIES}
+        LINK_LIBRARIES ${SCALAPACK_LIBRARIES} ${MPI_LIBRARIES}
         OUTPUT_VARIABLE output
       )
       if(result)
@@ -54,6 +54,9 @@ function(DetectFortran OUTFILE)
         break()
       endif()
   endforeach()
+  if(NOT found_mangling)
+    message(FATAL_ERROR "Could not detect fortran mangling")
+  endif()
 
   foreach(underscore "NAME ## __" "name ## __" ${manglings})
       file(WRITE "${PROJECT_BINARY_DIR}/DetectFortran/fcmangling.h"
@@ -65,7 +68,7 @@ function(DetectFortran OUTFILE)
       try_compile(result
         "${PROJECT_BINARY_DIR}/DetectFortran"
         "${PROJECT_BINARY_DIR}/DetectFortran/main_underscore.cpp"
-        LINK_LIBRARIES scalapack ${MPI_LIBRARIES}
+        LINK_LIBRARIES ${SCALAPACK_LIBRARIES} ${MPI_LIBRARIES}
         OUTPUT_VARIABLE output
       )
       if(result)
