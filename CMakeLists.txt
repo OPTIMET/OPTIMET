@@ -2,22 +2,19 @@ cmake_minimum_required(VERSION 3.0)
 
 # Location of extra cmake includes for the project
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-include(HunterGate)
-if(NOT HUNTER_ROOT AND "$ENV{HUNTER_ROOT}" STREQUAL "")
-  set(HUNTER_ROOT "${CMAKE_CURRENT_BINARY_DIR}/hunter" CACHE PATH "Hunter root dir")
-endif()
-HunterGate(
-  URL "https://github.com/ruslo/hunter/archive/v0.12.33.tar.gz"
-  SHA1 "f64eda11326e12d84b6aa7f4aed80c09c182aa64"
-)
+# Downloads and installs GreatCMakeCookOff
+# It contains a number of cmake recipes
+include(LookUp-GreatCMakeCookOff)
+
+# Hunter helps us download stuff automatically
+include(AddHunter)
+set(HUNTER_ROOT ${CMAKE_BINARY_DIR}/hunter_root)
+initialize_hunter(HUNTER_ROOT ${HUNTER_ROOT} LOCAL)
+
 project(Optimet3D CXX C)
 
 option(dompi "Enable mpi" off)
 option(dotesting "Enable testing" on)
-
-# Downloads and installs GreatCMakeCookOff
-# It contains a number of cmake recipes
-include(LookUp-GreatCMakeCookOff)
 
 # looks for all dependencies used by optimet
 include(dependencies)
