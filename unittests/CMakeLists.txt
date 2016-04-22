@@ -1,5 +1,7 @@
 include_directories("${PROJECT_SOURCE_DIR}")
-add_catch_test(single_particle LIBRARIES optilib ${library_dependencies})
+if(NOT dompi)
+  add_catch_test(single_particle LIBRARIES optilib ${library_dependencies})
+endif()
 add_catch_test(translation_addition LIBRARIES optilib ${library_dependencies})
 add_catch_test(harmonics_iterator LIBRARIES optilib ${library_dependencies})
 
@@ -34,6 +36,7 @@ if(dompi)
   endfunction()
 
   add_catch_test(squarest LIBRARIES optilib ${library_dependencies})
+  add_mpi_test(single_particle LIBRARIES optilib ${library_dependencies})
   add_mpi_test(mpi_communicator LIBRARIES optilib ${library_dependencies})
   add_mpi_test(scalapack_context LIBRARIES optilib ${library_dependencies})
   add_mpi_test(scalapack_matrix LIBRARIES optilib ${library_dependencies})
