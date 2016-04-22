@@ -44,11 +44,11 @@ include(PackageLookup)
 if(dompi)
   find_package(MPI)
   find_package(scalapack REQUIRED)
-endif()
 
-# GMRes and other solvers
-find_package(Belos)
-set(OPTIMET_BELOS ${Belos_FOUND})
-if(NOT Belos_FOUND)
-  message(STATUS "Compiling without Belos solvers")
+  # GMRes and other solvers
+  find_package(Belos)
+  set(OPTIMET_BELOS ${Belos_FOUND})
+  if(NOT Belos_FOUND)
+    message(STATUS "Compiling without Belos solvers")
+  endif()
 endif()
