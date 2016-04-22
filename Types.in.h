@@ -6,6 +6,9 @@
 #include <Eigen/Core>
 
 #cmakedefine OPTIMET_MPI
+#cmakedefine OPTIMET_CHAR_ARCH
+#cmakedefine OPTIMET_LONG_ARCH
+#cmakedefine OPTIMET_ULONG_ARCH
 
 namespace optimet {
 //! Root of the type hierarchy for signed integers

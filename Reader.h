@@ -68,6 +68,7 @@ public:
 
 protected:
   Scatterer readSphericalScatterer(pugi::xml_node const &node);
+  void readParallel(const pugi::xml_node &, optimet::scalapack::Parameters &);
 };
 
 #endif /* READER_H_ */
