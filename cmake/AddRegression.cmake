@@ -1,7 +1,7 @@
 include(CMakeParseArguments)
 function(add_regression_test testname)
   cmake_parse_arguments(regr
-    "DISABLE" "INPUTFILE;HDF5_PRECISION" "DIFF_CMD;BLESSED;OUTPUTS;LABELS" ${ARGN})
+    "DISABLE;DOMPI" "INPUTFILE;HDF5_PRECISION" "DIFF_CMD;BLESSED;OUTPUTS;LABELS" ${ARGN})
   if(NOT regr_BLESSED)
     message(FATAL_ERROR "No blessed outputs given for test ${testname}")
   endif()
@@ -28,6 +28,11 @@ function(add_regression_test testname)
   )
   # Command is always optimet + input
   set(regr_CMD ${PROJECT_BINARY_DIR}/Optimet3D ${regr_INPUTFILE})
+  if(regr_DOMPI)
+    set(regr_CMD
+      ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS}
+      ${regr_CMD})
+  endif()
   # Creates regression test file
   file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/regressions/")
   configure_file(
