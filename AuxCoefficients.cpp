@@ -191,15 +191,17 @@ AuxCoefficients::VIGdVIG(t_uint nMax, t_int m, const Spherical<t_real> &R) {
           (s * (2 * s + 1)))) /
         std::sin(vig_the);
   }
-  // Calculate the final term in the dWigner recursion
-  const double Wn_max = ((2 * s + 1) * vig_x * Wigner[s] -
-                         std::sqrt(s * s - m * m) * Wigner[s - 1]) /
-                        std::sqrt((s + 1) * (s + 1) - m * m);
-  dWigner[s] =
-      (((s * std::sqrt((s + 1) * (s + 1) - m * m) * Wn_max) / (2 * s + 1)) -
-       (((s + 1) * std::sqrt(s * s * (s * s - m * m)) * Wigner[s - 1]) /
-        (s * (2 * s + 1)))) /
-      std::sin(vig_the);
+  if (nMax > 0) {
+    // Calculate the final term in the dWigner recursion
+    const double Wn_max = ((2 * nMax + 1) * vig_x * Wigner[nMax] -
+                           std::sqrt(nMax * nMax - m * m) * Wigner[nMax - 1]) /
+                          std::sqrt((nMax + 1) * (nMax + 1) - m * m);
+    dWigner[nMax] =
+        (((nMax * std::sqrt((nMax + 1) * (nMax + 1) - m * m) * Wn_max) / (2 * nMax + 1)) -
+         (((nMax + 1) * std::sqrt(nMax * nMax * (nMax * nMax - m * m)) * Wigner[nMax - 1]) /
+          (nMax * (2 * nMax + 1)))) /
+        std::sin(vig_the);
+  }
 
   // IV - if (m<0) : apply symmetry property eq(B.7) to eqs(B.22-B.24)
   if (check_m_negative) {
