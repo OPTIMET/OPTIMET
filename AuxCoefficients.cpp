@@ -169,8 +169,16 @@ AuxCoefficients::VIGdVIG(t_uint nMax, t_int m, const Spherical<t_real> &R) {
   // obtain all other values in VIG_d[i] from recursive relationship
   //   - Based on 'n_min' value and 'n' value; total recursive steps == n -
   //   n_min
-  t_uint s;
-  for (s = n_min; s < nMax; ++s) {
+  t_uint s = n_min;
+  if (n_min == 0 && nMax > 0) {
+    // When n_min == 0 recursion depends on current value only - including
+    // previous value results in out-of-bounds read, which shouldn't matter as
+    // it gets multiplied by zero, but if the out-of-bounds read happens to be
+    // NaN then it will propagate (n_min == |m| == s)
+    Wigner[1] = vig_x * Wigner[0];
+    s = 1;
+  }
+  for (; s < nMax; ++s) {
     // Equation B.22
     Wigner[s + 1] = ((2 * s + 1) * vig_x * Wigner[s] -
                      std::sqrt(s * s - m * m) * Wigner[s - 1]) /
