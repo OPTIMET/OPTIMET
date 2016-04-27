@@ -4,6 +4,7 @@ if(NOT dompi)
 endif()
 add_catch_test(translation_addition LIBRARIES optilib ${library_dependencies})
 add_catch_test(harmonics_iterator LIBRARIES optilib ${library_dependencies})
+add_catch_test(aux_coefficients LIBRARIES optilib ${library_dependencies})
 
 if(dompi)
   if(CATCH_INCLUDE_DIR)
