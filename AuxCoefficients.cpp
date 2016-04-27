@@ -145,6 +145,7 @@ std::vector<SphericalP<t_complex>> AuxCoefficients::compute_Nn(
 
 std::tuple<std::vector<t_real>, std::vector<t_real>>
 AuxCoefficients::VIGdVIG(t_uint nMax, t_int m, const Spherical<t_real> &R) {
+  assert(std::abs(m) <= nMax);
 
   std::vector<t_real> Wigner(nMax + 1, 0.0), dWigner(nMax + 1, 0.0);
 
