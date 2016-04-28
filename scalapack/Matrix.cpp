@@ -11,11 +11,13 @@ template <class SCALAR> struct fortran_pdgemm;
 template <> struct fortran_pdgemm<double> {
   const static decltype(&OPTIMET_FC_GLOBAL(pdgemm, PDGEMM)) pointer;
 };
-const auto fortran_pdgemm<double>::pointer = &OPTIMET_FC_GLOBAL(pdgemm, PDGEMM);
+const decltype(&OPTIMET_FC_GLOBAL(pdgemm, PDGEMM))
+  fortran_pdgemm<double>::pointer = &OPTIMET_FC_GLOBAL(pdgemm, PDGEMM);
 template <> struct fortran_pdgemm<std::complex<double>> {
   const static decltype(&OPTIMET_FC_GLOBAL(pzgemm, PZGEMM)) pointer;
 };
-const auto fortran_pdgemm<std::complex<double>>::pointer = &OPTIMET_FC_GLOBAL(pzgemm, PZGEMM);
+const decltype(&OPTIMET_FC_GLOBAL(pzgemm, PZGEMM))
+  fortran_pdgemm<std::complex<double>>::pointer = &OPTIMET_FC_GLOBAL(pzgemm, PZGEMM);
 
 template <class SCALAR_A, class SCALAR_B, class SCALAR_C>
 void pdgemm_(typename MatrixTraits<SCALAR_A>::Scalar alpha, Matrix<SCALAR_A> const &a,
