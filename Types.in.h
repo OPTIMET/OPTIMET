@@ -6,6 +6,9 @@
 #include <Eigen/Core>
 
 #cmakedefine OPTIMET_MPI
+#ifdef OPTIMET_MPI
+#cmakedefine OPTIMET_BELOS
+#endif
 #cmakedefine OPTIMET_CHAR_ARCH
 #cmakedefine OPTIMET_LONG_ARCH
 #cmakedefine OPTIMET_ULONG_ARCH

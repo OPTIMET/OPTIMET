@@ -25,7 +25,8 @@ include(AddCPP11Flags)
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(SYSTEM
   ${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS}
-  ${F2C_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR})
+  ${F2C_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR}
+  ${Belos_INCLUDE_DIRS})
 
 # list all object files
 file(GLOB SRC *.c*  pugi/*.c*)
@@ -52,7 +53,10 @@ add_library(optilib STATIC ${SRC})
 if(TARGET Boost::boost)
   target_link_libraries(optilib Boost::boost)
 endif()
-set(library_dependencies ${GSL_LIBRARIES} ${BOOST_LIBRARIES} ${HDF5_LIBRARIES} ${F2C_LIBRARIES})
+set(library_dependencies
+  ${GSL_LIBRARIES} ${BOOST_LIBRARIES} ${HDF5_LIBRARIES} ${F2C_LIBRARIES}
+  ${Belos_LIBRARIES}
+)
 if(dompi)
   list(APPEND library_dependencies ${MPI_LIBRARIES} ${SCALAPACK_LIBRARIES})
 endif()

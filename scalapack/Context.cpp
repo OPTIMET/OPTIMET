@@ -1,8 +1,8 @@
-#include <exception>
-#include <iostream>
+#include "scalapack/Blacs.h"
 #include "scalapack/Context.h"
 #include "scalapack/InitExit.h"
-#include "scalapack/Blacs.h"
+#include <exception>
+#include <iostream>
 
 namespace optimet {
 namespace scalapack {
@@ -40,8 +40,8 @@ Context::Context(t_uint rows, t_uint cols) : impl(nullptr) {
   OPTIMET_FC_GLOBAL_(blacs_get, BLACS_GET)(&this_row, &this_col, &context);
   char order = 'R';
   OPTIMET_FC_GLOBAL_(blacs_gridinit, BLACS_GRIDINIT)(&context, &order, &nrows, &ncols);
-  OPTIMET_FC_GLOBAL_(
-      blacs_gridinfo, BLACS_GRIDINFO)(&context, &nrows, &ncols, &this_row, &this_col);
+  OPTIMET_FC_GLOBAL_(blacs_gridinfo, BLACS_GRIDINFO)
+  (&context, &nrows, &ncols, &this_row, &this_col);
   Impl const data{context, static_cast<t_int>(nrows), static_cast<t_int>(ncols),
                   static_cast<t_int>(this_row), static_cast<t_int>(this_col)};
   impl = std::shared_ptr<Impl const>(new Impl(data), &Context::delete_with_finalize);
@@ -78,7 +78,8 @@ Matrix<t_uint> Context::rank_map() const {
   Matrix<t_uint> result(rows(), cols());
   for(int i(0); i < rows(); ++i)
     for(int j(0); j < cols(); ++j)
-      result(i, j) = static_cast<t_uint>(OPTIMET_FC_GLOBAL_(blacs_pnum, BLACS_PNUM)(&context, &i, &j));
+      result(i, j) =
+          static_cast<t_uint>(OPTIMET_FC_GLOBAL_(blacs_pnum, BLACS_PNUM)(&context, &i, &j));
   return result;
 }
 
@@ -94,8 +95,7 @@ Context Context::split(t_uint nrows, t_uint ncols) const {
     for(t_uint j(0), current_c(0); j < ncols; ++j) {
       auto const nj = cols() / ncols + (j < (cols() % ncols) ? 1 : 0);
       auto const intermediate = subcontext(full_map.block(current_r, current_c, ni, nj));
-      if(static_cast<t_uint>(row()) >= current_r and
-         static_cast<t_uint>(row()) < current_r + ni and
+      if(static_cast<t_uint>(row()) >= current_r and static_cast<t_uint>(row()) < current_r + ni and
          static_cast<t_uint>(col()) >= current_c and static_cast<t_uint>(col()) < current_c + nj) {
         assert(result == *this);
         result = intermediate;
@@ -125,6 +125,5 @@ Index Context::process_coordinates(t_uint pnum) const {
   OPTIMET_FC_GLOBAL_(blacs_pcoord, BLACS_PCOORD)(&context, &num, &prow, &pcol);
   return {static_cast<t_uint>(prow), static_cast<t_uint>(pcol)};
 }
-
 } /* scalapack  */
 } /* optimet  */

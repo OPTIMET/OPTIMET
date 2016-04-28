@@ -5,6 +5,10 @@
 #include "Run.h"
 #include "pugi/pugixml.hpp"
 
+#ifdef OPTIMET_BELOS
+#include <Teuchos_ParameterList.hpp>
+#endif
+
 /**
  * The Reader class is used to read a simulation case file.
  * Provides an interface for reading a Run object.
@@ -65,6 +69,9 @@ public:
    * @return 0 if valid, 1 otherwise.
    */
   int readOutput();
+
+  //! Reads Teuchos::ParameterList from XML
+  void readParameterList(pugi::xml_document const & root_node);
 
 protected:
   Scatterer readSphericalScatterer(pugi::xml_node const &node);

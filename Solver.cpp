@@ -1,25 +1,46 @@
 #include "Solver.h"
 
-#include <iostream>
-#include <cstdlib>
+#include "Algebra.h"
+#include "Aliases.h"
 #include "CompoundIterator.h"
 #include "HarmonicsIterator.h"
 #include "Tools.h"
-#include "Algebra.h"
 #include "constants.h"
-#include "Aliases.h"
 #include "mpi/Communicator.h"
-#include "scalapack/Matrix.h"
 #include "scalapack/LinearSystemSolver.h"
+#include "scalapack/Matrix.h"
 #include <Eigen/Dense>
+#include <cstdlib>
+#include <iostream>
 
 namespace optimet {
+#if defined(OPTIMET_BELOS)
+Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long nMax,
+               Teuchos::RCP<Teuchos::ParameterList> belos_params, scalapack::Context const &context)
+    : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
+      belos_params_(belos_params), context_(context), block_size_{64, 64}
+
+{
+  populate();
+}
+#elif defined(OPTIMET_MPI)
 Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long nMax,
                scalapack::Context const &context)
     : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
-      context_(context), block_size_{64, 64} {
+      context_(context), block_size_{64, 64}
+
+{
   populate();
 }
+#else
+Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long nMax)
+    : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
+      block_size_{64, 64}
+
+{
+  populate();
+}
+#endif
 
 void Solver::populate() {
   auto const N = 2 * (HarmonicsIterator::max_flat(nMax) - 1) * geometry->objects.size();
@@ -166,31 +187,43 @@ void Solver::update(Geometry *geometry_, Excitation const *incWave_, long nMax_)
 void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b,
                                Vector<t_complex> &x) const {
 #ifdef OPTIMET_MPI
-  if(scalapack::global_size() > 1) {
-    // scalapack parameters: matrix size, grid of processors, block size
-    scalapack::Sizes const size{static_cast<t_uint>(A.rows()), static_cast<t_uint>(A.cols())};
-
-    // "serial" version to distribute from A to root.
-    scalapack::Matrix<t_complex> Aserial(context().serial(), size, block_size());
-    scalapack::Matrix<t_complex> bserial(Aserial.context(), {size.rows, 1}, block_size());
-    if(Aserial.context().is_valid()) {
-      Aserial.local() = A;
-      bserial.local() = b;
-    }
-    // Transfer to grid
-    auto Aparallel = Aserial.transfer_to(context(), block_size());
-    auto bparallel = bserial.transfer_to(context(), block_size());
-
-    // Now the actual work
-    auto Xparallel = std::get<0>(scalapack::general_linear_system(Aparallel, bparallel));
-
-    // Transfer back to root
-    auto Xserial = Xparallel.transfer_to(Aserial.context(), block_size());
-    // Broadcast from root
-    x = context().broadcast(Xserial.local(), 0, 0);
-  } else
+  if(scalapack::global_size() > 1)
+    solveLinearSystemScalapack(A, b, x);
+  else
 #endif
-  x = A.colPivHouseholderQr().solve(b);
+    x = A.colPivHouseholderQr().solve(b);
 }
+
+#ifdef OPTIMET_MPI
+void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_complex> const &b,
+                                        Vector<t_complex> &x) const {
+  // scalapack parameters: matrix size, grid of processors, block size
+  scalapack::Sizes const size{static_cast<t_uint>(A.rows()), static_cast<t_uint>(A.cols())};
+
+  // "serial" version to distribute from A to root.
+  scalapack::Matrix<t_complex> Aserial(context().serial(), size, block_size());
+  scalapack::Matrix<t_complex> bserial(Aserial.context(), {size.rows, 1}, block_size());
+  if(Aserial.context().is_valid()) {
+    Aserial.local() = A;
+    bserial.local() = b;
+  }
+  // Transfer to grid
+  auto Aparallel = Aserial.transfer_to(context(), block_size());
+  auto bparallel = bserial.transfer_to(context(), block_size());
+
+  // Now the actual work
+  auto Xparallel = std::get<0>(
+#ifdef OPTIMET_BELOS
+      belos_parameters()->get<std::string>("Solver", "scalapack") != "scalapack" ?
+          scalapack::gmres_linear_system(Aparallel, bparallel, belos_parameters()) :
+#endif
+          scalapack::general_linear_system(Aparallel, bparallel));
+
+  // Transfer back to root
+  auto Xserial = Xparallel.transfer_to(Aserial.context(), block_size());
+  // Broadcast from root
+  x = context().broadcast(Xserial.local(), 0, 0);
+}
+#endif
 
 } // optimet namespace

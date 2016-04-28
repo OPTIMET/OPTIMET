@@ -1,17 +1,17 @@
 #include "Simulation.h"
 
-#include "Reader.h"
+#include "Aliases.h"
 #include "CompoundIterator.h"
 #include "Excitation.h"
-#include "Solver.h"
+#include "Output.h"
+#include "Reader.h"
 #include "Result.h"
 #include "Run.h"
-#include "Aliases.h"
-#include "Output.h"
+#include "Solver.h"
 
-#include <iostream>
-#include <fstream>
 #include <cstdlib>
+#include <fstream>
+#include <iostream>
 
 int Simulation::run() {
 
@@ -26,11 +26,14 @@ int Simulation::run() {
     return 1;
 
 // Initialize the solver
-#ifdef OPTIMET_MPI
+#if defined(OPTIMET_BELOS)
   optimet::scalapack::Context context(run.parallel_params.grid);
-
+  optimet::Solver solver(&(run.geometry), &(run.excitation), O3DSolverIndirect, run.nMax,
+                         run.belos_params, context);
+  solver.block_size({run.parallel_params.block_size, run.parallel_params.block_size});
+#elif defined(OPTIMET_MPI)
+  optimet::scalapack::Context context(run.parallel_params.grid);
   optimet::Solver solver(&(run.geometry), &(run.excitation), O3DSolverIndirect, run.nMax, context);
-
   solver.block_size({run.parallel_params.block_size, run.parallel_params.block_size});
 #else
   optimet::Solver solver(&(run.geometry), &(run.excitation), O3DSolverIndirect, run.nMax);
