@@ -1,13 +1,13 @@
-#include <iostream>
 #include "catch.hpp"
+#include <iostream>
 
-#include "Types.h"
+#include "Aliases.h"
 #include "Geometry.h"
 #include "Scatterer.h"
-#include "constants.h"
-#include "Tools.h"
 #include "Solver.h"
-#include "Aliases.h"
+#include "Tools.h"
+#include "Types.h"
+#include "constants.h"
 
 using namespace optimet;
 
@@ -21,18 +21,18 @@ TEST_CASE("N spheres") {
 
   // Create excitation
   auto const wavelength = 14960e-9;
-  Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0,
-                                90 * consPi / 180.0};
+  Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
   SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
-  Excitation excitation{0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics};
-  excitation.populate();
-  geometry.update(&excitation);
+  auto const excitation =
+      std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
+  excitation->populate();
+  geometry.update(excitation);
 
-  optimet::Result parallel(&geometry, &excitation, nHarmonics);
-  Solver solver(&geometry, &excitation, O3DSolverIndirect, nHarmonics);
+  optimet::Result parallel(&geometry, excitation, nHarmonics);
+  Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
   solver.solve(parallel.scatter_coef, parallel.internal_coef);
 
-  optimet::Result serial(&geometry, &excitation, nHarmonics);
+  optimet::Result serial(&geometry, excitation, nHarmonics);
   auto const serial_context = solver.context().serial();
   if(serial_context.is_valid()) {
     solver.context(serial_context).solve(serial.scatter_coef, serial.internal_coef);
@@ -56,15 +56,14 @@ TEST_CASE("Simultaneous") {
 
   // Create excitation
   auto const wavelength = 14960e-9;
-  Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0,
-                                90 * consPi / 180.0};
+  Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
   SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
-  Excitation excitation{0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics};
-  excitation.populate();
-  geometry.update(&excitation);
+  auto const excitation =
+      std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
+  excitation->populate();
+  geometry.update(excitation);
 
-  optimet::Result parallel(&geometry, &excitation, nHarmonics);
-
+  optimet::Result parallel(&geometry, excitation, nHarmonics);
 
   auto const gridsize = scalapack::squarest_largest_grid(scalapack::global_size() - 1);
   Matrix<t_uint> grid_map(gridsize.rows, gridsize.cols);
@@ -75,13 +74,11 @@ TEST_CASE("Simultaneous") {
   auto const parallel_context = world_context.subcontext(grid_map);
   auto const serial_context = world_context.serial();
 
-  CHECK((
-      (serial_context.is_valid() xor parallel_context.is_valid()) or
-      (not (parallel_context.is_valid() and serial_context.is_valid()))
-  ));
+  CHECK(((serial_context.is_valid() xor parallel_context.is_valid()) or
+         (not(parallel_context.is_valid() and serial_context.is_valid()))));
 
-  Solver solver(&geometry, &excitation, O3DSolverIndirect, nHarmonics);
-  optimet::Result result(&geometry, &excitation, nHarmonics);
+  Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
+  optimet::Result result(&geometry, excitation, nHarmonics);
 
   if(parallel_context.is_valid())
     solver.context(parallel_context).solve(result.scatter_coef, result.internal_coef);
@@ -93,7 +90,8 @@ TEST_CASE("Simultaneous") {
   auto const scatter_parallel = world_context.broadcast(result.scatter_coef, proot.row, proot.col);
 
   auto const internal_serial = world_context.broadcast(result.internal_coef, 0, 0);
-  auto const internal_parallel = world_context.broadcast(result.internal_coef, proot.row, proot.col);
+  auto const internal_parallel =
+      world_context.broadcast(result.internal_coef, proot.row, proot.col);
 
   if(parallel_context.is_valid()) {
     CHECK(scatter_serial.isApprox(result.scatter_coef));

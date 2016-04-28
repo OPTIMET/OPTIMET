@@ -3,8 +3,10 @@
 
 #include "Spherical.h"
 
+#include "Types.h"
 #include <complex>
 
+namespace optimet {
 /**
  * The Excitation class implements the incoming wave coefficients.
  * Possible Excitation types are:
@@ -15,8 +17,6 @@
  * @warning Do not use without initialization.
  */
 class Excitation {
-private:
-  bool initDone; /**< Specifies if the object has been initialized. */
 public:
   //! The incoming wave values as (0, Einc_the, Einc_phi) in [V/m].
   SphericalP<std::complex<double>> Einc;
@@ -25,18 +25,12 @@ public:
   long nMax;               /**< The maximum value for the n iterator. */
   unsigned long type;      /**< The Excitation type. */
 
-  std::complex<double> *dataIncAp; /**< The incoming wave a_n^m coefficients. */
-  std::complex<double> *dataIncBp; /**< The incoming wave b_n^m coefficients. */
+  Vector<t_complex> dataIncAp; /**< The incoming wave a_n^m coefficients. */
+  Vector<t_complex> dataIncBp; /**< The incoming wave b_n^m coefficients. */
 
   std::complex<double> waveK; /**< The incoming wave wavenumber. */
   double lambda;              /**< The incoming wave wavelength (calculated). */
   double omega;               /**< The incoming wave frequency (calculated). */
-
-  /**
-   * Default constructor for the Excitation class.
-   * Does NOT initialize the object.
-   */
-  Excitation();
 
   /**
    * Initialization constructor for the Excitation class.
@@ -51,17 +45,7 @@ public:
   /**
    * Default destructor for the Excitation class.
    */
-  virtual ~Excitation();
-
-  /**
-   * Initialization method for the Excitation class.
-   * @param type_ the type of the wave.
-   * @param Einc_ the incoming wave values.
-   * @param waveKInc_ the incoming wavevector values.
-   * @param nMax_ the maximum value of the n iterator.
-   */
-  void init(unsigned long type_, SphericalP<std::complex<double>> Einc_,
-            Spherical<double> vKInc_, int nMax_);
+  virtual ~Excitation() {}
 
   /**
    * Update method for the Excitation class.
@@ -97,5 +81,5 @@ public:
    */
   void updateWavelength(double lambda_);
 };
-
+}
 #endif /* EXCITATION_H_ */

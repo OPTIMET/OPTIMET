@@ -5,6 +5,7 @@
 #include "CompoundIterator.h"
 #include "Excitation.h"
 #include "scalapack/Parameters.h"
+#include <memory>
 
 #ifdef OPTIMET_BELOS
 #include <Teuchos_ParameterListExceptions.hpp>
@@ -22,7 +23,7 @@
 class Run {
 public:
   Geometry geometry;     /**< The Geometry of the case. */
-  Excitation excitation; /**< The Excitation of the case. */
+  std::shared_ptr<optimet::Excitation> excitation; /**< The Excitation of the case. */
   //! Parameters needed to setup parallel computations
   optimet::scalapack::Parameters parallel_params;
 #ifdef OPTIMET_BELOS

@@ -1,10 +1,10 @@
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_
 
-#include <vector>
-#include "Types.h"
-#include "Scatterer.h"
 #include "Excitation.h"
+#include "Scatterer.h"
+#include "Types.h"
+#include <vector>
 
 /**
  * The Geometry class implements a list of objects and properties of the medium.
@@ -112,18 +112,18 @@ public:
    * @param Q_SH_local_ the return value of the local SH source vector.
    * @return 0 if successful, 1 otherwise.
    */
-  int getSourceLocal(int objectIndex_, Excitation const *incWave_,
+  int getSourceLocal(int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_,
                      std::complex<double> *internalCoef_FF_, int nMax_,
                      std::complex<double> *Q_SH_local_) const;
 
-  int setSourcesSingle(Excitation const *incWave_, std::complex<double> *internalCoef_FF_,
-                       int nMax_);
+  int setSourcesSingle(std::shared_ptr<optimet::Excitation const> incWave_,
+                       std::complex<double> *internalCoef_FF_, int nMax_);
 
   /**
    * Updates the Geometry object to a new Excitation.
    * @param lambda_ the new wavelength.
    */
-  void update(Excitation *incWave_);
+  void update(std::shared_ptr<optimet::Excitation const> incWave_);
 
   /**
    * Updates the Geometry object by modifying the radius of an object.

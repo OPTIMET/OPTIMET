@@ -121,11 +121,11 @@ int Reader::readExcitation() {
   Einc = Tools::toProjection(vAux, Eaux);
 
   // Initialize and populate the excitation
-  run->excitation.init(source_type, Einc, vKinc, run->nMax);
-  run->excitation.populate();
+  run->excitation = std::make_shared<optimet::Excitation>(source_type, Einc, vKinc, run->nMax);
+  run->excitation->populate();
 
   // Update the geometry in case we had dynamic models
-  run->geometry.update(&(run->excitation));
+  run->geometry.update(run->excitation);
 
   return 0;
 }

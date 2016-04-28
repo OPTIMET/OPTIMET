@@ -15,7 +15,7 @@
 
 namespace optimet {
 #if defined(OPTIMET_BELOS)
-Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long nMax,
+Solver::Solver(Geometry *geometry, std::shared_ptr<Excitation const> incWave, int method, long nMax,
                Teuchos::RCP<Teuchos::ParameterList> belos_params, scalapack::Context const &context)
     : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
       belos_params_(belos_params), context_(context), block_size_{64, 64}
@@ -24,7 +24,7 @@ Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long n
   populate();
 }
 #elif defined(OPTIMET_MPI)
-Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long nMax,
+Solver::Solver(Geometry *geometry, std::shared_ptr<Excitation const> incWave, int method, long nMax,
                scalapack::Context const &context)
     : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
       context_(context), block_size_{64, 64}
@@ -33,7 +33,7 @@ Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long n
   populate();
 }
 #else
-Solver::Solver(Geometry *geometry, Excitation const *incWave, int method, long nMax)
+Solver::Solver(Geometry *geometry, std:shared_ptr<Excitation const> incWave, int method, long nMax)
     : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
       block_size_{64, 64}
 
@@ -174,7 +174,7 @@ void Solver::populateIndirect() {
   }
 }
 
-void Solver::update(Geometry *geometry_, Excitation const *incWave_, long nMax_) {
+void Solver::update(Geometry *geometry_, std::shared_ptr<Excitation const> incWave_, long nMax_) {
   geometry = geometry_;
   incWave = incWave_;
   nMax = nMax_;

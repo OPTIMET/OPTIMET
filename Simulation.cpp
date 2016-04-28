@@ -2,7 +2,6 @@
 
 #include "Aliases.h"
 #include "CompoundIterator.h"
-#include "Excitation.h"
 #include "Output.h"
 #include "Reader.h"
 #include "Result.h"
@@ -28,15 +27,15 @@ int Simulation::run() {
 // Initialize the solver
 #if defined(OPTIMET_BELOS)
   optimet::scalapack::Context context(run.parallel_params.grid);
-  optimet::Solver solver(&(run.geometry), &(run.excitation), O3DSolverIndirect, run.nMax,
+  optimet::Solver solver(&(run.geometry), run.excitation, O3DSolverIndirect, run.nMax,
                          run.belos_params, context);
   solver.block_size({run.parallel_params.block_size, run.parallel_params.block_size});
 #elif defined(OPTIMET_MPI)
   optimet::scalapack::Context context(run.parallel_params.grid);
-  optimet::Solver solver(&(run.geometry), &(run.excitation), O3DSolverIndirect, run.nMax, context);
+  optimet::Solver solver(&(run.geometry), run.excitation, O3DSolverIndirect, run.nMax, context);
   solver.block_size({run.parallel_params.block_size, run.parallel_params.block_size});
 #else
-  optimet::Solver solver(&(run.geometry), &(run.excitation), O3DSolverIndirect, run.nMax);
+  optimet::Solver solver(&(run.geometry), run.excitation, O3DSolverIndirect, run.nMax);
 #endif
 
   switch(run.outputType) {
@@ -65,7 +64,7 @@ int Simulation::run() {
 void Simulation::field_simulation(Run &run, optimet::Solver &solver) {
   // Determine the simulation type and proceed accordingly
 
-  optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
+  optimet::Result result(&(run.geometry), run.excitation, run.nMax);
   solver.solve(result.scatter_coef, result.internal_coef);
 
   if(communicator().rank() == communicator().root_id()) {
@@ -117,11 +116,11 @@ void Simulation::scan_wavelengths(Run &run, optimet::Solver &solver) {
 
     std::cout << "Solving for Lambda = " << lam << std::endl;
 
-    run.excitation.updateWavelength(lam);
-    run.geometry.update(&(run.excitation));
-    solver.update(&(run.geometry), &(run.excitation), run.nMax);
+    run.excitation->updateWavelength(lam);
+    run.geometry.update(run.excitation);
+    solver.update(&(run.geometry), run.excitation, run.nMax);
 
-    optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
+    optimet::Result result(&(run.geometry), run.excitation, run.nMax);
     solver.solve(result.scatter_coef, result.internal_coef);
 
     if(communicator().rank() == communicator().root_id()) {
@@ -172,9 +171,9 @@ void Simulation::radius_scan(Run &run, optimet::Solver &solver) {
       exit(1);
     }
 
-    solver.update(&(run.geometry), &(run.excitation), run.nMax);
+    solver.update(&(run.geometry), run.excitation, run.nMax);
 
-    optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
+    optimet::Result result(&(run.geometry), run.excitation, run.nMax);
     solver.solve(result.scatter_coef, result.internal_coef);
 
     if(communicator().rank() == communicator().root_id()) {
@@ -220,8 +219,8 @@ void Simulation::radius_and_wavelength_scan(Run &run, optimet::Solver &solver) {
 
       std::cout << "Solving for Lambda = " << lam << " and R =" << rad << std::endl;
 
-      run.excitation.updateWavelength(lam);
-      run.geometry.update(&(run.excitation));
+      run.excitation->updateWavelength(lam);
+      run.geometry.update(run.excitation);
       for(size_t k = 0; k < run.geometry.objects.size(); k++) {
         run.geometry.updateRadius(rad, k);
       }
@@ -235,9 +234,9 @@ void Simulation::radius_and_wavelength_scan(Run &run, optimet::Solver &solver) {
         exit(1);
       }
 
-      solver.update(&(run.geometry), &(run.excitation), run.nMax);
+      solver.update(&(run.geometry), run.excitation, run.nMax);
 
-      optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
+      optimet::Result result(&(run.geometry), run.excitation, run.nMax);
       solver.solve(result.scatter_coef, result.internal_coef);
 
       if(communicator().rank() == communicator().root_id()) {
@@ -265,7 +264,7 @@ void Simulation::radius_and_wavelength_scan(Run &run, optimet::Solver &solver) {
 void Simulation::coefficients(Run &run, optimet::Solver &solver) {
   // Scattering coefficients requests
 
-  optimet::Result result(&(run.geometry), &(run.excitation), run.nMax);
+  optimet::Result result(&(run.geometry), run.excitation, run.nMax);
   solver.solve(result.scatter_coef, result.internal_coef);
 
   if(communicator().rank() == communicator().root_id()) {

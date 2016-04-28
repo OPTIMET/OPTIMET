@@ -1,20 +1,20 @@
-#include "Geometry.h"
 #include "Coupling.h"
+#include "Geometry.h"
 
-#include "Tools.h"
+#include "Algebra.h"
 #include "Bessel.h"
 #include "CompoundIterator.h"
 #include "HarmonicsIterator.h"
 #include "Symbol.h"
-#include "Algebra.h"
-#include "constants.h"
+#include "Tools.h"
 #include "Types.h"
+#include "constants.h"
 
-#include <iostream>
 #include <cmath>
-#include <vector>
-#include <stdexcept>
+#include <iostream>
 #include <sstream>
+#include <stdexcept>
+#include <vector>
 
 Geometry::~Geometry() {}
 Geometry::Geometry() {}
@@ -246,8 +246,8 @@ int Geometry::checkInner(Spherical<double> R_) {
   return -1;
 }
 
-int Geometry::setSourcesSingle(Excitation const *incWave_, std::complex<double> *internalCoef_FF_,
-                               int nMax_) {
+int Geometry::setSourcesSingle(std::shared_ptr<optimet::Excitation const> incWave_,
+                               std::complex<double> *internalCoef_FF_, int nMax_) {
   CompoundIterator p;
   int pMax = p.max(nMax_);
 
@@ -327,8 +327,9 @@ Geometry::getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet
   return result;
 }
 
-int Geometry::getSourceLocal(int objectIndex_, Excitation const *incWave_, std::complex<double> *,
-                             int nMax_, std::complex<double> *Q_SH_local_) const {
+int Geometry::getSourceLocal(int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_,
+                             std::complex<double> *, int nMax_,
+                             std::complex<double> *Q_SH_local_) const {
   CompoundIterator p;
   CompoundIterator q;
 
@@ -381,11 +382,10 @@ int Geometry::getSourceLocal(int objectIndex_, Excitation const *incWave_, std::
   return 0;
 }
 
-void Geometry::update(Excitation *incWave_) {
+void Geometry::update(std::shared_ptr<optimet::Excitation const> incWave_) {
   // Update the ElectroMagnetic properties of each object
-  for(auto &object : objects) {
+  for(auto &object : objects)
     object.elmag.update(incWave_->lambda);
-  }
 }
 
 void Geometry::updateRadius(double radius_, int object_) { objects[object_].radius = radius_; }

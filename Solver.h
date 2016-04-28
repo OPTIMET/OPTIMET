@@ -9,7 +9,7 @@
 #include "scalapack/Context.h"
 #include "scalapack/Parameters.h"
 #include <complex>
-#include <complex>
+#include <memory>
 #include <exception>
 
 #ifdef OPTIMET_BELOS
@@ -58,7 +58,7 @@ public:
    * @param method_ the solver method to be used.
    * @param nMax_ the maximum value for the n iterator.
    */
-  Solver(Geometry *geometry_, Excitation const *incWave_, int method_, long nMax_);
+  Solver(Geometry *geometry_, std::shared_ptr<Excitation const> incWave_, int method_, long nMax_);
 #endif
 
   /**
@@ -91,7 +91,7 @@ public:
    * @param incWave_ the incoming wave excitation.
    * @param nMax_ the maximum value for the n iterator.
    */
-  void update(Geometry *geometry_, Excitation const *incWave_, long nMax_);
+  void update(Geometry *geometry_, std::shared_ptr<Excitation const> incWave_, long nMax_);
   //! \brief Update after internal parameters changed externally
   //! \details Because that's how the original implementation rocked.
   void update() { populate(); }
@@ -144,7 +144,7 @@ private:
                                   Vector<t_complex> &x) const;
 #endif
   Geometry *geometry;        /**< Pointer to the geometry. */
-  Excitation const *incWave; /**< Pointer to the incoming excitation. */
+  std::shared_ptr<Excitation const> incWave; /**< Pointer to the incoming excitation. */
   long nMax;                 /**< The maximum n order. */
   Result *result_FF;         /**< The fundamental frequency results. */
   int solverMethod;          /**< Solver method: Direct = Mischenko1996, Indirect =
