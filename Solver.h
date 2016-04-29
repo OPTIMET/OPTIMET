@@ -25,18 +25,7 @@ public:
   Matrix<t_complex> S; /**< The scattering matrix S = I - T*AB. */
   Vector<t_complex> Q; /**< The local field matrix Q = T*AB*a. */
 
-#if defined(OPTIMET_MPI)
-  /**
-   * Initialization constructor for the Solver class.
-   * @param geometry_ the geometry of the simulation.
-   * @param incWave_ the incoming wave excitation.
-   * @param method_ the solver method to be used.
-   * @param nMax_ the maximum value for the n iterator.
-   * @param context Scalapack context associated with this solver instance
-   */
-  Solver(Geometry *geometry_, Excitation const *incWave_, int method_, long nMax_,
-         scalapack::Context const &context = scalapack::Context::Squarest());
-#elif defined(OPTIMET_BELOS)
+#if defined(OPTIMET_BELOS)
   /**
    * Initialization constructor for the Solver class.
    * @param geometry_ the geometry of the simulation.
@@ -50,6 +39,17 @@ public:
       Geometry *geometry_, Excitation const *incWave_, int method_, long nMax_,
       Teuchos::RCP<Teuchos::ParameterList> belos_params = Teuchos::rcp(new Teuchos::ParameterList),
       scalapack::Context const &context = scalapack::Context::Squarest());
+#elif defined(OPTIMET_MPI)
+  /**
+   * Initialization constructor for the Solver class.
+   * @param geometry_ the geometry of the simulation.
+   * @param incWave_ the incoming wave excitation.
+   * @param method_ the solver method to be used.
+   * @param nMax_ the maximum value for the n iterator.
+   * @param context Scalapack context associated with this solver instance
+   */
+  Solver(Geometry *geometry_, Excitation const *incWave_, int method_, long nMax_,
+         scalapack::Context const &context = scalapack::Context::Squarest());
 #else
   /**
    * Initialization constructor for the Solver class.
