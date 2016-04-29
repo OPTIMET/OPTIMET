@@ -17,6 +17,10 @@ find_or_add_hunter_package(hdf5 PACKAGE HDF5)
 find_or_add_hunter_package(GSL)
 find_or_add_hunter_package(F2C)
 
+if(dobenchmarks)
+  find_or_add_hunter_package(GBenchmark)
+endif()
+
 if(dompi AND "$ENV{CRAYOS_VERSION}" STREQUAL "")
   find_package(MPI REQUIRED)
   find_package(scalapack REQUIRED)
