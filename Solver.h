@@ -36,7 +36,7 @@ public:
    * @param context Scalapack context associated with this solver instance
    */
   Solver(
-      Geometry *geometry_, Excitation const *incWave_, int method_, long nMax_,
+      Geometry *geometry_, std::shared_ptr<Excitation const> incWave_, int method_, long nMax_,
       Teuchos::RCP<Teuchos::ParameterList> belos_params = Teuchos::rcp(new Teuchos::ParameterList),
       scalapack::Context const &context = scalapack::Context::Squarest());
 #elif defined(OPTIMET_MPI)
@@ -48,7 +48,7 @@ public:
    * @param nMax_ the maximum value for the n iterator.
    * @param context Scalapack context associated with this solver instance
    */
-  Solver(Geometry *geometry_, Excitation const *incWave_, int method_, long nMax_,
+  Solver(Geometry *geometry_, std::shared_ptr<Excitation const> incWave_, int method_, long nMax_,
          scalapack::Context const &context = scalapack::Context::Squarest());
 #else
   /**

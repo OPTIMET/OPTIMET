@@ -33,7 +33,7 @@ Solver::Solver(Geometry *geometry, std::shared_ptr<Excitation const> incWave, in
   populate();
 }
 #else
-Solver::Solver(Geometry *geometry, std:shared_ptr<Excitation const> incWave, int method, long nMax)
+Solver::Solver(Geometry *geometry, std::shared_ptr<Excitation const> incWave, int method, long nMax)
     : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
       block_size_{64, 64}
 
