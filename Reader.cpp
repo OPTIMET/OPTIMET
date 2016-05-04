@@ -536,7 +536,10 @@ Scatterer Reader::readSphericalScatterer(pugi::xml_node const &node) {
 void Reader::readParameterList(pugi::xml_document const &root_node) {
   auto const xml_params = root_node.child("ParameterList");
   std::ostringstream str_params;
-  xml_params.print(str_params);
+  if(not xml_params)
+    str_params << "<ParameterList name=\"belos\"></ParameterList>";
+  else
+    xml_params.print(str_params);
   run->belos_params = Teuchos::getParametersFromXmlString(str_params.str());
   if(not run->belos_params->isParameter("Solver"))
     run->belos_params->set("Solver", "scalapack");
