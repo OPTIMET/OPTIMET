@@ -5,6 +5,9 @@
 #include "Tools.h"
 #include "Types.h"
 #include "constants.h"
+#include "mpi/Collectives.h"
+#include "mpi/Communicator.h"
+#include "mpi/Session.h"
 #include <benchmark/benchmark.h>
 
 namespace {
@@ -58,7 +61,9 @@ void problem_setup(benchmark::State &state) {
     Solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics);
 }
 
-void serial(benchmark::State &state) {
+
+#ifndef OPTIMET_MPI
+void serial_solver(benchmark::State &state) {
   auto const range = std::make_tuple(state.range_x(), state.range_x(), state.range_x());
   auto const nHarmonics = state.range_y();
   ElectroMagnetic const elmag{13.1, 1.0};
@@ -72,12 +77,41 @@ void serial(benchmark::State &state) {
   }
   state.SetBytesProcessed(int64_t(state.iterations()) * int64_t(result.internal_coef.size()));
 }
+#endif
+
+#ifdef OPTIMET_MPI
+void scalapack_solver(benchmark::State &state) {
+  auto const range = std::make_tuple(state.range_x(), state.range_x(), state.range_x());
+  auto const nHarmonics = state.range_y();
+  ElectroMagnetic const elmag{13.1, 1.0};
+  auto input = fcc_system(range, default_length(), default_scatterer(nHarmonics));
+  Solver solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics);
+  Result result(&std::get<0>(input), std::get<1>(input), nHarmonics);
+  while(state.KeepRunning()) {
+    result.internal_coef.fill(0);
+    solver.solve(result.scatter_coef, result.internal_coef);
+  }
+  state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(result.internal_coef.size()));
+}
+#endif
 }
 
-std::tuple<int, int> const nGeom = {1, 4};
-std::tuple<int, int> const nHarm = {1, 20};
+std::tuple<int, int> const nGeom = {1, 5};
+std::tuple<int, int> const nHarm = {1, 8};
 BENCHMARK(problem_setup)
     ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm));
-BENCHMARK(serial)
+#ifndef OPTIMET_MPI
+BENCHMARK(serial_solver)
     ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm));
-BENCHMARK_MAIN();
+#else
+BENCHMARK(scalapack_solver)
+    ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm));
+#endif
+
+int main(int argc, char** argv) {
+  optimet::mpi::init(argc, const_cast<const char **>(argv));
+  ::benchmark::Initialize(&argc, argv);
+  ::benchmark::RunSpecifiedBenchmarks();
+  optimet::mpi::finalize();
+  return 0;
+}
