@@ -1,16 +1,16 @@
+#include "catch.hpp"
 #include <iostream>
 #include <numeric>
-#include "catch.hpp"
 
 #include "Types.h"
-#include "scalapack/LinearSystemSolver.h"
-#include "scalapack/InitExit.h"
-#include "mpi/Communicator.h"
 #include "mpi/Collectives.h"
+#include "mpi/Communicator.h"
+#include "scalapack/InitExit.h"
+#include "scalapack/LinearSystemSolver.h"
 
 using namespace optimet;
 
-template<class SCALAR> void check(scalapack::Sizes const &grid, t_uint n, t_uint nb) {
+template <class SCALAR> void check(scalapack::Sizes const &grid, t_uint n, t_uint nb) {
   scalapack::Sizes const size = {n, n};
   scalapack::Sizes const blocks = {nb, nb};
   if(mpi::Communicator().size() < grid.rows * grid.cols) {
@@ -45,6 +45,8 @@ TEST_CASE("Compute solver in parallel, check result in serial") {
     SECTION("1x3") { check<double>({1, 3}, 1024, 64); }
     SECTION("3x1") { check<double>({3, 1}, 1024, 64); }
     SECTION("3x2") { check<double>({3, 2}, 1024, 64); }
+    SECTION("matrix small than block size") { check<double>({2, 2}, 36, 64); }
+    SECTION("matrix size equal to block size") { check<double>({2, 2}, 64, 64); }
   }
   SECTION("complex double") {
     SECTION("1x1") { check<std::complex<double>>({1, 1}, 1024, 64); }

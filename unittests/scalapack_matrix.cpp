@@ -14,7 +14,6 @@ using namespace optimet;
 TEST_CASE("Creates a matrix in 1x1 context") {
   auto const rank = scalapack::global_rank();
   scalapack::Context const context(1, 1);
-  CAPTURE(context.is_valid());
   REQUIRE(context.is_valid() == (rank == 0));
   scalapack::Matrix<> matrix(context, {64, 64}, {20, 10});
 
@@ -30,7 +29,7 @@ TEST_CASE("Creates a matrix in 1x1 context") {
   CHECK(matrix.blacs()[6] == 0);
   CHECK(matrix.blacs()[7] == 0);
   auto const leading = matrix.local().IsRowMajor ? matrix.local().cols() : matrix.local().rows();
-  CHECK(matrix.blacs()[8] == leading);
+  CHECK(matrix.blacs()[8] == std::max(leading, static_cast<decltype(leading)>(1)));
 }
 
 TEST_CASE("Creates a matrix in 1x2 context") {
@@ -38,7 +37,6 @@ TEST_CASE("Creates a matrix in 1x2 context") {
     return;
   auto const rank = scalapack::global_rank();
   scalapack::Context const context(1, 2);
-  CAPTURE(context.is_valid());
   scalapack::Matrix<> matrix(context, {64, 64}, {16, 8});
 
   CHECK(matrix.local().rows() == (context.is_valid() ? 64 : 0));
@@ -52,7 +50,7 @@ TEST_CASE("Creates a matrix in 1x2 context") {
   CHECK(matrix.blacs()[6] == 0);
   CHECK(matrix.blacs()[7] == 0);
   auto const leading = matrix.local().IsRowMajor ? matrix.local().cols() : matrix.local().rows();
-  CHECK(matrix.blacs()[8] == leading);
+  CHECK(matrix.blacs()[8] == std::max(leading, static_cast<decltype(leading)>(1)));
 }
 
 void check_creation(t_uint n, t_uint m) {
@@ -60,7 +58,6 @@ void check_creation(t_uint n, t_uint m) {
     return;
   auto const rank = scalapack::global_rank();
   scalapack::Context const context(n, m);
-  CAPTURE(context.is_valid());
   scalapack::Sizes const size = {1024, 1024};
   scalapack::Sizes const blocks = {31, 65};
   scalapack::Matrix<> matrix(context, size, blocks);
@@ -94,7 +91,7 @@ void check_creation(t_uint n, t_uint m) {
   CHECK(matrix.blacs()[6] == 0);
   CHECK(matrix.blacs()[7] == 0);
   auto const leading = matrix.local().IsRowMajor ? matrix.local().cols() : matrix.local().rows();
-  CHECK(matrix.blacs()[8] == leading);
+  CHECK(matrix.blacs()[8] == std::max(leading, static_cast<decltype(leading)>(1)));
 }
 
 TEST_CASE("Creates a matrice in nxm context") {
@@ -289,4 +286,10 @@ TEST_CASE("Matrix multiplication") {
   SECTION("1x2") { check_multiply({1, 2}, {1024, 2048}, {32, 65}); }
   SECTION("2x1") { check_multiply({2, 1}, {1024, 2048}, {32, 65}); }
   SECTION("2x3") { check_multiply({2, 3}, {1024, 2048}, {32, 65}); }
+  SECTION("matrix smaller than block size in one dimensions") {
+    check_multiply({2, 2}, {64, 32}, {64, 64});
+  }
+  SECTION("matrix smaller than block size in both dimensions") {
+    check_multiply({2, 2}, {32, 32}, {64, 64});
+  }
 }

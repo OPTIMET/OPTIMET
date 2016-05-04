@@ -129,7 +129,10 @@ public:
   t_uint size() const { return rows() * cols(); }
 
   //! Local leading dimension
-  t_uint local_leading() const { return EigenMatrix::IsRowMajor ? local().cols() : local().rows(); }
+  t_uint local_leading() const {
+    auto const result = EigenMatrix::IsRowMajor ? local().cols() : local().rows();
+    return std::max(result, static_cast<decltype(result)>(1));
+  }
 
   //! Global to local indices
   std::tuple<t_uint, t_uint, t_uint, t_uint> local_indices(t_uint i, t_uint j) const {
@@ -171,6 +174,7 @@ public:
   //! Number of local columns for given scalapack parameters
   static typename EigenMatrix::Index
   local_cols(Context const &context, Sizes size, Sizes blocks, Index index);
+
 protected:
   //! Associated blacs context
   Context context_;
