@@ -83,6 +83,8 @@ gmres_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b,
     auto const b_in_A = b.transfer_to(A.context());
     return gmres_linear_system(A, b_in_A, parameters, comm);
   }
+  if(A.size() == 0)
+    return {b, 0};
   auto const splitcomm = comm.split(A.context().is_valid());
   if(not A.context().is_valid())
     return std::tuple<Matrix<SCALAR>, int>{b, 0};

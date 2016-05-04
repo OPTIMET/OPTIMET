@@ -53,3 +53,29 @@ TEST_CASE("Compute solver in parallel, check result in serial") {
     SECTION("3x2") { check<std::complex<double>>({3, 2}, 1024, 64); }
   }
 }
+
+TEST_CASE("Empty matrix") {
+  scalapack::Sizes const grid = {2, 2};
+  t_uint const n = 0;
+  t_uint const nb = 64;
+  scalapack::Sizes const size = {n, n};
+  scalapack::Sizes const blocks = {nb, nb};
+  if(mpi::Communicator().size() < grid.rows * grid.cols) {
+    WARN("Not enough processes to run test: " << grid.rows << "x" << grid.cols << " < "
+                                              << mpi::Communicator().size());
+    return;
+  }
+  scalapack::Context const parallel_context(grid.rows, grid.cols);
+  scalapack::Context const serial_context(1, 1);
+  scalapack::Matrix<double> Aserial(serial_context, size, blocks);
+  scalapack::Matrix<double> bserial(serial_context, {size.cols, 1}, blocks);
+
+  auto const Aparallel = Aserial.transfer_to(parallel_context);
+  auto const bparallel = bserial.transfer_to(parallel_context);
+
+  auto const result = general_linear_system(Aparallel, bparallel);
+  REQUIRE(std::get<1>(result) == 0);
+  auto const x = std::get<0>(result).transfer_to(serial_context);
+  CHECK(x.size() == 0);
+  CHECK(x.local().size() == 0);
+}
