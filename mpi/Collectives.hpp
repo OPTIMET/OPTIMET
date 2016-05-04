@@ -1,10 +1,10 @@
 #ifndef OPTIMET_MPI_COLLECTIVES_HPP
 #define OPTIMET_MPI_COLLECTIVES_HPP
 
+#include "Types.h"
 #include <mpi.h>
 #include <type_traits>
 #include <vector>
-#include "Types.h"
 
 namespace optimet {
 namespace mpi {
