@@ -1,9 +1,10 @@
 #ifndef SCATTERER_H_
 #define SCATTERER_H_
 
-#include <vector>
-#include "Spherical.h"
+#include "Types.h"
 #include "ElectroMagnetic.h"
+#include "Spherical.h"
+#include <vector>
 
 /**
  * The Scatterer class is the highest level element of a geometry.
@@ -30,8 +31,7 @@ public:
    * @param nMax_ the maximum value of the n iterator.
    * @see init()
    */
-  Scatterer(Spherical<double> vR_, ElectroMagnetic elmag_, double radius_,
-            int nMax_);
+  Scatterer(Spherical<double> vR_, ElectroMagnetic elmag_, double radius_, int nMax_);
 
   /**
    * Default scatterer destructor.
@@ -40,11 +40,20 @@ public:
 
   Spherical<double> vR;  /**< The coordinates of the center of the scatterer.*/
   ElectroMagnetic elmag; /**< The electromagnetic properties of the scatterer.*/
-  double radius; /**< The radius of a sphere encompassing the scatterer.*/
-  int nMax;      /**< Maximum value of the n iterator. */
+  double radius;         /**< The radius of a sphere encompassing the scatterer.*/
+  int nMax;              /**< Maximum value of the n iterator. */
 
-  std::vector<std::complex<double>>
-      sourceCoef; /**< The source coefficients needed for SH work.*/
+  std::vector<std::complex<double>> sourceCoef; /**< The source coefficients needed for SH work.*/
+
+  /**
+   * Returns the single object local scattering matrix T
+   * Currently implements the scattering matrix for spherical objects
+   * @param omega_ the angular frequency of the simulation
+   * @param bground background electromagnetic medium
+   * @return 0 if successful, 1 otherwise.
+   */
+  optimet::Matrix<optimet::t_complex>
+  getTLocal(optimet::t_real omega_, ElectroMagnetic const &bground) const;
 };
 
 #endif /* SCATTERER_H_ */

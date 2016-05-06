@@ -295,46 +295,11 @@ int Geometry::setSourcesSingle(std::shared_ptr<optimet::Excitation const> incWav
 optimet::Matrix<optimet::t_complex> Geometry::getTLocal(optimet::t_real omega_,
                                                         optimet::t_int objectIndex_,
                                                         optimet::t_uint nMax_) const {
-  using namespace optimet;
   if(objectIndex_ >= static_cast<int>(objects.size()))
     std::out_of_range("Object index out of range");
-
-  auto const k_s =
-      omega_ * std::sqrt(objects[objectIndex_].elmag.epsilon * objects[objectIndex_].elmag.mu);
-  auto const k_b = omega_ * std::sqrt(bground.epsilon * bground.mu);
-
-  auto const rho = k_s / k_b;
-  auto const r_0 = k_b * objects[objectIndex_].radius;
-  auto const mu_sob = objects[objectIndex_].elmag.mu / bground.mu;
-
-  auto const Jn = optimet::bessel<optimet::Bessel>(r_0, nMax_);
-  auto const Jrho = optimet::bessel<optimet::Bessel>(rho * r_0, nMax_);
-  auto const Hn = optimet::bessel<optimet::Hankel1>(r_0, nMax_);
-
-  auto const N = HarmonicsIterator::max_flat(nMax_) - 1;
-  Matrix<t_complex> result = Matrix<t_complex>::Zero(2 * N, 2 * N);
-  for(t_uint n(1), current(0); n <= nMax_; current += 2 * n + 1, ++n) {
-    auto const psi = r_0 * std::get<0>(Jn)[n];
-    auto const dpsi = r_0 * std::get<1>(Jn)[n] + std::get<0>(Jn)[n];
-
-    auto const ksi = r_0 * std::get<0>(Hn)[n];
-    auto const dksi = r_0 * std::get<1>(Hn)[n] + std::get<0>(Hn)[n];
-
-    auto const psirho = r_0 * rho * std::get<0>(Jrho)[n];
-    auto const dpsirho = r_0 * rho * std::get<1>(Jrho)[n] + std::get<0>(Jrho)[n];
-
-    // TE Part
-    auto const TE = (psi / ksi) * (mu_sob * dpsi / psi - rho * dpsirho / psirho) /
-                    (rho * dpsirho / psirho - mu_sob * dksi / ksi);
-    result.diagonal().segment(current, 2 * n + 1).fill(TE);
-
-    // TM part
-    auto const TM = (psi / ksi) * (mu_sob * dpsirho / psirho - rho * dpsi / psi) /
-                    (rho * dksi / ksi - mu_sob * dpsirho / psirho);
-    result.diagonal().segment(current + N, 2 * n + 1).fill(TM);
-  }
-
-  return result;
+  if(nMax_ != static_cast<optimet::t_uint>(objects[objectIndex_].nMax))
+    std::runtime_error("Internal inconsistency");
+  return objects[objectIndex_].getTLocal(omega_, bground);
 }
 
 int Geometry::getSourceLocal(int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_,

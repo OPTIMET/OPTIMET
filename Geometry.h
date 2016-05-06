@@ -75,8 +75,6 @@ public:
    * @param omega_ the angular frequency of the simulation.
    * @param objectIndex_ the index of the object for which T_j is calculated.
    * @param nMax_ the maximum value of the n iterator.
-   * @param T_local_ the return value as the local T_j scattering matrix.
-   * @return 0 if successful, 1 otherwise.
    */
   optimet::Matrix<optimet::t_complex>
   getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet::t_uint nMax_) const;
