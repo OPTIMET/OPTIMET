@@ -168,24 +168,9 @@ void Solver::populateIndirect() {
 
     // Push Q_local into Q (direct equivalence)
     Q.segment(i * 2 * flatMax, 2 * flatMax) = Q_local;
-
-    for(size_t j = 0; j < geometry->objects.size(); j++)
-      if(i == j)
-        S.block(i * 2 * flatMax, i * 2 * flatMax, 2 * flatMax, 2 * flatMax) =
-            Matrix<>::Identity(2 * flatMax, 2 * flatMax);
-      else {
-        // Build the T_AB matrix (non-regular corresponding to alpha(i,j))
-        Coupling const AB(geometry->objects[i].vR - geometry->objects[j].vR, incWave->waveK, nMax);
-
-        T_AB.topLeftCorner(flatMax, flatMax) = AB.diagonal.transpose();
-        T_AB.bottomRightCorner(flatMax, flatMax) = AB.diagonal.transpose();
-        T_AB.topRightCorner(flatMax, flatMax) = AB.offdiagonal.transpose();
-        T_AB.bottomLeftCorner(flatMax, flatMax) = AB.offdiagonal.transpose();
-
-        S.block(i * 2 * flatMax, j * 2 * flatMax, 2 * flatMax, 2 * flatMax) =
-            -T_AB * geometry->getTLocal(incWave->omega, j, nMax);
-      }
   }
+  assert(geometry->objects.size() == 0 or nMax == geometry->objects.front().nMax);
+  S = preconditioned_scattering_matrix(*geometry, *incWave);
 }
 
 void Solver::update(Geometry *geometry_, std::shared_ptr<Excitation const> incWave_, long nMax_) {
@@ -257,5 +242,36 @@ void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_com
   }
 }
 #endif
+
+Matrix<t_complex>
+preconditioned_scattering_matrix(Geometry const &geometry, Excitation const &incWave) {
+  if(geometry.objects.size() == 0)
+    return Matrix<t_complex>(0, 0);
+  // Check nMax is same accross all objects
+  auto const nMax = geometry.objects.front().nMax;
+  for(auto const &scatterer : geometry.objects)
+    if(scatterer.nMax != nMax)
+      throw std::runtime_error("All objects must have same number of harmonics");
+
+  auto const n = HarmonicsIterator::max_flat(nMax) - 1;
+  auto const size = 2 * n * geometry.objects.size();
+
+  auto const &objects = geometry.objects;
+  Matrix<t_complex> result = Matrix<t_complex>::Identity(size, size);
+  for(size_t j = 0, y(0); j < objects.size(); ++j, y += 2 * n) {
+    Matrix<t_complex> const factor = -geometry.getTLocal(incWave.omega, j, nMax);
+    for(size_t i = 0, x(0); i < objects.size(); ++i, x += 2 * n) {
+      if(i == j)
+        continue;
+      Coupling const AB(objects[i].vR - objects[j].vR, incWave.waveK, nMax);
+      result.block(x, y, n, n) = AB.diagonal.transpose();
+      result.block(x + n, y + n, n, n) = AB.diagonal.transpose();
+      result.block(x, y + n, n, n) = AB.offdiagonal.transpose();
+      result.block(x + n, y, n, n) = AB.offdiagonal.transpose();
+      result.block(x, y, 2 * n, 2 * n) *= factor;
+    }
+  }
+  return result;
+}
 
 } // optimet namespace

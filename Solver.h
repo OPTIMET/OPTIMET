@@ -170,6 +170,10 @@ private:
   scalapack::Sizes block_size_;
 };
 
+//! Computes preconditioned scattering matrix
+Matrix<t_complex>
+preconditioned_scattering_matrix(Geometry const &geometry, Excitation const &incWave);
+
 #ifdef OPTIMET_MPI
 //! \brief Broadcast data from a proc in the context to procs outside the context
 //! \details Usefull if some procs are not part of the context but still require the data.
