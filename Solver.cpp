@@ -251,22 +251,25 @@ preconditioned_scattering_matrix(std::vector<Scatterer>::const_iterator const &f
                                  ElectroMagnetic const &bground, Excitation const &incWave) {
   auto const nMax = first->nMax;
   auto const n = HarmonicsIterator::max_flat(nMax) - 1;
+  if(first == end_first or second == end_second)
+    return Matrix<t_complex>::Zero(2 * n * (end_first - first), 2 * n * (end_second - second));
 
-  Matrix<t_complex> result =
-      Matrix<t_complex>::Identity(2 * n * (end_first - first), 2 * n * (end_second - second));
+  Matrix<t_complex> result(2 * n * (end_first - first), 2 * n * (end_second - second));
   size_t y(0);
   for(auto iterj(second); iterj != end_second; ++iterj, y += 2 * n) {
     Matrix<t_complex> const factor = -iterj->getTLocal(incWave.omega, bground);
     size_t x(0);
     for(auto iteri(first); iteri != end_first; ++iteri, x += 2 * n) {
-      if(iteri == iterj)
-        continue;
-      Coupling const AB(iteri->vR - iterj->vR, incWave.waveK, nMax);
-      result.block(x, y, n, n) = AB.diagonal.transpose();
-      result.block(x + n, y + n, n, n) = AB.diagonal.transpose();
-      result.block(x, y + n, n, n) = AB.offdiagonal.transpose();
-      result.block(x + n, y, n, n) = AB.offdiagonal.transpose();
-      result.block(x, y, 2 * n, 2 * n) *= factor;
+      if(iteri == iterj) {
+        result.block(x, y, 2 * n, 2 * n) = Matrix<t_complex>::Identity(2 * n, 2 * n);
+      } else {
+        Coupling const AB(iteri->vR - iterj->vR, incWave.waveK, nMax);
+        result.block(x, y, n, n) = AB.diagonal.transpose();
+        result.block(x + n, y + n, n, n) = AB.diagonal.transpose();
+        result.block(x, y + n, n, n) = AB.offdiagonal.transpose();
+        result.block(x + n, y, n, n) = AB.offdiagonal.transpose();
+        result.block(x, y, 2 * n, 2 * n) *= factor;
+      }
     }
   }
   return result;
@@ -292,8 +295,50 @@ preconditioned_scattering_matrix(Geometry const &geometry, Excitation const &inc
 }
 
 #ifdef OPTIMET_MPI
-scalapack::Matrix<Scalar> preconditioned_scattering_matrix(Geometry const &geometry,
-                                                           Excitation const &incWave,
-                                                           scalapack::Context const &context) {}
+Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
+                                                   Excitation const &incWave,
+                                                   scalapack::Context const &context,
+                                                   scalapack::Sizes const &blocks) {
+  // construct an n by 1 context
+  auto const nobj = geometry.objects.size();
+  if(nobj == 0)
+    return Matrix<t_complex>::Zero(0, 0);
+  auto rank_map = context.rank_map();
+  rank_map.resize(context.size(), 1);
+  auto const linear_context = context.subcontext(rank_map.topRows(std::min(context.size(), nobj)));
+
+  auto const nMax = geometry.objects.front().nMax;
+  auto const remainder = nobj % linear_context.size();
+  auto const nloc = nobj / linear_context.size();
+  auto const n = HarmonicsIterator::max_flat(nMax) - 1;
+  scalapack::Matrix<t_complex> linear_matrix(linear_context, {nobj * n * 2, nobj * n * 2},
+                                             {nobj * n * 2, nloc * 2 * n});
+  linear_matrix.local().rightCols(nloc * 2 * n) = preconditioned_scattering_matrix(
+      geometry.objects.begin(), geometry.objects.end(),
+      geometry.objects.begin() + nloc * linear_context.row(),
+      geometry.objects.begin() + (nloc + 1) * linear_context.row(), geometry.bground, incWave);
+
+  if(remainder > 0) {
+    auto const remainder_context = linear_context.subcontext(rank_map.topRows(remainder));
+    scalapack::Matrix<t_complex> remainder_matrix(
+        remainder_context, {nobj * n * 2, remainder * n * 2}, {nobj * n * 2, 2 * n});
+    if(remainder_context.is_valid())
+      remainder_matrix.local() = preconditioned_scattering_matrix(
+          geometry.objects.begin(), geometry.objects.end(),
+          geometry.objects.begin() + nloc * linear_context.rows() + remainder_context.row(),
+          geometry.objects.begin() + nloc * linear_context.rows() + remainder_context.row() + 1,
+          geometry.bground, incWave);
+    auto const serial_context = linear_context.serial();
+    if(serial_context.is_valid())
+      linear_matrix.local().leftCols(remainder * 2 * n) =
+          remainder_matrix.transfer_to(serial_context).local();
+    else if(remainder_context.is_valid())
+      remainder_matrix.transfer_to(serial_context);
+  }
+
+  scalapack::Matrix<t_complex> distributed_matrix(context, linear_matrix.sizes(), blocks);
+  linear_matrix.transfer_to(distributed_matrix);
+  return distributed_matrix.local();
+}
 #endif
 } // optimet namespace
