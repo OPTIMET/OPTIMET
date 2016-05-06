@@ -79,7 +79,7 @@ public:
    * @return 0 if successful, 1 otherwise.
    */
   optimet::Matrix<optimet::t_complex>
-  getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet::t_uint nMax_);
+  getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet::t_uint nMax_) const;
 
   int getIaux(double omega_, int objectIndex_, int nMax_, std::complex<double> *I_aux_);
 

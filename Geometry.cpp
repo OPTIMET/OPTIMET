@@ -292,8 +292,9 @@ int Geometry::setSourcesSingle(std::shared_ptr<optimet::Excitation const> incWav
   return 0;
 }
 
-optimet::Matrix<optimet::t_complex>
-Geometry::getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet::t_uint nMax_) {
+optimet::Matrix<optimet::t_complex> Geometry::getTLocal(optimet::t_real omega_,
+                                                        optimet::t_int objectIndex_,
+                                                        optimet::t_uint nMax_) const {
   using namespace optimet;
   if(objectIndex_ >= static_cast<int>(objects.size()))
     std::out_of_range("Object index out of range");
