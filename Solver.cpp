@@ -244,26 +244,24 @@ void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_com
 #endif
 
 Matrix<t_complex>
-preconditioned_scattering_matrix(Geometry const &geometry, Excitation const &incWave) {
-  if(geometry.objects.size() == 0)
-    return Matrix<t_complex>(0, 0);
-  // Check nMax is same accross all objects
-  auto const nMax = geometry.objects.front().nMax;
-  for(auto const &scatterer : geometry.objects)
-    if(scatterer.nMax != nMax)
-      throw std::runtime_error("All objects must have same number of harmonics");
-
+preconditioned_scattering_matrix(std::vector<Scatterer>::const_iterator const &first,
+                                 std::vector<Scatterer>::const_iterator const &end_first,
+                                 std::vector<Scatterer>::const_iterator const &second,
+                                 std::vector<Scatterer>::const_iterator const &end_second,
+                                 ElectroMagnetic const &bground, Excitation const &incWave) {
+  auto const nMax = first->nMax;
   auto const n = HarmonicsIterator::max_flat(nMax) - 1;
-  auto const size = 2 * n * geometry.objects.size();
 
-  auto const &objects = geometry.objects;
-  Matrix<t_complex> result = Matrix<t_complex>::Identity(size, size);
-  for(size_t j = 0, y(0); j < objects.size(); ++j, y += 2 * n) {
-    Matrix<t_complex> const factor = -geometry.getTLocal(incWave.omega, j, nMax);
-    for(size_t i = 0, x(0); i < objects.size(); ++i, x += 2 * n) {
-      if(i == j)
+  Matrix<t_complex> result =
+      Matrix<t_complex>::Identity(2 * n * (end_first - first), 2 * n * (end_second - second));
+  size_t y(0);
+  for(auto iterj(second); iterj != end_second; ++iterj, y += 2 * n) {
+    Matrix<t_complex> const factor = -iterj->getTLocal(incWave.omega, bground);
+    size_t x(0);
+    for(auto iteri(first); iteri != end_first; ++iteri, x += 2 * n) {
+      if(iteri == iterj)
         continue;
-      Coupling const AB(objects[i].vR - objects[j].vR, incWave.waveK, nMax);
+      Coupling const AB(iteri->vR - iterj->vR, incWave.waveK, nMax);
       result.block(x, y, n, n) = AB.diagonal.transpose();
       result.block(x + n, y + n, n, n) = AB.diagonal.transpose();
       result.block(x, y + n, n, n) = AB.offdiagonal.transpose();
@@ -274,4 +272,28 @@ preconditioned_scattering_matrix(Geometry const &geometry, Excitation const &inc
   return result;
 }
 
+Matrix<t_complex> preconditioned_scattering_matrix(std::vector<Scatterer> const &objects,
+                                                   ElectroMagnetic const &bground,
+                                                   Excitation const &incWave) {
+  return preconditioned_scattering_matrix(objects.begin(), objects.end(), objects.begin(),
+                                          objects.end(), bground, incWave);
+}
+
+Matrix<t_complex>
+preconditioned_scattering_matrix(Geometry const &geometry, Excitation const &incWave) {
+  if(geometry.objects.size() == 0)
+    return Matrix<t_complex>(0, 0);
+  // Check nMax is same accross all objects
+  auto const nMax = geometry.objects.front().nMax;
+  for(auto const &scatterer : geometry.objects)
+    if(scatterer.nMax != nMax)
+      throw std::runtime_error("All objects must have same number of harmonics");
+  return preconditioned_scattering_matrix(geometry.objects, geometry.bground, incWave);
+}
+
+#ifdef OPTIMET_MPI
+scalapack::Matrix<Scalar> preconditioned_scattering_matrix(Geometry const &geometry,
+                                                           Excitation const &incWave,
+                                                           scalapack::Context const &context) {}
+#endif
 } // optimet namespace
