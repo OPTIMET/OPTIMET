@@ -313,6 +313,8 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
   auto const n = HarmonicsIterator::max_flat(nMax) - 1;
   scalapack::Matrix<t_complex> linear_matrix(linear_context, {nobj * n * 2, nobj * n * 2},
                                              {nobj * n * 2, nloc * 2 * n});
+  assert(linear_matrix.local().rows() == nobj * n * 2);
+  assert(linear_matrix.local().cols() == nloc * n * 2);
   linear_matrix.local().rightCols(nloc * 2 * n) = preconditioned_scattering_matrix(
       geometry.objects.begin(), geometry.objects.end(),
       geometry.objects.begin() + nloc * linear_context.row(),

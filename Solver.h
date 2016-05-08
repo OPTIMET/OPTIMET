@@ -174,6 +174,11 @@ private:
 Matrix<t_complex>
 preconditioned_scattering_matrix(Geometry const &geometry, Excitation const &incWave);
 
+//! Computes preconditioned scattering matrix in paralllel
+Matrix<t_complex>
+preconditioned_scattering_matrix(Geometry const &geometry, Excitation const &incWave,
+                                 scalapack::Context const &context, scalapack::Sizes const &blocks);
+
 #ifdef OPTIMET_MPI
 //! \brief Broadcast data from a proc in the context to procs outside the context
 //! \details Usefull if some procs are not part of the context but still require the data.
