@@ -150,25 +150,23 @@ void Solver::populateIndirect() {
   auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
   Matrix<t_complex> T_AB(2 * flatMax, 2 * flatMax);
 
-  if(result_FF) // if SH simulation, set the local source first
+  if(result_FF) { // if SH simulation, set the local source first
     geometry->setSourcesSingle(incWave, result_FF->internal_coef.data(), nMax);
 
-  for(size_t i = 0; i < geometry->objects.size(); i++) {
-    Vector<t_complex> Q_local(2 * flatMax);
+    for(size_t i = 0; i < geometry->objects.size(); i++) {
+      Vector<t_complex> Q_local(2 * flatMax);
 
-    // Get the IncLocal matrices
-    // These correspond directly to the Beta*a in Stout2002 Eq. 10 as
-    // they are already translated.
-    // we are in the SH case -> get the local sources from the geometry
-    if(result_FF)
+      // Get the IncLocal matrices
+      // These correspond directly to the Beta*a in Stout2002 Eq. 10 as
+      // they are already translated.
+      // we are in the SH case -> get the local sources from the geometry
       geometry->getSourceLocal(i, incWave, result_FF->internal_coef.data(), nMax, Q_local.data());
-    // we are in the FF case -> get the incoming excitation from the geometry
-    else
-      incWave->getIncLocal(geometry->objects[i].vR, Q_local.data(), nMax);
 
-    // Push Q_local into Q (direct equivalence)
-    Q.segment(i * 2 * flatMax, 2 * flatMax) = Q_local;
-  }
+      // Push Q_local into Q (direct equivalence)
+      Q.segment(i * 2 * flatMax, 2 * flatMax) = Q_local;
+    }
+  } else
+    Q = source_vector(*geometry, *incWave);
   assert(geometry->objects.size() == 0 or nMax == geometry->objects.front().nMax);
   S = preconditioned_scattering_matrix(*geometry, *incWave);
 }
@@ -308,13 +306,11 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
   auto const linear_context = context.subcontext(rank_map.leftCols(std::min(context.size(), nobj)));
 
   auto const nMax = geometry.objects.front().nMax;
-  auto const remainder = linear_context.is_valid() ? nobj % linear_context.size(): 0;
-  auto const nloc = linear_context.is_valid() ? nobj / linear_context.size(): 0;
+  auto const remainder = linear_context.is_valid() ? nobj % linear_context.size() : 0;
+  auto const nloc = linear_context.is_valid() ? nobj / linear_context.size() : 0;
   auto const n = HarmonicsIterator::max_flat(nMax) - 1;
-  scalapack::Sizes const non_cyclic{
-    linear_context.is_valid() ? nobj * n * 2: 1,
-    linear_context.is_valid() ? nloc * n * 2: 1
-  };
+  scalapack::Sizes const non_cyclic{linear_context.is_valid() ? nobj * n * 2 : 1,
+                                    linear_context.is_valid() ? nloc * n * 2 : 1};
   scalapack::Matrix<t_complex> linear_matrix(linear_context, {nobj * n * 2, nobj * n * 2},
                                              non_cyclic);
   if(linear_context.is_valid()) {
@@ -350,4 +346,33 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
   return distributed_matrix.local();
 }
 #endif
+
+Vector<t_complex> source_vector(std::vector<Scatterer>::const_iterator first,
+                                std::vector<Scatterer>::const_iterator const &last,
+                                Excitation const &incWave) {
+  if(first == last)
+    return Vector<t_complex>::Zero(0);
+  auto const nMax = first->nMax;
+  auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
+  Vector<t_complex> result(2 * flatMax * (last - first));
+  for(size_t i(0); first != last; ++first, i += 2 * flatMax)
+    incWave.getIncLocal(first->vR, result.data() + i, nMax);
+  return result;
+}
+
+Vector<t_complex> source_vector(std::vector<Scatterer> const &objects, Excitation const &incWave) {
+  return source_vector(objects.begin(), objects.end(), incWave);
+}
+
+Vector<t_complex> source_vector(Geometry const &geometry, Excitation const &incWave) {
+  if(geometry.objects.size() == 0)
+    return Vector<t_complex>(0, 0);
+  // Check nMax is same accross all objects
+  auto const nMax = geometry.objects.front().nMax;
+  for(auto const &scatterer : geometry.objects)
+    if(scatterer.nMax != nMax)
+      throw std::runtime_error("All objects must have same number of harmonics");
+  return source_vector(geometry.objects, incWave);
+}
+
 } // optimet namespace

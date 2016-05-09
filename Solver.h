@@ -171,6 +171,9 @@ private:
 };
 
 //! Computes preconditioned scattering matrix
+Vector<t_complex> source_vector(Geometry const &geometry, Excitation const &incWave);
+
+//! Computes preconditioned scattering matrix
 Matrix<t_complex>
 preconditioned_scattering_matrix(Geometry const &geometry, Excitation const &incWave);
 
