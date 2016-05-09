@@ -50,14 +50,15 @@ fcc_system(std::tuple<int, int, int> const &range, t_real length, Scatterer cons
 void check(Geometry const &geometry, Excitation const &excitation) {
   scalapack::Context context;
   scalapack::Sizes const blocks = {16, 16};
-  auto const nHarmonics = geometry.objects.front().nMax;
+  auto const nHarmonics = geometry.objects.size() ? geometry.objects.front().nMax: 1;
   auto const N = geometry.objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1);
   // Compute matrix in parallel
   auto const parallel_local =
       preconditioned_scattering_matrix(geometry, excitation, context, blocks);
   // Compute serial matrix
   auto const serial_context = context.serial();
-  scalapack::Matrix<t_complex> serial(serial_context, {N, N}, {N, N});
+  auto const N1 = std::max(N, t_uint(1));
+  scalapack::Matrix<t_complex> serial(serial_context, {N, N}, {N1, N1});
   if(serial_context.is_valid()) {
     serial.local() = preconditioned_scattering_matrix(geometry, excitation);
     REQUIRE(serial.local().rows() == N);
@@ -114,4 +115,13 @@ TEST_CASE("Scattering matrix with remainder") {
       check(std::get<0>(input), *std::get<1>(input));
     }
   }
+}
+
+TEST_CASE("Zero objects") {
+  auto const nHarmonics = 3;
+  auto const scatterer = default_scatterer(nHarmonics);
+  auto const length = default_length();
+  auto const cell = fcc_cell();
+  auto input = fcc_system({0, 1, 1}, length, scatterer);
+  check(std::get<0>(input), *std::get<1>(input));
 }
