@@ -293,3 +293,9 @@ TEST_CASE("Matrix multiplication") {
     check_multiply({2, 2}, {32, 32}, {64, 64});
   }
 }
+
+TEST_CASE("Empty matrix") {
+  scalapack::Matrix<> A(scalapack::Context(), {0, 0}, {64, 64});
+  CHECK(A.rows() == 0);
+  CHECK(A.cols() == 0);
+}
