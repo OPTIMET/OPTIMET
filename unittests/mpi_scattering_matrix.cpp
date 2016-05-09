@@ -125,3 +125,13 @@ TEST_CASE("Zero objects") {
   auto input = fcc_system({0, 1, 1}, length, scatterer);
   check(std::get<0>(input), *std::get<1>(input));
 }
+
+TEST_CASE("Very small number of objects") {
+  mpi::Communicator world;
+  auto const nHarmonics = 3;
+  auto const scatterer = default_scatterer(nHarmonics);
+  auto const length = default_length();
+  auto const cell = fcc_cell();
+  auto input = fcc_system({world.size() - 1, 1, 1}, length, scatterer);
+  check(std::get<0>(input), *std::get<1>(input));
+}

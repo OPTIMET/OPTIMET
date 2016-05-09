@@ -308,27 +308,35 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
   auto const linear_context = context.subcontext(rank_map.leftCols(std::min(context.size(), nobj)));
 
   auto const nMax = geometry.objects.front().nMax;
-  auto const remainder = nobj % linear_context.size();
-  auto const nloc = nobj / linear_context.size();
+  auto const remainder = linear_context.is_valid() ? nobj % linear_context.size(): 0;
+  auto const nloc = linear_context.is_valid() ? nobj / linear_context.size(): 0;
   auto const n = HarmonicsIterator::max_flat(nMax) - 1;
+  scalapack::Sizes const non_cyclic{
+    linear_context.is_valid() ? nobj * n * 2: 1,
+    linear_context.is_valid() ? nloc * n * 2: 1
+  };
   scalapack::Matrix<t_complex> linear_matrix(linear_context, {nobj * n * 2, nobj * n * 2},
-                                             {nobj * n * 2, nloc * 2 * n});
-  linear_matrix.local().leftCols(nloc * 2 * n) = preconditioned_scattering_matrix(
-      geometry.objects.begin(), geometry.objects.end(),
-      geometry.objects.begin() + nloc * linear_context.col(),
-      geometry.objects.begin() + nloc * (1 + linear_context.col()), geometry.bground, incWave);
+                                             non_cyclic);
+  if(linear_context.is_valid()) {
+    assert(geometry.objects.end() > geometry.objects.begin() + nloc * linear_context.col());
+    assert(geometry.objects.end() >= geometry.objects.begin() + nloc * (1 + linear_context.col()));
+    assert(nloc * 2 * n > 0);
+    linear_matrix.local().leftCols(nloc * 2 * n) = preconditioned_scattering_matrix(
+        geometry.objects.begin(), geometry.objects.end(),
+        geometry.objects.begin() + nloc * linear_context.col(),
+        geometry.objects.begin() + nloc * (1 + linear_context.col()), geometry.bground, incWave);
+  }
 
-  if(remainder > 0) {
+  if(remainder > 0 and linear_context.is_valid()) {
     auto const remainder_context = linear_context.subcontext(rank_map.leftCols(remainder));
     scalapack::Matrix<t_complex> remainder_matrix(
         remainder_context, {nobj * n * 2, remainder * n * 2}, {nobj * n * 2, 2 * n});
-    if(remainder_context.is_valid()) {
+    if(remainder_context.is_valid())
       remainder_matrix.local() = preconditioned_scattering_matrix(
           geometry.objects.begin(), geometry.objects.end(),
           geometry.objects.begin() + nloc * linear_context.cols() + remainder_context.col(),
           geometry.objects.begin() + nloc * linear_context.cols() + remainder_context.col() + 1,
           geometry.bground, incWave);
-    }
 
     scalapack::Matrix<t_complex> transfered(remainder_context, {nobj * n * 2, remainder * n * 2},
                                             {nobj * n * 2, nloc * 2 * n});
