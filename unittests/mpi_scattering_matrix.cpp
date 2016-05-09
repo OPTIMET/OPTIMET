@@ -76,8 +76,6 @@ void check(Geometry const &geometry, Excitation const &excitation) {
 
 TEST_CASE("Scattering matrix without remainder") {
   mpi::Communicator world;
-  if(world.size() == 1)
-    return;
   auto const nHarmonics = 5;
   auto const scatterer = default_scatterer(nHarmonics);
   auto const length = default_length();
@@ -87,8 +85,6 @@ TEST_CASE("Scattering matrix without remainder") {
 
 TEST_CASE("Scattering matrix with remainder") {
   mpi::Communicator world;
-  if(world.size() == 1)
-    return;
   auto const nHarmonics = 3;
   auto const scatterer = default_scatterer(nHarmonics);
   auto const length = default_length();
