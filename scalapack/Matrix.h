@@ -62,6 +62,8 @@ public:
                 static_cast<int>(sizes.cols), static_cast<int>(blocks.rows),
                 static_cast<int>(blocks.cols), static_cast<int>(index.row),
                 static_cast<int>(index.col), static_cast<int>(local_leading())}} {
+    assert(blocks.rows > 0);
+    assert(blocks.cols > 0);
     assert(local_rows(context, sizes, blocks, index) == matrix_.rows());
     assert(local_cols(context, sizes, blocks, index) == matrix_.cols());
   }
