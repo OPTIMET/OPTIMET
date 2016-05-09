@@ -47,59 +47,52 @@ fcc_system(std::tuple<int, int, int> const &range, t_real length, Scatterer cons
   return {geometry, excitation};
 }
 
+void check(Geometry const &geometry, Excitation const &excitation) {
+  scalapack::Context context;
+  scalapack::Sizes const blocks = {32, 32};
+  auto const nHarmonics = geometry.objects.front().nMax;
+  auto const N = geometry.objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1);
+  // Compute matrix in parallel
+  auto const parallel_local =
+      preconditioned_scattering_matrix(geometry, excitation, context, blocks);
+  // Compute serial matrix
+  auto const serial_context = context.serial();
+  scalapack::Matrix<t_complex> serial(serial_context, {N, N}, {N, N});
+  if(serial_context.is_valid()) {
+    serial.local() = preconditioned_scattering_matrix(geometry, excitation);
+    REQUIRE(serial.local().rows() == N);
+    REQUIRE(serial.local().cols() == N);
+  }
+  // transfer serial matrix to parallel context
+  scalapack::Matrix<t_complex> parallel(context, {N, N}, blocks);
+  serial.transfer_to(parallel.context(), parallel);
+  // Check the local matrices are identical
+  REQUIRE(parallel.local().rows() == parallel_local.rows());
+  REQUIRE(parallel.local().cols() == parallel_local.cols());
+  CHECK(parallel.local().isApprox(parallel_local));
+}
+
 TEST_CASE("Scattering matrix without remainder") {
   mpi::Communicator world;
   if(world.size() == 1)
     return;
-  scalapack::Sizes const blocks = {16, 16};
   auto const nHarmonics = 5;
-  auto const input =
-      fcc_system({world.size(), 2, 1}, default_length(), default_scatterer(nHarmonics));
-
-  scalapack::Context context;
-  auto const parallel_local =
-      preconditioned_scattering_matrix(std::get<0>(input), *std::get<1>(input), context, blocks);
-  auto const serial_context = context.serial();
-  if(serial_context.is_valid())
-    REQUIRE(serial_context.size() == 1);
-  else
-    REQUIRE(serial_context.size() == 0);
-  scalapack::Matrix<t_complex> serial(
-      serial_context,
-      {std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1),
-       std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1)},
-      {std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1),
-       std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1)});
-  if(serial_context.is_valid()) {
-    serial.local() = preconditioned_scattering_matrix(std::get<0>(input), *std::get<1>(input));
-    REQUIRE(serial.local().rows() ==
-            std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1));
-    REQUIRE(serial.local().cols() ==
-            std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1));
-  }
-  scalapack::Matrix<t_complex> parallel(
-      context,
-      {std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1),
-       std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1)},
-      blocks);
-  serial.transfer_to(parallel.context(), parallel);
-  CHECK(parallel.local().rows() == parallel_local.rows());
-  CHECK(parallel.local().cols() == parallel_local.cols());
-  CHECK(parallel.local().isApprox(parallel_local));
+  auto const scatterer = default_scatterer(nHarmonics);
+  auto const length = default_length();
+  auto const input = fcc_system({world.size(), 2, 1}, length, scatterer);
+  check(std::get<0>(input), *std::get<1>(input));
 }
 
 TEST_CASE("Scattering matrix with remainder") {
   mpi::Communicator world;
   if(world.size() == 1)
     return;
-  scalapack::Sizes const blocks = {4, 4};
   auto const nHarmonics = 5;
-  auto const input =
-      fcc_system({world.size(), 2, 1}, default_length(), default_scatterer(nHarmonics));
-  auto geometry = std::get<0>(input);
   auto const scatterer = default_scatterer(nHarmonics);
-  auto const cell = fcc_cell();
   auto const length = default_length();
+  auto input = fcc_system({world.size(), 2, 1}, length, scatterer);
+  auto &geometry = std::get<0>(input);
+  auto const cell = fcc_cell();
   for(int i(1); i < static_cast<int>(world.size()); ++i) {
     Eigen::Matrix<t_real, 3, 1> pos =
         cell * Eigen::Matrix<t_real, 3, 1>(-1 - i, -1 - i, -1 - i) * length;
@@ -107,26 +100,5 @@ TEST_CASE("Scattering matrix with remainder") {
                          scatterer.radius, scatterer.nMax});
   }
   geometry.update(std::get<1>(input).get());
-
-  scalapack::Context context;
-  auto const parallel_local =
-      preconditioned_scattering_matrix(geometry, *std::get<1>(input), context, blocks);
-  auto const serial_context = context.serial();
-  if(serial_context.is_valid())
-    REQUIRE(serial_context.size() == 1);
-  else
-    REQUIRE(serial_context.size() == 0);
-  auto const N = geometry.objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1);
-  scalapack::Matrix<t_complex> serial(serial_context, {N, N}, {N, N});
-  if(serial_context.is_valid())
-    serial.local() = preconditioned_scattering_matrix(geometry, *std::get<1>(input));
-
-  scalapack::Matrix<t_complex> parallel(
-      context, {geometry.objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1),
-                geometry.objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1)},
-      blocks);
-  serial.transfer_to(parallel.context(), parallel);
-  CHECK(parallel.local().rows() == parallel_local.rows());
-  CHECK(parallel.local().cols() == parallel_local.cols());
-  CHECK(parallel.local().isApprox(parallel_local));
+  check(std::get<0>(input), *std::get<1>(input));
 }
