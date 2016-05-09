@@ -330,12 +330,11 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
           geometry.bground, incWave);
     }
 
-    auto const serial_context = linear_context.serial();
-    scalapack::Matrix<t_complex> serial_matrix(serial_context, {nobj * n * 2, remainder * n * 2},
-                                               {nobj * n * 2, remainder * 2 * n});
-    remainder_matrix.transfer_to(remainder_context, serial_matrix);
-    if(serial_context.is_valid())
-      linear_matrix.local().rightCols(remainder * 2 * n) = serial_matrix.local();
+    scalapack::Matrix<t_complex> transfered(remainder_context, {nobj * n * 2, remainder * n * 2},
+                                            {nobj * n * 2, nloc * 2 * n});
+    remainder_matrix.transfer_to(remainder_context, transfered);
+    if(transfered.local().cols() > 0)
+      linear_matrix.local().rightCols(transfered.local().cols()) = transfered.local();
   }
 
   scalapack::Matrix<t_complex> distributed_matrix(context, linear_matrix.sizes(), blocks);
