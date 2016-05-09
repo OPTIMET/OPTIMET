@@ -304,8 +304,8 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
   if(nobj == 0)
     return Matrix<t_complex>::Zero(0, 0);
   auto rank_map = context.rank_map();
-  rank_map.resize(context.size(), 1);
-  auto const linear_context = context.subcontext(rank_map.topRows(std::min(context.size(), nobj)));
+  rank_map.resize(1, context.size());
+  auto const linear_context = context.subcontext(rank_map.leftCols(std::min(context.size(), nobj)));
 
   auto const nMax = geometry.objects.front().nMax;
   auto const remainder = nobj % linear_context.size();
@@ -315,10 +315,11 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
                                              {nobj * n * 2, nloc * 2 * n});
   assert(linear_matrix.local().rows() == nobj * n * 2);
   assert(linear_matrix.local().cols() == nloc * n * 2);
-  linear_matrix.local().rightCols(nloc * 2 * n) = preconditioned_scattering_matrix(
+  auto const rightCols = preconditioned_scattering_matrix(
       geometry.objects.begin(), geometry.objects.end(),
-      geometry.objects.begin() + nloc * linear_context.row(),
-      geometry.objects.begin() + (nloc + 1) * linear_context.row(), geometry.bground, incWave);
+      geometry.objects.begin() + nloc * linear_context.col(),
+      geometry.objects.begin() + nloc * (1 + linear_context.col()), geometry.bground, incWave);
+  linear_matrix.local().rightCols(nloc * 2 * n) = rightCols;
 
   if(remainder > 0) {
     auto const remainder_context = linear_context.subcontext(rank_map.topRows(remainder));

@@ -1,7 +1,7 @@
 #include "catch.hpp"
 #include <iostream>
 
-#include "Solver.h"
+#include "HarmonicsIterator.h"
 #include "Solver.h"
 #include "Types.h"
 #include "constants.h"
@@ -51,19 +51,39 @@ TEST_CASE("Scattering matrix without remainder") {
   mpi::Communicator world;
   if(world.size() == 1)
     return;
+  scalapack::Sizes const blocks = {16, 16};
   auto const nHarmonics = 5;
   auto const input =
       fcc_system({world.size(), 2, 1}, default_length(), default_scatterer(nHarmonics));
 
   scalapack::Context context;
   auto const parallel_local =
-      preconditioned_scattering_matrix(std::get<0>(input), *std::get<1>(input), context, {64, 64});
-  // auto const serial_local =
-  //     preconditioned_scattering_matrix(std::get<0>(input), *std::get<1>(input));
-  // scalapack::Matrix<t_complex const *> const serial(
-  //     {serial_local.data(), serial_local.rows(), serial_local.cols()}, context,
-  //     {static_cast<t_uint>(serial_local.rows()), static_cast<t_uint>(serial_local.cols())},
-  //     {64, 64});
-  // auto const parallel = serial.transfer_to(context);
-  // CHECK(parallel.local().isApprox(parallel_local));
+      preconditioned_scattering_matrix(std::get<0>(input), *std::get<1>(input), context, blocks);
+  auto const serial_context = context.serial();
+  if(serial_context.is_valid())
+    REQUIRE(serial_context.size() == 1);
+  else
+    REQUIRE(serial_context.size() == 0);
+  scalapack::Matrix<t_complex> serial(
+      serial_context,
+      {std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1),
+       std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1)},
+      {std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1),
+       std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1)});
+  if(serial_context.is_valid()) {
+    serial.local() = preconditioned_scattering_matrix(std::get<0>(input), *std::get<1>(input));
+    REQUIRE(serial.local().rows() ==
+            std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1));
+    REQUIRE(serial.local().cols() ==
+            std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1));
+  }
+  scalapack::Matrix<t_complex> parallel(
+      context,
+      {std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1),
+       std::get<0>(input).objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1)},
+      blocks);
+  serial.transfer_to(parallel.context(), parallel);
+  CHECK(parallel.local().rows() == parallel_local.rows());
+  CHECK(parallel.local().cols() == parallel_local.cols());
+  CHECK(parallel.local().isApprox(parallel_local));
 }
