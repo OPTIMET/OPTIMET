@@ -313,30 +313,29 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
   auto const n = HarmonicsIterator::max_flat(nMax) - 1;
   scalapack::Matrix<t_complex> linear_matrix(linear_context, {nobj * n * 2, nobj * n * 2},
                                              {nobj * n * 2, nloc * 2 * n});
-  assert(linear_matrix.local().rows() == nobj * n * 2);
-  assert(linear_matrix.local().cols() == nloc * n * 2);
-  auto const rightCols = preconditioned_scattering_matrix(
+  linear_matrix.local().leftCols(nloc * 2 * n) = preconditioned_scattering_matrix(
       geometry.objects.begin(), geometry.objects.end(),
       geometry.objects.begin() + nloc * linear_context.col(),
       geometry.objects.begin() + nloc * (1 + linear_context.col()), geometry.bground, incWave);
-  linear_matrix.local().rightCols(nloc * 2 * n) = rightCols;
 
   if(remainder > 0) {
-    auto const remainder_context = linear_context.subcontext(rank_map.topRows(remainder));
+    auto const remainder_context = linear_context.subcontext(rank_map.leftCols(remainder));
     scalapack::Matrix<t_complex> remainder_matrix(
         remainder_context, {nobj * n * 2, remainder * n * 2}, {nobj * n * 2, 2 * n});
-    if(remainder_context.is_valid())
+    if(remainder_context.is_valid()) {
       remainder_matrix.local() = preconditioned_scattering_matrix(
           geometry.objects.begin(), geometry.objects.end(),
-          geometry.objects.begin() + nloc * linear_context.rows() + remainder_context.row(),
-          geometry.objects.begin() + nloc * linear_context.rows() + remainder_context.row() + 1,
+          geometry.objects.begin() + nloc * linear_context.cols() + remainder_context.col(),
+          geometry.objects.begin() + nloc * linear_context.cols() + remainder_context.col() + 1,
           geometry.bground, incWave);
+    }
+
     auto const serial_context = linear_context.serial();
+    scalapack::Matrix<t_complex> serial_matrix(serial_context, {nobj * n * 2, remainder * n * 2},
+                                               {nobj * n * 2, remainder * 2 * n});
+    remainder_matrix.transfer_to(remainder_context, serial_matrix);
     if(serial_context.is_valid())
-      linear_matrix.local().leftCols(remainder * 2 * n) =
-          remainder_matrix.transfer_to(serial_context).local();
-    else if(remainder_context.is_valid())
-      remainder_matrix.transfer_to(serial_context);
+      linear_matrix.local().rightCols(remainder * 2 * n) = serial_matrix.local();
   }
 
   scalapack::Matrix<t_complex> distributed_matrix(context, linear_matrix.sizes(), blocks);

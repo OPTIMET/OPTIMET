@@ -87,3 +87,46 @@ TEST_CASE("Scattering matrix without remainder") {
   CHECK(parallel.local().cols() == parallel_local.cols());
   CHECK(parallel.local().isApprox(parallel_local));
 }
+
+TEST_CASE("Scattering matrix with remainder") {
+  mpi::Communicator world;
+  if(world.size() == 1)
+    return;
+  scalapack::Sizes const blocks = {4, 4};
+  auto const nHarmonics = 5;
+  auto const input =
+      fcc_system({world.size(), 2, 1}, default_length(), default_scatterer(nHarmonics));
+  auto geometry = std::get<0>(input);
+  auto const scatterer = default_scatterer(nHarmonics);
+  auto const cell = fcc_cell();
+  auto const length = default_length();
+  for(int i(1); i < static_cast<int>(world.size()); ++i) {
+    Eigen::Matrix<t_real, 3, 1> pos =
+        cell * Eigen::Matrix<t_real, 3, 1>(-1 - i, -1 - i, -1 - i) * length;
+    geometry.pushObject({Tools::toSpherical({pos(0), pos(1), pos(2)}), scatterer.elmag,
+                         scatterer.radius, scatterer.nMax});
+  }
+  geometry.update(std::get<1>(input).get());
+
+  scalapack::Context context;
+  auto const parallel_local =
+      preconditioned_scattering_matrix(geometry, *std::get<1>(input), context, blocks);
+  auto const serial_context = context.serial();
+  if(serial_context.is_valid())
+    REQUIRE(serial_context.size() == 1);
+  else
+    REQUIRE(serial_context.size() == 0);
+  auto const N = geometry.objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1);
+  scalapack::Matrix<t_complex> serial(serial_context, {N, N}, {N, N});
+  if(serial_context.is_valid())
+    serial.local() = preconditioned_scattering_matrix(geometry, *std::get<1>(input));
+
+  scalapack::Matrix<t_complex> parallel(
+      context, {geometry.objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1),
+                geometry.objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1)},
+      blocks);
+  serial.transfer_to(parallel.context(), parallel);
+  CHECK(parallel.local().rows() == parallel_local.rows());
+  CHECK(parallel.local().cols() == parallel_local.cols());
+  CHECK(parallel.local().isApprox(parallel_local));
+}
