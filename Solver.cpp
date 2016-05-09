@@ -67,7 +67,7 @@ void Solver::populateDirect() {
     auto const T = geometry->getTLocal(incWave->omega, i, nMax);
     // we are in the SH case -> get the local sources from the geometry
     if(result_FF)
-      geometry->getSourceLocal(i, incWave, result_FF->internal_coef.data(), nMax, Q_local.data());
+      geometry->getSourceLocal(i, incWave, nMax, Q_local.data());
     // we are in the FF case -> get the incoming excitation from the geometry
     else
       incWave->getIncLocal(geometry->objects[i].vR, Q_local.data(), nMax);
@@ -147,27 +147,10 @@ Vector<t_complex> Solver::solveInternal(Vector<t_complex> const &scattered) cons
 }
 
 void Solver::populateIndirect() {
-  auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
-  Matrix<t_complex> T_AB(2 * flatMax, 2 * flatMax);
-
-  if(result_FF) { // if SH simulation, set the local source first
-    geometry->setSourcesSingle(incWave, result_FF->internal_coef.data(), nMax);
-
-    for(size_t i = 0; i < geometry->objects.size(); i++) {
-      Vector<t_complex> Q_local(2 * flatMax);
-
-      // Get the IncLocal matrices
-      // These correspond directly to the Beta*a in Stout2002 Eq. 10 as
-      // they are already translated.
-      // we are in the SH case -> get the local sources from the geometry
-      geometry->getSourceLocal(i, incWave, result_FF->internal_coef.data(), nMax, Q_local.data());
-
-      // Push Q_local into Q (direct equivalence)
-      Q.segment(i * 2 * flatMax, 2 * flatMax) = Q_local;
-    }
-  } else
+  if(result_FF)
+    Q = local_source_vector(*geometry, *incWave, result_FF->internal_coef);
+  else
     Q = source_vector(*geometry, *incWave);
-  assert(geometry->objects.size() == 0 or nMax == geometry->objects.front().nMax);
   S = preconditioned_scattering_matrix(*geometry, *incWave);
 }
 
@@ -373,6 +356,29 @@ Vector<t_complex> source_vector(Geometry const &geometry, Excitation const &incW
     if(scatterer.nMax != nMax)
       throw std::runtime_error("All objects must have same number of harmonics");
   return source_vector(geometry.objects, incWave);
+}
+
+Vector<t_complex> local_source_vector(Geometry const &geometry, Excitation const &incWave,
+                                      Vector<t_complex> const &input_coeffs) {
+  if(geometry.objects.size() == 0)
+    return Vector<t_complex>(0, 0);
+  // Check nMax is same accross all objects
+  auto const nMax = geometry.objects.front().nMax;
+  for(auto const &scatterer : geometry.objects)
+    if(scatterer.nMax != nMax)
+      throw std::runtime_error("All objects must have same number of harmonics");
+
+  Geometry copy_geometry(geometry);
+  copy_geometry.setSourcesSingle(&incWave, input_coeffs.data(), nMax);
+  // Get the IncLocal matrices
+  // These correspond directly to the Beta*a in Stout2002 Eq. 10 as
+  // they are already translated.
+  // we are in the SH case -> get the local sources from the geometry
+  auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
+  Vector<t_complex> result(flatMax * 2 * copy_geometry.objects.size());
+  for(size_t i = 0; i < copy_geometry.objects.size(); i++)
+    copy_geometry.getSourceLocal(i, &incWave, nMax, result.data() + i * 2 * flatMax);
+  return result;
 }
 
 } // optimet namespace

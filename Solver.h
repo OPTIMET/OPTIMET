@@ -170,8 +170,11 @@ private:
   scalapack::Sizes block_size_;
 };
 
-//! Computes preconditioned scattering matrix
+//! \brief Computes source vector
 Vector<t_complex> source_vector(Geometry const &geometry, Excitation const &incWave);
+//! \brief Computes source vector from fundamental frequency
+Vector<t_complex> local_source_vector(Geometry const &geometry, Excitation const &incWave,
+                                      Vector<t_complex> const &input_coeffs);
 
 //! Computes preconditioned scattering matrix
 Matrix<t_complex>
