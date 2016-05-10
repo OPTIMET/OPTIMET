@@ -18,7 +18,7 @@ find_or_add_hunter_package(GSL)
 find_or_add_hunter_package(F2C)
 
 if(dobenchmarks)
-  find_or_add_hunter_package(GBenchmark)
+  find_or_add_hunter_package(GBenchmark NAMES benchmark GBenchmark)
 endif()
 
 if(dompi AND "$ENV{CRAYOS_VERSION}" STREQUAL "")
