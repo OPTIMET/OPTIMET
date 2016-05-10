@@ -186,7 +186,11 @@ void Solver::update(Geometry *geometry_, std::shared_ptr<Excitation const> incWa
 
 void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b,
                                Vector<t_complex> &x) const {
-#ifdef OPTIMET_MPI
+#ifdef OPTIMET_BELOS
+  if(belos_parameters()->get<std::string>("Solver", "scalapack") != "eigen")
+    solveLinearSystemScalapack(A, b, x);
+  else
+#elif OPTIMET_MPI
   if(scalapack::global_size() > 1)
     solveLinearSystemScalapack(A, b, x);
   else
