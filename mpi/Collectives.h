@@ -1,12 +1,13 @@
 #ifndef OPTIMET_MPI_COLLECTIVES_H
 #define OPTIMET_MPI_COLLECTIVES_H
 
+#include "Types.h"
+#ifdef OPTIMET_MPI
+#include "mpi/Collectives.hpp"
+#include "mpi/Communicator.h"
 #include <mpi.h>
 #include <type_traits>
 #include <vector>
-#include "Types.h"
-#include "mpi/Communicator.h"
-#include "mpi/Collectives.hpp"
 
 namespace optimet {
 namespace mpi {
@@ -40,7 +41,7 @@ Matrix<T> broadcast(Matrix<T> const &mat, Communicator const &comm, t_uint root)
   auto const nrows = broadcast(mat.rows(), comm, root);
   auto const ncols = broadcast(mat.cols(), comm, root);
   if(comm.rank() == root) {
-    MPI_Bcast(const_cast<T*>(mat.data()), nrows * ncols, Type<T>::value, root, *comm);
+    MPI_Bcast(const_cast<T *>(mat.data()), nrows * ncols, Type<T>::value, root, *comm);
     return mat;
   } else {
     Matrix<T> result = Matrix<T>::Zero(nrows, ncols);
@@ -83,4 +84,5 @@ all_gather(T const &value, Communicator const &comm) {
 
 } /* optime::mpi */
 } /* optimet */
+#endif
 #endif /* ifndef OPTIMET_MPI_COMMUNICATOR */

@@ -2,6 +2,7 @@
 #define OPTIMET_MPI_COLLECTIVES_HPP
 
 #include "Types.h"
+#ifdef OPTIMET_MPI
 #include <mpi.h>
 #include <type_traits>
 #include <vector>
@@ -37,4 +38,5 @@ typename std::enable_if<std::is_same<Matrix<typename MATRIX::Scalar>, MATRIX>::v
 broadcast(Communicator const &comm, t_uint root);
 } /* optime::mpi */
 } /* optimet */
+#endif
 #endif /* ifndef OPTIMET_MPI_COMMUNICATOR */
