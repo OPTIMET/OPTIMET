@@ -5,10 +5,11 @@
 #include "Tools.h"
 #include "Types.h"
 #include "constants.h"
-#include "mpi/Collectives.h"
+#include "mpi/Collectives.hpp"
 #include "mpi/Communicator.h"
 #include "mpi/Session.h"
 #include <benchmark/benchmark.h>
+#include <chrono>
 
 namespace {
 using namespace optimet;
@@ -51,6 +52,7 @@ Scatterer default_scatterer(t_int nHarmonics) {
 
 constexpr t_real default_length() { return 2000e-9; }
 
+#ifndef OPTIMET_MPI
 void problem_setup(benchmark::State &state) {
   auto const range = std::make_tuple(state.range_x(), state.range_x(), state.range_x());
   auto const nHarmonics = state.range_y();
@@ -59,10 +61,10 @@ void problem_setup(benchmark::State &state) {
 
   while(state.KeepRunning())
     Solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics);
+  state.SetItemsProcessed(int64_t(state.iterations()) *
+                          int64_t(std::get<0>(input).scatterer_size()));
 }
 
-
-#ifndef OPTIMET_MPI
 void serial_solver(benchmark::State &state) {
   auto const range = std::make_tuple(state.range_x(), state.range_x(), state.range_x());
   auto const nHarmonics = state.range_y();
@@ -75,12 +77,14 @@ void serial_solver(benchmark::State &state) {
     result.internal_coef.fill(0);
     solver.solve(result.scatter_coef, result.internal_coef);
   }
-  state.SetBytesProcessed(int64_t(state.iterations()) * int64_t(result.internal_coef.size()));
+  state.SetItemsProcessed(int64_t(state.iterations()) *
+                          int64_t(std::get<0>(input).scatterer_size()));
 }
 #endif
 
 #ifdef OPTIMET_MPI
 void scalapack_solver(benchmark::State &state) {
+  mpi::Communicator world;
   auto const range = std::make_tuple(state.range_x(), state.range_x(), state.range_x());
   auto const nHarmonics = state.range_y();
   ElectroMagnetic const elmag{13.1, 1.0};
@@ -89,29 +93,45 @@ void scalapack_solver(benchmark::State &state) {
   Result result(&std::get<0>(input), std::get<1>(input), nHarmonics);
   while(state.KeepRunning()) {
     result.internal_coef.fill(0);
+    auto start = std::chrono::high_resolution_clock::now();
     solver.solve(result.scatter_coef, result.internal_coef);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    auto proc_max = world.all_reduce(elapsed_seconds.count(), MPI_MAX);
+    state.SetIterationTime(proc_max);
   }
-  state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(result.internal_coef.size()));
+  state.SetItemsProcessed(int64_t(state.iterations()) *
+                          int64_t(std::get<0>(input).scatterer_size()));
 }
 #endif
 }
 
 std::tuple<int, int> const nGeom = {1, 5};
 std::tuple<int, int> const nHarm = {1, 8};
-BENCHMARK(problem_setup)
-    ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm));
 #ifndef OPTIMET_MPI
+BENCHMARK(problem_setup)
+    ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm))
+    ->Unit(benchmark::kMicrosecond);
 BENCHMARK(serial_solver)
-    ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm));
+    ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm))
+    ->Unit(benchmark::kMicrosecond);
 #else
 BENCHMARK(scalapack_solver)
-    ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm));
+    ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm))
+    ->Unit(benchmark::kMicrosecond)
+    ->UseManualTime();
 #endif
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   optimet::mpi::init(argc, const_cast<const char **>(argv));
+#ifndef OPTIMET_MPI
+  ::benchmark::initialize_mpi(argc, argv);
+#endif
   ::benchmark::Initialize(&argc, argv);
   ::benchmark::RunSpecifiedBenchmarks();
+#ifndef OPTIMET_MPI
+  ::benchmark::finalize_mpi();
+#endif
   optimet::mpi::finalize();
   return 0;
 }
