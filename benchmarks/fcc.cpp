@@ -4,6 +4,7 @@
 #include "Solver.h"
 #include "Tools.h"
 #include "Types.h"
+#include "cmdl.h"
 #include "constants.h"
 #include "mpi/Collectives.hpp"
 #include "mpi/Communicator.h"
@@ -65,7 +66,7 @@ void problem_setup(benchmark::State &state) {
                           int64_t(std::get<0>(input).scatterer_size()));
 }
 
-void serial_solver(benchmark::State &state) {
+void solver(benchmark::State &state) {
   auto const range = std::make_tuple(state.range_x(), state.range_x(), state.range_x());
   auto const nHarmonics = state.range_y();
   ElectroMagnetic const elmag{13.1, 1.0};
@@ -82,14 +83,23 @@ void serial_solver(benchmark::State &state) {
 }
 #endif
 
+#ifdef OPTIMET_BELOS
+//! Holds solver parameters
+Teuchos::RCP<Teuchos::ParameterList> parameters;
+#endif
+
 #ifdef OPTIMET_MPI
-void scalapack_solver(benchmark::State &state) {
+void solver(benchmark::State &state) {
   mpi::Communicator world;
   auto const range = std::make_tuple(state.range_x(), state.range_x(), state.range_x());
   auto const nHarmonics = state.range_y();
   ElectroMagnetic const elmag{13.1, 1.0};
   auto input = fcc_system(range, default_length(), default_scatterer(nHarmonics));
+#ifdef OPTIMET_BELOS
+  Solver solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics, parameters);
+#else
   Solver solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics);
+#endif
   Result result(&std::get<0>(input), std::get<1>(input), nHarmonics);
   while(state.KeepRunning()) {
     result.internal_coef.fill(0);
@@ -112,11 +122,11 @@ std::tuple<int, int> const nHarm = {1, 8};
 BENCHMARK(problem_setup)
     ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm))
     ->Unit(benchmark::kMicrosecond);
-BENCHMARK(serial_solver)
+BENCHMARK(solver)
     ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm))
     ->Unit(benchmark::kMicrosecond);
 #else
-BENCHMARK(scalapack_solver)
+BENCHMARK(solver)
     ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm))
     ->Unit(benchmark::kMicrosecond)
     ->UseManualTime();
@@ -126,6 +136,9 @@ int main(int argc, char **argv) {
   optimet::mpi::init(argc, const_cast<const char **>(argv));
 #ifndef OPTIMET_MPI
   ::benchmark::initialize_mpi(argc, argv);
+#endif
+#ifdef OPTIMET_BELOS
+  parameters = parse_cmdl(argc, argv);
 #endif
   ::benchmark::Initialize(&argc, argv);
   ::benchmark::RunSpecifiedBenchmarks();
