@@ -215,13 +215,17 @@ void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_com
   auto Aparallel = Aserial.transfer_to(context(), block_size());
   auto bparallel = bserial.transfer_to(context(), block_size());
 
-  // Now the actual work
-  auto Xparallel = std::get<0>(
+// Now the actual work
 #ifdef OPTIMET_BELOS
-      belos_parameters()->get<std::string>("Solver", "scalapack") != "scalapack" ?
-          scalapack::gmres_linear_system(Aparallel, bparallel, belos_parameters()) :
+  auto result = belos_parameters()->get<std::string>("Solver", "scalapack") != "scalapack" ?
+                    scalapack::gmres_linear_system(Aparallel, bparallel, belos_parameters()) :
+                    scalapack::general_linear_system(Aparallel, bparallel);
+#else
+  auto result = scalapack::general_linear_system(Aparallel, bparallel);
 #endif
-          scalapack::general_linear_system(Aparallel, bparallel));
+  auto Xparallel = std::get<0>(result);
+  if(std::get<1>(result) !=0)
+    throw std::runtime_error("Error encountered while solving the linear system");
 
   // Transfer back to root
   auto Xserial = Xparallel.transfer_to(Aserial.context(), block_size());
