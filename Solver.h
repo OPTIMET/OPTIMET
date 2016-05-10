@@ -9,8 +9,8 @@
 #include "scalapack/Context.h"
 #include "scalapack/Parameters.h"
 #include <complex>
-#include <memory>
 #include <exception>
+#include <memory>
 
 #ifdef OPTIMET_BELOS
 #include <Teuchos_ParameterList.hpp>
@@ -143,12 +143,12 @@ private:
   void solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_complex> const &b,
                                   Vector<t_complex> &x) const;
 #endif
-  Geometry *geometry;        /**< Pointer to the geometry. */
+  Geometry *geometry;                        /**< Pointer to the geometry. */
   std::shared_ptr<Excitation const> incWave; /**< Pointer to the incoming excitation. */
-  long nMax;                 /**< The maximum n order. */
-  Result *result_FF;         /**< The fundamental frequency results. */
-  int solverMethod;          /**< Solver method: Direct = Mischenko1996, Indirect =
-                                Stout2002 */
+  long nMax;                                 /**< The maximum n order. */
+  Result *result_FF;                         /**< The fundamental frequency results. */
+  int solverMethod;                          /**< Solver method: Direct = Mischenko1996, Indirect =
+                                                Stout2002 */
 #ifdef OPTIMET_BELOS
   Teuchos::RCP<Teuchos::ParameterList> belos_params_;
 #endif
