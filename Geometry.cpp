@@ -15,6 +15,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <vector>
+#include <numeric>
 
 Geometry::~Geometry() {}
 Geometry::Geometry() {}
@@ -41,6 +42,14 @@ bool Geometry::is_valid() const {
 }
 
 void Geometry::initBground(ElectroMagnetic bground_) { bground = bground_; }
+
+
+optimet::t_uint Geometry::scatterer_size() const {
+  auto const object_size = [](optimet::t_uint current, Scatterer const &scatterer) {
+    return current + 2 * (optimet::HarmonicsIterator::max_flat(scatterer.nMax) - 1);
+  };
+  return std::accumulate(objects.cbegin(), objects.cend(), 0, object_size);
+}
 
 bool Geometry::no_overlap(Scatterer const &object_) {
   if(objects.size() < 1)

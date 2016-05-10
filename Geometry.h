@@ -138,6 +138,9 @@ public:
    */
   void rebuildStructure();
 
+  //! Size of the scattering vector
+  optimet::t_uint scatterer_size() const;
+
 protected:
   //! Validate last added sphere
   bool no_overlap(Scatterer const &object);

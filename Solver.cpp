@@ -43,7 +43,7 @@ Solver::Solver(Geometry *geometry, std::shared_ptr<Excitation const> incWave, in
 #endif
 
 void Solver::populate() {
-  auto const N = 2 * (HarmonicsIterator::max_flat(nMax) - 1) * geometry->objects.size();
+  auto const N = geometry->scatterer_size();
   S.resize(N, N);
   Q.resize(N);
 
