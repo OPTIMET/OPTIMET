@@ -13,6 +13,18 @@
 #include <chrono>
 
 namespace {
+#ifdef OPTIMET_BELOS
+//! Holds solver parameters
+Teuchos::RCP<Teuchos::ParameterList> parameters;
+template<class T> T get_param(std::string const & name, T const & default_) {
+  return parameters->get<T>(name, default_);
+}
+#else
+template<class T> T get_param(std::string const & name, T const & default) {
+  return default;
+}
+#endif
+
 using namespace optimet;
 //! Gets an fcc cell
 Matrix<t_real> fcc_cell() {
@@ -22,13 +34,22 @@ Matrix<t_real> fcc_cell() {
 }
 
 std::tuple<Geometry, std::shared_ptr<Excitation>>
-fcc_system(std::tuple<int, int, int> const &range, t_real length, Scatterer const &scatterer) {
+fcc_system(t_int const &N, t_real length, Scatterer const &scatterer) {
   // setup geometry
   auto const cell = fcc_cell();
+  t_int n = std::pow(N, 1e0 / 3e0);
+  auto range = std::make_tuple(n, n, n);
+  if(n * n * n < N)
+    ++std::get<0>(range);
+  if((n + 1) * n * n < N)
+    ++std::get<1>(range);
   Geometry geometry;
+  n = 0;
   for(int i(0); i < std::get<0>(range); ++i)
     for(int j(0); j < std::get<1>(range); ++j)
-      for(int k(0); k < std::get<2>(range); ++k) {
+      for(int k(0); k < std::get<2>(range); ++k, ++n) {
+        if(n == N)
+          break;
         Eigen::Matrix<t_real, 3, 1> pos = cell * Eigen::Matrix<t_real, 3, 1>(i, j, k) * length;
         geometry.pushObject({Tools::toSpherical({pos(0), pos(1), pos(2)}), scatterer.elmag,
                              scatterer.radius, scatterer.nMax});
@@ -46,8 +67,8 @@ fcc_system(std::tuple<int, int, int> const &range, t_real length, Scatterer cons
 }
 
 Scatterer default_scatterer(t_int nHarmonics) {
-  auto const radius = 500e-9;
-  ElectroMagnetic const elmag{13.1, 1.0};
+  auto const radius = get_param<t_real>("radius", 500e-9);
+  ElectroMagnetic const elmag{get_param<t_complex>("epsilon_r", 13.1), 1.0};
   return {{0, 0, 0}, elmag, radius, nHarmonics};
 }
 
@@ -57,7 +78,6 @@ constexpr t_real default_length() { return 2000e-9; }
 void problem_setup(benchmark::State &state) {
   auto const range = std::make_tuple(state.range_x(), state.range_x(), state.range_x());
   auto const nHarmonics = state.range_y();
-  ElectroMagnetic const elmag{13.1, 1.0};
   auto input = fcc_system(range, default_length(), default_scatterer(nHarmonics));
 
   while(state.KeepRunning())
@@ -69,7 +89,6 @@ void problem_setup(benchmark::State &state) {
 void solver(benchmark::State &state) {
   auto const range = std::make_tuple(state.range_x(), state.range_x(), state.range_x());
   auto const nHarmonics = state.range_y();
-  ElectroMagnetic const elmag{13.1, 1.0};
   auto input = fcc_system(range, default_length(), default_scatterer(nHarmonics));
   Solver solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics);
   Result result(&std::get<0>(input), std::get<1>(input), nHarmonics);
@@ -83,18 +102,11 @@ void solver(benchmark::State &state) {
 }
 #endif
 
-#ifdef OPTIMET_BELOS
-//! Holds solver parameters
-Teuchos::RCP<Teuchos::ParameterList> parameters;
-#endif
-
 #ifdef OPTIMET_MPI
 void solver(benchmark::State &state) {
   mpi::Communicator world;
-  auto const range = std::make_tuple(state.range_x(), state.range_x(), state.range_x());
   auto const nHarmonics = state.range_y();
-  ElectroMagnetic const elmag{13.1, 1.0};
-  auto input = fcc_system(range, default_length(), default_scatterer(nHarmonics));
+  auto input = fcc_system(state.range_x(), default_length(), default_scatterer(nHarmonics));
 #ifdef OPTIMET_BELOS
   Solver solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics, parameters);
 #else
@@ -116,18 +128,22 @@ void solver(benchmark::State &state) {
 #endif
 }
 
-std::tuple<int, int> const nGeom = {1, 5};
-std::tuple<int, int> const nHarm = {1, 8};
+static void CustomArguments(benchmark::internal::Benchmark* b) {
+  for(auto const i: {1, 10, 20, 30, 40, 50, 100})
+    for(auto const j: {1, 2, 4, 6, 8, 10})
+      b->ArgPair(i, j);
+}
+
 #ifndef OPTIMET_MPI
 BENCHMARK(problem_setup)
-    ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm))
+    ->Apply(CustomArguments)
     ->Unit(benchmark::kMicrosecond);
 BENCHMARK(solver)
-    ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm))
+    ->Apply(CustomArguments)
     ->Unit(benchmark::kMicrosecond);
 #else
 BENCHMARK(solver)
-    ->RangePair(std::get<0>(nGeom), std::get<1>(nGeom), std::get<0>(nHarm), std::get<1>(nHarm))
+    ->Apply(CustomArguments)
     ->Unit(benchmark::kMicrosecond)
     ->UseManualTime();
 #endif

@@ -16,6 +16,9 @@ struct Cmdl {
   t_int verbosity = 0;
   t_int num_blocks = 50;
   t_int num_recycled_blocks = 5;
+  t_real radius = 1e-8;
+  t_real epsilon_r = 13.1;
+  t_real epsilon_i = 0;
 };
 }
 Teuchos::RCP<Teuchos::ParameterList> parse_cmdl(int argc, char *argv[]) {
@@ -32,6 +35,11 @@ Teuchos::RCP<Teuchos::ParameterList> parse_cmdl(int argc, char *argv[]) {
   clp.setOption("verbosity", &cmdl.verbosity);
   clp.setOption("num_blocks", &cmdl.num_blocks);
   clp.setOption("num_recycled_blocks", &cmdl.num_recycled_blocks);
+  clp.setOption("num_recycled_blocks", &cmdl.num_recycled_blocks);
+  clp.setOption("radius", &cmdl.radius, "of the particles");
+  clp.setOption("epsilon_r", &cmdl.epsilon_r, "Real part of the relative dielectric constant");
+  clp.setOption("epsilon_i", &cmdl.epsilon_i, "Imaginary part of the relative dielectric constant");
+
   auto result = Teuchos::rcp(new Teuchos::ParameterList);
   if(clp.parse(argc, argv) != Teuchos::CommandLineProcessor::PARSE_SUCCESSFUL)
     throw std::runtime_error("Couldn't parse command-line");
@@ -45,6 +53,8 @@ Teuchos::RCP<Teuchos::ParameterList> parse_cmdl(int argc, char *argv[]) {
   result->set("Block Size", cmdl.block_size);
   result->set("Adaptive Block Size", cmdl.adaptive_block_size);
   result->set("Verbosity", cmdl.verbosity);
+  result->set("radius", cmdl.radius);
+  result->set("epsilon_r", t_complex(cmdl.epsilon_r, cmdl.epsilon_i));
   return result;
 }
 }
