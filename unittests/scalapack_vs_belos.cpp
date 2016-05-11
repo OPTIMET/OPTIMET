@@ -16,8 +16,11 @@ TEST_CASE("Scalapack vs Belos") {
   // spherical coords, ε, μ, radius, nmax
   auto const nSpheres = 10;
   auto const nHarmonics = 10;
-  for(t_uint i(0); i < 10; ++i)
-    geometry.pushObject({{static_cast<t_real>(i) * 1.5, 0, 0}, {0.45e0, 1.1e0}, 0.5, nHarmonics});
+  for(t_uint i(0); i < 10; ++i) {
+    t_real const ii(i);
+    geometry.pushObject(
+        {{ii * 1.5, 0, 0}, {0.45e0 + 0.1 * ii, 1.1e0}, 0.5 + 0.01 * ii, nHarmonics});
+  }
 
   // Create excitation
   auto const wavelength = 14960e-9;
