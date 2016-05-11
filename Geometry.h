@@ -5,6 +5,7 @@
 #include "Scatterer.h"
 #include "Types.h"
 #include <vector>
+#include <memory>
 
 /**
  * The Geometry class implements a list of objects and properties of the medium.
