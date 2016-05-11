@@ -90,7 +90,7 @@ gmres_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b,
     return std::tuple<Matrix<SCALAR>, int>{b, 0};
   // Create the GMRES solver.
   BelosSolverFactory<SCALAR> factory;
-  auto solver = factory.create("GMRES", parameters);
+  auto solver = factory.create(parameters->get("Solver", "GMRES"), parameters);
   // Create a LinearProblem struct with the problem to solve.
   // A, X, B, and M are passed by (smart) pointer, not copied.
   Teuchos::RCP<BelosOperator<SCALAR>> Aptr = Teuchos::rcp(new BelosOperator<SCALAR>(A));
