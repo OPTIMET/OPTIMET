@@ -62,7 +62,7 @@ Context::Context(Context const &system, Matrix<t_uint> const &gridmap) : impl(nu
   int sys;
   OPTIMET_FC_GLOBAL_(blacs_get, BLACS_GET)(&context, &ten, &sys);
   // Creates the context
-  OPTIMET_FC_GLOBAL_(blacs_gridmap, BLACS_GRIDMAP)(&sys, procs.data(), &ldau, &nrows, &ncols);
+  OPTIMET_FC_GLOBAL(blacs_gridmap, BLACS_GRIDMAP)(&sys, procs.data(), &ldau, &nrows, &ncols);
   // Creates the matrix
   int this_row, this_col;
   OPTIMET_FC_GLOBAL_(blacs_gridinfo, BLACS_GRIDINFO)(&sys, &nrows, &ncols, &this_row, &this_col);
