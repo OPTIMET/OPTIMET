@@ -63,7 +63,7 @@ fcc_system(t_int const &N, t_real length, Scatterer const &scatterer) {
       std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, scatterer.nMax);
   excitation->populate();
   geometry.update(excitation);
-  return {geometry, excitation};
+  return std::tuple<Geometry, std::shared_ptr<Excitation>>{geometry, excitation};
 }
 
 Scatterer default_scatterer(t_int nHarmonics) {
