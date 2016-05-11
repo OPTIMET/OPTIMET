@@ -34,13 +34,33 @@ TEST_CASE("Scalapack vs Belos") {
   solver.belos_parameters()->set("Solver", "scalapack");
   solver.solve(scalapack.scatter_coef, scalapack.internal_coef);
 
-  solver.belos_parameters()->set("Solver", "GMRES");
-  solver.belos_parameters()->set("Num Blocks", 1000);
-  solver.belos_parameters()->set("Maximum Iterations", 4000);
-  solver.belos_parameters()->set("Convergence Tolerance", 1.0e-10);
-  optimet::Result belos(&geometry, excitation, nHarmonics);
-  solver.solve(belos.scatter_coef, belos.internal_coef);
+  // known to fail: "CGPOLY", "FLEXIBLE GMRES", "RECYCLING CG", "RCG", "PCPG", "MINRES", "LSQR",
+  // "SEED CG",
+  auto const names = {
+      "BICGSTAB",
+      "BLOCK GMRES",
+      "CG",                 // "PSEUDO BLOCK CG",
+      "GMRES",              // "PSEUDO BLOCK GMRES",
+      "GMRESPOLY",          // "HYBRID BLOCK GMRES", "SEED GMRES"
+      "PSEUDO BLOCK TFQMR", // "PSEUDO BLOCK TRANSPOSE-FREE QMR",
+      "GCRODR",             // "RECYCLING GMRES",
+      "STOCHASTIC CG",      // "PSEUDO BLOCK STOCHASTIC CG"
+      "TFQMR",              // "TRANSPOSE-FREE QMR",
+      "BLOCK CG",
+      "BLOCK GMRES",
+      "FIXED POINT",
+  };
+  for(auto const name : names) {
+    SECTION(name) {
+      solver.belos_parameters()->set("Solver", name);
+      solver.belos_parameters()->set("Num Blocks", 1000);
+      solver.belos_parameters()->set("Maximum Iterations", 4000);
+      solver.belos_parameters()->set("Convergence Tolerance", 1.0e-10);
+      optimet::Result belos(&geometry, excitation, nHarmonics);
+      solver.solve(belos.scatter_coef, belos.internal_coef);
 
-  CHECK(belos.scatter_coef.isApprox(belos.scatter_coef));
-  CHECK(belos.internal_coef.isApprox(belos.internal_coef));
+      CHECK(belos.scatter_coef.isApprox(belos.scatter_coef));
+      CHECK(belos.internal_coef.isApprox(belos.internal_coef));
+    }
+  }
 }
