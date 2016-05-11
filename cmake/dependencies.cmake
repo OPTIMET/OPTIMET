@@ -19,8 +19,24 @@ find_or_add_hunter_package(F2C)
 
 if(dompi AND "$ENV{CRAYOS_VERSION}" STREQUAL "")
   find_package(MPI REQUIRED)
-  find_package(scalapack REQUIRED)
-  set(SCALAPACK_LIBRARIES scalapack)
+
+  if(NOT DEFINED BLA_VENDOR OR BLA_VENDOR STREQUAL "All" OR BLA_VENDOR MATCHES "Intel")
+    set(MKL_MESSAGE_PASSING OpenMPI)
+    set(MKL_USE_STATIC_LIBS ON)	# OpenMPI BLACS is only available as a static library on Legion
+    find_package(MKL COMPONENTS ScaLAPACK)
+    find_package(Threads)
+    set(scalapack_FOUND ${MKL_ScaLAPACK_FOUND})
+    set(SCALAPACK_LIBRARIES -Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group ${MPI_CXX_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+  endif()
+
+  if(NOT MKL_FOUND)
+    find_package(scalapack REQUIRED)
+    set(SCALAPACK_LIBRARIES scalapack)
+  endif()
+
+  if (scalapack_FOUND)
+    message(STATUS "Using ScaLAPACK libraries: ${SCALAPACK_LIBRARIES}")
+  endif()
 elseif(NOT "$ENV{CRAYOS_VERSION}" STREQUAL "")
   unset(SCALAPACK_LIBRARIES)
 endif()
