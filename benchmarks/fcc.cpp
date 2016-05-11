@@ -150,17 +150,12 @@ BENCHMARK(solver)
 
 int main(int argc, char **argv) {
   optimet::mpi::init(argc, const_cast<const char **>(argv));
-#ifndef OPTIMET_MPI
-  ::benchmark::initialize_mpi(argc, argv);
-#endif
 #ifdef OPTIMET_BELOS
   parameters = parse_cmdl(argc, argv);
 #endif
+
   ::benchmark::Initialize(&argc, argv);
   ::benchmark::RunSpecifiedBenchmarks();
-#ifndef OPTIMET_MPI
-  ::benchmark::finalize_mpi();
-#endif
   optimet::mpi::finalize();
   return 0;
 }
