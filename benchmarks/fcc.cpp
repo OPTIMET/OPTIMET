@@ -11,18 +11,17 @@
 #include "mpi/Session.h"
 #include <benchmark/benchmark.h>
 #include <chrono>
+#include <iostream>
 
 namespace {
 #ifdef OPTIMET_BELOS
 //! Holds solver parameters
 Teuchos::RCP<Teuchos::ParameterList> parameters;
-template<class T> T get_param(std::string const & name, T const & default_) {
+template <class T> T get_param(std::string const &name, T const &default_) {
   return parameters->get<T>(name, default_);
 }
 #else
-template<class T> T get_param(std::string const & name, T const & default) {
-  return default;
-}
+template <class T> T get_param(std::string const &name, T const &default) { return default; }
 #endif
 
 using namespace optimet;
@@ -32,6 +31,8 @@ Matrix<t_real> fcc_cell() {
   result.diagonal().fill(0);
   return result;
 }
+
+t_real default_wavelength() { return 750e-9; }
 
 std::tuple<Geometry, std::shared_ptr<Excitation>>
 fcc_system(t_int const &N, t_real length, Scatterer const &scatterer) {
@@ -56,8 +57,7 @@ fcc_system(t_int const &N, t_real length, Scatterer const &scatterer) {
       }
 
   // Create excitation
-  auto const wavelength = 750e-9;
-  Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
+  Spherical<t_real> const vKinc{2 * consPi / default_wavelength(), 90 * consPi / 180.0, 90 * consPi / 180.0};
   SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
   auto const excitation =
       std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, scatterer.nMax);
@@ -67,7 +67,7 @@ fcc_system(t_int const &N, t_real length, Scatterer const &scatterer) {
 }
 
 Scatterer default_scatterer(t_int nHarmonics) {
-  auto const radius = get_param<t_real>("radius", 500e-9);
+  auto const radius = get_param<t_real>("radius", 1e0) * default_wavelength();
   ElectroMagnetic const elmag{get_param<t_complex>("epsilon_r", 13.1), 1.0};
   return {{0, 0, 0}, elmag, radius, nHarmonics};
 }
@@ -128,34 +128,71 @@ void solver(benchmark::State &state) {
 #endif
 }
 
-static void CustomArguments(benchmark::internal::Benchmark* b) {
-  for(auto const i: {1, 10, 20, 30, 40, 50, 100})
-    for(auto const j: {1, 2, 4, 6, 8, 10})
+static void CustomArguments(benchmark::internal::Benchmark *b) {
+  for(auto const i : {1, 10, 20, 30, 40, 50, 100})
+    for(auto const j : {1, 2, 4, 6, 8, 10})
       b->ArgPair(i, j);
 }
 
+extern std::string FLAG_benchmark_format;
+
 #ifndef OPTIMET_MPI
-BENCHMARK(problem_setup)
-    ->Apply(CustomArguments)
-    ->Unit(benchmark::kMicrosecond);
-BENCHMARK(solver)
-    ->Apply(CustomArguments)
-    ->Unit(benchmark::kMicrosecond);
+BENCHMARK(problem_setup)->Apply(CustomArguments)->Unit(benchmark::kMicrosecond);
+BENCHMARK(solver)->Apply(CustomArguments)->Unit(benchmark::kMicrosecond);
 #else
-BENCHMARK(solver)
-    ->Apply(CustomArguments)
-    ->Unit(benchmark::kMicrosecond)
-    ->UseManualTime();
+BENCHMARK(solver)->Apply(CustomArguments)->Unit(benchmark::kMicrosecond)->UseManualTime();
 #endif
+
+namespace benchmark {
+class MPIReporter : public BenchmarkReporter {
+public:
+  MPIReporter(std::unique_ptr<BenchmarkReporter> reporter, bool doreport)
+      : reporter(std::move(reporter)), doreport(doreport) {}
+  MPIReporter(std::unique_ptr<BenchmarkReporter> reporter)
+      : MPIReporter(std::move(reporter), optimet::mpi::Communicator().rank() == 0) {}
+  virtual bool ReportContext(const Context &context) {
+    if(doreport)
+      return reporter->ReportContext(context);
+    else
+      return true;
+  }
+  virtual void ReportRuns(const std::vector<Run> &report) {
+    if(doreport)
+      reporter->ReportRuns(report);
+  }
+  virtual void Finalize() {
+    if(doreport)
+      reporter->Finalize();
+  }
+
+private:
+  std::unique_ptr<BenchmarkReporter> reporter;
+  bool doreport;
+};
+
+std::unique_ptr<BenchmarkReporter> parse_cmdl(int argc, char **argv) {
+  for(int i(0); i < argc; ++i)
+    if(std::string(argv[i]) == "--benchmark_format=console")
+      return std::unique_ptr<BenchmarkReporter>{new ConsoleReporter()};
+    else if(std::string(argv[i]) == "--benchmark_format=json")
+      return std::unique_ptr<BenchmarkReporter>{new JSONReporter()};
+    else if(std::string(argv[i]) == "--benchmark_format=csv")
+      return std::unique_ptr<BenchmarkReporter>{new CSVReporter()};
+  return std::unique_ptr<BenchmarkReporter>{new ConsoleReporter()};
+}
+}
 
 int main(int argc, char **argv) {
   optimet::mpi::init(argc, const_cast<const char **>(argv));
+
+  ::benchmark::MPIReporter reporter(::benchmark::parse_cmdl(argc, argv));
+  ::benchmark::Initialize(&argc, argv);
+
 #ifdef OPTIMET_BELOS
   parameters = parse_cmdl(argc, argv);
 #endif
 
-  ::benchmark::Initialize(&argc, argv);
-  ::benchmark::RunSpecifiedBenchmarks();
+  ::benchmark::RunSpecifiedBenchmarks(&reporter);
   optimet::mpi::finalize();
   return 0;
 }
