@@ -205,12 +205,15 @@ void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_com
   scalapack::Sizes const size{static_cast<t_uint>(A.rows()), static_cast<t_uint>(A.cols())};
 
   // "serial" version to distribute from A to root.
-  scalapack::Matrix<t_complex> Aserial(context().serial(), size, block_size());
-  scalapack::Matrix<t_complex> bserial(Aserial.context(), {size.rows, 1}, block_size());
-  if(Aserial.context().is_valid()) {
-    Aserial.local() = A;
-    bserial.local() = b;
-  }
+  auto const serial_context = context().serial();
+  auto const nrows = serial_context.is_valid() ? A.rows() : 0;
+  auto const ncols = serial_context.is_valid() ? A.cols() : 0;
+  assert(A.rows() == b.rows());
+  Eigen::Map<Matrix<t_complex> const> const amap(A.data(), nrows, ncols);
+  Eigen::Map<Matrix<t_complex> const> const bmap(b.data(), nrows, ncols != 0 ? 1 : 0);
+  scalapack::Matrix<t_complex const *> Aserial(amap, serial_context, size, block_size());
+  scalapack::Matrix<t_complex const *> bserial(bmap, Aserial.context(), {size.rows, 1},
+                                               block_size());
   // Transfer to grid
   auto Aparallel = Aserial.transfer_to(context(), block_size());
   auto bparallel = bserial.transfer_to(context(), block_size());
@@ -224,7 +227,7 @@ void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_com
   auto result = scalapack::general_linear_system(Aparallel, bparallel);
 #endif
   auto Xparallel = std::get<0>(result);
-  if(std::get<1>(result) !=0)
+  if(std::get<1>(result) != 0)
     throw std::runtime_error("Error encountered while solving the linear system");
 
   // Transfer back to root
