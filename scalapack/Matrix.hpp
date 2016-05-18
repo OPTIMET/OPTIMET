@@ -109,6 +109,9 @@ template <>
 void pdgemm<double>(double alpha, Matrix<double> const &a, Matrix<double> const &b, double beta,
                     Matrix<double> &c, char opa, char opb);
 template <>
+void pdgemm<double>(double alpha, Matrix<double const *> const &a, Matrix<double const *> const &b,
+                    double beta, Matrix<double *> &c, char opa, char opb);
+template <>
 void pdgemm<double>(double alpha, Matrix<double> const &a, Matrix<double const *> const &b,
                     double beta, Matrix<double *> &c, char opa, char opb);
 template <>
@@ -117,6 +120,12 @@ void pdgemm<std::complex<double>>(std::complex<double> alpha, Matrix<std::comple
                                   Matrix<std::complex<double>> &c, char opa, char opb);
 template <>
 void pdgemm<std::complex<double>>(std::complex<double> alpha, Matrix<std::complex<double>> const &a,
+                                  Matrix<std::complex<double> const *> const &b,
+                                  std::complex<double> beta, Matrix<std::complex<double> *> &c,
+                                  char opa, char opb);
+template <>
+void pdgemm<std::complex<double>>(std::complex<double> alpha,
+                                  Matrix<std::complex<double> const *> const &a,
                                   Matrix<std::complex<double> const *> const &b,
                                   std::complex<double> beta, Matrix<std::complex<double> *> &c,
                                   char opa, char opb);

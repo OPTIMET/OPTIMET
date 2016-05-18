@@ -198,6 +198,11 @@ template <class SCALAR>
 void pdgemm(typename MatrixTraits<SCALAR>::Scalar alpha, Matrix<SCALAR> const &a,
             Matrix<SCALAR const *> const &b, typename MatrixTraits<SCALAR>::Scalar beta,
             Matrix<SCALAR *> &c, char opa = 'N', char opb = 'N');
+//! Multiplies two matrices
+template <class SCALAR>
+void pdgemm(typename MatrixTraits<SCALAR>::Scalar alpha, Matrix<SCALAR const*> const &a,
+            Matrix<SCALAR const *> const &b, typename MatrixTraits<SCALAR>::Scalar beta,
+            Matrix<SCALAR *> &c, char opa = 'N', char opb = 'N');
 }
 }
 

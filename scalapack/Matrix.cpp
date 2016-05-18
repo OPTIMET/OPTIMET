@@ -11,13 +11,13 @@ template <class SCALAR> struct fortran_pdgemm;
 template <> struct fortran_pdgemm<double> {
   const static decltype(&OPTIMET_FC_GLOBAL(pdgemm, PDGEMM)) pointer;
 };
-const decltype(&OPTIMET_FC_GLOBAL(pdgemm, PDGEMM))
-  fortran_pdgemm<double>::pointer = &OPTIMET_FC_GLOBAL(pdgemm, PDGEMM);
+const decltype(&OPTIMET_FC_GLOBAL(pdgemm, PDGEMM)) fortran_pdgemm<double>::pointer =
+    &OPTIMET_FC_GLOBAL(pdgemm, PDGEMM);
 template <> struct fortran_pdgemm<std::complex<double>> {
   const static decltype(&OPTIMET_FC_GLOBAL(pzgemm, PZGEMM)) pointer;
 };
-const decltype(&OPTIMET_FC_GLOBAL(pzgemm, PZGEMM))
-  fortran_pdgemm<std::complex<double>>::pointer = &OPTIMET_FC_GLOBAL(pzgemm, PZGEMM);
+const decltype(&OPTIMET_FC_GLOBAL(pzgemm, PZGEMM)) fortran_pdgemm<std::complex<double>>::pointer =
+    &OPTIMET_FC_GLOBAL(pzgemm, PZGEMM);
 
 template <class SCALAR_A, class SCALAR_B, class SCALAR_C>
 void pdgemm_(typename MatrixTraits<SCALAR_A>::Scalar alpha, Matrix<SCALAR_A> const &a,
@@ -51,17 +51,19 @@ void pdgemm_(typename MatrixTraits<SCALAR_A>::Scalar alpha, Matrix<SCALAR_A> con
 }
 }
 
-#define OPTIMET_MACRO(TYPE, CONST, POINTER)                                                        \
+#define OPTIMET_MACRO(SCALAR, A, B, C)                                                             \
   template <>                                                                                      \
-  void pdgemm<TYPE>(TYPE alpha, Matrix<TYPE> const &a, Matrix<TYPE CONST POINTER> const &b,        \
-                    TYPE beta, Matrix<TYPE POINTER> &c, char opa, char opb) {                      \
+  void pdgemm<SCALAR>(SCALAR alpha, Matrix<SCALAR A> const &a, Matrix<SCALAR B> const &b,          \
+                      SCALAR beta, Matrix<SCALAR C> &c, char opa, char opb) {                      \
     pdgemm_(alpha, a, b, beta, c, opa, opb);                                                       \
   }
 
-OPTIMET_MACRO(double, , )
-OPTIMET_MACRO(double, const, *)
-OPTIMET_MACRO(std::complex<double>, , )
-OPTIMET_MACRO(std::complex<double>, const, *)
+OPTIMET_MACRO(double, , , )
+OPTIMET_MACRO(double, , const *, *)
+OPTIMET_MACRO(double, const *, const *, *)
+OPTIMET_MACRO(std::complex<double>, , ,)
+OPTIMET_MACRO(std::complex<double>, , const *, *)
+OPTIMET_MACRO(std::complex<double>, const *, const *, *)
 #undef OPTIMET_MACRO
 } // scalapack
 } // optimet
