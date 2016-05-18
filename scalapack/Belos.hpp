@@ -15,12 +15,15 @@
 
 namespace optimet {
 namespace scalapack {
-template <class SCALAR> TeuchosArrayView<SCALAR> view(Matrix<SCALAR> &A) {
-  return TeuchosArrayView<SCALAR>(A.local().data(), A.local().size());
+template <class SCALAR> TeuchosArrayView<typename Matrix<SCALAR>::Scalar> view(Matrix<SCALAR> &A) {
+  typedef typename Matrix<SCALAR>::Scalar Scalar;
+  return TeuchosArrayView<Scalar>(A.local().data(), A.local().size());
 }
 
-template <class SCALAR> TeuchosArrayView<SCALAR const> view(Matrix<SCALAR> const &A) {
-  return TeuchosArrayView<SCALAR const>(A.local().data(), A.local().size());
+template <class SCALAR>
+TeuchosArrayView<typename Matrix<SCALAR>::Scalar const> view(Matrix<SCALAR> const &A) {
+  typedef typename Matrix<SCALAR>::Scalar Scalar;
+  return TeuchosArrayView<Scalar const>(A.local().data(), A.local().size());
 }
 
 template <class SCALAR>
@@ -45,15 +48,17 @@ matrix_map(Matrix<SCALAR> const &A, mpi::Communicator const &comm) {
 }
 
 template <class SCALAR>
-Teuchos::RCP<TpetraVector<SCALAR>>
+Teuchos::RCP<TpetraVector<typename Matrix<SCALAR>::Scalar>>
 tpetra_vector(Matrix<SCALAR> const &A, mpi::Communicator const &comm) {
+  typedef typename Matrix<SCALAR>::Scalar Scalar;
   return Teuchos::rcp(
-      new TpetraVector<SCALAR>(matrix_map(A, comm), view<SCALAR>(A), A.local().size(), 1));
+      new TpetraVector<Scalar>(matrix_map(A, comm), view<SCALAR>(A), A.local().size(), 1));
 }
 
 template <class SCALAR>
-void matrix_vector_operator(Matrix<SCALAR> const &A, const TpetraVector<SCALAR> &X,
-                            TpetraVector<SCALAR> &Y, Belos::ETrans trans) {
+void matrix_vector_operator(Matrix<SCALAR> const &A,
+                            const TpetraVector<typename Matrix<SCALAR>::Scalar> &X,
+                            TpetraVector<typename Matrix<SCALAR>::Scalar> &Y, Belos::ETrans trans) {
   if(not A.context().is_valid())
     return;
   if(X.getLocalLength() != Y.getLocalLength())
