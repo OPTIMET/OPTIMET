@@ -199,6 +199,22 @@ void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> con
 }
 
 #ifdef OPTIMET_MPI
+template <class SCALARA, class SCALARB>
+typename scalapack::Matrix<SCALARA>::ConcreteMatrix
+solveLinearSystem(Solver const &solver, scalapack::Matrix<SCALARA> const &A,
+                  scalapack::Matrix<SCALARB> const &b) {
+#ifdef OPTIMET_BELOS
+  auto const result =
+      solver.belos_parameters()->get<std::string>("Solver", "scalapack") != "scalapack" ?
+          scalapack::gmres_linear_system(A, b, solver.belos_parameters()) :
+          scalapack::general_linear_system(A, b);
+#else
+  auto const result = scalapack::general_linear_system(A, b);
+#endif
+  if(std::get<1>(result) != 0)
+    throw std::runtime_error("Error encountered while solving the linear system");
+  return std::get<0>(result);
+}
 void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_complex> const &b,
                                         Vector<t_complex> &x) const {
   // scalapack parameters: matrix size, grid of processors, block size
@@ -214,26 +230,18 @@ void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_com
   scalapack::Matrix<t_complex const *> Aserial(amap, serial_context, size, block_size());
   scalapack::Matrix<t_complex const *> bserial(bmap, Aserial.context(), {size.rows, 1},
                                                block_size());
-  // Transfer to grid
-  auto Aparallel = Aserial.transfer_to(context(), block_size());
-  auto bparallel = bserial.transfer_to(context(), block_size());
-
-// Now the actual work
-#ifdef OPTIMET_BELOS
-  auto result = belos_parameters()->get<std::string>("Solver", "scalapack") != "scalapack" ?
-                    scalapack::gmres_linear_system(Aparallel, bparallel, belos_parameters()) :
-                    scalapack::general_linear_system(Aparallel, bparallel);
-#else
-  auto result = scalapack::general_linear_system(Aparallel, bparallel);
-#endif
-  auto Xparallel = std::get<0>(result);
-  if(std::get<1>(result) != 0)
-    throw std::runtime_error("Error encountered while solving the linear system");
-
-  // Transfer back to root
-  auto Xserial = Xparallel.transfer_to(Aserial.context(), block_size());
-  // Broadcast from root
-  x = context().broadcast(Xserial.local(), 0, 0);
+  if(context().size() == 1) {
+    auto const X = ::optimet::solveLinearSystem(*this, Aserial, bserial);
+    x = context().broadcast(X.local(), 0, 0);
+  }
+  else {
+    // Transfer to grid
+    auto Aparallel = Aserial.transfer_to(context(), block_size());
+    auto bparallel = bserial.transfer_to(context(), block_size());
+    auto const X = ::optimet::solveLinearSystem(*this, Aparallel, bparallel);
+    auto Xserial = X.transfer_to(Aserial.context(), block_size());
+    x = context().broadcast(Xserial.local(), 0, 0);
+  }
 }
 #endif
 
