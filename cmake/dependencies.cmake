@@ -24,9 +24,8 @@ if(dompi AND "$ENV{CRAYOS_VERSION}" STREQUAL "")
     set(MKL_MESSAGE_PASSING OpenMPI)
     set(MKL_USE_STATIC_LIBS ON)	# OpenMPI BLACS is only available as a static library on Legion
     find_package(MKL COMPONENTS ScaLAPACK)
-    find_package(Threads)
     set(scalapack_FOUND ${MKL_ScaLAPACK_FOUND})
-    set(SCALAPACK_LIBRARIES -Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group ${MPI_CXX_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    set(SCALAPACK_LIBRARIES -Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group ${MPI_CXX_LIBRARIES})
   endif()
 
   if(NOT MKL_FOUND)
