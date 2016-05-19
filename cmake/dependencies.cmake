@@ -21,8 +21,6 @@ if(dompi AND "$ENV{CRAYOS_VERSION}" STREQUAL "")
   find_package(MPI REQUIRED)
 
   if(NOT DEFINED BLA_VENDOR OR BLA_VENDOR STREQUAL "All" OR BLA_VENDOR MATCHES "Intel")
-    set(MKL_MESSAGE_PASSING OpenMPI)
-    set(MKL_USE_STATIC_LIBS ON)	# OpenMPI BLACS is only available as a static library on Legion
     find_package(MKL COMPONENTS ScaLAPACK)
     set(scalapack_FOUND ${MKL_ScaLAPACK_FOUND})
     set(SCALAPACK_LIBRARIES -Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group ${MPI_CXX_LIBRARIES})
