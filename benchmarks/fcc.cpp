@@ -129,8 +129,8 @@ void solver(benchmark::State &state) {
 }
 
 static void CustomArguments(benchmark::internal::Benchmark *b) {
-  for(auto const i : {1, 10, 20, 30, 40, 50, 100})
-    for(auto const j : {1, 2, 4, 6, 8, 10})
+  for(auto const i : {1, 2, 3, 4, 5, 10, 20, 30, 40, 50})
+    for(auto const j : {1, 2, 3, 4, 6, 8, 10})
       b->ArgPair(i, j);
 }
 
