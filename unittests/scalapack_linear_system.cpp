@@ -7,6 +7,7 @@
 #include "mpi/Communicator.h"
 #include "scalapack/InitExit.h"
 #include "scalapack/LinearSystemSolver.h"
+#include "Solver.h"
 
 using namespace optimet;
 
@@ -80,4 +81,29 @@ TEST_CASE("Empty matrix") {
   auto const x = std::get<0>(result).transfer_to(serial_context);
   CHECK(x.size() == 0);
   CHECK(x.local().size() == 0);
+}
+
+TEST_CASE("Shuttle data to out-of-context procs") {
+  mpi::Communicator const world;
+  auto const input = world.broadcast(Vector<t_real>::Random(6).eval());
+  SECTION("All procs in context") {
+    scalapack::Context const context(1, world.size());
+    auto const local = Vector<t_real>::Random(input.size()).eval();
+    auto inout = local;
+    broadcast_to_out_of_context(inout, context, world);
+    CHECK(inout.isApprox(local));
+  }
+
+  for(size_t i(1); i < world.size() - 1; ++i) {
+    std::ostringstream sstr;
+    sstr << i << " procs are missing from context";
+    SECTION(sstr.str()) {
+      scalapack::Context const context(1, world.size() - i);
+      CHECK(i == world.all_reduce<int>(context.is_valid() ? 0: 1, MPI_SUM));
+      auto const local = Vector<t_real>::Random(input.size()).eval();
+      auto inout = world.is_root() ? input: local;
+      broadcast_to_out_of_context(inout, context, world);
+      CHECK(inout.isApprox(world.is_root() or not context.is_valid() ? input: local));
+    }
+  }
 }
