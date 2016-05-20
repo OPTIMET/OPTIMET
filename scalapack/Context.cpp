@@ -109,7 +109,7 @@ Context Context::split(t_uint nrows, t_uint ncols) const {
 
 t_uint Context::process_number(t_uint row, t_uint col) const {
   if(not is_valid())
-    throw std::runtime_error("Invalid context");
+    throw std::runtime_error("Invalid context when checking process number");
   int context = **this;
   int prow = static_cast<int>(row);
   int pcol = static_cast<int>(col);
@@ -118,7 +118,7 @@ t_uint Context::process_number(t_uint row, t_uint col) const {
 
 Index Context::process_coordinates(t_uint pnum) const {
   if(not is_valid())
-    throw std::runtime_error("Invalid context");
+    throw std::runtime_error("Invalid context when checking process coordinates");
   int context = **this;
   int num = static_cast<int>(pnum);
   int prow, pcol;
