@@ -50,6 +50,20 @@ Matrix<T> broadcast(Matrix<T> const &mat, Communicator const &comm, t_uint root)
   }
 }
 
+template <class T>
+Vector<T> broadcast(Vector<T> const &mat, Communicator const &comm, t_uint root) {
+  assert(root < comm.size());
+  auto const size = broadcast(mat.size(), comm, root);
+  if(comm.rank() == root) {
+    MPI_Bcast(const_cast<T *>(mat.data()), size, Type<T>::value, root, *comm);
+    return mat;
+  } else {
+    Vector<T> result = Vector<T>::Zero(size);
+    MPI_Bcast(result.data(), size, Type<T>::value, root, *comm);
+    return result;
+  }
+}
+
 template <class MATRIX>
 typename std::enable_if<std::is_same<Matrix<typename MATRIX::Scalar>, MATRIX>::value, MATRIX>::type
 broadcast(Communicator const &comm, t_uint root) {
@@ -59,6 +73,17 @@ broadcast(Communicator const &comm, t_uint root) {
   auto const ncols = broadcast<t_uint>(comm, root);
   MATRIX result = Matrix<typename MATRIX::Scalar>::Zero(nrows, ncols);
   MPI_Bcast(result.data(), nrows * ncols, Type<typename MATRIX::Scalar>::value, root, *comm);
+  return result;
+}
+
+template <class VECTOR>
+typename std::enable_if<std::is_same<Vector<typename VECTOR::Scalar>, VECTOR>::value, VECTOR>::type
+broadcast(Communicator const &comm, t_uint root) {
+  assert(root < comm.size());
+  assert(root != comm.rank());
+  auto const size = broadcast<t_uint>(comm, root);
+  VECTOR result = Vector<typename VECTOR::Scalar>::Zero(size);
+  MPI_Bcast(result.data(), size, Type<typename VECTOR::Scalar>::value, root, *comm);
   return result;
 }
 
