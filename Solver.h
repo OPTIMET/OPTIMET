@@ -152,7 +152,7 @@ private:
 #ifdef OPTIMET_BELOS
   Teuchos::RCP<Teuchos::ParameterList> belos_params_;
 #endif
-  //! \brief MPI commnunicator
+  //! \brief Scalapack context
   //! \details Fake if not compiled with MPI
   scalapack::Context context_;
   scalapack::Sizes block_size_;
