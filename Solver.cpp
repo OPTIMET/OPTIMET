@@ -91,7 +91,7 @@ void Solver::populateDirect() {
   }
 }
 
-int Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) {
+void Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const {
   if(not context().is_valid())
     throw std::runtime_error("Scalapack context is invalid");
   solveLinearSystem(S, Q, X_sca_);
@@ -99,10 +99,9 @@ int Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) {
     X_sca_ = convertIndirect(X_sca_);
 
   X_int_ = solveInternal(X_sca_);
-  return 0;
 }
 
-Vector<t_complex> Solver::convertIndirect(Vector<t_complex> const &scattered) {
+Vector<t_complex> Solver::convertIndirect(Vector<t_complex> const &scattered) const {
   auto const N = 2 * (HarmonicsIterator::max_flat(nMax) - 1);
   Vector<t_complex> result(N * geometry->objects.size());
   for(size_t i = 0; i < geometry->objects.size(); i++)
@@ -121,7 +120,7 @@ Solver &Solver::SH(Result *r) {
   return *this;
 }
 
-Vector<t_complex> Solver::solveInternal(Vector<t_complex> const &scattered) {
+Vector<t_complex> Solver::solveInternal(Vector<t_complex> const &scattered) const {
   auto const N = 2 * (HarmonicsIterator::max_flat(nMax) - 1);
   Vector<t_complex> result(scattered.size());
   // sets each result.segment(j * N, N) to something
@@ -233,8 +232,7 @@ void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_com
   if(context().size() == 1) {
     auto const X = ::optimet::solveLinearSystem(*this, Aserial, bserial);
     x = context().broadcast(X.local(), 0, 0);
-  }
-  else {
+  } else {
     // Transfer to grid
     auto Aparallel = Aserial.transfer_to(context(), block_size());
     auto bparallel = bserial.transfer_to(context(), block_size());

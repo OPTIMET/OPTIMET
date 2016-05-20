@@ -85,7 +85,7 @@ public:
    * @param X_int_ the return vector for the internal coefficients.
    * @return 0 if successful, 1 otherwise.
    */
-  int solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_);
+  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const;
   /**
    * Update method for the Solver class.
    * @param geometry_ the geometry of the simulation.
@@ -98,10 +98,10 @@ public:
   void update() { populate(); }
 
   //! Converts back to the scattered result from the indirect calculation
-  Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered);
+  Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered) const;
 
   //! Solves for the internal coefficients.
-  Vector<t_complex> solveInternal(Vector<t_complex> const &X_sca_);
+  Vector<t_complex> solveInternal(Vector<t_complex> const &X_sca_) const;
 
   scalapack::Context context() const { return context_; }
   Solver &context(scalapack::Context const &c) {
@@ -175,7 +175,7 @@ void broadcast_to_out_of_context(T &inout, scalapack::Context const &context,
       is_in_context[comm.rank()] and
       std::all_of(is_in_context.begin(), is_in_context.begin() + comm.rank(), is_false);
   auto const is_in_group = is_root or not is_in_context[comm.rank()];
-  auto const split = comm.split(is_in_group, is_root ? 0: 1);
+  auto const split = comm.split(is_in_group, is_root ? 0 : 1);
   if(is_in_group)
     inout = split.broadcast(inout, 0);
 }
