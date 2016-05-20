@@ -101,6 +101,15 @@ void Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const {
   X_int_ = solveInternal(X_sca_);
 }
 
+void Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
+                   mpi::Communicator const &comm) const {
+  assert(comm.size() >= context().size());
+  if(context().is_valid())
+    solve(X_sca_, X_int_);
+  broadcast_to_out_of_context(X_sca_, context(), comm);
+  broadcast_to_out_of_context(X_int_, context(), comm);
+}
+
 Vector<t_complex> Solver::convertIndirect(Vector<t_complex> const &scattered) const {
   auto const N = 2 * (HarmonicsIterator::max_flat(nMax) - 1);
   Vector<t_complex> result(N * geometry->objects.size());

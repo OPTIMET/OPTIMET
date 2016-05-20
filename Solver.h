@@ -6,6 +6,7 @@
 #include "Geometry.h"
 #include "Result.h"
 #include "Types.h"
+#include "mpi/Collectives.h"
 #include "mpi/Communicator.h"
 #include "scalapack/Context.h"
 #include "scalapack/Parameters.h"
@@ -86,6 +87,11 @@ public:
    * @return 0 if successful, 1 otherwise.
    */
   void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const;
+  //! \brief Solves linear system of equations
+  //! \details Makes sure all procs in comm have access to result.
+  //! The communicator should contain all the procs in the scalapack context of the solver.
+  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
+             mpi::Communicator const &comm) const;
   /**
    * Update method for the Solver class.
    * @param geometry_ the geometry of the simulation.

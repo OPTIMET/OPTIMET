@@ -65,7 +65,7 @@ void Simulation::field_simulation(Run &run, optimet::Solver &solver) {
   // Determine the simulation type and proceed accordingly
 
   optimet::Result result(&(run.geometry), run.excitation, run.nMax);
-  solver.solve(result.scatter_coef, result.internal_coef);
+  solver.solve(result.scatter_coef, result.internal_coef, communicator());
 
   if(communicator().rank() == communicator().root_id()) {
     Output oFile(caseFile + ".h5");
@@ -121,7 +121,7 @@ void Simulation::scan_wavelengths(Run &run, optimet::Solver &solver) {
     solver.update(&(run.geometry), run.excitation, run.nMax);
 
     optimet::Result result(&(run.geometry), run.excitation, run.nMax);
-    solver.solve(result.scatter_coef, result.internal_coef);
+    solver.solve(result.scatter_coef, result.internal_coef, communicator());
 
     if(communicator().rank() == communicator().root_id()) {
       outASec << lam << "\t" << result.getAbsorptionCrossSection() << std::endl;
@@ -174,7 +174,7 @@ void Simulation::radius_scan(Run &run, optimet::Solver &solver) {
     solver.update(&(run.geometry), run.excitation, run.nMax);
 
     optimet::Result result(&(run.geometry), run.excitation, run.nMax);
-    solver.solve(result.scatter_coef, result.internal_coef);
+    solver.solve(result.scatter_coef, result.internal_coef, communicator());
 
     if(communicator().rank() == communicator().root_id()) {
       outASec << rad << "\t" << result.getAbsorptionCrossSection() << std::endl;
@@ -237,7 +237,7 @@ void Simulation::radius_and_wavelength_scan(Run &run, optimet::Solver &solver) {
       solver.update(&(run.geometry), run.excitation, run.nMax);
 
       optimet::Result result(&(run.geometry), run.excitation, run.nMax);
-      solver.solve(result.scatter_coef, result.internal_coef);
+      solver.solve(result.scatter_coef, result.internal_coef, communicator());
 
       if(communicator().rank() == communicator().root_id()) {
         outASec << result.getAbsorptionCrossSection() << "\t";
@@ -265,7 +265,7 @@ void Simulation::coefficients(Run &run, optimet::Solver &solver) {
   // Scattering coefficients requests
 
   optimet::Result result(&(run.geometry), run.excitation, run.nMax);
-  solver.solve(result.scatter_coef, result.internal_coef);
+  solver.solve(result.scatter_coef, result.internal_coef, communicator());
 
   if(communicator().rank() == communicator().root_id()) {
     std::ofstream outPCoef(caseFile + "_pCoefficients.dat");

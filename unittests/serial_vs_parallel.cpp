@@ -28,9 +28,10 @@ TEST_CASE("N spheres") {
   excitation->populate();
   geometry.update(excitation);
 
+  optimet::mpi::Communicator world;
   optimet::Result parallel(&geometry, excitation, nHarmonics);
   Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
-  solver.solve(parallel.scatter_coef, parallel.internal_coef);
+  solver.solve(parallel.scatter_coef, parallel.internal_coef, world);
 
   optimet::Result serial(&geometry, excitation, nHarmonics);
   auto const serial_context = solver.context().serial();

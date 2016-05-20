@@ -116,7 +116,7 @@ void solver(benchmark::State &state) {
   while(state.KeepRunning()) {
     result.internal_coef.fill(0);
     auto start = std::chrono::high_resolution_clock::now();
-    solver.solve(result.scatter_coef, result.internal_coef);
+    solver.solve(result.scatter_coef, result.internal_coef, world);
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     auto proc_max = world.all_reduce(elapsed_seconds.count(), MPI_MAX);
