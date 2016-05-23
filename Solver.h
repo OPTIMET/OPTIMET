@@ -143,12 +143,17 @@ protected:
   void populateIndirect();
   //! Solves linear system of equations
   void solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b,
-                         Vector<t_complex> &x) const;
+                         Vector<t_complex> &x, mpi::Communicator const &comm) const;
+  //! Solves linear system of equations
+  void solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b,
+                         Vector<t_complex> &x) const {
+    return solveLinearSystem(A, b, x, mpi::Communicator());
+  }
 
 private:
 #ifdef OPTIMET_MPI
   void solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_complex> const &b,
-                                  Vector<t_complex> &x) const;
+                                  Vector<t_complex> &x, mpi::Communicator const &comm) const;
 #endif
   Geometry *geometry;                        /**< Pointer to the geometry. */
   std::shared_ptr<Excitation const> incWave; /**< Pointer to the incoming excitation. */

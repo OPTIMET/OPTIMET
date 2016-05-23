@@ -104,8 +104,14 @@ void Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const {
 void Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
                    mpi::Communicator const &comm) const {
   assert(comm.size() >= context().size());
-  if(context().is_valid())
-    solve(X_sca_, X_int_);
+  auto const splitcomm = comm.split(context().is_valid());
+  if(context().is_valid()) {
+    solveLinearSystem(S, Q, X_sca_, splitcomm);
+    if(solverMethod == O3DSolverIndirect)
+      X_sca_ = convertIndirect(X_sca_);
+
+    X_int_ = solveInternal(X_sca_);
+  }
   broadcast_to_out_of_context(X_sca_, context(), comm);
   broadcast_to_out_of_context(X_int_, context(), comm);
 }
@@ -193,14 +199,14 @@ void Solver::update(Geometry *geometry_, std::shared_ptr<Excitation const> incWa
 }
 
 void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b,
-                               Vector<t_complex> &x) const {
+                               Vector<t_complex> &x, mpi::Communicator const &comm) const {
 #ifdef OPTIMET_BELOS
   if(belos_parameters()->get<std::string>("Solver", "scalapack") != "eigen")
-    solveLinearSystemScalapack(A, b, x);
+    solveLinearSystemScalapack(A, b, x, comm);
   else
 #elif OPTIMET_MPI
   if(scalapack::global_size() > 1)
-    solveLinearSystemScalapack(A, b, x);
+    solveLinearSystemScalapack(A, b, x, comm);
   else
 #endif
     x = A.colPivHouseholderQr().solve(b);
@@ -210,11 +216,11 @@ void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> con
 template <class SCALARA, class SCALARB>
 typename scalapack::Matrix<SCALARA>::ConcreteMatrix
 solveLinearSystem(Solver const &solver, scalapack::Matrix<SCALARA> const &A,
-                  scalapack::Matrix<SCALARB> const &b) {
+                  scalapack::Matrix<SCALARB> const &b, mpi::Communicator const &comm) {
 #ifdef OPTIMET_BELOS
   auto const result =
       solver.belos_parameters()->get<std::string>("Solver", "scalapack") != "scalapack" ?
-          scalapack::gmres_linear_system(A, b, solver.belos_parameters()) :
+          scalapack::gmres_linear_system(A, b, solver.belos_parameters(), comm) :
           scalapack::general_linear_system(A, b);
 #else
   auto const result = scalapack::general_linear_system(A, b);
@@ -224,7 +230,7 @@ solveLinearSystem(Solver const &solver, scalapack::Matrix<SCALARA> const &A,
   return std::get<0>(result);
 }
 void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_complex> const &b,
-                                        Vector<t_complex> &x) const {
+                                        Vector<t_complex> &x, mpi::Communicator const &comm) const {
   // scalapack parameters: matrix size, grid of processors, block size
   scalapack::Sizes const size{static_cast<t_uint>(A.rows()), static_cast<t_uint>(A.cols())};
 
@@ -239,13 +245,13 @@ void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_com
   scalapack::Matrix<t_complex const *> bserial(bmap, Aserial.context(), {size.rows, 1},
                                                block_size());
   if(context().size() == 1) {
-    auto const X = ::optimet::solveLinearSystem(*this, Aserial, bserial);
+    auto const X = ::optimet::solveLinearSystem(*this, Aserial, bserial, comm);
     x = context().broadcast(X.local(), 0, 0);
   } else {
     // Transfer to grid
     auto Aparallel = Aserial.transfer_to(context(), block_size());
     auto bparallel = bserial.transfer_to(context(), block_size());
-    auto const X = ::optimet::solveLinearSystem(*this, Aparallel, bparallel);
+    auto const X = ::optimet::solveLinearSystem(*this, Aparallel, bparallel, comm);
     auto Xserial = X.transfer_to(Aserial.context(), block_size());
     x = context().broadcast(Xserial.local(), 0, 0);
   }
