@@ -44,7 +44,7 @@ fcc_system(std::tuple<int, int, int> const &range, t_real length, Scatterer cons
       std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, scatterer.nMax);
   excitation->populate();
   geometry.update(excitation.get());
-  return {geometry, excitation};
+  return std::tuple<Geometry, std::shared_ptr<Excitation>>(geometry, excitation);
 }
 
 void check(Geometry const &geometry, Excitation const &excitation) {
@@ -80,7 +80,7 @@ TEST_CASE("Scattering matrix without remainder") {
   auto const nHarmonics = 5;
   auto const scatterer = default_scatterer(nHarmonics);
   auto const length = default_length();
-  auto const input = fcc_system({world.size(), 2, 1}, length, scatterer);
+  auto const input = fcc_system(std::make_tuple(world.size(), 2, 1), length, scatterer);
   check(std::get<0>(input), *std::get<1>(input));
 }
 
@@ -91,7 +91,7 @@ TEST_CASE("Scattering matrix with remainder") {
   auto const length = default_length();
   auto const cell = fcc_cell();
   SECTION("Remainder > number of local objects") {
-    auto input = fcc_system({world.size(), 1, 1}, length, scatterer);
+    auto input = fcc_system(std::make_tuple(world.size(), 1, 1), length, scatterer);
     auto &geometry = std::get<0>(input);
     for(int i(1); i < std::min(3, static_cast<int>(world.size())); ++i) {
       Eigen::Matrix<t_real, 3, 1> pos =
@@ -104,7 +104,7 @@ TEST_CASE("Scattering matrix with remainder") {
   }
 
   SECTION("Remainder < number of local objects") {
-    auto input = fcc_system({world.size() + 1, world.size(), 1}, length, scatterer);
+    auto input = fcc_system(std::make_tuple(world.size() + 1, world.size(), 1), length, scatterer);
     auto &geometry = std::get<0>(input);
     for(int i(1); i < std::min(3, static_cast<int>(world.size())); ++i) {
       Eigen::Matrix<t_real, 3, 1> pos =
@@ -122,7 +122,7 @@ TEST_CASE("Zero objects") {
   auto const scatterer = default_scatterer(nHarmonics);
   auto const length = default_length();
   auto const cell = fcc_cell();
-  auto input = fcc_system({0, 1, 1}, length, scatterer);
+  auto input = fcc_system(std::make_tuple(0, 1, 1), length, scatterer);
   check(std::get<0>(input), *std::get<1>(input));
 }
 
@@ -132,6 +132,6 @@ TEST_CASE("Very small number of objects") {
   auto const scatterer = default_scatterer(nHarmonics);
   auto const length = default_length();
   auto const cell = fcc_cell();
-  auto input = fcc_system({world.size() - 1, 1, 1}, length, scatterer);
+  auto input = fcc_system(std::make_tuple(world.size() - 1, 1, 1), length, scatterer);
   check(std::get<0>(input), *std::get<1>(input));
 }
