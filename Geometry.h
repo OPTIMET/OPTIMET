@@ -112,11 +112,10 @@ public:
    * @return 0 if successful, 1 otherwise.
    */
   int getSourceLocal(int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_,
-                     std::complex<double> *internalCoef_FF_, int nMax_,
-                     std::complex<double> *Q_SH_local_) const;
+                     int nMax_, std::complex<double> *Q_SH_local_) const;
 
   int setSourcesSingle(std::shared_ptr<optimet::Excitation const> incWave_,
-                       std::complex<double> *internalCoef_FF_, int nMax_);
+                       std::complex<double> const *internalCoef_FF_, int nMax_);
 
   /**
    * Updates the Geometry object to a new Excitation.

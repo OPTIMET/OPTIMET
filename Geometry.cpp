@@ -256,7 +256,7 @@ int Geometry::checkInner(Spherical<double> R_) {
 }
 
 int Geometry::setSourcesSingle(std::shared_ptr<optimet::Excitation const> incWave_,
-                               std::complex<double> *internalCoef_FF_, int nMax_) {
+                               std::complex<double> const *internalCoef_FF_, int nMax_) {
   CompoundIterator p;
   int pMax = p.max(nMax_);
 
@@ -303,8 +303,7 @@ optimet::Matrix<optimet::t_complex> Geometry::getTLocal(optimet::t_real omega_,
 }
 
 int Geometry::getSourceLocal(int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_,
-                             std::complex<double> *, int nMax_,
-                             std::complex<double> *Q_SH_local_) const {
+                             int nMax_, std::complex<double> *Q_SH_local_) const {
   CompoundIterator p;
   CompoundIterator q;
 

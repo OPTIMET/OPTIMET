@@ -148,10 +148,10 @@ Vector<t_complex> Solver::solveInternal(Vector<t_complex> const &scattered) cons
 
 void Solver::populateIndirect() {
   if(result_FF)
-    Q = local_source_vector(*geometry, *incWave, result_FF->internal_coef);
+    Q = local_source_vector(*geometry, incWave, result_FF->internal_coef);
   else
-    Q = source_vector(*geometry, *incWave);
-  S = preconditioned_scattering_matrix(*geometry, *incWave);
+    Q = source_vector(*geometry, incWave);
+  S = preconditioned_scattering_matrix(*geometry, incWave);
 }
 
 void Solver::update(Geometry *geometry_, std::shared_ptr<Excitation const> incWave_, long nMax_) {
@@ -229,7 +229,8 @@ preconditioned_scattering_matrix(std::vector<Scatterer>::const_iterator const &f
                                  std::vector<Scatterer>::const_iterator const &end_first,
                                  std::vector<Scatterer>::const_iterator const &second,
                                  std::vector<Scatterer>::const_iterator const &end_second,
-                                 ElectroMagnetic const &bground, Excitation const &incWave) {
+                                 ElectroMagnetic const &bground,
+                                 std::shared_ptr<Excitation const> incWave) {
   auto const nMax = first->nMax;
   auto const n = HarmonicsIterator::max_flat(nMax) - 1;
   if(first == end_first or second == end_second)
@@ -238,13 +239,13 @@ preconditioned_scattering_matrix(std::vector<Scatterer>::const_iterator const &f
   Matrix<t_complex> result(2 * n * (end_first - first), 2 * n * (end_second - second));
   size_t y(0);
   for(auto iterj(second); iterj != end_second; ++iterj, y += 2 * n) {
-    Matrix<t_complex> const factor = -iterj->getTLocal(incWave.omega, bground);
+    Matrix<t_complex> const factor = -iterj->getTLocal(incWave->omega, bground);
     size_t x(0);
     for(auto iteri(first); iteri != end_first; ++iteri, x += 2 * n) {
       if(iteri == iterj) {
         result.block(x, y, 2 * n, 2 * n) = Matrix<t_complex>::Identity(2 * n, 2 * n);
       } else {
-        Coupling const AB(iteri->vR - iterj->vR, incWave.waveK, nMax);
+        Coupling const AB(iteri->vR - iterj->vR, incWave->waveK, nMax);
         result.block(x, y, n, n) = AB.diagonal.transpose();
         result.block(x + n, y + n, n, n) = AB.diagonal.transpose();
         result.block(x, y + n, n, n) = AB.offdiagonal.transpose();
@@ -258,13 +259,13 @@ preconditioned_scattering_matrix(std::vector<Scatterer>::const_iterator const &f
 
 Matrix<t_complex> preconditioned_scattering_matrix(std::vector<Scatterer> const &objects,
                                                    ElectroMagnetic const &bground,
-                                                   Excitation const &incWave) {
+                                                   std::shared_ptr<Excitation const> incWave) {
   return preconditioned_scattering_matrix(objects.begin(), objects.end(), objects.begin(),
                                           objects.end(), bground, incWave);
 }
 
-Matrix<t_complex>
-preconditioned_scattering_matrix(Geometry const &geometry, Excitation const &incWave) {
+Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
+                                                   std::shared_ptr<Excitation const> incWave) {
   if(geometry.objects.size() == 0)
     return Matrix<t_complex>(0, 0);
   // Check nMax is same accross all objects
@@ -277,7 +278,7 @@ preconditioned_scattering_matrix(Geometry const &geometry, Excitation const &inc
 
 #ifdef OPTIMET_MPI
 Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
-                                                   Excitation const &incWave,
+                                                   std::shared_ptr<Excitation const> incWave,
                                                    scalapack::Context const &context,
                                                    scalapack::Sizes const &blocks) {
   // construct an n by 1 context
@@ -332,22 +333,24 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
 
 Vector<t_complex> source_vector(std::vector<Scatterer>::const_iterator first,
                                 std::vector<Scatterer>::const_iterator const &last,
-                                Excitation const &incWave) {
+                                std::shared_ptr<Excitation const> incWave) {
   if(first == last)
     return Vector<t_complex>::Zero(0);
   auto const nMax = first->nMax;
   auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
   Vector<t_complex> result(2 * flatMax * (last - first));
   for(size_t i(0); first != last; ++first, i += 2 * flatMax)
-    incWave.getIncLocal(first->vR, result.data() + i, nMax);
+    incWave->getIncLocal(first->vR, result.data() + i, nMax);
   return result;
 }
 
-Vector<t_complex> source_vector(std::vector<Scatterer> const &objects, Excitation const &incWave) {
+Vector<t_complex>
+source_vector(std::vector<Scatterer> const &objects, std::shared_ptr<Excitation const> incWave) {
   return source_vector(objects.begin(), objects.end(), incWave);
 }
 
-Vector<t_complex> source_vector(Geometry const &geometry, Excitation const &incWave) {
+Vector<t_complex>
+source_vector(Geometry const &geometry, std::shared_ptr<Excitation const> incWave) {
   if(geometry.objects.size() == 0)
     return Vector<t_complex>(0, 0);
   // Check nMax is same accross all objects
@@ -358,7 +361,8 @@ Vector<t_complex> source_vector(Geometry const &geometry, Excitation const &incW
   return source_vector(geometry.objects, incWave);
 }
 
-Vector<t_complex> local_source_vector(Geometry const &geometry, Excitation const &incWave,
+Vector<t_complex> local_source_vector(Geometry const &geometry,
+                                      std::shared_ptr<Excitation const> incWave,
                                       Vector<t_complex> const &input_coeffs) {
   if(geometry.objects.size() == 0)
     return Vector<t_complex>(0, 0);
@@ -369,7 +373,7 @@ Vector<t_complex> local_source_vector(Geometry const &geometry, Excitation const
       throw std::runtime_error("All objects must have same number of harmonics");
 
   Geometry copy_geometry(geometry);
-  copy_geometry.setSourcesSingle(&incWave, input_coeffs.data(), nMax);
+  copy_geometry.setSourcesSingle(incWave, input_coeffs.data(), nMax);
   // Get the IncLocal matrices
   // These correspond directly to the Beta*a in Stout2002 Eq. 10 as
   // they are already translated.
@@ -377,7 +381,7 @@ Vector<t_complex> local_source_vector(Geometry const &geometry, Excitation const
   auto const flatMax = HarmonicsIterator::max_flat(nMax) - 1;
   Vector<t_complex> result(flatMax * 2 * copy_geometry.objects.size());
   for(size_t i = 0; i < copy_geometry.objects.size(); i++)
-    copy_geometry.getSourceLocal(i, &incWave, nMax, result.data() + i * 2 * flatMax);
+    copy_geometry.getSourceLocal(i, incWave, nMax, result.data() + i * 2 * flatMax);
   return result;
 }
 

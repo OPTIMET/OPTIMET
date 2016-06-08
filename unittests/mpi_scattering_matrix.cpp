@@ -43,11 +43,11 @@ fcc_system(std::tuple<int, int, int> const &range, t_real length, Scatterer cons
   auto const excitation =
       std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, scatterer.nMax);
   excitation->populate();
-  geometry.update(excitation.get());
+  geometry.update(excitation);
   return std::tuple<Geometry, std::shared_ptr<Excitation>>(geometry, excitation);
 }
 
-void check(Geometry const &geometry, Excitation const &excitation) {
+void check(Geometry const &geometry, std::shared_ptr<Excitation const> excitation) {
   scalapack::Context context;
   scalapack::Sizes const blocks = {16, 16};
   auto const nHarmonics = geometry.objects.size() ? geometry.objects.front().nMax: 1;
@@ -81,7 +81,7 @@ TEST_CASE("Scattering matrix without remainder") {
   auto const scatterer = default_scatterer(nHarmonics);
   auto const length = default_length();
   auto const input = fcc_system(std::make_tuple(world.size(), 2, 1), length, scatterer);
-  check(std::get<0>(input), *std::get<1>(input));
+  check(std::get<0>(input), std::get<1>(input));
 }
 
 TEST_CASE("Scattering matrix with remainder") {
@@ -98,8 +98,8 @@ TEST_CASE("Scattering matrix with remainder") {
           cell * Eigen::Matrix<t_real, 3, 1>(-1 - i, -1 - i, -1 - i) * length;
       geometry.pushObject({Tools::toSpherical({pos(0), pos(1), pos(2)}), scatterer.elmag,
                            scatterer.radius, scatterer.nMax});
-      geometry.update(std::get<1>(input).get());
-      check(std::get<0>(input), *std::get<1>(input));
+      geometry.update(std::get<1>(input));
+      check(std::get<0>(input), std::get<1>(input));
     }
   }
 
@@ -111,8 +111,8 @@ TEST_CASE("Scattering matrix with remainder") {
           cell * Eigen::Matrix<t_real, 3, 1>(-1 - i, -1 - i, -1 - i) * length;
       geometry.pushObject({Tools::toSpherical({pos(0), pos(1), pos(2)}), scatterer.elmag,
                            scatterer.radius, scatterer.nMax});
-      geometry.update(std::get<1>(input).get());
-      check(std::get<0>(input), *std::get<1>(input));
+      geometry.update(std::get<1>(input));
+      check(std::get<0>(input), std::get<1>(input));
     }
   }
 }
@@ -123,7 +123,7 @@ TEST_CASE("Zero objects") {
   auto const length = default_length();
   auto const cell = fcc_cell();
   auto input = fcc_system(std::make_tuple(0, 1, 1), length, scatterer);
-  check(std::get<0>(input), *std::get<1>(input));
+  check(std::get<0>(input), std::get<1>(input));
 }
 
 TEST_CASE("Very small number of objects") {
@@ -133,5 +133,5 @@ TEST_CASE("Very small number of objects") {
   auto const length = default_length();
   auto const cell = fcc_cell();
   auto input = fcc_system(std::make_tuple(world.size() - 1, 1, 1), length, scatterer);
-  check(std::get<0>(input), *std::get<1>(input));
+  check(std::get<0>(input), std::get<1>(input));
 }

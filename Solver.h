@@ -90,8 +90,8 @@ public:
   //! \brief Solves linear system of equations
   //! \details Makes sure all procs in comm have access to result.
   //! The communicator should contain all the procs in the scalapack context of the solver.
-  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
-             mpi::Communicator const &comm) const;
+  void
+  solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_, mpi::Communicator const &comm) const;
   /**
    * Update method for the Solver class.
    * @param geometry_ the geometry of the simulation.
@@ -171,19 +171,22 @@ private:
 };
 
 //! \brief Computes source vector
-Vector<t_complex> source_vector(Geometry const &geometry, Excitation const &incWave);
+Vector<t_complex>
+source_vector(Geometry const &geometry, std::shared_ptr<Excitation const> incWave);
 //! \brief Computes source vector from fundamental frequency
-Vector<t_complex> local_source_vector(Geometry const &geometry, Excitation const &incWave,
+Vector<t_complex> local_source_vector(Geometry const &geometry,
+                                      std::shared_ptr<Excitation const> incWave,
                                       Vector<t_complex> const &input_coeffs);
 
 //! Computes preconditioned scattering matrix
-Matrix<t_complex>
-preconditioned_scattering_matrix(Geometry const &geometry, Excitation const &incWave);
+Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
+                                                   std::shared_ptr<Excitation const> incWave);
 
 //! Computes preconditioned scattering matrix in paralllel
-Matrix<t_complex>
-preconditioned_scattering_matrix(Geometry const &geometry, Excitation const &incWave,
-                                 scalapack::Context const &context, scalapack::Sizes const &blocks);
+Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
+                                                   std::shared_ptr<Excitation const> incWave,
+                                                   scalapack::Context const &context,
+                                                   scalapack::Sizes const &blocks);
 
 #ifdef OPTIMET_MPI
 //! \brief Broadcast data from a proc in the context to procs outside the context
