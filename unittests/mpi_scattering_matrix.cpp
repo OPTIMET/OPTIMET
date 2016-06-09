@@ -48,9 +48,9 @@ fcc_system(std::tuple<int, int, int> const &range, t_real length, Scatterer cons
 }
 
 void check(Geometry const &geometry, std::shared_ptr<Excitation const> excitation) {
-  scalapack::Context context;
+  scalapack::Context context = scalapack::Context::Squarest();
   scalapack::Sizes const blocks = {16, 16};
-  auto const nHarmonics = geometry.objects.size() ? geometry.objects.front().nMax: 1;
+  auto const nHarmonics = geometry.objects.size() ? geometry.objects.front().nMax : 1;
   auto const N = geometry.objects.size() * 2 * (HarmonicsIterator::max_flat(nHarmonics) - 1);
   // Compute matrix in parallel
   auto const parallel_local =
@@ -166,13 +166,18 @@ TEST_CASE("Distributed source vector") {
 
   scalapack::Matrix<t_complex> sca_result(context, {N, 1}, blocks);
   pdgemm(1e0, sca_matrix, sca_vector, 0, sca_result);
-
-  CHECK(sca_result.local().rows() ==
-        scalapack::Matrix<t_complex>::local_rows(context, {N, 1}, blocks, {0, 0}));
-  CHECK(sca_result.local().cols() ==
-        scalapack::Matrix<t_complex>::local_cols(context, {N, 1}, blocks, {0, 0}));
+  if(context.is_valid()) {
+    CHECK(sca_result.local().rows() ==
+          scalapack::Matrix<t_complex>::local_rows(context, {N, 1}, blocks, {0, 0}));
+    CHECK(sca_result.local().cols() ==
+          scalapack::Matrix<t_complex>::local_cols(context, {N, 1}, blocks, {0, 0}));
+  }
   auto const result = gather_all_source_vector(sca_result);
-  REQUIRE(result.rows() == N);
-  REQUIRE(result.cols() == 1);
-  REQUIRE(result.isApprox(serial_matrix * serial_vector));
+  if(context.is_valid()) {
+    REQUIRE(result.rows() == N);
+    REQUIRE(result.cols() == 1);
+    REQUIRE(result.isApprox(serial_matrix * serial_vector));
+  } else {
+    REQUIRE(result.rows() == 0);
+  }
 }

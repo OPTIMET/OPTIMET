@@ -18,6 +18,8 @@ namespace optimet {
 Vector<t_complex> distributed_source_vector(Vector<t_complex> const &input,
                                             scalapack::Context const &context,
                                             scalapack::Sizes const &blocks) {
+  if(not context.is_valid())
+    return Vector<t_complex>::Zero(0);
   auto const serial = context.serial();
   t_uint const n(input.size());
   Eigen::Map<Matrix<t_complex> const> const input_map(input.data(), serial.is_valid() ? n : 0,
@@ -33,6 +35,8 @@ Vector<t_complex> distributed_source_vector(Vector<t_complex> const &input,
 Vector<t_complex> gather_all_source_vector(t_uint n, Vector<t_complex> const &input,
                                            scalapack::Context const &context,
                                            scalapack::Sizes const &blocks) {
+  if(not context.is_valid())
+    return Vector<t_complex>::Zero(0);
   auto const serial = context.serial();
   auto const parallel_vector = map_cmatrix(input, context, {n, 1}, blocks);
   scalapack::Matrix<t_complex> result(context.serial(), {n, 1}, {n, 1});
@@ -343,9 +347,9 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
           geometry.objects.begin() + nloc * linear_context.cols() + remainder_context.col() + 1,
           geometry.bground, incWave);
 
-    scalapack::Matrix<t_complex> transfered(remainder_context, {nobj * n * 2, remainder * n * 2},
-                                            {nobj * n * 2, nloc * 2 * n});
-    remainder_matrix.transfer_to(remainder_context, transfered);
+    scalapack::Matrix<t_complex> transfered(linear_context, {nobj * n * 2, remainder * n * 2},
+                                            {nobj * n * 2, nloc * n * 2});
+    remainder_matrix.transfer_to(linear_context, transfered);
     if(transfered.local().cols() > 0)
       linear_matrix.local().rightCols(transfered.local().cols()) = transfered.local();
   }
