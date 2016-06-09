@@ -43,11 +43,12 @@ void pdgemm_(typename MatrixTraits<SCALAR_A>::Scalar alpha, Matrix<SCALAR_A> con
   int m(c.rows()), n(c.cols()), k(opa != 'N' ? a.rows() : a.cols());
   int zero = 1;
   typedef typename MatrixTraits<SCALAR_A>::Scalar Scalar;
-  (*fortran_pdgemm<Scalar>::pointer)(
-      &opa, &opb, &m, &n, &k, &alpha, const_cast<Scalar *>(a.local().data()), &zero, &zero,
-      const_cast<int *>(a.blacs().data()), const_cast<Scalar *>(b.local().data()), &zero, &zero,
-      const_cast<int *>(b.blacs().data()), &beta, const_cast<Scalar *>(c.local().data()), &zero,
-      &zero, const_cast<int *>(c.blacs().data()));
+  if(a.context().is_valid())
+    (*fortran_pdgemm<Scalar>::pointer)(
+        &opa, &opb, &m, &n, &k, &alpha, const_cast<Scalar *>(a.local().data()), &zero, &zero,
+        const_cast<int *>(a.blacs().data()), const_cast<Scalar *>(b.local().data()), &zero, &zero,
+        const_cast<int *>(b.blacs().data()), &beta, const_cast<Scalar *>(c.local().data()), &zero,
+        &zero, const_cast<int *>(c.blacs().data()));
 }
 }
 
@@ -61,7 +62,7 @@ void pdgemm_(typename MatrixTraits<SCALAR_A>::Scalar alpha, Matrix<SCALAR_A> con
 OPTIMET_MACRO(double, , , )
 OPTIMET_MACRO(double, , const *, *)
 OPTIMET_MACRO(double, const *, const *, *)
-OPTIMET_MACRO(std::complex<double>, , ,)
+OPTIMET_MACRO(std::complex<double>, , , )
 OPTIMET_MACRO(std::complex<double>, , const *, *)
 OPTIMET_MACRO(std::complex<double>, const *, const *, *)
 #undef OPTIMET_MACRO
