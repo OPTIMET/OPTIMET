@@ -14,6 +14,41 @@
 #include <iostream>
 
 namespace optimet {
+#ifdef OPTIMET_MPI
+Vector<t_complex> distributed_source_vector(Vector<t_complex> const &input,
+                                            scalapack::Context const &context,
+                                            scalapack::Sizes const &blocks) {
+  auto const serial = context.serial();
+  t_uint const n(input.size());
+  Eigen::Map<Matrix<t_complex> const> const input_map(input.data(), serial.is_valid() ? n : 0,
+                                                      serial.is_valid() ? 1 : 0);
+  scalapack::Matrix<t_complex const *> const serial_vector(input_map, serial, {n, 1}, {n, 1});
+  scalapack::Matrix<t_complex> result(context, {n, 1}, blocks);
+  serial_vector.transfer_to(context, result);
+  if(result.local().cols() == 0)
+    return Vector<t_complex>::Zero(0);
+  return result.local();
+}
+
+Vector<t_complex> gather_all_source_vector(t_uint n, Vector<t_complex> const &input,
+                                           scalapack::Context const &context,
+                                           scalapack::Sizes const &blocks) {
+  auto const serial = context.serial();
+  auto const parallel_vector = map_cmatrix(input, context, {n, 1}, blocks);
+  scalapack::Matrix<t_complex> result(context.serial(), {n, 1}, {n, 1});
+  parallel_vector.transfer_to(context, result);
+  return context.broadcast(result.local(), 0, 0);
+}
+Vector<t_complex> gather_all_source_vector(scalapack::Matrix<t_complex> const &matrix) {
+  if(matrix.local().cols() == 0)
+    return gather_all_source_vector(matrix.rows(), Vector<t_complex>::Zero(0), matrix.context(),
+                                    matrix.blocks());
+  if(matrix.local().cols() != 1)
+    throw std::runtime_error("Expected vector as input");
+  return gather_all_source_vector(matrix.rows(), matrix.local(), matrix.context(), matrix.blocks());
+}
+#endif
+
 #if defined(OPTIMET_BELOS)
 Solver::Solver(Geometry *geometry, std::shared_ptr<Excitation const> incWave, int method, long nMax,
                Teuchos::RCP<Teuchos::ParameterList> belos_params, scalapack::Context const &context)
@@ -43,14 +78,8 @@ Solver::Solver(Geometry *geometry, std::shared_ptr<Excitation const> incWave, in
 #endif
 
 void Solver::populate() {
-  auto const N = geometry->scatterer_size();
-  S.resize(N, N);
-  Q.resize(N);
-
-  if(solverMethod == O3DSolverIndirect)
-    populateIndirect();
-  else // Default
-    populateDirect();
+  assert(solverMethod == O3DSolverIndirect);
+  populateIndirect();
 }
 
 void Solver::populateDirect() {
@@ -92,6 +121,9 @@ void Solver::populateDirect() {
 }
 
 void Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const {
+  // If the context is invalid, we cannot ensure that this proc will receive the solution.
+  // This context is the only one we have, and what we need is a context where the solution exists
+  // or can be computed. We do not have that context.
   if(not context().is_valid())
     throw std::runtime_error("Scalapack context is invalid");
   solveLinearSystem(S, Q, X_sca_);
@@ -147,11 +179,12 @@ Vector<t_complex> Solver::solveInternal(Vector<t_complex> const &scattered) cons
 }
 
 void Solver::populateIndirect() {
-  if(result_FF)
-    Q = local_source_vector(*geometry, incWave, result_FF->internal_coef);
-  else
-    Q = source_vector(*geometry, incWave);
-  S = preconditioned_scattering_matrix(*geometry, incWave);
+  Q = source_vector(*geometry, incWave);
+#ifdef OPTIMET_MPI
+  Q = distributed_source_vector(Q, context(), block_size());
+#endif
+
+  S = preconditioned_scattering_matrix(*geometry, incWave, context(), block_size());
 }
 
 void Solver::update(Geometry *geometry_, std::shared_ptr<Excitation const> incWave_, long nMax_) {
@@ -195,32 +228,24 @@ solveLinearSystem(Solver const &solver, scalapack::Matrix<SCALARA> const &A,
     throw std::runtime_error("Error encountered while solving the linear system");
   return std::get<0>(result);
 }
+
 void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_complex> const &b,
                                         Vector<t_complex> &x, mpi::Communicator const &comm) const {
-  // scalapack parameters: matrix size, grid of processors, block size
-  scalapack::Sizes const size{static_cast<t_uint>(A.rows()), static_cast<t_uint>(A.cols())};
+  auto const N = 2 * (HarmonicsIterator::max_flat(nMax) - 1) * geometry->objects.size();
+  scalapack::Matrix<t_complex> Aparallel(context(), {N, N}, block_size());
+  if(A.size() > 0)
+    Aparallel.local() = A;
+  scalapack::Matrix<t_complex> bparallel(context(), {N, 1}, block_size());
+  if(bparallel.local().size() > 0)
+    bparallel.local() = b;
 
-  // "serial" version to distribute from A to root.
-  auto const serial_context = context().serial();
-  auto const nrows = serial_context.is_valid() ? A.rows() : 0;
-  auto const ncols = serial_context.is_valid() ? A.cols() : 0;
-  assert(A.rows() == b.rows());
-  Eigen::Map<Matrix<t_complex> const> const amap(A.data(), nrows, ncols);
-  Eigen::Map<Matrix<t_complex> const> const bmap(b.data(), nrows, ncols != 0 ? 1 : 0);
-  scalapack::Matrix<t_complex const *> Aserial(amap, serial_context, size, block_size());
-  scalapack::Matrix<t_complex const *> bserial(bmap, Aserial.context(), {size.rows, 1},
-                                               block_size());
-  if(context().size() == 1) {
-    auto const X = ::optimet::solveLinearSystem(*this, Aserial, bserial, comm);
-    x = context().broadcast(X.local(), 0, 0);
-  } else {
-    // Transfer to grid
-    auto Aparallel = Aserial.transfer_to(context(), block_size());
-    auto bparallel = bserial.transfer_to(context(), block_size());
-    auto const X = ::optimet::solveLinearSystem(*this, Aparallel, bparallel, comm);
-    auto Xserial = X.transfer_to(Aserial.context(), block_size());
-    x = context().broadcast(Xserial.local(), 0, 0);
-  }
+  // Now the actual work
+  auto Xparallel = optimet::solveLinearSystem(*this, Aparallel, bparallel, comm);
+  // Transfer back to root
+  scalapack::Matrix<t_complex> Xserial(context().serial(), {N, 1}, {N, 1});
+  Xparallel.transfer_to(context(), Xserial);
+  // Broadcast from root
+  x = context().broadcast(Xserial.local(), 0, 0);
 }
 #endif
 
@@ -326,7 +351,8 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
   }
 
   scalapack::Matrix<t_complex> distributed_matrix(context, linear_matrix.sizes(), blocks);
-  linear_matrix.transfer_to(distributed_matrix);
+
+  linear_matrix.transfer_to(context, distributed_matrix);
   return distributed_matrix.local();
 }
 #endif

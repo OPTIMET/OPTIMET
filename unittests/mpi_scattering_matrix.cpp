@@ -70,9 +70,9 @@ void check(Geometry const &geometry, std::shared_ptr<Excitation const> excitatio
   // Check the local matrices are identical
   REQUIRE(parallel.local().rows() == parallel_local.rows());
   REQUIRE(parallel.local().cols() == parallel_local.cols());
-  CAPTURE(parallel.local());
-  CAPTURE(parallel_local);
   CHECK(parallel.local().isApprox(parallel_local));
+  if(context.size() == 1)
+    CHECK(parallel.local().isApprox(serial.local()));
 }
 
 TEST_CASE("Scattering matrix without remainder") {
@@ -134,4 +134,45 @@ TEST_CASE("Very small number of objects") {
   auto const cell = fcc_cell();
   auto input = fcc_system(std::make_tuple(world.size() - 1, 1, 1), length, scatterer);
   check(std::get<0>(input), std::get<1>(input));
+}
+
+TEST_CASE("Distributed source vector") {
+  mpi::Communicator world;
+  auto const nHarmonics = 5;
+  auto const scatterer = default_scatterer(nHarmonics);
+  auto const length = default_length();
+  auto const input = fcc_system(std::make_tuple(world.size(), 2, 1), length, scatterer);
+
+  scalapack::Context context = scalapack::Context::Squarest();
+  scalapack::Sizes const blocks = {16, 16};
+
+  // Compute matrix in parallel
+  auto const parallel_matrix =
+      preconditioned_scattering_matrix(std::get<0>(input), std::get<1>(input), context, blocks);
+  auto const serial_matrix =
+      preconditioned_scattering_matrix(std::get<0>(input), std::get<1>(input));
+
+  Vector<t_complex> const serial_vector = Vector<t_complex>::Random(serial_matrix.rows());
+  auto const parallel_vector = distributed_source_vector(serial_vector, context, blocks);
+
+  t_uint const N(serial_matrix.rows());
+  scalapack::Matrix<t_complex> sca_matrix(context, {N, N}, blocks);
+  CHECK(sca_matrix.local().rows() == parallel_matrix.rows());
+  CHECK(sca_matrix.local().cols() == parallel_matrix.cols());
+  sca_matrix.local() = parallel_matrix;
+  scalapack::Matrix<t_complex> sca_vector(context, {N, 1}, blocks);
+  CHECK(sca_vector.local().size() == parallel_vector.size());
+  sca_vector.local() = parallel_vector;
+
+  scalapack::Matrix<t_complex> sca_result(context, {N, 1}, blocks);
+  pdgemm(1e0, sca_matrix, sca_vector, 0, sca_result);
+
+  CHECK(sca_result.local().rows() ==
+        scalapack::Matrix<t_complex>::local_rows(context, {N, 1}, blocks, {0, 0}));
+  CHECK(sca_result.local().cols() ==
+        scalapack::Matrix<t_complex>::local_cols(context, {N, 1}, blocks, {0, 0}));
+  auto const result = gather_all_source_vector(sca_result);
+  REQUIRE(result.rows() == N);
+  REQUIRE(result.cols() == 1);
+  REQUIRE(result.isApprox(serial_matrix * serial_vector));
 }

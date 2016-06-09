@@ -129,5 +129,38 @@ void pdgemm<std::complex<double>>(std::complex<double> alpha,
                                   Matrix<std::complex<double> const *> const &b,
                                   std::complex<double> beta, Matrix<std::complex<double> *> &c,
                                   char opa, char opb);
+
+template <class SCALAR>
+Matrix<SCALAR *> map_matrix(optimet::Matrix<SCALAR> &matrix, Context const &context,
+                            Sizes const &sizes, Sizes const &blocks) {
+  Eigen::Map<optimet::Matrix<SCALAR>> const map(matrix.data(), matrix.rows(), matrix.cols());
+  return Matrix<SCALAR *>(map, context, sizes, blocks);
+}
+template <class SCALAR>
+Matrix<SCALAR const *> map_matrix(optimet::Matrix<SCALAR> const &matrix, Context const &context,
+                                  Sizes const &sizes, Sizes const &blocks) {
+  Eigen::Map<optimet::Matrix<SCALAR> const> const map(matrix.data(), matrix.rows(), matrix.cols());
+  return Matrix<SCALAR const*>(map, context, sizes, blocks);
+}
+template <class SCALAR>
+Matrix<SCALAR *> map_matrix(optimet::Vector<SCALAR> &matrix, Context const &context,
+                            Sizes const &sizes, Sizes const &blocks) {
+  auto const nrows = Matrix<SCALAR>::local_rows(context, sizes, blocks, {0, 0});
+  auto const ncols = Matrix<SCALAR>::local_cols(context, sizes, blocks, {0, 0});
+  if(nrows * ncols != matrix.size())
+    throw std::runtime_error("Incorrect local size");
+  Eigen::Map<optimet::Matrix<SCALAR>> const map(matrix.data(), nrows, ncols);
+  return Matrix<SCALAR *>(map, context, sizes, blocks);
+}
+template <class SCALAR>
+Matrix<SCALAR const *> map_matrix(optimet::Vector<SCALAR> const &matrix, Context const &context,
+                                  Sizes const &sizes, Sizes const &blocks) {
+  auto const nrows = Matrix<SCALAR>::local_rows(context, sizes, blocks, {0, 0});
+  auto const ncols = Matrix<SCALAR>::local_cols(context, sizes, blocks, {0, 0});
+  if(nrows * ncols != matrix.size())
+    throw std::runtime_error("Incorrect local size");
+  Eigen::Map<optimet::Matrix<SCALAR> const> const map(matrix.data(), nrows, ncols);
+  return Matrix<SCALAR const *>(map, context, sizes, blocks);
+}
 } // scalapack
 } // optimet

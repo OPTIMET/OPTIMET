@@ -104,7 +104,7 @@ gmres_linear_system(Matrix<SCALARA> const &A, Matrix<SCALARB> const &b,
   // problem->setRightPrec(M);
   // Tell the solver what problem you want to solve.
   if(not problem->setProblem())
-    throw std::runtime_error("WTF");
+    throw std::runtime_error("Could not setup up Belos problem");
   solver->setProblem(problem);
   // Attempt to solve the linear system.  result == Belos::Converged
   // means that it was solved to the desired tolerance.  This call

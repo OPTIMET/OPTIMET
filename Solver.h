@@ -10,6 +10,7 @@
 #include "mpi/Communicator.h"
 #include "scalapack/Context.h"
 #include "scalapack/Parameters.h"
+#include "scalapack/Matrix.h"
 #include <complex>
 #include <exception>
 #include <memory>
@@ -187,6 +188,16 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
                                                    std::shared_ptr<Excitation const> incWave,
                                                    scalapack::Context const &context,
                                                    scalapack::Sizes const &blocks);
+//! Distributes the source vectors
+Vector<t_complex> distributed_source_vector(Vector<t_complex> const &input,
+                                            scalapack::Context const &context,
+                                            scalapack::Sizes const &blocks);
+//! Gather the distributed vector into a single vector
+Vector<t_complex> gather_all_source_vector(t_uint n, Vector<t_complex> const &input,
+                                           scalapack::Context const &context,
+                                           scalapack::Sizes const &blocks);
+//! Gather the distributed vector into a single vector
+Vector<t_complex> gather_all_source_vector(scalapack::Matrix<t_complex> const &matrix);
 
 #ifdef OPTIMET_MPI
 //! \brief Broadcast data from a proc in the context to procs outside the context
