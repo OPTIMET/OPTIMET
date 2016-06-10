@@ -48,6 +48,8 @@ TEST_CASE("Add scatterers to geometry") {
 }
 
 TEST_CASE("Two spheres") {
+  auto const context = scalapack::Context().split(1, scalapack::global_size());
+
   Geometry geometry;
   // spherical coords, ε, μ, radius, nmax
   auto const nHarmonics = 5;
@@ -64,7 +66,7 @@ TEST_CASE("Two spheres") {
   excitation->populate();
   geometry.update(excitation);
 
-  Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
+  Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics, context);
 
   auto const nb = 2 * nHarmonics * (nHarmonics + 2);
   CHECK(solver.S.rows() == solver.S.cols());
