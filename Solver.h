@@ -111,10 +111,6 @@ public:
   Vector<t_complex> solveInternal(Vector<t_complex> const &X_sca_) const;
 
   scalapack::Context context() const { return context_; }
-  Solver &context(scalapack::Context const &c) {
-    context_ = c;
-    return *this;
-  }
   scalapack::Sizes const &block_size() const { return block_size_; }
   Solver &block_size(scalapack::Sizes const &c) {
     if(c.rows != c.cols)
