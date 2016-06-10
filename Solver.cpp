@@ -238,7 +238,7 @@ void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_com
                                         Vector<t_complex> &x, mpi::Communicator const &comm) const {
   auto const N = 2 * (HarmonicsIterator::max_flat(nMax) - 1) * geometry->objects.size();
   scalapack::Matrix<t_complex> Aparallel(context(), {N, N}, block_size());
-  if(A.size() > 0)
+  if(Aparallel.size() > 0)
     Aparallel.local() = A;
   scalapack::Matrix<t_complex> bparallel(context(), {N, 1}, block_size());
   if(bparallel.local().size() > 0)
@@ -247,10 +247,7 @@ void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_com
   // Now the actual work
   auto Xparallel = optimet::solveLinearSystem(*this, Aparallel, bparallel, comm);
   // Transfer back to root
-  scalapack::Matrix<t_complex> Xserial(context().serial(), {N, 1}, {N, 1});
-  Xparallel.transfer_to(context(), Xserial);
-  // Broadcast from root
-  x = context().broadcast(Xserial.local(), 0, 0);
+  x = gather_all_source_vector(Xparallel);
 }
 #endif
 
