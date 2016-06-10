@@ -57,7 +57,8 @@ fcc_system(t_int const &N, t_real length, Scatterer const &scatterer) {
       }
 
   // Create excitation
-  Spherical<t_real> const vKinc{2 * consPi / default_wavelength(), 90 * consPi / 180.0, 90 * consPi / 180.0};
+  Spherical<t_real> const vKinc{2 * consPi / default_wavelength(), 90 * consPi / 180.0,
+                                90 * consPi / 180.0};
   SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
   auto const excitation =
       std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, scatterer.nMax);
@@ -107,10 +108,12 @@ void solver(benchmark::State &state) {
   mpi::Communicator world;
   auto const nHarmonics = state.range_y();
   auto input = fcc_system(state.range_x(), default_length(), default_scatterer(nHarmonics));
+  auto const context = optimet::scalapack::Context::Squarest();
 #ifdef OPTIMET_BELOS
-  Solver solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics, parameters);
+  Solver solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics, context,
+                parameters);
 #else
-  Solver solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics);
+  Solver solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics, context);
 #endif
   Result result(&std::get<0>(input), std::get<1>(input), nHarmonics);
   while(state.KeepRunning()) {

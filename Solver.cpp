@@ -55,7 +55,7 @@ Vector<t_complex> gather_all_source_vector(scalapack::Matrix<t_complex> const &m
 
 #if defined(OPTIMET_BELOS)
 Solver::Solver(Geometry *geometry, std::shared_ptr<Excitation const> incWave, int method, long nMax,
-               Teuchos::RCP<Teuchos::ParameterList> belos_params, scalapack::Context const &context)
+               scalapack::Context const &context, Teuchos::RCP<Teuchos::ParameterList> belos_params)
     : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
       belos_params_(belos_params), context_(context), block_size_{64, 64}
 

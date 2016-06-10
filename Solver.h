@@ -40,8 +40,8 @@ public:
    */
   Solver(
       Geometry *geometry_, std::shared_ptr<Excitation const> incWave_, int method_, long nMax_,
-      Teuchos::RCP<Teuchos::ParameterList> belos_params = Teuchos::rcp(new Teuchos::ParameterList),
-      scalapack::Context const &context = scalapack::Context::Squarest());
+      scalapack::Context const &context = scalapack::Context::Squarest(),
+      Teuchos::RCP<Teuchos::ParameterList> belos_params = Teuchos::rcp(new Teuchos::ParameterList));
 #elif defined(OPTIMET_MPI)
   /**
    * Initialization constructor for the Solver class.

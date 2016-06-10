@@ -28,7 +28,7 @@ int Simulation::run() {
 #if defined(OPTIMET_BELOS)
   optimet::scalapack::Context context(run.parallel_params.grid);
   optimet::Solver solver(&(run.geometry), run.excitation, O3DSolverIndirect, run.nMax,
-                         run.belos_params, context);
+                         context, run.belos_params);
   solver.block_size({run.parallel_params.block_size, run.parallel_params.block_size});
 #elif defined(OPTIMET_MPI)
   optimet::scalapack::Context context(run.parallel_params.grid);
