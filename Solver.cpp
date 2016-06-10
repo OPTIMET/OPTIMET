@@ -44,12 +44,13 @@ Vector<t_complex> gather_all_source_vector(t_uint n, Vector<t_complex> const &in
   return context.broadcast(result.local(), 0, 0);
 }
 Vector<t_complex> gather_all_source_vector(scalapack::Matrix<t_complex> const &matrix) {
-  if(matrix.local().cols() == 0)
-    return gather_all_source_vector(matrix.rows(), Vector<t_complex>::Zero(0), matrix.context(),
-                                    matrix.blocks());
-  if(matrix.local().cols() != 1)
-    throw std::runtime_error("Expected vector as input");
-  return gather_all_source_vector(matrix.rows(), matrix.local(), matrix.context(), matrix.blocks());
+  scalapack::Matrix<t_complex> result(matrix.context().serial(), {matrix.rows(), 1},
+                                      {matrix.rows(), 1});
+  matrix.transfer_to(matrix.context(), result);
+  auto const result_vector = matrix.context().broadcast(result.local(), 0, 0);
+  if(result_vector.size() == 0)
+    return Vector<t_complex>::Zero(0);
+  return result_vector;
 }
 #endif
 
