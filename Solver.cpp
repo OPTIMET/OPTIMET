@@ -208,7 +208,7 @@ void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> con
   if(belos_parameters()->get<std::string>("Solver", "scalapack") != "eigen")
     solveLinearSystemScalapack(A, b, x, comm);
   else
-#elif OPTIMET_MPI
+#elif defined(OPTIMET_MPI)
   if(scalapack::global_size() > 1)
     solveLinearSystemScalapack(A, b, x, comm);
   else
