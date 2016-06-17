@@ -78,7 +78,8 @@ constexpr t_real default_length() { return 2000e-9; }
 void problem_setup(benchmark::State &state) {
   auto const range = std::make_tuple(state.range_x(), state.range_x(), state.range_x());
   auto const nHarmonics = state.range_y();
-  auto input = fcc_system(range, default_length(), default_scatterer(nHarmonics));
+  auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
+  auto input = fcc_system(range, length, default_scatterer(nHarmonics));
 
   while(state.KeepRunning())
     Solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics);
@@ -89,7 +90,8 @@ void problem_setup(benchmark::State &state) {
 void solver(benchmark::State &state) {
   auto const range = std::make_tuple(state.range_x(), state.range_x(), state.range_x());
   auto const nHarmonics = state.range_y();
-  auto input = fcc_system(range, default_length(), default_scatterer(nHarmonics));
+  auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
+  auto input = fcc_system(range, length, default_scatterer(nHarmonics));
   Solver solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics);
   Result result(&std::get<0>(input), std::get<1>(input), nHarmonics);
 
@@ -106,7 +108,8 @@ void solver(benchmark::State &state) {
 void solver(benchmark::State &state) {
   mpi::Communicator world;
   auto const nHarmonics = state.range_y();
-  auto input = fcc_system(state.range_x(), default_length(), default_scatterer(nHarmonics));
+  auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
+  auto input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
 #ifdef OPTIMET_BELOS
   Solver solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics, parameters);
 #else
