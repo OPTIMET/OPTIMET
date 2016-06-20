@@ -133,7 +133,11 @@ void Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const {
 void Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
                    mpi::Communicator const &comm) const {
   assert(comm.size() >= context().size());
+#ifdef OPTIMET_MPI
   auto const splitcomm = comm.split(context().is_valid());
+#else
+  auto const &splitcomm = comm;
+#endif
   if(context().is_valid()) {
     solveLinearSystem(S, Q, X_sca_, splitcomm);
     if(solverMethod == O3DSolverIndirect)
