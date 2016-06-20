@@ -63,19 +63,11 @@ Solver::Solver(Geometry *geometry, std::shared_ptr<Excitation const> incWave, in
 {
   populate();
 }
-#elif defined(OPTIMET_MPI)
+#else
 Solver::Solver(Geometry *geometry, std::shared_ptr<Excitation const> incWave, int method, long nMax,
                scalapack::Context const &context)
     : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
       context_(context), block_size_{64, 64}
-
-{
-  populate();
-}
-#else
-Solver::Solver(Geometry *geometry, std::shared_ptr<Excitation const> incWave, int method, long nMax)
-    : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
-      block_size_{64, 64}
 
 {
   populate();
