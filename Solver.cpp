@@ -353,6 +353,13 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
   linear_matrix.transfer_to(context, distributed_matrix);
   return distributed_matrix.local();
 }
+#else
+Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
+                                                   std::shared_ptr<Excitation const> incWave,
+                                                   scalapack::Context const &,
+                                                   scalapack::Sizes const &) {
+  return preconditioned_scattering_matrix(geometry, incWave);
+}
 #endif
 
 Vector<t_complex> source_vector(std::vector<Scatterer>::const_iterator first,
