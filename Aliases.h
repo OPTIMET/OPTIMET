@@ -1,7 +1,7 @@
 #ifndef ALIASES_H_
 #define ALIASES_H_
 
-/** @file aliases.h
+/** @file Aliases.h
  * Header file containing common aliases used in the code.
  * Aliases are implemented as preprocessor defines and start with O3D.
  * Alias groups:

@@ -1,38 +1,88 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(Optimet3D)
+# Location of extra cmake includes for the project
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+# Downloads and installs GreatCMakeCookOff
+# It contains a number of cmake recipes
+include(LookUp-GreatCMakeCookOff)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
+# Hunter helps us download stuff automatically
+include(AddHunter)
+set(HUNTER_ROOT ${CMAKE_BINARY_DIR}/hunter_root)
+initialize_hunter(HUNTER_ROOT ${HUNTER_ROOT} LOCAL)
 
-find_package(GSL REQUIRED)
-find_package(HDF5 REQUIRED)
-find_package(Armadillo REQUIRED)
-find_package(F2C REQUIRED)
+project(Optimet3D CXX C)
 
-include_directories(${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${ARMADILLO_INCLUDE_DIRS} ${F2C_INCLUDE_DIRS})
+option(dompi "Enable mpi" off)
+option(dotesting "Enable testing" on)
+option(dobenchmarks "Enable Benchmarking" on)
 
-file(GLOB SRC ${CMAKE_SOURCE_DIR}/*.c* ${CMAKE_SOURCE_DIR}/pugi/*.c*)
+# looks for all dependencies used by optimet
+include(dependencies)
 
-add_executable(Optimet3D ${SRC})
-target_link_libraries(Optimet3D ${GSL_LIBRARIES} ${HDF5_LIBRARIES} ${ARMADILLO_LIBRARIES} ${F2C_LIBRARIES})
-
+# adds flags for compiling with c++11
 include(AddCPP11Flags)
 
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doxygen.config
-    ${CMAKE_CURRENT_BINARY_DIR}/doxygen.config @ONLY)
-  add_custom_target(doc ${DOXYGEN_EXECUTABLE}
-    ${CMAKE_CURRENT_BINARY_DIR}/doxygen.config
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating API documentation with Doxygen" VERBATIM)
-endif(DOXYGEN_FOUND)
+include_directories(${PROJECT_SOURCE_DIR})
+include_directories(SYSTEM
+  ${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS}
+  ${F2C_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR}
+  ${Belos_INCLUDE_DIRS})
 
-if(EXISTS "${PROJECT_SOURCE_DIR}/test-data/OneParticle.h5")
+# list all object files
+file(GLOB SRC *.c*  pugi/*.c*)
+list(REMOVE_ITEM SRC main.cpp)
+if(dompi)
+  set(OPTIMET_MPI TRUE)
+  file(GLOB parallel_files scalapack/*.cpp mpi/*.cpp)
+  list(APPEND SRC ${parallel_files})
+  # Add fortran interface for blacs and scalapack
+  include(DetectFortran)
+  DetectFortran("${PROJECT_BINARY_DIR}/include/optimet/OptimetFC.h")
+  include_directories(SYSTEM ${MPI_CXX_INCLUDE_PATH})
+  # We need to check integer architecture
+  include(DetectIntegerArchitecture)
+  DetectIntegerArchitecture(OPTIMET)
+endif()
+
+# configure a file with some build defaults
+include_directories("${PROJECT_BINARY_DIR}/include/optimet")
+configure_file(Types.in.h "${PROJECT_BINARY_DIR}/include/optimet/Types.h")
+
+# add a library that can be linked against in unittests as well
+add_library(optilib STATIC ${SRC})
+if(TARGET Boost::boost)
+  target_link_libraries(optilib Boost::boost)
+endif()
+set(library_dependencies
+  ${GSL_LIBRARIES} ${BOOST_LIBRARIES} ${HDF5_LIBRARIES} ${F2C_LIBRARIES}
+  ${Belos_LIBRARIES}
+)
+if(dompi)
+  list(APPEND library_dependencies ${MPI_LIBRARIES} ${SCALAPACK_LIBRARIES})
+endif()
+list(APPEND library_dependencies ${F2C_LIBRARIES})
+
+# main executable
+add_executable(Optimet3D main.cpp)
+target_link_libraries(Optimet3D optilib ${library_dependencies})
+
+# all testing stuff below
+if(dotesting)
   enable_testing()
-  include(regression)
-else()
-  message(WARNING "The git submodule test-data has not been downloaded.\n"
-    "Do `git submodule update --init --recursive` to do so now.\n"
-    "Until then, tests that need this data will be disabled")
+
+  include(AddCatchTest)
+  add_subdirectory(unittests)
+  if(EXISTS "${PROJECT_SOURCE_DIR}/test-data/OneParticle.h5")
+    include(regression)
+  else()
+    message(WARNING "The git submodule test-data has not been downloaded.\n"
+      "Do `git submodule update --init --recursive` to do so now.\n"
+      "Until then, tests that need this data will be disabled")
+  endif()
+endif()
+
+if(dobenchmarks)
+  include(AddBenchmark)
+  add_subdirectory(benchmarks)
 endif()

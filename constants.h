@@ -8,22 +8,37 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
-#include <complex>
+#include "Types.h"
 
-extern const double consPi;      /**< The PI constant. */
-extern const double consEpsilon0;  /**< The permittivity of vacuum in <SI>. */
-extern const double consMu0;     /**< The permeability of vacuum in <SI>. */
+extern const optimet::t_real consPi;       /**< The PI constant. */
+extern const optimet::t_real consEpsilon0; /**< The permittivity of vacuum in <SI>. */
+extern const optimet::t_real consMu0;      /**< The permeability of vacuum in <SI>. */
 
-extern const double consC;      /**< The speed of light in vacuum in <SI>. */
+extern const optimet::t_real consC; /**< The speed of light in vacuum in <SI>. */
 
-extern const double consFrnmTom;  /**< Conversion from nm to m in <SI>. */
+extern const optimet::t_real consFrnmTom; /**< Conversion from nm to m in <SI>. */
 
-extern const std::complex<double> consC1;   /**< The complex number 1. */
-extern const std::complex<double> consCi;   /**< The complex number i. */
-extern const std::complex<double> consCmi;  /**< The complex number -i. */
-extern const std::complex<double> consCm1;  /**< The complex number -1. */
-extern const std::complex<double> consC0;   /**< The complex number 0. */
+extern const optimet::t_complex consC1;  /**< The complex number 1. */
+extern const optimet::t_complex consCi;  /**< The complex number i. */
+extern const optimet::t_complex consCmi; /**< The complex number -i. */
+extern const optimet::t_complex consCm1; /**< The complex number -1. */
+extern const optimet::t_complex consC0;  /**< The complex number 0. */
 
-extern const double errEpsilon;     /**< The predefined epsilon error value for comparison of floats. */
+extern const optimet::t_real errEpsilon; /**< The predefined epsilon error value for
+                                   comparison of floats. */
+namespace optimet {
+namespace constant {
+extern const t_real pi;
+extern const t_real epsilon0; /**< The permittivity of vacuum in <SI>. */
+extern const t_real mu0;      /**< The permeability of vacuum in <SI>. */
+extern const t_real c;        /**< The speed of light in vacuum in <SI>. */
+
+extern const t_real from_nm_to_m; /**< Conversion from nm to m in <SI>. */
+
+extern const t_complex i; /**< The complex number 1. */
+
+extern const t_real tolerance;
+}
+}
 
 #endif /* CONSTANTS_H_ */
