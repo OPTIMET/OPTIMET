@@ -1,10 +1,11 @@
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_
 
-#include <vector>
-#include "Types.h"
-#include "Scatterer.h"
 #include "Excitation.h"
+#include "Scatterer.h"
+#include "Types.h"
+#include <vector>
+#include <memory>
 
 /**
  * The Geometry class implements a list of objects and properties of the medium.
@@ -74,11 +75,9 @@ public:
    * @param omega_ the angular frequency of the simulation.
    * @param objectIndex_ the index of the object for which T_j is calculated.
    * @param nMax_ the maximum value of the n iterator.
-   * @param T_local_ the return value as the local T_j scattering matrix.
-   * @return 0 if successful, 1 otherwise.
    */
   optimet::Matrix<optimet::t_complex>
-  getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet::t_uint nMax_);
+  getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet::t_uint nMax_) const;
 
   int getIaux(double omega_, int objectIndex_, int nMax_, std::complex<double> *I_aux_);
 
@@ -112,18 +111,17 @@ public:
    * @param Q_SH_local_ the return value of the local SH source vector.
    * @return 0 if successful, 1 otherwise.
    */
-  int getSourceLocal(int objectIndex_, Excitation const *incWave_,
-                     std::complex<double> *internalCoef_FF_, int nMax_,
-                     std::complex<double> *Q_SH_local_) const;
+  int getSourceLocal(int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_,
+                     int nMax_, std::complex<double> *Q_SH_local_) const;
 
-  int setSourcesSingle(Excitation const *incWave_, std::complex<double> *internalCoef_FF_,
-                       int nMax_);
+  int setSourcesSingle(std::shared_ptr<optimet::Excitation const> incWave_,
+                       std::complex<double> const *internalCoef_FF_, int nMax_);
 
   /**
    * Updates the Geometry object to a new Excitation.
    * @param lambda_ the new wavelength.
    */
-  void update(Excitation *incWave_);
+  void update(std::shared_ptr<optimet::Excitation const> incWave_);
 
   /**
    * Updates the Geometry object by modifying the radius of an object.
@@ -137,6 +135,9 @@ public:
    * Rebuilds a structure based on the new updated Radius.
    */
   void rebuildStructure();
+
+  //! Size of the scattering vector
+  optimet::t_uint scatterer_size() const;
 
 protected:
   //! Validate last added sphere

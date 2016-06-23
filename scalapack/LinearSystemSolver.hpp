@@ -24,14 +24,15 @@ namespace optimet {
 namespace scalapack {
 
 template <class SCALAR>
-std::tuple<Matrix<SCALAR>, int>
+std::tuple<typename Matrix<SCALAR>::ConcreteMatrix, int>
 general_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b) {
+  typedef typename Matrix<SCALAR>::ConcreteMatrix ConcreteMatrix;
   if(not(A.context().is_valid() and b.context().is_valid()))
-    return std::tuple<Matrix<SCALAR>, int>{b, 0};
-  Matrix<SCALAR> result = b;
-  Matrix<SCALAR> Acopy = A;
+    return std::tuple<ConcreteMatrix, int>{ConcreteMatrix(b.context(), b.sizes(), b.blocks()), 0};
+  ConcreteMatrix result(b.local(), b.context(), b.sizes(), b.blocks());
+  ConcreteMatrix Acopy(A.local(), A.context(), A.sizes(), A.blocks());
   auto info = general_linear_system_inplace(Acopy, result);
-  return std::tuple<Matrix<SCALAR>, int>{std::move(result), std::move(info)};
+  return std::tuple<ConcreteMatrix, int>{std::move(result), std::move(info)};
 }
 
 namespace {
@@ -47,7 +48,8 @@ OPTIMET_MACRO(c, C, std::complex<float>);
 OPTIMET_MACRO(z, Z, std::complex<double>);
 #undef OPTIMET_MACRO
 
-template <class SCALAR> void sane_input(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b) {
+template <class SCALARA, class SCALARB>
+void sane_input(Matrix<SCALARA> const &A, Matrix<SCALARB> const &b) {
   if(A.rows() != A.cols())
     throw std::runtime_error("Matrix should be square");
   if(A.cols() != b.rows())
@@ -73,33 +75,36 @@ template <class SCALAR> int general_linear_system_inplace(Matrix<SCALAR> &A, Mat
 }
 
 #ifdef OPTIMET_BELOS
-template <class SCALAR>
-std::tuple<Matrix<SCALAR>, int>
-gmres_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b,
+template <class SCALARA, class SCALARB>
+std::tuple<typename Matrix<SCALARA>::ConcreteMatrix, int>
+gmres_linear_system(Matrix<SCALARA> const &A, Matrix<SCALARB> const &b,
                     Teuchos::RCP<Teuchos::ParameterList> const &parameters,
                     mpi::Communicator const &comm) {
+  typedef typename Matrix<SCALARA>::ConcreteMatrix ConcreteMatrix;
   sane_input(A, b);
   if(b.context() != A.context()) {
     auto const b_in_A = b.transfer_to(A.context());
     return gmres_linear_system(A, b_in_A, parameters, comm);
   }
+  if(A.size() == 0)
+    return std::tuple<ConcreteMatrix, int>{ConcreteMatrix(b.context(), b.sizes(), b.blocks()), 0};
   auto const splitcomm = comm.split(A.context().is_valid());
   if(not A.context().is_valid())
-    return std::tuple<Matrix<SCALAR>, int>{b, 0};
+    return std::tuple<ConcreteMatrix, int>{ConcreteMatrix(b.context(), b.sizes(), b.blocks()), 0};
   // Create the GMRES solver.
-  BelosSolverFactory<SCALAR> factory;
-  auto solver = factory.create("GMRES", parameters);
+  BelosSolverFactory<SCALARA> factory;
+  auto solver = factory.create(parameters->get("Solver", "GMRES"), parameters);
   // Create a LinearProblem struct with the problem to solve.
   // A, X, B, and M are passed by (smart) pointer, not copied.
-  Teuchos::RCP<BelosOperator<SCALAR>> Aptr = Teuchos::rcp(new BelosOperator<SCALAR>(A));
+  Teuchos::RCP<BelosOperator<SCALARA>> Aptr = Teuchos::rcp(new BelosOperator<SCALARA>(A));
   auto const X = tpetra_vector(b, splitcomm);
   auto const B = tpetra_vector(b, splitcomm);
-  Teuchos::RCP<BelosLinearProblem<SCALAR>> problem =
-      rcp(new BelosLinearProblem<SCALAR>(Aptr, X, B));
+  Teuchos::RCP<BelosLinearProblem<SCALARA>> problem =
+      rcp(new BelosLinearProblem<SCALARA>(Aptr, X, B));
   // problem->setRightPrec(M);
   // Tell the solver what problem you want to solve.
   if(not problem->setProblem())
-    throw std::runtime_error("WTF");
+    throw std::runtime_error("Could not setup up Belos problem");
   solver->setProblem(problem);
   // Attempt to solve the linear system.  result == Belos::Converged
   // means that it was solved to the desired tolerance.  This call
@@ -107,14 +112,14 @@ gmres_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b,
   int info = solver->solve() == Belos::Converged ? 0 : 1;
 
   auto const view = as_matrix(*X, b);
-  Matrix<SCALAR> result(b.context(), b.sizes(), b.blocks());
+  ConcreteMatrix result(b.context(), b.sizes(), b.blocks());
   result.local() = view.local();
-  return std::tuple<Matrix<SCALAR>, int>{std::move(result), std::move(info)};
+  return std::tuple<ConcreteMatrix, int>{std::move(result), std::move(info)};
 } // anonymous namespace
 
-template <class SCALAR>
-std::tuple<Matrix<SCALAR>, int>
-gmres_linear_system(Matrix<SCALAR> const &A, Matrix<SCALAR> const &b,
+template <class SCALARA, class SCALARB>
+std::tuple<typename Matrix<SCALARA>::ConcreteMatrix, int>
+gmres_linear_system(Matrix<SCALARA> const &A, Matrix<SCALARB> const &b,
                     mpi::Communicator const &comm) {
   // Make an empty new parameter list.
   Teuchos::RCP<Teuchos::ParameterList> solverParams = Teuchos::parameterList();

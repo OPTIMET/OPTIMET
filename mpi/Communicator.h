@@ -5,12 +5,12 @@
 
 #ifdef OPTIMET_MPI
 
-#include <mpi.h>
+#include "mpi/Collectives.hpp"
+#include "mpi/RegisteredTypes.h"
 #include <memory>
+#include <mpi.h>
 #include <type_traits>
 #include <vector>
-#include "mpi/RegisteredTypes.h"
-#include "mpi/Collectives.hpp"
 
 namespace optimet {
 namespace mpi {
@@ -80,6 +80,14 @@ public:
   decltype(optimet::mpi::all_gather(std::declval<T>(), std::declval<Communicator>()))
   all_gather(T const &value) const {
     return optimet::mpi::all_gather(value, *this);
+  }
+  //! Helper function for gathering
+  template <class T>
+  typename std::enable_if<std::is_fundamental<T>::value, T>::type
+  all_reduce(T const &value, MPI_Op operation) const {
+    T result;
+    MPI_Allreduce(&value, &result, 1, registered_type(value), operation, **this);
+    return result;
   }
 
   void barrier() const { return optimet::mpi::barrier(*this); }

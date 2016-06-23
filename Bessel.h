@@ -1,18 +1,17 @@
 #ifndef OPTIMET_BESSEL_H
 #define OPTIMET_BESSEL_H
 
-#include <vector>
-#include <tuple>
 #include <complex>
+#include <tuple>
+#include <vector>
 
 #include "constants.h"
 
 extern "C" {
-int zbesj_(const double *, const double *, const double *, const long int *,
+int zbesj_(const double *, const double *, const double *, const long int *, const long int *,
+           double *, double *, long int *, long int *);
+int zbesh_(const double *, const double *, const double *, const long int *, const long int *,
            const long int *, double *, double *, long int *, long int *);
-int zbesh_(const double *, const double *, const double *, const long int *,
-           const long int *, const long int *, double *, double *, long int *,
-           long int *);
 }
 
 namespace optimet {
@@ -45,15 +44,15 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
 bessel(const std::complex<double> &z, long int max_order) {
   // Calling FORTRAN functions from C/C++ expects the arguments to be pointers
   // to int/real which means they must be rvalues
-  static constexpr double order = 0.5;
-  static constexpr long int scaling = static_cast<long int>(Scaling) + 1;
-  static constexpr long int bessel_type = BesselType;
+  const double order = 0.5;
+  const long int scaling = Scaling ? 2 : 1;
+  const long int bessel_type = BesselType;
 
   std::vector<std::complex<double>> data(max_order + 1);
   std::vector<std::complex<double>> ddata(max_order + 1);
 
-  if (std::abs(z) <= errEpsilon) {
-    for (int i = 0; i <= max_order; i++)
+  if(std::abs(z) <= errEpsilon) {
+    for(int i = 0; i <= max_order; i++)
       data[i] = ddata[i] = std::complex<double>(0.0, 0.0);
   } else {
     const double zr = z.real();
@@ -67,50 +66,64 @@ bessel(const std::complex<double> &z, long int max_order) {
 
     long int zeroUnderflow, ierr;
 
-    if (BesselType == Bessel)
+    if(BesselType == Bessel)
       // Calculate the Bessel function of the first kind
-      zbesj_(&zr, &zi, &order, &scaling, &size, cyr.data(), cyi.data(),
-             &zeroUnderflow, &ierr);
+      zbesj_(&zr, &zi, &order, &scaling, &size, cyr.data(), cyi.data(), &zeroUnderflow, &ierr);
     else
       // Calculate the Hankel function of the first or second kind
-      zbesh_(&zr, &zi, &order, &scaling, &bessel_type, &size, cyr.data(),
-             cyi.data(), &zeroUnderflow, &ierr);
+      zbesh_(&zr, &zi, &order, &scaling, &bessel_type, &size, cyr.data(), cyi.data(),
+             &zeroUnderflow, &ierr);
 
-    if (ierr != 0)
-      throw std::range_error("Error computing Bessel/Hankel functions");
+    switch(ierr) {
+    case 0:
+      break;
+    case 1:
+      throw std::runtime_error("Incorrect input to Henkel/Bessel functions");
+      break;
+    case 2:
+      throw std::runtime_error("Overflow when computing to Henkel/Bessel functions");
+      break;
+    case 3:
+      throw std::runtime_error(
+          "Loss of significance: result is less than half of machine accuracy");
+      break;
+    case 4:
+      throw std::runtime_error("Complete loss of significance");
+      break;
+    case 5:
+      throw std::runtime_error("Algorithmic conditions not met");
+      break;
+    default:
+      throw std::runtime_error("Unknown error when computing Henkel/Bessel functions");
+      break;
+    }
 
     // Assemble the direct functions
     const std::complex<double> r = std::sqrt(consPi / (2.0 * z));
-    for (int i = 0; i <= max_order; i++)
+    for(int i = 0; i <= max_order; i++)
       data[i] = r * std::complex<double>(cyr[i], cyi[i]);
 
     // Assemble the derivative functions
-    for (int i = 0; i < max_order; i++)
+    for(int i = 0; i < max_order; i++)
       ddata[i] = consCm1 * data[i + 1] + ((double)i / z) * data[i];
 
     // The last derivative
-    ddata[max_order] = consCm1 * r * std::complex<double>(cyr[max_order + 1],
-                                                          cyi[max_order + 1]) +
+    ddata[max_order] = consCm1 * r * std::complex<double>(cyr[max_order + 1], cyi[max_order + 1]) +
                        ((double)max_order / z) * data[max_order];
   }
 
   return std::make_tuple(data, ddata);
 }
 
-static std::tuple<std::vector<std::complex<double>>,
-                  std::vector<std::complex<double>>>
-bessel(const std::complex<double> &z, enum BESSEL_TYPE besselType, bool scale,
-       long int nMax) {
-  switch (besselType) {
+static std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
+bessel(const std::complex<double> &z, enum BESSEL_TYPE besselType, bool scale, long int nMax) {
+  switch(besselType) {
   case Bessel:
-    return (scale) ? bessel<Bessel, true>(z, nMax)
-                   : bessel<Bessel, false>(z, nMax);
+    return (scale) ? bessel<Bessel, true>(z, nMax) : bessel<Bessel, false>(z, nMax);
   case Hankel1:
-    return (scale) ? bessel<Hankel1, true>(z, nMax)
-                   : bessel<Hankel1, false>(z, nMax);
+    return (scale) ? bessel<Hankel1, true>(z, nMax) : bessel<Hankel1, false>(z, nMax);
   case Hankel2:
-    return (scale) ? bessel<Hankel2, true>(z, nMax)
-                   : bessel<Hankel2, false>(z, nMax);
+    return (scale) ? bessel<Hankel2, true>(z, nMax) : bessel<Hankel2, false>(z, nMax);
   }
 }
 

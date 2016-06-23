@@ -1,13 +1,13 @@
-#include <iostream>
 #include "catch.hpp"
+#include <iostream>
 
-#include "Types.h"
+#include "Aliases.h"
 #include "Geometry.h"
 #include "Scatterer.h"
-#include "constants.h"
-#include "Tools.h"
 #include "Solver.h"
-#include "Aliases.h"
+#include "Tools.h"
+#include "Types.h"
+#include "constants.h"
 
 using namespace optimet;
 
@@ -23,8 +23,7 @@ TEST_CASE("Add scatterers to geometry") {
     CHECK(geometry.objects.front().vR.phi == Approx(0));
     CHECK(geometry.objects.front().elmag.epsilon_r.real() == Approx(1.1));
     CHECK(geometry.objects.front().elmag.epsilon_r.imag() == Approx(0));
-    CHECK(geometry.objects.front().elmag.epsilon.real() ==
-          Approx(1.1 * consEpsilon0));
+    CHECK(geometry.objects.front().elmag.epsilon.real() == Approx(1.1 * consEpsilon0));
     CHECK(geometry.objects.front().elmag.epsilon.imag() == Approx(0));
     CHECK(geometry.objects.front().elmag.mu_r.real() == Approx(1.2));
     CHECK(geometry.objects.front().elmag.mu_r.imag() == Approx(0));
@@ -32,8 +31,7 @@ TEST_CASE("Add scatterers to geometry") {
     CHECK(geometry.objects.front().elmag.mu.imag() == Approx(0));
     CHECK(geometry.objects.front().radius == Approx(0.5));
     CHECK(geometry.objects.front().nMax == 2);
-    CHECK(geometry.objects.front().sourceCoef.size() ==
-          2 * Tools::iteratorMax(2));
+    CHECK(geometry.objects.front().sourceCoef.size() == 2 * Tools::iteratorMax(2));
   }
 
   SECTION("Add second scatterer") {
@@ -45,8 +43,7 @@ TEST_CASE("Add scatterers to geometry") {
       CHECK(geometry.objects.back().vR.phi == Approx(0.0));
     }
     SECTION("Overlap -- touching")
-    CHECK_THROWS_AS(geometry.pushObject({{2, 0, 0}, {1.1e0, 1.2e0}, 0.5, 2}),
-                    std::runtime_error);
+    CHECK_THROWS_AS(geometry.pushObject({{2, 0, 0}, {1.1e0, 1.2e0}, 0.5, 2}), std::runtime_error);
   }
 }
 
@@ -60,14 +57,19 @@ TEST_CASE("Two spheres") {
 
   // Create excitation
   auto const wavelength = 14960e-9;
-  Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0,
-                                90 * consPi / 180.0};
+  Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
   SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
-  Excitation excitation{0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics};
-  excitation.populate();
-  geometry.update(&excitation);
+  auto const excitation =
+      std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
+  excitation->populate();
+  geometry.update(excitation);
 
-  Solver solver(&geometry, &excitation, O3DSolverIndirect, nHarmonics);
+#ifdef OPTIMET_MPI
+  auto const context = scalapack::Context().split(1, scalapack::global_size());
+#else
+  scalapack::Context const context;
+#endif
+  Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics, context);
 
   auto const nb = 2 * nHarmonics * (nHarmonics + 2);
   CHECK(solver.S.rows() == solver.S.cols());
@@ -75,12 +77,11 @@ TEST_CASE("Two spheres") {
   CHECK(solver.Q.size() == solver.S.cols());
 
   SECTION("Check transparent <==> identity") {
-    CHECK(solver.S.isApprox(
-        Matrix<>::Identity(solver.S.rows(), solver.S.cols())));
+    CHECK(solver.S.isApprox(Matrix<>::Identity(solver.S.rows(), solver.S.cols())));
   }
   SECTION("Check structure for only one transparent sphere") {
     geometry.objects.front() = {{0, 0, 0}, {10.0e0, 1.0e0}, 0.5, nHarmonics};
-    geometry.update(&excitation);
+    geometry.update(excitation);
     solver.update();
     CHECK(solver.S.topLeftCorner(nb, nb).isIdentity());
     CHECK(solver.S.bottomRightCorner(nb, nb).isIdentity());
@@ -90,7 +91,7 @@ TEST_CASE("Two spheres") {
   SECTION("Check structure for two identical spheres") {
     geometry.objects.front() = {{-1, 0, 0}, {10.0e0, 1.0e0}, 0.5, nHarmonics};
     geometry.objects.back() = {{1, 0, 0}, {10.0e0, 1.0e0}, 0.5, nHarmonics};
-    geometry.update(&excitation);
+    geometry.update(excitation);
     solver.update();
     CHECK(solver.S.topLeftCorner(nb, nb).isIdentity());
     CHECK(solver.S.bottomRightCorner(nb, nb).isIdentity());

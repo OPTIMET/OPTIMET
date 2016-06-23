@@ -62,14 +62,20 @@ public:
                 static_cast<int>(sizes.cols), static_cast<int>(blocks.rows),
                 static_cast<int>(blocks.cols), static_cast<int>(index.row),
                 static_cast<int>(index.col), static_cast<int>(local_leading())}} {
-    assert(local_rows(context, sizes, blocks, index) == matrix_.rows());
-    assert(local_cols(context, sizes, blocks, index) == matrix_.cols());
+    assert(blocks.rows > 0);
+    assert(blocks.cols > 0);
+#ifndef NDEBUG
+    auto const nrows = local_rows(context, sizes, blocks, index);
+    auto const ncols = local_cols(context, sizes, blocks, index);
+    assert(nrows == matrix_.rows());
+    assert(ncols == matrix_.cols());
+#endif
   }
   //! Constructs from any eigen matrix
   Matrix(Context const &context, Sizes sizes, Sizes blocks, Index index = {0, 0})
       : Matrix(EigenMatrix::Zero(local_rows(context, sizes, blocks, index),
                                  local_cols(context, sizes, blocks, index)),
-               context, sizes, blocks) {}
+               context, sizes, blocks, index) {}
 
   //! Gets the underlying local eigen matrix
   EigenMatrix &local() { return matrix_; }
@@ -129,7 +135,10 @@ public:
   t_uint size() const { return rows() * cols(); }
 
   //! Local leading dimension
-  t_uint local_leading() const { return EigenMatrix::IsRowMajor ? local().cols() : local().rows(); }
+  t_uint local_leading() const {
+    auto const result = EigenMatrix::IsRowMajor ? local().cols() : local().rows();
+    return std::max(result, static_cast<decltype(result)>(1));
+  }
 
   //! Global to local indices
   std::tuple<t_uint, t_uint, t_uint, t_uint> local_indices(t_uint i, t_uint j) const {
@@ -171,6 +180,7 @@ public:
   //! Number of local columns for given scalapack parameters
   static typename EigenMatrix::Index
   local_cols(Context const &context, Sizes size, Sizes blocks, Index index);
+
 protected:
   //! Associated blacs context
   Context context_;
@@ -184,6 +194,35 @@ protected:
   t_uint first_col() const { return static_cast<t_uint>(blacs_[7]); }
 };
 
+//! Creates a scalapack map of input matrix
+template <class SCALAR>
+Matrix<SCALAR *> map_matrix(optimet::Matrix<SCALAR> &matrix, Context const &context,
+                            Sizes const &sizes, Sizes const &blocks);
+//! Creates a scalapack map of input matrix
+template <class SCALAR>
+Matrix<SCALAR const *> map_cmatrix(optimet::Matrix<SCALAR> const &matrix, Context const &context,
+                                   Sizes const &sizes, Sizes const &blocks) {
+  return map_matrix(matrix, context, sizes, blocks);
+}
+//! Creates a scalapack map of input matrix
+template <class SCALAR>
+Matrix<SCALAR const *> map_matrix(optimet::Matrix<SCALAR> const &matrix, Context const &context,
+                                  Sizes const &sizes, Sizes const &blocks);
+//! Creates a scalapack map of input vector
+template <class SCALAR>
+Matrix<SCALAR *> map_matrix(optimet::Vector<SCALAR> &matrix, Context const &context,
+                            Sizes const &sizes, Sizes const &blocks);
+//! Creates a scalapack map of input vector
+template <class SCALAR>
+Matrix<SCALAR const *> map_matrix(optimet::Vector<SCALAR> const &matrix, Context const &context,
+                                  Sizes const &sizes, Sizes const &blocks);
+//! Creates a scalapack map of input matrix
+template <class SCALAR>
+Matrix<SCALAR const *> map_cmatrix(optimet::Vector<SCALAR> const &matrix, Context const &context,
+                                   Sizes const &sizes, Sizes const &blocks) {
+  return map_matrix(matrix, context, sizes, blocks);
+}
+
 //! Multiplies two matrices
 template <class SCALAR>
 void pdgemm(typename MatrixTraits<SCALAR>::Scalar alpha, Matrix<SCALAR> const &a,
@@ -192,6 +231,11 @@ void pdgemm(typename MatrixTraits<SCALAR>::Scalar alpha, Matrix<SCALAR> const &a
 //! Multiplies two matrices
 template <class SCALAR>
 void pdgemm(typename MatrixTraits<SCALAR>::Scalar alpha, Matrix<SCALAR> const &a,
+            Matrix<SCALAR const *> const &b, typename MatrixTraits<SCALAR>::Scalar beta,
+            Matrix<SCALAR *> &c, char opa = 'N', char opb = 'N');
+//! Multiplies two matrices
+template <class SCALAR>
+void pdgemm(typename MatrixTraits<SCALAR>::Scalar alpha, Matrix<SCALAR const *> const &a,
             Matrix<SCALAR const *> const &b, typename MatrixTraits<SCALAR>::Scalar beta,
             Matrix<SCALAR *> &c, char opa = 'N', char opb = 'N');
 }

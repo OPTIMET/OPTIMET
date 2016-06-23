@@ -1,10 +1,11 @@
 #ifndef OPTIMET_MPI_COLLECTIVES_HPP
 #define OPTIMET_MPI_COLLECTIVES_HPP
 
+#include "Types.h"
+#ifdef OPTIMET_MPI
 #include <mpi.h>
 #include <type_traits>
 #include <vector>
-#include "Types.h"
 
 namespace optimet {
 namespace mpi {
@@ -31,10 +32,17 @@ all_gather(T const &, Communicator const &);
 
 //! Broadcasts an eigen matrix
 template <class T> Matrix<T> broadcast(Matrix<T> const &, Communicator const &, t_uint);
+//! Broadcasts an eigen vector
+template <class T> Vector<T> broadcast(Vector<T> const &, Communicator const &, t_uint);
 //! Broadcasts an eigen matrix
 template <class MATRIX>
 typename std::enable_if<std::is_same<Matrix<typename MATRIX::Scalar>, MATRIX>::value, MATRIX>::type
 broadcast(Communicator const &comm, t_uint root);
+//! Broadcasts an eigen vector
+template <class VECTOR>
+typename std::enable_if<std::is_same<Vector<typename VECTOR::Scalar>, VECTOR>::value, VECTOR>::type
+broadcast(Communicator const &comm, t_uint root);
 } /* optime::mpi */
 } /* optimet */
+#endif
 #endif /* ifndef OPTIMET_MPI_COMMUNICATOR */

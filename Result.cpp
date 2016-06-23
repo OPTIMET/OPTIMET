@@ -11,17 +11,17 @@
 #include <cstdlib>
 
 namespace optimet {
-Result::Result(Geometry *geometry_, Excitation *excitation_, int nMax_)
+Result::Result(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, int nMax_)
   : flagSH(false), result_FF(nullptr) {
   init(geometry_, excitation_, nMax_);
 }
 
-Result::Result(Geometry *geometry_, Excitation *excitation_, Result *result_FF_,
+Result::Result(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, Result *result_FF_,
                int nMax_) {
   init(geometry_, excitation_, result_FF_, nMax_);
 }
 
-void Result::init(Geometry *geometry_, Excitation *excitation_, int nMax_) {
+void Result::init(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, int nMax_) {
   geometry = geometry_;
   nMax = nMax_;
   excitation = excitation_;
@@ -34,14 +34,14 @@ void Result::init(Geometry *geometry_, Excitation *excitation_, int nMax_) {
   c_scatter_coef.resize(2 * Tools::iteratorMax(nMax));
 }
 
-void Result::update(Geometry *geometry_, Excitation *excitation_, int nMax_) {
+void Result::update(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, int nMax_) {
   geometry = geometry_;
   nMax = nMax_;
   excitation = excitation_;
   waveK = excitation->waveK;
 }
 
-void Result::init(Geometry *geometry_, Excitation *excitation_,
+void Result::init(Geometry *geometry_, std::shared_ptr<Excitation> excitation_,
                   Result *result_FF_, int nMax_) {
   geometry = geometry_;
   nMax = nMax_;

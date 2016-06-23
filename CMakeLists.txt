@@ -15,6 +15,7 @@ project(Optimet3D CXX C)
 
 option(dompi "Enable mpi" off)
 option(dotesting "Enable testing" on)
+option(dobenchmarks "Enable Benchmarking" on)
 
 # looks for all dependencies used by optimet
 include(dependencies)
@@ -79,4 +80,9 @@ if(dotesting)
       "Do `git submodule update --init --recursive` to do so now.\n"
       "Until then, tests that need this data will be disabled")
   endif()
+endif()
+
+if(dobenchmarks)
+  include(AddBenchmark)
+  add_subdirectory(benchmarks)
 endif()

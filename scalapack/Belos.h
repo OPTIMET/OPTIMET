@@ -28,16 +28,19 @@ template <class SCALAR> using BelosOperator = std::reference_wrapper<Matrix<SCAL
 //! Simplifies acccess to the Belos solver factory object
 template <class SCALAR>
 using BelosSolverFactory =
-    Belos::SolverFactory<SCALAR, TpetraVector<SCALAR>, BelosOperator<SCALAR>>;
+    Belos::SolverFactory<typename Matrix<SCALAR>::Scalar,
+                         TpetraVector<typename Matrix<SCALAR>::Scalar>, BelosOperator<SCALAR>>;
 //! Simplifies acccess to the Belos linear problem object
 template <class SCALAR>
 using BelosLinearProblem =
-    Belos::LinearProblem<SCALAR, TpetraVector<SCALAR>, BelosOperator<SCALAR>>;
+    Belos::LinearProblem<typename Matrix<SCALAR>::Scalar,
+                         TpetraVector<typename Matrix<SCALAR>::Scalar>, BelosOperator<SCALAR>>;
 
 //! Obtains a 1-dimensional kokkos view over a matrix data
-template <class SCALAR> TeuchosArrayView<SCALAR> view(Matrix<SCALAR> &A);
+template <class SCALAR> TeuchosArrayView<typename Matrix<SCALAR>::Scalar> view(Matrix<SCALAR> &A);
 //! Obtains a 1-dimensional kokkos view over a constant matrix data
-template <class SCALAR> TeuchosArrayView<SCALAR const> view(Matrix<SCALAR> const &A);
+template <class SCALAR>
+TeuchosArrayView<typename Matrix<SCALAR>::Scalar const> view(Matrix<SCALAR> const &A);
 
 //! \brief Obtains a map for a scalapack::Matrix
 //! \note Belos doesn't know that the matrix is block cyclic. Since we will be defining our own
@@ -54,13 +57,15 @@ matrix_map(Matrix<SCALAR> const &A, mpi::Communicator const &comm);
 //! \param[in] comm: an mpi communicator equivalent to the scalapack context. All processes and only
 //!     the processes for which the scalapack context is valid should be in the communicator.
 template <class SCALAR>
-Teuchos::RCP<TpetraVector<SCALAR>>
+Teuchos::RCP<TpetraVector<typename Matrix<SCALAR>::Scalar>>
 tpetra_vector(Matrix<SCALAR> const &A, mpi::Communicator const &comm);
 
 //! Matrix-multiplication against a Belos MultiVector
 template <class SCALAR>
-void matrix_vector_operator(Matrix<SCALAR> const &matrix, const TpetraVector<SCALAR> &X,
-                            TpetraVector<SCALAR> &Y, Belos::ETrans trans = Belos::NOTRANS);
+void matrix_vector_operator(Matrix<SCALAR> const &A,
+                            const TpetraVector<typename Matrix<SCALAR>::Scalar> &X,
+                            TpetraVector<typename Matrix<SCALAR>::Scalar> &Y,
+                            Belos::ETrans trans = Belos::NOTRANS);
 
 //! \details Creates a scalapack::Matrix view over a Tpetra multi-vector
 //! \brief The data in memory is shared. The input vector must have correct (=scalpack) local sizes
@@ -92,12 +97,17 @@ Matrix<SCALAR const *> as_matrix(const TpetraVector<SCALAR> &X, Matrix<OTHER> co
 namespace Belos {
 //! Partial specialization of OperatorTraits for Tpetra objects.
 template <class SCALAR>
-class OperatorTraits<SCALAR, optimet::scalapack::TpetraVector<SCALAR>,
-                     optimet::scalapack::BelosOperator<SCALAR>> {
+class OperatorTraits<
+    typename optimet::scalapack::Matrix<SCALAR>::Scalar,
+    optimet::scalapack::TpetraVector<typename optimet::scalapack::Matrix<SCALAR>::Scalar>,
+    optimet::scalapack::BelosOperator<SCALAR>> {
 public:
-  static void Apply(optimet::scalapack::BelosOperator<SCALAR> const &Op,
-                    optimet::scalapack::TpetraVector<SCALAR> const &X,
-                    optimet::scalapack::TpetraVector<SCALAR> &Y, const ETrans trans = NOTRANS) {
+  static void
+  Apply(optimet::scalapack::BelosOperator<SCALAR> const &Op,
+        optimet::scalapack::TpetraVector<typename optimet::scalapack::Matrix<SCALAR>::Scalar> const
+            &X,
+        optimet::scalapack::TpetraVector<typename optimet::scalapack::Matrix<SCALAR>::Scalar> &Y,
+        const ETrans trans = NOTRANS) {
     optimet::scalapack::matrix_vector_operator(Op.get(), X, Y, trans);
   }
 
