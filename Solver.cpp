@@ -205,7 +205,7 @@ void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> con
     solveLinearSystemScalapack(A, b, x, comm);
   else
 #elif defined(OPTIMET_MPI)
-  if(scalapack::global_size() > 1)
+  if(comm.size() > 1)
     solveLinearSystemScalapack(A, b, x, comm);
   else
 #endif
