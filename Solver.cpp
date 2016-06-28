@@ -417,7 +417,7 @@ Vector<t_complex> local_source_vector(Geometry const &geometry,
 }
 
 t_uint Solver::scattering_size() const {
-  return 2 * (HarmonicsIterator::max_flat(nMax) - 1);
+  return 2 * (HarmonicsIterator::max_flat(nMax) - 1) * geometry->objects.size();
 }
 
 } // optimet namespace

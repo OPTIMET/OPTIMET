@@ -8,6 +8,7 @@
 #include "Tools.h"
 #include "Types.h"
 #include "constants.h"
+#include <BelosTypes.hpp>
 
 using namespace optimet;
 
@@ -18,8 +19,10 @@ TEST_CASE("Scalapack vs Belos") {
   auto const nHarmonics = 10;
   for(t_uint i(0); i < 10; ++i) {
     t_real const ii(i);
-    geometry.pushObject(
-        {{ii * 1.5, 0, 0}, {0.45e0 + 0.1 * ii, 1.1e0}, 0.5 + 0.01 * ii, nHarmonics});
+    geometry.pushObject({{ii * 1.5 * 2e-6, 0, 0},
+                         {0.45e0 + 0.1 * ii, 1.1e0},
+                         (0.5 + 0.01 * ii) * 2e-6,
+                         nHarmonics});
   }
 
   // Create excitation
@@ -36,6 +39,15 @@ TEST_CASE("Scalapack vs Belos") {
   optimet::Result scalapack(&geometry, excitation, nHarmonics);
   solver.belos_parameters()->set("Solver", "scalapack");
   solver.solve(scalapack.scatter_coef, scalapack.internal_coef);
+
+  solver.belos_parameters()->set<int>("Num Blocks", solver.scattering_size());
+  solver.belos_parameters()->set("Maximum Iterations", 4000);
+  solver.belos_parameters()->set("Convergence Tolerance", 1.0e-10);
+  // solver.belos_parameters()->set(
+  //     "Verbosity", Belos::MsgType::Warnings + Belos::MsgType::Debug + Belos::MsgType::Errors +
+  //                      Belos::MsgType::StatusTestDetails + Belos::MsgType::IterationDetails +
+  //                      Belos::MsgType::FinalSummary);
+  // solver.belos_parameters()->set("Output Frequency", 1);
 
   // known to fail: "CGPOLY", "FLEXIBLE GMRES", "RECYCLING CG", "RCG", "PCPG", "MINRES", "LSQR",
   // "SEED CG",
@@ -56,9 +68,6 @@ TEST_CASE("Scalapack vs Belos") {
   for(auto const name : names) {
     SECTION(name) {
       solver.belos_parameters()->set("Solver", name);
-      solver.belos_parameters()->set("Num Blocks", 1000);
-      solver.belos_parameters()->set("Maximum Iterations", 4000);
-      solver.belos_parameters()->set("Convergence Tolerance", 1.0e-10);
       optimet::Result belos(&geometry, excitation, nHarmonics);
       solver.solve(belos.scatter_coef, belos.internal_coef);
 
