@@ -144,12 +144,17 @@ template <class SCALAR> void check_gmres(scalapack::Sizes const &grid, t_uint n,
   auto const A = Aserial.transfer_to(context);
   b.local() = Matrix<SCALAR>::Random(b.local().rows(), b.local().cols()).array() - 0.5;
 
-  auto const result = gmres_linear_system(A, b);
+  auto params = Teuchos::rcp(new Teuchos::ParameterList);
+  params->set("Solver", "GMRES");
+  params->set<int>("Num Blocks", Aserial.rows());
+  params->set("Maximum Iterations", 4000);
+  params->set("Convergence Tolerance", 1.0e-14);
+  auto const result = gmres_linear_system(A, b, params);
   REQUIRE(std::get<1>(result) == 0);
   if(context.is_valid()) {
     scalapack::Matrix<SCALAR> x = b;
     scalapack::pdgemm(1e0, A, std::get<0>(result), -1e0, x);
-    CHECK(x.local().isZero(1e-4));
+    CHECK(x.local().isZero(1e-6));
   }
 }
 
