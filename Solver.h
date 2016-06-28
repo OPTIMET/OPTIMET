@@ -118,6 +118,9 @@ public:
   Teuchos::RCP<Teuchos::ParameterList> belos_parameters() const { return belos_params_; }
 #endif
 
+  //! Order of the scattering matrix
+  t_uint scattering_size() const;
+
 protected:
   //! Populate the S and Q matrices using the solverMethod option
   void populate();
