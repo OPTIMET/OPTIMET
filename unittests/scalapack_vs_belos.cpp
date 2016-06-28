@@ -71,8 +71,11 @@ TEST_CASE("Scalapack vs Belos") {
       optimet::Result belos(&geometry, excitation, nHarmonics);
       solver.solve(belos.scatter_coef, belos.internal_coef);
 
-      CHECK(belos.scatter_coef.isApprox(belos.scatter_coef));
-      CHECK(belos.internal_coef.isApprox(belos.internal_coef));
+      auto const scatter_tol = 1e-6 * std::max(1., scalapack.scatter_coef.array().abs().maxCoeff());
+      CHECK(belos.scatter_coef.isApprox(scalapack.scatter_coef, scatter_tol));
+      auto const internal_tol =
+          1e-6 * std::max(1., scalapack.internal_coef.array().abs().maxCoeff());
+      CHECK(belos.internal_coef.isApprox(belos.internal_coef, internal_tol));
     }
   }
 }
