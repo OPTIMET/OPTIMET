@@ -106,6 +106,14 @@ gmres_linear_system(Matrix<SCALARA> const &A, Matrix<SCALARB> const &b,
   if(not problem->setProblem())
     throw std::runtime_error("Could not setup up Belos problem");
   solver->setProblem(problem);
+
+  // Print out parameters for given verbosity
+  if(parameters->get<int>("Verbosity", 0) & Belos::MsgType::FinalSummary) {
+    auto const out = parameters->get<Teuchos::RCP<std::ostream>>("Output Stream",
+                                                                 Teuchos::rcp(&std::cout, false));
+    if(splitcomm.rank() == 0)
+      solver->getCurrentParameters()->print(*out);
+  }
   // Attempt to solve the linear system.  result == Belos::Converged
   // means that it was solved to the desired tolerance.  This call
   // overwrites X with the computed approximate solution.
