@@ -42,7 +42,7 @@ TEST_CASE("Scalapack vs Belos") {
 
   solver.belos_parameters()->set<int>("Num Blocks", solver.scattering_size());
   solver.belos_parameters()->set("Maximum Iterations", 4000);
-  solver.belos_parameters()->set("Convergence Tolerance", 1.0e-10);
+  solver.belos_parameters()->set("Convergence Tolerance", 1.0e-14);
   // solver.belos_parameters()->set(
   //     "Verbosity", Belos::MsgType::Warnings + Belos::MsgType::Debug + Belos::MsgType::Errors +
   //                      Belos::MsgType::StatusTestDetails + Belos::MsgType::IterationDetails +
