@@ -21,12 +21,20 @@ Geometry::~Geometry() {}
 Geometry::Geometry() {}
 
 void Geometry::pushObject(Scatterer const &object_) {
-  if(not no_overlap(object_)) {
-    std::ostringstream sstr;
-    sstr << "The sphere at (" << object_.vR.rrr << ", " << object_.vR.the << ", " << object_.vR.phi
-         << ") overlap";
-    throw std::runtime_error(sstr.str());
-  }
+  for(auto const &obj : objects)
+    if(Tools::findDistance(obj.vR, object_.vR) <= (object_.radius + obj.radius)) {
+      std::ostringstream sstr;
+      sstr << "The sphere at ("
+           << Tools::toCartesian(object_.vR).x << ", "
+           << Tools::toCartesian(object_.vR).y << ", "
+           << Tools::toCartesian(object_.vR).z << ") "
+           << "overlaps with the one at ("
+           << Tools::toCartesian(obj.vR).x << ", "
+           << Tools::toCartesian(obj.vR).y << ", "
+           << Tools::toCartesian(obj.vR).z << "), "
+           << "with radii " << object_.radius << " and " << obj.radius;
+      throw std::runtime_error(sstr.str());
+    }
   objects.emplace_back(object_);
 }
 
