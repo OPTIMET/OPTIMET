@@ -163,16 +163,6 @@ public:
                            long row_index_, long column_index_);
 
   /**
-   * Returns the value of an Associated Legendre function \f$P_n^m(x)\f$.
-   * Static member. Insures m < 0 compatibility.
-   * @param argument_ the argument x.
-   * @param orderN_ the order n.
-   * @param orderM_ the order m.
-   * @return the Associated Legendre function.
-   */
-  static double getLegendre(double argument_, int orderN_, int orderM_);
-
-  /**
    * Allocate space for a 2D matrix.
    * @param i_x the 1st size of the matrix.
    * @param i_y the 2nd size of the matrix.
