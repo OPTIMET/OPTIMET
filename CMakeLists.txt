@@ -55,7 +55,7 @@ if(TARGET Boost::boost)
   target_link_libraries(optilib Boost::boost)
 endif()
 set(library_dependencies
-  ${GSL_LIBRARIES} ${BOOST_LIBRARIES} ${HDF5_LIBRARIES} ${F2C_LIBRARIES}
+  ${GSL_LIBRARIES} ${BOOST_LIBRARIES} ${HDF5_C_LIBRARIES} ${F2C_LIBRARIES}
   ${Belos_LIBRARIES}
 )
 if(dompi)
