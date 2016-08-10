@@ -1,10 +1,13 @@
 include_directories("${PROJECT_SOURCE_DIR}")
+add_library(common_catch_main_object OBJECT common_mpi_catch_main.cpp)
 if(NOT dompi)
   add_catch_test(single_particle LIBRARIES optilib ${library_dependencies})
 endif()
 add_catch_test(translation_addition LIBRARIES optilib ${library_dependencies})
 add_catch_test(harmonics_iterator LIBRARIES optilib ${library_dependencies})
 add_catch_test(aux_coefficients LIBRARIES optilib ${library_dependencies})
+
+add_catch_test(rotation_coefficients LIBRARIES optilib ${library_dependencies})
 
 if(dompi)
   if(CATCH_INCLUDE_DIR)
