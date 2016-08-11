@@ -68,7 +68,7 @@ void RotationCoefficients::coefficients(t_uint n, t_int m, t_int mu,
 }
 
 t_complex RotationCoefficients::recursion(t_uint n, t_int m, t_int mu) {
-  assert(n >= 2);
+  assert(n >= 1);
   auto const factor = std::exp(t_complex(0, chi)) / b(n + 1, m - 1);
   auto const c0 =
       factor * 0.5 * b(n + 1, -mu - 1) * std::exp(t_complex(0, phi)) * (1 - std::cos(theta));
