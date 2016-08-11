@@ -4,24 +4,23 @@
 #include <iterator>
 
 namespace optimet {
-namespace {
 
-t_real a(t_uint n, t_uint m) {
-  if(n < m)
+RotationCoefficients::Real RotationCoefficients::a(t_uint n, t_int m) {
+  t_uint const absm(std::abs(m));
+  if(n < absm)
     return 0;
-  return std::sqrt(static_cast<t_real>((n + 1 + m) * (n + 1 - m)) /
-                   static_cast<t_real>((2 * n + 1) * (2 * n + 3)));
+  return std::sqrt(static_cast<Real>((n + 1 + absm) * (n + 1 - absm)) /
+                   static_cast<Real>((2 * n + 1) * (2 * n + 3)));
 }
-t_real a(t_uint n, t_int m) { return a(n, static_cast<t_uint>(std::abs(m))); }
 
-t_real b(t_uint n, t_int m) {
+RotationCoefficients::Real RotationCoefficients::b(t_uint n, t_int m) {
   if(static_cast<t_uint>(std::abs(m)) > n)
     return 0;
-  return (m >= 0 ? 1 : -1) * std::sqrt(static_cast<t_real>((n - m - 1) * (n - m)) /
-                                       static_cast<t_real>((2 * n - 1) * (2 * n + 1)));
+  return (m >= 0 ? 1 : -1) * std::sqrt(static_cast<Real>((n - m - 1) * (n - m)) /
+                                       static_cast<Real>((2 * n - 1) * (2 * n + 1)));
 }
-}
-t_complex RotationCoefficients::operator()(t_uint n, t_int m, t_int mu) {
+
+RotationCoefficients::Complex RotationCoefficients::operator()(t_uint n, t_int m, t_int mu) {
   if(static_cast<t_uint>(std::abs(m)) > n or static_cast<t_uint>(std::abs(mu)) > n)
     return 0;
   if(m < 0)
@@ -36,8 +35,7 @@ t_complex RotationCoefficients::operator()(t_uint n, t_int m, t_int mu) {
   return value;
 }
 
-void RotationCoefficients::coefficients(t_uint n, t_int m, t_int mu,
-                                        std::vector<t_complex> &coeffs) {
+void RotationCoefficients::coefficients(t_uint n, t_int m, t_int mu, std::vector<Complex> &coeffs) {
 
   if(m == 0) {
     coeffs.push_back(initial(n, mu));
@@ -46,34 +44,34 @@ void RotationCoefficients::coefficients(t_uint n, t_int m, t_int mu,
   if(m < 0) {
     auto const conjgate = coefficients(n, -m, -mu);
     std::transform(conjgate.begin(), conjgate.end(), std::back_inserter(coeffs),
-                   [](t_complex const &c) { return std::conj(c); });
+                   [](Complex const &c) { return std::conj(c); });
     return;
   }
 
-  auto const factor = std::exp(t_complex(0, chi)) / b(n + 1, m - 1);
+  auto const factor = std::exp(Complex(0, chi)) / b(n + 1, m - 1);
   auto const c0 =
-      factor * 0.5 * b(n + 1, -mu - 1) * std::exp(t_complex(0, phi)) * (1 - std::cos(theta));
+      factor * 0.5 * b(n + 1, -mu - 1) * std::exp(Complex(0, phi)) * (1 - std::cos(theta));
   auto const c1 =
-      -factor * 0.5 * b(n + 1, mu - 1) * std::exp(t_complex(0, -phi)) * (1 + std::cos(theta));
+      -factor * 0.5 * b(n + 1, mu - 1) * std::exp(Complex(0, -phi)) * (1 + std::cos(theta));
   auto const c2 = -factor * a(n, mu) * std::sin(theta);
   auto const coeffs0 = coefficients(n + 1, m - 1, mu + 1);
   auto const coeffs1 = coefficients(n + 1, m - 1, mu - 1);
   auto const coeffs2 = coefficients(n + 1, m - 1, mu);
   std::transform(coeffs0.begin(), coeffs0.end(), std::back_inserter(coeffs),
-                 [c0](t_complex const &coeff) -> t_complex { return c0 * coeff; });
+                 [c0](Complex const &coeff) -> Complex { return c0 * coeff; });
   std::transform(coeffs1.begin(), coeffs1.end(), std::back_inserter(coeffs),
-                 [c1](t_complex const &coeff) { return c1 * coeff; });
+                 [c1](Complex const &coeff) { return c1 * coeff; });
   std::transform(coeffs2.begin(), coeffs2.end(), std::back_inserter(coeffs),
-                 [c2](t_complex const &coeff) { return c2 * coeff; });
+                 [c2](Complex const &coeff) { return c2 * coeff; });
 }
 
-t_complex RotationCoefficients::recursion(t_uint n, t_int m, t_int mu) {
+RotationCoefficients::Complex RotationCoefficients::recursion(t_uint n, t_int m, t_int mu) {
   assert(n >= 1);
-  auto const factor = std::exp(t_complex(0, chi)) / b(n + 1, m - 1);
+  auto const factor = std::exp(Complex(0, chi)) / b(n + 1, m - 1);
   auto const c0 =
-      factor * 0.5 * b(n + 1, -mu - 1) * std::exp(t_complex(0, phi)) * (1 - std::cos(theta));
+      factor * 0.5 * b(n + 1, -mu - 1) * std::exp(Complex(0, phi)) * (1 - std::cos(theta));
   auto const c1 =
-      -factor * 0.5 * b(n + 1, mu - 1) * std::exp(t_complex(0, -phi)) * (1 + std::cos(theta));
+      -factor * 0.5 * b(n + 1, mu - 1) * std::exp(Complex(0, -phi)) * (1 + std::cos(theta));
   auto const c2 = -factor * a(n, mu) * std::sin(theta);
   return c0 * operator()(n + 1, m - 1, mu + 1) + c1 * operator()(n + 1, m - 1, mu - 1) +
          c2 * operator()(n + 1, m - 1, mu);
