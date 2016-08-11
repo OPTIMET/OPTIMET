@@ -8,6 +8,7 @@
 
 namespace optimet {
 //! Equation 1 of Appendix A in Stout (2002)
+t_complex Ynmlegacy(Spherical<t_real> const &R, t_int n, t_int m);
 t_complex Ynm(Spherical<t_real> const &R, t_int n, t_int m);
 
 namespace details {

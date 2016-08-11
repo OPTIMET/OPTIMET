@@ -49,13 +49,19 @@ inline t_real b_minus(t_int n, t_int m) {
 }
 } // anonymous namespace
 
-t_complex Ynm(Spherical<t_real> const &R, t_int n, t_int m) {
+t_complex Ynmlegacy(Spherical<t_real> const &R, t_int n, t_int m) {
   if(not is_valid(n, m))
     return 0;
   auto const gamma = static_cast<t_real>(2 * n + 1) / (constant::pi * static_cast<t_real>(4)) *
                      factorial_ratio(n - m, n + m);
   return std::sqrt(gamma) * std::exp(constant::i * (m * R.phi)) *
          boost::math::legendre_p(n, m, std::cos(R.the));
+}
+
+t_complex Ynm(Spherical<t_real> const &R, t_int n, t_int m) {
+  if(not is_valid(n, m))
+    return 0;
+  return boost::math::spherical_harmonic(n, m, R.the, R.phi);
 }
 
 namespace details {
