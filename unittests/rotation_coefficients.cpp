@@ -67,15 +67,33 @@ TEST_CASE("Check recurrence") {
   };
 
   // Creates a set of n to look at
-  std::uniform_int_distribution<> ndist(2, 20);
-  std::set<t_uint> ns = {2};
-  for(auto i = 0; i < 10; ++i)
-    ns.insert(ndist(*mersenne));
+  std::uniform_int_distribution<> ndist(2, 50);
+  std::set<t_uint> ns = {30};
+  // for(auto i = 0; i < 10; ++i)
+  //   ns.insert(ndist(*mersenne));
 
   for(auto const n : ns)
     for(t_int m(1); m <= static_cast<t_int>(n); ++m)
       for(t_int mu(-static_cast<t_int>(n)); mu <= static_cast<t_int>(n); ++mu) {
+        std::cout << n << " " << m << " " << mu << ": " << rot(n, m, mu) << std::endl;
         REQUIRE(std::abs(rot(n, m, mu) - recurrence(n, m, mu)) < 1e-8);
         CHECK(std::abs(rot(n, m, mu) - std::conj(rot(n, -m, -mu))) < 1e-8);
       }
+}
+
+TEST_CASE("All coeffs") {
+  std::uniform_real_distribution<> rdist(0, constant::pi);
+  auto const theta = rdist(*mersenne);
+  auto const phi = 2 * rdist(*mersenne);
+  auto const chi = rdist(*mersenne);
+  RotationCoefficients rot(theta, phi, chi);
+
+  auto const through_coeffs = [&rot](t_uint n, t_int m, t_int mu) {
+    auto const coeffs = rot.coefficients(n, m, mu);
+    return std::accumulate(coeffs.begin(), coeffs.end(), t_complex(0));
+  };
+  CHECK(std::abs(rot(1, 1, 0) - through_coeffs(1, 1, 0)) < 1e-8);
+  CHECK(std::abs(rot(2, 1, 0) - through_coeffs(2, 1, 0)) < 1e-8);
+  CHECK(std::abs(rot(4, 4, 0) - through_coeffs(4, 4, 0)) < 1e-8);
+  CHECK(std::abs(rot(4, -4, 0) - through_coeffs(4, -4, 0)) < 1e-8);
 }

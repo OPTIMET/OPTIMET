@@ -4,6 +4,7 @@
 #include "Types.h"
 #include "constants.h"
 #include <map>
+#include <vector>
 
 #include <boost/math/special_functions/spherical_harmonic.hpp>
 
@@ -27,6 +28,17 @@ public:
   //! \brief Spherical Harmonic Y^m_n projected onto Y^\mu_n
   //! \details from Y^m_n = \sum_\mu T_n^{\mu,n}Y^\mu_n. This operator gives T_n^{\mu, n}.
   t_complex operator()(t_uint n, t_int m, t_int mu);
+  //! \brief Spherical Harmonic Y^m_n projected onto Y^\mu_n
+  //! \details from Y^m_n = \sum_\mu T_n^{\mu,n}Y^\mu_n. This operator gives T_n^{\mu, n}.
+  void coefficients(t_uint n, t_int m, t_int mu, std::vector<t_complex> &coeffs);
+  //! \brief Spherical Harmonic Y^m_n projected onto Y^\mu_n
+  //! \details from Y^m_n = \sum_\mu T_n^{\mu,n}Y^\mu_n. This operator gives T_n^{\mu, n}.
+  std::vector<t_complex> coefficients(t_uint n, t_int m, t_int mu) {
+    std::vector<t_complex> coeff;
+    coefficients(n, m, mu, coeff);
+    return coeff;
+  }
+  //! \brief Spherical Harmonic Y^m_n projected onto Y^\mu_n
   //! \brief Spherical Harmonic Y^m_n projected onto Y^\mu_n
   t_complex operator()(Index const &index) {
     return operator()(std::get<0>(index), std::get<1>(index), std::get<2>(index));

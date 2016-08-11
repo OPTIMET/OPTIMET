@@ -1,5 +1,7 @@
 #include "RotationCoefficients.h"
+#include <algorithm>
 #include <cmath>
+#include <iterator>
 
 namespace optimet {
 namespace {
@@ -32,6 +34,37 @@ t_complex RotationCoefficients::operator()(t_uint n, t_int m, t_int mu) {
   auto const value = m == 0 ? initial(n, mu) : recursion(n, m, mu);
   cache[std::make_tuple(n, m, mu)] = value;
   return value;
+}
+
+void RotationCoefficients::coefficients(t_uint n, t_int m, t_int mu,
+                                        std::vector<t_complex> &coeffs) {
+
+  if(m == 0) {
+    coeffs.push_back(initial(n, mu));
+    return;
+  }
+  if(m < 0) {
+    auto const conjgate = coefficients(n, -m, -mu);
+    std::transform(conjgate.begin(), conjgate.end(), std::back_inserter(coeffs),
+                   [](t_complex const &c) { return std::conj(c); });
+    return;
+  }
+
+  auto const factor = std::exp(t_complex(0, chi)) / b(n + 1, m - 1);
+  auto const c0 =
+      factor * 0.5 * b(n + 1, -mu - 1) * std::exp(t_complex(0, phi)) * (1 - std::cos(theta));
+  auto const c1 =
+      -factor * 0.5 * b(n + 1, mu - 1) * std::exp(t_complex(0, -phi)) * (1 + std::cos(theta));
+  auto const c2 = -factor * a(n, mu) * std::sin(theta);
+  auto const coeffs0 = coefficients(n + 1, m - 1, mu + 1);
+  auto const coeffs1 = coefficients(n + 1, m - 1, mu - 1);
+  auto const coeffs2 = coefficients(n + 1, m - 1, mu);
+  std::transform(coeffs0.begin(), coeffs0.end(), std::back_inserter(coeffs),
+                 [c0](t_complex const &coeff) -> t_complex { return c0 * coeff; });
+  std::transform(coeffs1.begin(), coeffs1.end(), std::back_inserter(coeffs),
+                 [c1](t_complex const &coeff) { return c1 * coeff; });
+  std::transform(coeffs2.begin(), coeffs2.end(), std::back_inserter(coeffs),
+                 [c2](t_complex const &coeff) { return c2 * coeff; });
 }
 
 t_complex RotationCoefficients::recursion(t_uint n, t_int m, t_int mu) {
