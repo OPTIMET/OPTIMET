@@ -56,6 +56,7 @@ public:
 protected:
   static Real a(t_uint n, t_int m);
   static Real b(t_uint n, t_int m);
+  Eigen::Matrix<Complex, 3, 1> factors(t_uint n, t_int m, t_int mu) const;
   //! Cache which holds previously computed values
   std::map<Index, Complex> cache;
   //! Initial values
