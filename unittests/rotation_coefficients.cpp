@@ -58,12 +58,12 @@ TEST_CASE("Check recurrence") {
   auto const recurrence = [&rot, theta, phi, chi, &bnm, &anm](t_uint n, t_int m,
                                                               t_int mu) -> t_complex {
     auto const factor = std::exp(t_complex(0, chi)) / bnm(n + 1, m - 1);
-    auto const first = 0.5 * bnm(n + 1, -mu - 1) * std::exp(t_complex(0, phi)) *
+    auto const first = factor * 0.5 * bnm(n + 1, -mu - 1) * std::exp(t_complex(0, phi)) *
                        (1 - std::cos(theta)) * rot(n + 1, m - 1, mu + 1);
-    auto const second = -0.5 * bnm(n + 1, mu - 1) * std::exp(-t_complex(0, phi)) *
+    auto const second = factor * -0.5 * bnm(n + 1, mu - 1) * std::exp(-t_complex(0, phi)) *
                         (1 + std::cos(theta)) * rot(n + 1, m - 1, mu - 1);
-    auto const third = -anm(n, mu) * std::sin(theta) * rot(n + 1, m - 1, mu);
-    return factor * (first + second + third);
+    auto const third = factor* -anm(n, mu) * std::sin(theta) * rot(n + 1, m - 1, mu);
+    return  first + second + third;
   };
 
   // Creates a set of n to look at
@@ -75,7 +75,6 @@ TEST_CASE("Check recurrence") {
   for(auto const n : ns)
     for(t_int m(1); m <= static_cast<t_int>(n); ++m)
       for(t_int mu(-static_cast<t_int>(n)); mu <= static_cast<t_int>(n); ++mu) {
-        std::cout << n << " " << m << " " << mu << ": " << rot(n, m, mu) << std::endl;
         REQUIRE(std::abs(rot(n, m, mu) - recurrence(n, m, mu)) < 1e-8);
         CHECK(std::abs(rot(n, m, mu) - std::conj(rot(n, -m, -mu))) < 1e-8);
       }
