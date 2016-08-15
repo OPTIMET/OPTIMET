@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include <boost/math/special_functions/legendre.hpp>
+#include <boost/math/special_functions/spherical_harmonic.hpp>
 
 namespace optimet {
 namespace {
