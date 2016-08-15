@@ -13,7 +13,7 @@ include(CMakeParseArguments)
 
 find_or_add_hunter_package(Boost)
 find_or_add_hunter_package(Eigen PACKAGE Eigen3)
-find_or_add_hunter_package(hdf5 PACKAGE HDF5)
+find_or_add_hunter_package(hdf5 PACKAGE HDF5 COMPONENTS C)
 find_or_add_hunter_package(GSL)
 find_or_add_hunter_package(F2C)
 
