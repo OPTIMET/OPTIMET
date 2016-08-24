@@ -203,3 +203,16 @@ TEST_CASE("Translation-Addition all m") {
     CHECK(ta(5, -3, 3, -1).imag() == Approx(-ta_conj(5, 3, 3, 1).imag()));
   }
 }
+
+TEST_CASE("CoAxial initial") {
+  {
+    Spherical<t_real> const R(1e0, 0.42, 0.36);
+    t_complex const waveK(1e0, 1.5e0);
+    CoAxialTranslationAdditionCoefficients tca(R, waveK, true);
+    // Numbers are generated from the same formula in Scipy
+    CHECK(tca(0, 0, 0).real() == Approx(4.0413762081663052));
+    CHECK(tca(0, 0, 0).imag() == Approx(-1.9838089421624792));
+
+
+  }
+}

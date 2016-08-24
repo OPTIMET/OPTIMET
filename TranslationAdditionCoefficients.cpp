@@ -120,6 +120,64 @@ t_complex CachedRecurrence::offdiagonal_recurrence(t_int n, t_int m, t_int l, t_
           operator()(n - 1, m, l + 1, k) * a_minus(l + 1, k)) /
          a_plus(n - 1, m);
 }
+
+t_complex CachedCoAxialRecurrence::operator()(t_int n, t_int m, t_int l) {
+  // It simplifies the recurrence if we assume zero outside the domain of
+  // validity
+  if(not is_valid(n, m, l, m))
+    return 0e0;
+
+  // For simplicity, coefficients for negative m should be implemented
+  // separately using the symmetry
+  // relationship.
+  assert(m >= 0);
+
+  // Check cache first
+  t_indices const indices{{n, m, l}};
+  auto const i_found = cache.find(indices);
+  if(i_found != cache.end())
+    return i_found->second;
+
+  auto const result = recurrence(n, m, l);
+  cache[indices] = result;
+  return result;
+}
+
+t_complex CachedCoAxialRecurrence::recurrence(t_int n, t_int m, t_int l) {
+  if(n == 0 and m == 0)
+    return initial(l);
+  // else if(n == m)
+  //   return diagonal_recurrence(n, l, k);
+  // else
+  //   return offdiagonal_recurrence(n, m, l, k);
+}
+
+t_complex CachedCoAxialRecurrence::initial(t_int l) {
+  assert(l >= 0);
+  auto const wave = direction.rrr * waveK;
+  auto const bessel = regular ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
+  auto const hb = std::get<0>(bessel(wave, l)).back();
+
+  auto const factor = std::sqrt(4e0 * constant::pi) * (l % 2 == 0 ? 1 : -1);
+
+  return factor * hb;
+}
+//
+// t_complex CachedRecurrence::diagonal_recurrence(t_int n, t_int l, t_int k) {
+//   return (operator()(n - 1, n - 1, l - 1, k - 1) * b_plus(l - 1, k - 1) +
+//           operator()(n - 1, n - 1, l + 1, k - 1) * b_minus(l + 1, k - 1)) /
+//          b_plus(n - 1, n - 1);
+// }
+//
+// t_complex CachedRecurrence::offdiagonal_recurrence(t_int n, t_int m, t_int l, t_int k) {
+//   return (-operator()(n - 2, m, l, k) * a_minus(n - 1, m) +
+//           operator()(n - 1, m, l - 1, k) * a_plus(l - 1, k) +
+//           operator()(n - 1, m, l + 1, k) * a_minus(l + 1, k)) /
+//          a_plus(n - 1, m);
+// }
+
+
+
 } // end of detailed namespace
 
 t_complex TranslationAdditionCoefficients::operator()(t_int n, t_int m, t_int l, t_int k) {
@@ -129,5 +187,10 @@ t_complex TranslationAdditionCoefficients::operator()(t_int n, t_int m, t_int l,
   auto const sign = negative.is_regular() ? k + m : n + m + l + k;
   auto const result = std::conj(negative(n, -m, l, -k));
   return sign % 2 == 0 ? result : -result;
+}
+
+t_complex CoAxialTranslationAdditionCoefficients::operator()(t_int n, t_int m, t_int l) {
+  // the coaxial recurrence is independent of sign of m Gumerov (4.81)
+  return cached_recurrence(n, std::abs(m), l);
 }
 } // end of optimet namespace
