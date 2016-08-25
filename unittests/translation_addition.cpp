@@ -210,9 +210,8 @@ TEST_CASE("CoAxial initial") {
     t_complex const waveK(1e0, 1.5e0);
     CoAxialTranslationAdditionCoefficients tca(R, waveK, true);
     // Numbers are generated from the same formula in Scipy
-    CHECK(tca(0, 0, 0).real() == Approx(4.0413762081663052));
-    CHECK(tca(0, 0, 0).imag() == Approx(-1.9838089421624792));
-
+    CHECK(tca(0, 0, 0).real() == Approx(1.1400511799225792));
+    CHECK(tca(0, 0, 0).imag() == Approx(-0.55962217045848206));
 
   }
 }
