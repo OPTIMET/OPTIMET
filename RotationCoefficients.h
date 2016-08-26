@@ -32,16 +32,6 @@ public:
   //! \details from Y^m_n = \sum_\mu T_n^{\mu,n}Y^\mu_n. This operator gives T_n^{\mu, n}.
   Complex operator()(t_uint n, t_int m, t_int mu);
   //! \brief Spherical Harmonic Y^m_n projected onto Y^\mu_n
-  //! \details from Y^m_n = \sum_\mu T_n^{\mu,n}Y^\mu_n. This operator gives T_n^{\mu, n}.
-  void coefficients(t_uint n, t_int m, t_int mu, std::vector<Complex> &coeffs);
-  //! \brief Spherical Harmonic Y^m_n projected onto Y^\mu_n
-  //! \details from Y^m_n = \sum_\mu T_n^{\mu,n}Y^\mu_n. This operator gives T_n^{\mu, n}.
-  std::vector<Complex> coefficients(t_uint n, t_int m, t_int mu) {
-    std::vector<Complex> coeff;
-    coefficients(n, m, mu, coeff);
-    return coeff;
-  }
-  //! \brief Spherical Harmonic Y^m_n projected onto Y^\mu_n
   //! \brief Spherical Harmonic Y^m_n projected onto Y^\mu_n
   Complex operator()(Index const &index) {
     return operator()(std::get<0>(index), std::get<1>(index), std::get<2>(index));
@@ -54,14 +44,6 @@ public:
     return (m > 0 and m % 2 == 1) ? -boost::math::spherical_harmonic(n, m, theta, phi) :
                                     boost::math::spherical_harmonic(n, m, theta, phi);
   }
-
-  //! \brief Computes all coefficients in the recursion
-  std::map<Index, Coefficients> all_coefficients(t_uint n, t_int m, t_int mu) const {
-    std::map<Index, Coefficients> result;
-    all_coefficients(n, m, mu, result);
-    return result;
-  }
-  void all_coefficients(t_uint n, t_int m, t_int mu, std::map<Index, Coefficients> &result) const;
 
 protected:
   static Real a(t_uint n, t_int m);

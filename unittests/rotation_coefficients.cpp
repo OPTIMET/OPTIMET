@@ -71,15 +71,15 @@ Complex recurrence(Real theta, Real phi, Real chi, t_uint n, t_int m, t_int mu, 
   }
 
   auto const factor = std::exp(Complex(0, chi)) / bnm(n + 1, m - 1);
-  auto const first = factor * static_cast<Real>(0.5) * bnm(n + 1, -mu - 1) *
-                     std::exp(Complex(0, phi)) * (static_cast<Real>(1) - std::cos(theta)) *
+  auto const first = static_cast<Real>(0.5) * bnm(n + 1, -mu - 1) * std::exp(Complex(0, phi)) *
+                     (static_cast<Real>(1) - std::cos(theta)) *
                      recurrence(theta, phi, chi, n + 1, m - 1, mu + 1, cache);
-  auto const second = factor * static_cast<Real>(-0.5) * bnm(n + 1, mu - 1) *
-                      std::exp(-Complex(0, phi)) * (static_cast<Real>(1) + std::cos(theta)) *
+  auto const second = static_cast<Real>(-0.5) * bnm(n + 1, mu - 1) * std::exp(-Complex(0, phi)) *
+                      (static_cast<Real>(1) + std::cos(theta)) *
                       recurrence(theta, phi, chi, n + 1, m - 1, mu - 1, cache);
   auto const third =
-      factor * -anm(n, mu) * std::sin(theta) * recurrence(theta, phi, chi, n + 1, m - 1, mu, cache);
-  auto const result = first + second + third;
+      -anm(n, mu) * std::sin(theta) * recurrence(theta, phi, chi, n + 1, m - 1, mu, cache);
+  auto const result = factor * (first + second + third);
   cache.emplace(Triplet{n, m, mu}, result);
   return result;
 };
@@ -95,12 +95,9 @@ TEST_CASE("Check recurrence") {
   Cache cache;
   std::uniform_int_distribution<> ndist(2, 50);
   std::set<Triplet> triplets = {
-      Triplet{1, 0, 0},    Triplet{1, 0, 1},    Triplet{1, 1, 0},    Triplet{1, 1, 1},
-      Triplet{1, 0, -1},   Triplet{1, -1, 0},   Triplet{1, -1, -1},  Triplet{2, 2, 2},
-      Triplet{2, -2, 2},   Triplet{10, 10, 2},  Triplet{10, -1, 2},  Triplet{15, 15, 2},
-      Triplet{20, 20, 20}, Triplet{21, 21, 21}, Triplet{22, 22, 22}, Triplet{23, 23, 23},
-      Triplet{24, 24, 24}, Triplet{25, 25, 25}, Triplet{26, 26, 26}, Triplet{27, 27, 27},
-      Triplet{28, 28, 28}, Triplet{29, 29, 29}, Triplet{30, 30, 30},
+      Triplet{1, 0, 0},  Triplet{1, 0, 1},   Triplet{1, 1, 0},   Triplet{1, 1, 1},
+      Triplet{1, 0, -1}, Triplet{1, -1, 0},  Triplet{1, -1, -1}, Triplet{2, 2, 2},
+      Triplet{2, -2, 2}, Triplet{10, 10, 2}, Triplet{10, -1, 2}, Triplet{15, 15, 2},
   };
 
   for(auto const triplet : triplets) {
@@ -117,36 +114,3 @@ TEST_CASE("Check recurrence") {
     CHECK(std::abs(rot(n, m, mu) - std::conj(rot(n, -m, -mu))) < 1e-8);
   }
 }
-
-TEST_CASE("Coefficient sum") {
-  std::uniform_real_distribution<> rdist(0, constant::pi);
-  auto const theta = rdist(*mersenne);
-  auto const phi = 2 * rdist(*mersenne);
-  auto const chi = rdist(*mersenne);
-  RotationCoefficients rot(theta, phi, chi);
-
-  auto const through_coeffs = [&rot](t_uint n, t_int m, t_int mu) {
-    auto const coeffs = rot.coefficients(n, m, mu);
-    return std::accumulate(coeffs.begin(), coeffs.end(), t_complex(0));
-  };
-  CHECK(std::abs(rot(1, 1, 0) - through_coeffs(1, 1, 0)) < 1e-8);
-  CHECK(std::abs(rot(2, 1, 0) - through_coeffs(2, 1, 0)) < 1e-8);
-  CHECK(std::abs(rot(4, 4, 0) - through_coeffs(4, 4, 0)) < 1e-8);
-  CHECK(std::abs(rot(4, -4, 0) - through_coeffs(4, -4, 0)) < 1e-8);
-}
-
-// TEST_CASE("All coefficients") {
-//   std::uniform_real_distribution<> rdist(0, constant::pi);
-//   auto const theta = rdist(*mersenne);
-//   auto const phi = 2 * rdist(*mersenne);
-//   auto const chi = rdist(*mersenne);
-//   RotationCoefficients rot(theta, phi, chi);
-//
-//   auto const coeffs = rot.all_coefficients(10, 10, 0);
-//   std::cout << std::setw(18) << std::setprecision(6) << std::setfill(' ') << std::right
-//             << std::scientific << "\n";
-//   for(auto const c : coeffs)
-//     if(std::get<1>(c.first) >= 0)
-//       std::cout << std::get<0>(c.first) << ", " << std::get<1>(c.first) << ", "
-//                 << std::get<2>(c.first) << ": " << c.second.transpose() << std::endl;
-// }

@@ -46,57 +46,10 @@ RotationCoefficients::Complex RotationCoefficients::operator()(t_uint n, t_int m
   return value;
 }
 
-void RotationCoefficients::coefficients(t_uint n, t_int m, t_int mu, std::vector<Complex> &coeffs) {
-
-  if(m == 0) {
-    coeffs.push_back(initial(n, mu));
-    return;
-  }
-  if(m < 0) {
-    auto const conjgate = coefficients(n, -m, -mu);
-    std::transform(conjgate.begin(), conjgate.end(), std::back_inserter(coeffs),
-                   [](Complex const &c) { return std::conj(c); });
-    return;
-  }
-  auto const factors = this->factors(n, m, mu);
-  auto const coeffs0 = coefficients(n + 1, m - 1, mu + 1);
-  auto const coeffs1 = coefficients(n + 1, m - 1, mu - 1);
-  auto const coeffs2 = coefficients(n + 1, m - 1, mu);
-  std::transform(coeffs0.begin(), coeffs0.end(), std::back_inserter(coeffs),
-                 [factors](Complex const &coeff) -> Complex { return factors(0) * coeff; });
-  std::transform(coeffs1.begin(), coeffs1.end(), std::back_inserter(coeffs),
-                 [factors](Complex const &coeff) { return factors(1) * coeff; });
-  std::transform(coeffs2.begin(), coeffs2.end(), std::back_inserter(coeffs),
-                 [factors](Complex const &coeff) { return factors(2) * coeff; });
-}
-
 RotationCoefficients::Complex RotationCoefficients::recursion(t_uint n, t_int m, t_int mu) {
   assert(n >= 1);
   auto const factors = this->factors(n, m, mu);
   return factors(0) * operator()(n + 1, m - 1, mu + 1) +
          factors(1) * operator()(n + 1, m - 1, mu - 1) + factors(2) * operator()(n + 1, m - 1, mu);
-}
-
-void RotationCoefficients::all_coefficients(t_uint n, t_int m, t_int mu,
-                                            std::map<Index, Coefficients> &result) const {
-  if(result.count(std::make_tuple(n, m, mu)) == 1)
-    return;
-  if(m == 0) {
-    auto const initial = this->initial(n, mu);
-    result.emplace(std::make_tuple(n, 0, mu), Coefficients(initial, 0, 0));
-    result.emplace(std::make_tuple(n, 0, -mu), Coefficients(std::conj(initial), 0, 0));
-    return;
-  }
-  if(m < 0) {
-    all_coefficients(n, -m, -mu);
-    return;
-  }
-
-  auto const factors = this->factors(n, std::abs(m), mu);
-  result.emplace(std::make_tuple(n, std::abs(m), mu), factors);
-  result.emplace(std::make_tuple(n, -std::abs(m), -mu), factors.conjugate());
-  all_coefficients(n + 1, std::abs(m) - 1, mu + 1, result);
-  all_coefficients(n + 1, std::abs(m) - 1, mu - 1, result);
-  all_coefficients(n + 1, std::abs(m) - 1, mu, result);
 }
 }
