@@ -13,40 +13,48 @@ namespace optimet {
 //! \details Implementation follows Nail A. Gumerov, Ramani Duraiswami, SIAM J. Sci. Comput. vol
 //! 25, issue 4 pages 1344-1381 (2004), DOI: 10.1137/S1064827501399705.
 class RotationCoefficients {
-public:
-  typedef t_complex Complex;
-  typedef Complex::value_type Real;
+  //! Inner floating point with higher precision
+  typedef long double Real;
+  //! Inner complex floating point with higher precision
+  typedef std::complex<Real> Complex;
 
+public:
   typedef std::tuple<t_uint, t_int, t_int> Index;
   typedef Eigen::Matrix<Complex, 3, 1> Coefficients;
-  //! Rotation angle in rad
-  Real const theta;
-  //! Rotation angle in rad
-  Real const phi;
-  //! Rotation angle in rad
-  Real const chi;
 
-  RotationCoefficients(Real const &theta, Real const &phi, Real const &chi)
-      : theta(theta), phi(phi), chi(chi) {}
+  RotationCoefficients(t_real const &theta, t_real const &phi, t_real const &chi)
+      : theta_(static_cast<Real>(theta)), phi_(static_cast<Real>(phi)),
+        chi_(static_cast<Real>(chi)) {}
 
   //! \brief Spherical Harmonic Y^m_n projected onto Y^\mu_n
   //! \details from Y^m_n = \sum_\mu T_n^{\mu,n}Y^\mu_n. This operator gives T_n^{\mu, n}.
-  Complex operator()(t_uint n, t_int m, t_int mu) {
-    return with_caching(n, m, mu);
+  t_complex operator()(t_uint n, t_int m, t_int mu) {
+    return static_cast<t_complex>(with_caching(n, m, mu));
   }
   //! \brief Spherical Harmonic Y^m_n projected onto Y^\mu_n
   //! \brief Spherical Harmonic Y^m_n projected onto Y^\mu_n
-  Complex operator()(Index const &index) {
+  t_complex operator()(Index const &index) {
     return operator()(std::get<0>(index), std::get<1>(index), std::get<2>(index));
   }
 
+  t_real theta() const { return static_cast<t_real>(theta_); }
+  t_real phi() const { return static_cast<t_real>(phi_); }
+  t_real chi() const { return static_cast<t_real>(chi_); }
+
 protected:
+  //! Rotation angle in rad
+  Real const theta_;
+  //! Rotation angle in rad
+  Real const phi_;
+  //! Rotation angle in rad
+  Real const chi_;
+
   //! \brief Simplifies access to spherical harmonics
   //! \note There is a (-1)^m factor (Condon-Shortley phase term) missing with respect to the
   //! definition used int the Gumerov paper.
   Complex spherical_harmonic(t_uint n, t_int m) const {
-    return (m > 0 and m % 2 == 1) ? -boost::math::spherical_harmonic(n, m, theta, phi) :
-                                    boost::math::spherical_harmonic(n, m, theta, phi);
+    return (m > 0 and m % 2 == 1) ? -boost::math::spherical_harmonic(n, m, theta_, phi_) :
+                                    boost::math::spherical_harmonic(n, m, theta_, phi_);
   }
 
   static Real a(t_uint n, t_int m);
