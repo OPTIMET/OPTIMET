@@ -31,25 +31,33 @@ RotationCoefficients::factors(t_uint n, t_int m, t_int mu) const {
   return Coefficients(c0, c1, c2);
 }
 
-RotationCoefficients::Complex RotationCoefficients::operator()(t_uint n, t_int m, t_int mu) {
+RotationCoefficients::Complex RotationCoefficients::with_caching(t_uint n, t_int m, t_int mu) {
   if(static_cast<t_uint>(std::abs(m)) > n or static_cast<t_uint>(std::abs(mu)) > n)
     return 0;
   if(m < 0)
-    return std::conj(operator()(n, -m, -mu));
+    return std::conj(with_caching(n, -m, -mu));
 
   auto const prior = cache.find(std::make_tuple(n, m, mu));
   if(prior != cache.end())
     return prior->second;
 
-  auto const value = m == 0 ? initial(n, mu) : recursion(n, m, mu);
+  auto const value = recursion(n, m, mu);
   cache[std::make_tuple(n, m, mu)] = value;
   return value;
 }
 
 RotationCoefficients::Complex RotationCoefficients::recursion(t_uint n, t_int m, t_int mu) {
-  assert(n >= 1);
+  if(static_cast<t_uint>(std::abs(m)) > n or static_cast<t_uint>(std::abs(mu)) > n)
+    return 0;
+  if(m < 0)
+    return std::conj(with_caching(n, -m, -mu));
+
+  if(m == 0)
+    return initial(n, mu);
+
   auto const factors = this->factors(n, m, mu);
-  return factors(0) * operator()(n + 1, m - 1, mu + 1) +
-         factors(1) * operator()(n + 1, m - 1, mu - 1) + factors(2) * operator()(n + 1, m - 1, mu);
+  return factors(0) * with_caching(n + 1, m - 1, mu + 1) +
+         factors(1) * with_caching(n + 1, m - 1, mu - 1) +
+         factors(2) * with_caching(n + 1, m - 1, mu);
 }
 }
