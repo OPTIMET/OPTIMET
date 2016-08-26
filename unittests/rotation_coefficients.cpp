@@ -98,6 +98,7 @@ TEST_CASE("Check recurrence") {
       Triplet{1, 0, 0},  Triplet{1, 0, 1},   Triplet{1, 1, 0},   Triplet{1, 1, 1},
       Triplet{1, 0, -1}, Triplet{1, -1, 0},  Triplet{1, -1, -1}, Triplet{2, 2, 2},
       Triplet{2, -2, 2}, Triplet{10, 10, 2}, Triplet{10, -1, 2}, Triplet{15, 15, 2},
+      Triplet{10, 10, 10}
   };
 
   for(auto const triplet : triplets) {
