@@ -3,6 +3,10 @@
 
 #include "Types.h"
 
+#ifdef OPTIMET_MPI
+#include <mpi.h>
+#endif
+
 namespace optimet {
 namespace mpi {
 #ifdef OPTIMET_MPI

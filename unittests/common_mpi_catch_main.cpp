@@ -4,7 +4,6 @@
 #include "mpi/Session.h"
 #include <catch.hpp>
 #include <memory>
-#include <mpi.h>
 #include <random>
 
 std::unique_ptr<std::mt19937_64> mersenne(new std::mt19937_64(0));
