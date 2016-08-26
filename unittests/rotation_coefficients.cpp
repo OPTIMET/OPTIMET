@@ -98,7 +98,7 @@ TEST_CASE("Check recurrence") {
       Triplet{1, 0, 0},  Triplet{1, 0, 1},   Triplet{1, 1, 0},   Triplet{1, 1, 1},
       Triplet{1, 0, -1}, Triplet{1, -1, 0},  Triplet{1, -1, -1}, Triplet{2, 2, 2},
       Triplet{2, -2, 2}, Triplet{10, 10, 2}, Triplet{10, -1, 2}, Triplet{15, 15, 2},
-      Triplet{10, 10, 10}
+      Triplet{10, 10, 10}, Triplet{15, 15, 5}
   };
 
   for(auto const triplet : triplets) {
@@ -111,7 +111,8 @@ TEST_CASE("Check recurrence") {
                << ", expected: " << expected);
     auto const tolerance =
         std::max(static_cast<Real>(1e-12), std::abs(expected) * static_cast<Real>(1e-8));
-    CHECK(std::abs(actual - expected) < tolerance);
+    if(std::abs(expected) > tolerance)
+      CHECK(std::abs(actual - expected) < tolerance);
     CHECK(std::abs(rot(n, m, mu) - std::conj(rot(n, -m, -mu))) < 1e-8);
   }
 }
