@@ -1,5 +1,5 @@
 include_directories("${PROJECT_SOURCE_DIR}")
-add_library(common_catch_main_object OBJECT common_mpi_catch_main.cpp)
+add_library(common_catch_main_object OBJECT common_catch_main.cpp)
 if(CATCH_INCLUDE_DIR)
   target_include_directories(common_catch_main_object SYSTEM PUBLIC ${CATCH_INCLUDE_DIR})
 endif()
@@ -23,6 +23,9 @@ if(dompi)
   endif()
 
   add_library(common_mpi_catch_main_object OBJECT common_mpi_catch_main.cpp)
+  if(CATCH_INCLUDE_DIR)
+    target_include_directories(common_mpi_catch_main_object SYSTEM PUBLIC ${CATCH_INCLUDE_DIR})
+  endif()
   function(add_mpi_test testname)
     add_catch_test(${testname}
       COMMON_MAIN common_mpi_catch_main_object
