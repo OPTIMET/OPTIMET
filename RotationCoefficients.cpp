@@ -20,7 +20,7 @@ RotationCoefficients::Real RotationCoefficients::b(t_uint n, t_int m) {
                                        static_cast<Real>((2 * n - 1) * (2 * n + 1)));
 }
 
-Eigen::Matrix<RotationCoefficients::Complex, 3, 1>
+RotationCoefficients::Coefficients
 RotationCoefficients::factors(t_uint n, t_int m, t_int mu) const {
   auto const factor = std::exp(Complex(0, chi)) / b(n + 1, m - 1);
   auto const c0 =
@@ -28,7 +28,7 @@ RotationCoefficients::factors(t_uint n, t_int m, t_int mu) const {
   auto const c1 =
       -factor * 0.5 * b(n + 1, mu - 1) * std::exp(Complex(0, -phi)) * (1 + std::cos(theta));
   auto const c2 = -factor * a(n, mu) * std::sin(theta);
-  return Eigen::Matrix<Complex, 3, 1>(c0, c1, c2);
+  return Coefficients(c0, c1, c2);
 }
 
 RotationCoefficients::Complex RotationCoefficients::operator()(t_uint n, t_int m, t_int mu) {
@@ -75,5 +75,28 @@ RotationCoefficients::Complex RotationCoefficients::recursion(t_uint n, t_int m,
   auto const factors = this->factors(n, m, mu);
   return factors(0) * operator()(n + 1, m - 1, mu + 1) +
          factors(1) * operator()(n + 1, m - 1, mu - 1) + factors(2) * operator()(n + 1, m - 1, mu);
+}
+
+void RotationCoefficients::all_coefficients(t_uint n, t_int m, t_int mu,
+                                            std::map<Index, Coefficients> &result) const {
+  if(result.count(std::make_tuple(n, m, mu)) == 1)
+    return;
+  if(m == 0) {
+    auto const initial = this->initial(n, mu);
+    result.emplace(std::make_tuple(n, 0, mu), Coefficients(initial, 0, 0));
+    result.emplace(std::make_tuple(n, 0, -mu), Coefficients(std::conj(initial), 0, 0));
+    return;
+  }
+  if(m < 0) {
+    all_coefficients(n, -m, -mu);
+    return;
+  }
+
+  auto const factors = this->factors(n, std::abs(m), mu);
+  result.emplace(std::make_tuple(n, std::abs(m), mu), factors);
+  result.emplace(std::make_tuple(n, -std::abs(m), -mu), factors.conjugate());
+  all_coefficients(n + 1, std::abs(m) - 1, mu + 1, result);
+  all_coefficients(n + 1, std::abs(m) - 1, mu - 1, result);
+  all_coefficients(n + 1, std::abs(m) - 1, mu, result);
 }
 }

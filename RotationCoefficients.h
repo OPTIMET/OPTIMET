@@ -17,6 +17,7 @@ public:
   typedef t_complex Complex;
   typedef Complex::value_type Real;
   typedef std::tuple<t_uint, t_int, t_int> Index;
+  typedef Eigen::Matrix<Complex, 3, 1> Coefficients;
   //! Rotation angle in rad
   Real const theta;
   //! Rotation angle in rad
@@ -50,19 +51,27 @@ public:
   //! \note There is a (-1)^m factor (Condon-Shortley phase term) missing with respect to the
   //! definition used int the Gumerov paper.
   Complex spherical_harmonic(t_uint n, t_int m) const {
-    return boost::math::spherical_harmonic(n, m, theta, phi);
+    return (m > 0 and m % 2 == 1) ? -boost::math::spherical_harmonic(n, m, theta, phi) :
+                                    boost::math::spherical_harmonic(n, m, theta, phi);
   }
+
+  //! \brief Computes all coefficients in the recursion
+  std::map<Index, Coefficients> all_coefficients(t_uint n, t_int m, t_int mu) const {
+    std::map<Index, Coefficients> result;
+    all_coefficients(n, m, mu, result);
+    return result;
+  }
+  void all_coefficients(t_uint n, t_int m, t_int mu, std::map<Index, Coefficients> &result) const;
 
 protected:
   static Real a(t_uint n, t_int m);
   static Real b(t_uint n, t_int m);
-  Eigen::Matrix<Complex, 3, 1> factors(t_uint n, t_int m, t_int mu) const;
+  Coefficients factors(t_uint n, t_int m, t_int mu) const;
   //! Cache which holds previously computed values
   std::map<Index, Complex> cache;
   //! Initial values
   Complex initial(t_uint n, t_int mu) const {
-    return (std::abs(mu) % 2 == 0 ? 1 : -1) *
-           std::sqrt(4 * constant::pi / static_cast<Real>(2 * n + 1)) * spherical_harmonic(n, -mu);
+    return std::sqrt(4 * constant::pi / static_cast<Real>(2 * n + 1)) * spherical_harmonic(n, -mu);
   }
   //! Applies recursion
   Complex recursion(t_uint n, t_int m, t_int mu);
