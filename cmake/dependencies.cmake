@@ -44,11 +44,11 @@ endif()
 if(dompi AND NOT MPIEXEX_MAX_NUMPROCS)
   set(MPIEXEC_MAX_NUMPROCS 6)
 endif()
+
 # GMRes and other solvers
-if(dompi)
-  find_package(Belos)
-  set(OPTIMET_BELOS ${Belos_FOUND})
-  if(NOT Belos_FOUND)
-    message(STATUS "Compiling without Belos solvers")
-  endif()
+find_package(Belos)
+set(OPTIMET_BELOS ${Belos_FOUND})
+
+if(NOT Belos_FOUND)
+  message(STATUS "Compiling without Belos solvers")
 endif()
