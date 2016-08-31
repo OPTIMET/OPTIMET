@@ -76,7 +76,7 @@ protected:
   //! Switches between recurrence relationships
   t_complex recurrence(t_int n, t_int m, t_int l);
   t_complex initial(t_int l);
-  t_complex sectorial_recurrence(t_int n, t_int l);
+  t_complex sectorial_recurrence(t_int n, t_int m, t_int l);
   t_complex zonal_recurrence(t_int n, t_int l);
   t_complex offdiagonal_recurrence(t_int n, t_int m, t_int l);
 };

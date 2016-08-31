@@ -10,6 +10,47 @@ extern std::unique_ptr<std::mt19937_64> mersenne;
 
 using namespace optimet;
 
+namespace {
+//! True if n and m within shperical harmonics validity regime
+constexpr bool is_valid(t_int n, t_int m) { return n >= 0 and std::abs(m) <= n; }
+//! True if both pairs are valid
+constexpr bool is_valid(t_int n, t_int m, t_int l, t_int k) {
+  return is_valid(n, m) and is_valid(l, k);
+}
+//! Eases computing ratios of two factorials
+inline t_real factorial_ratio(t_int n, t_int m) {
+  return n == m ? 1 : std::tgamma(n + 1) / std::tgamma(m + 1);
+}
+//! Coefficient of Stout (2004) Appendix C recurrence relationship
+inline t_real a_plus(t_int n, t_int m) {
+  if(not is_valid(n, m))
+    return 0e0;
+  return -std::sqrt(static_cast<t_real>((n + m + 1) * (n - m + 1)) /
+                    static_cast<t_real>((2 * n + 1) * (2 * n + 3)));
+}
+//! Coefficient of Stout (2004) Appendix C recurrence relationship
+inline t_real a_minus(t_int n, t_int m) {
+  if(not is_valid(n, m))
+    return 0e0;
+  return std::sqrt(static_cast<t_real>((n + m) * (n - m)) /
+                   static_cast<t_real>((2 * n + 1) * (2 * n - 1)));
+}
+//! Coefficient of Stout (2004) Appendix C recurrence relationship
+inline t_real b_plus(t_int n, t_int m) {
+  if(not is_valid(n, m))
+    return 0e0;
+  return std::sqrt(static_cast<t_real>((n + m + 2) * (n + m + 1)) /
+                   static_cast<t_real>((2 * n + 1) * (2 * n + 3)));
+}
+//! Coefficient of Stout (2004) Appendix C recurrence relationship
+inline t_real b_minus(t_int n, t_int m) {
+  if(not is_valid(n, m))
+    return 0e0;
+  return std::sqrt(static_cast<t_real>((n - m) * (n - m - 1)) /
+                   static_cast<t_real>((2 * n + 1) * (2 * n - 1)));
+}
+} // anonymous namespace
+
 TEST_CASE("Check Ynm") {
   using namespace boost::math;
   Spherical<t_real> const R(1e0, 0.42, 0.36);
@@ -204,14 +245,42 @@ TEST_CASE("Translation-Addition all m") {
   }
 }
 
-TEST_CASE("CoAxial initial") {
-  {
+void check_coaxial_n_recurrence(CoAxialTranslationAdditionCoefficients tca,
+                                t_int n, t_int m, t_int l) {
+  auto left0 = -a_plus( n-1, m) * tca(n-1, m, l) + a_plus(n, m) * tca(n+1, m, l);
+  auto right0 = -a_plus(l, m) * tca(n, m, l+1) + a_plus(l-1, m) * tca(n, m, l-1);
+
+  CHECK(left0.real() == Approx(right0.real()));
+  CHECK(left0.imag() == Approx(right0.imag()));
+}
+  
+  
+  
+TEST_CASE("CoAxial") {
+  SECTION("Initial values") {
     Spherical<t_real> const R(1e0, 0.42, 0.36);
     t_complex const waveK(1e0, 1.5e0);
     CoAxialTranslationAdditionCoefficients tca(R, waveK, true);
     // Numbers are generated from the same formula in Scipy
     CHECK(tca(0, 0, 0).real() == Approx(1.1400511799225792));
     CHECK(tca(0, 0, 0).imag() == Approx(-0.55962217045848206));
+  }
+  SECTION("Check n recurrence") {
+    Spherical<t_real> const R(1e0, 0.42, 0.36);
+    t_complex const waveK(1e0, 1.5e0);
+    CoAxialTranslationAdditionCoefficients tca(R, waveK, true);
+    // This aims to check that we correctly implement formula 4.79
+    
+    t_int max_recur = 10;
+    t_int m = 0;
+    for (int l = 0; l < max_recur; ++l) {
+      for (int n = 0; n < max_recur; ++n) {
+        for (int m = 0; m <= 0; ++m) {
+          check_coaxial_n_recurrence(tca, n, m, l);
+        }
+      }
+    }
+    check_coaxial_n_recurrence(tca, 0, 1, 2);
 
   }
 }
