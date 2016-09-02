@@ -172,7 +172,9 @@ t_complex CachedCoAxialRecurrence::initial(t_int l) {
 }
 
 t_complex CachedCoAxialRecurrence::sectorial_recurrence(t_int n, t_int m, t_int l) {
-  assert(l > 0 and n > 0 and l >= n and (m == n or m == n-1));
+  assert(l > 0 and n > 0 and l >= n and (m == n or m == n-1) and (n+m != 1));
+  // This formula requires bnm = 0 which is only true from m = n and m = n-1
+  // It also requires bn-m to be non zero. This is zero if n+m = 1
   // Gumerov's b coeffs are equal to b_minus from Stout for m >=0 and
   // - b_minus for m < 0. Here m = n or n-1 by definition.
   return (operator()(n-1, m-1, l-1) * b_minus(l, -m) +
@@ -183,10 +185,10 @@ t_complex CachedCoAxialRecurrence::sectorial_recurrence(t_int n, t_int m, t_int 
 t_complex CachedCoAxialRecurrence::offdiagonal_recurrence(t_int n, t_int m, t_int l) {
   // gumerov 4.80 
   assert(m != 0 and n != 0 and m != n);
-  return operator()(n-1, m-1, l-1) *(-b_minus(l, -m)) + // minus because -m < 0 to match def
-         operator()(n-2, m, l) * (b_minus(n-1, m-1)) -  // sign ok because m >= 1
-         operator()(n-1, m-1, l+1) * b_minus(l+1, m-1) / 
-         b_minus(n,m);
+  return (operator()(n-1, m-1, l-1) * b_minus(l, -m) - // minus because -m < 0 to match def
+         operator()(n-2, m, l) * (b_minus(n-1, m-1)) +  // sign ok because m >= 1
+         operator()(n-1, m-1, l+1) * b_minus(l+1, m-1)) /
+         b_minus(n,-m);
 }
 
 t_complex CachedCoAxialRecurrence::zonal_recurrence(t_int n, t_int l) {

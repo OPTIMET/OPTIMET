@@ -247,15 +247,57 @@ TEST_CASE("Translation-Addition all m") {
 
 void check_coaxial_n_recurrence(CoAxialTranslationAdditionCoefficients tca,
                                 t_int n, t_int m, t_int l) {
+  // This aims to check that we correctly implement formula 4.79
   auto left0 = -a_plus( n-1, m) * tca(n-1, m, l) + a_plus(n, m) * tca(n+1, m, l);
   auto right0 = -a_plus(l, m) * tca(n, m, l+1) + a_plus(l-1, m) * tca(n, m, l-1);
-
+  INFO( "Testing n recurrence for n " << n << " m " << m << " l " << l );
   CHECK(left0.real() == Approx(right0.real()));
   CHECK(left0.imag() == Approx(right0.imag()));
 }
-  
-  
-  
+
+void check_coaxial_m_recurrence(CoAxialTranslationAdditionCoefficients tca,
+                                t_int n, t_int m, t_int l) {
+  assert(-m-1 < 0);
+  // This aims to check that we correctly implement formula 4.80
+  auto left0 = b_minus(n, m)*tca(n-1, m+1, l) + b_minus(n+1,-m-1)*tca(n+1,m+1,l);
+  auto right0 = b_minus(l+1, m)*tca(n, m, l+1) + b_minus(l,-m-1)*tca(n, m, l-1);
+  INFO( "Testing m recurrence for n " << n << " m " << m << " l " << l );
+  CHECK(left0.real() == Approx(right0.real()));
+  CHECK(left0.imag() == Approx(right0.imag()));
+}
+
+void check_coaxial_mn_recurrence(CoAxialTranslationAdditionCoefficients tca,
+                                t_int n, t_int m, t_int l) {
+  // This aims to check that we correctly implement formula 4.84
+  t_complex sign = ((m) >= 0 ? 1 : -1);
+  auto left0 = sign*b_minus(n+1,-m-1)*tca(n+1,m+1,l);
+  auto right0 = sign*b_minus(l+1, m)*tca(n, m, l+1) + b_minus(l,-m-1)*tca(n, m, l-1);
+  INFO( "Testing m=n recurrence for n " << n << " m " << m << " l " << l );
+  CHECK(left0.real() == Approx(right0.real()));
+  CHECK(left0.imag() == Approx(right0.imag()));
+}
+
+void check_coaxial_m_symmetry(CoAxialTranslationAdditionCoefficients tca,
+                                t_int n, t_int m, t_int l) {
+  // check that value is independent of m
+  auto left0 = tca(n,m,l);
+  auto right0 = tca(n,-m,l);
+  INFO( "Testing m symmetry for " << n << " m " << m << " l " << l );
+  CHECK(left0.real() == Approx(right0.real()));
+  CHECK(left0.imag() == Approx(right0.imag()));
+}
+
+void check_coaxial_ln_symmetry(CoAxialTranslationAdditionCoefficients tca,
+                                t_int n, t_int m, t_int l) {
+  // check that value has the right sign change for m<->l
+  auto left0 = tca(n,m,l);
+  t_complex sign = ((n+l) % 2 == 0 ? 1 : -1);
+  auto right0 = tca(l,m,n)*sign;
+  INFO( "Testing l to n symmetry n " << n << " m " << m << " l " << l);
+  CHECK(left0.real() == Approx(right0.real()));
+  CHECK(left0.imag() == Approx(right0.imag()));
+}
+
 TEST_CASE("CoAxial") {
   SECTION("Initial values") {
     Spherical<t_real> const R(1e0, 0.42, 0.36);
@@ -264,23 +306,59 @@ TEST_CASE("CoAxial") {
     // Numbers are generated from the same formula in Scipy
     CHECK(tca(0, 0, 0).real() == Approx(1.1400511799225792));
     CHECK(tca(0, 0, 0).imag() == Approx(-0.55962217045848206));
+    CHECK(tca(0, 0, 4).real() == Approx(-0.028191522402192234));
+    CHECK(tca(0, 0, 4).imag() == Approx(-0.02162885905593049));
+    CHECK(tca(1, 0, 1).real() == Approx(1.2274819687880665));
+    CHECK(tca(1, 0, 1).imag() == Approx(-1.0271756758800463));
+    CHECK(tca(-1, 1, 3).real() == Approx(0));
+    CHECK(tca(-1, 1, 3).imag() == Approx(0));
+    CHECK(tca(1, 0, -1).real() == Approx(0));
+    CHECK(tca(1, 0, -1).imag() == Approx(0));
+    CHECK(tca(1, 1, 3).real() == Approx(-0.085169586217943016));
+    CHECK(tca(1, 1, 3).imag() == Approx(0.36331568009355053));
+
+    t_complex expected;
+    expected = (- tca(1, 0, 1)*a_plus(1,0) - tca(0,0,2)*a_plus(0,0) + tca(1,0,3) * a_plus(2,0))/(-a_plus(1,0));
+    CHECK(tca(2, 0, 2).real() == Approx(expected.real()));
+    CHECK(tca(2, 0, 2).imag() == Approx(expected.imag()));
+
+    expected = (- tca(0, 0, 2)*a_plus(2,0) + tca(0,0,4) * a_plus(3,0))/(-a_plus(0,0));
+    CHECK(tca(1, 0, 3).real() == Approx(expected.real()));
+    CHECK(tca(1, 0, 3).imag() == Approx(expected.imag()));
+
+    expected = (- tca(1, 0, 3)*a_plus(3,0) - tca(0,0,4) * a_plus(0,0) + tca(1,0,5) * a_plus(4,0) )/(-a_plus(1,0));
+    CHECK(tca(2, 0, 4).real() == Approx(expected.real()));
+    CHECK(tca(2, 0, 4).imag() == Approx(expected.imag()));
+
+    expected = (tca(0, 0, 2)*b_minus(3,-1) + tca(0,0,4) * b_minus(4,0))/(b_minus(1,-1));
+    CHECK(tca(1, 1, 3).real() == Approx(expected.real()));
+    CHECK(tca(1, 1, 3).imag() == Approx(expected.imag()));
+
+    expected = (tca(2, 0, 2)*b_minus(3,-1) - tca(1,1,3) * b_minus(2,0) + tca(2,0,4) * b_minus(4,0)) / (b_minus(3,-1));
+    CHECK(tca(3, 1, 3).real() == Approx(expected.real()));
+    CHECK(tca(3, 1, 3).imag() == Approx(expected.imag()));
   }
   SECTION("Check n recurrence") {
     Spherical<t_real> const R(1e0, 0.42, 0.36);
     t_complex const waveK(1e0, 1.5e0);
     CoAxialTranslationAdditionCoefficients tca(R, waveK, true);
-    // This aims to check that we correctly implement formula 4.79
-    
     t_int max_recur = 10;
-    t_int m = 0;
-    for (int l = 0; l < max_recur; ++l) {
-      for (int n = 0; n < max_recur; ++n) {
-        for (int m = 0; m <= 0; ++m) {
-          check_coaxial_n_recurrence(tca, n, m, l);
+    for (t_int l = 0; l < max_recur; ++l) {
+      for (t_int n = 0; n < max_recur; ++n) {
+        for (t_int m = -n; m <= n; ++m) {
+          check_coaxial_ln_symmetry(tca, n, m, l);
+          check_coaxial_m_symmetry(tca, n, m, l);
         }
       }
     }
-    check_coaxial_n_recurrence(tca, 0, 1, 2);
-
+    for (t_int l = 0; l < max_recur; ++l) {
+      for (t_int n = 0; n < max_recur; ++n) {
+        check_coaxial_mn_recurrence(tca, n, n, l);
+        for (t_int m = 0; m <= n; ++m) {
+          check_coaxial_n_recurrence(tca, n, m, l);
+          check_coaxial_m_recurrence(tca, n, m, l);
+        }
+      }
+    }
   }
 }
