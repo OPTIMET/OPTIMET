@@ -11,7 +11,9 @@ add_catch_test(translation_addition LIBRARIES optilib ${library_dependencies})
 add_catch_test(harmonics_iterator LIBRARIES optilib ${library_dependencies})
 add_catch_test(aux_coefficients LIBRARIES optilib ${library_dependencies})
 
-add_catch_test(rotation_coefficients LIBRARIES optilib ${library_dependencies})
+if(NOT dompi)
+  add_catch_test(rotation_coefficients LIBRARIES optilib ${library_dependencies})
+endif()
 
 if(dompi)
   if(MPIEXEC_MAX_NUMPROCS LESS 2)
@@ -55,6 +57,7 @@ if(dompi)
   if(OPTIMET_BELOS)
     add_mpi_test(belos LIBRARIES optilib ${library_dependencies})
     add_mpi_test(scalapack_vs_belos LIBRARIES optilib ${library_dependencies})
+    add_mpi_test(rotation_coefficients LIBRARIES optilib ${library_dependencies})
 
     # Prints all available solvers and their parameters
     add_executable(print_belos_params print_belos_params.cpp)

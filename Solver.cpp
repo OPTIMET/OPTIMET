@@ -200,7 +200,7 @@ void Solver::update(Geometry *geometry_, std::shared_ptr<Excitation const> incWa
 
 void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b,
                                Vector<t_complex> &x, mpi::Communicator const &comm) const {
-#ifdef OPTIMET_BELOS
+#if defined(OPTIMET_BELOS) && defined(OPTIMET_MPI)
   if(belos_parameters()->get<std::string>("Solver", "scalapack") != "eigen")
     solveLinearSystemScalapack(A, b, x, comm);
   else

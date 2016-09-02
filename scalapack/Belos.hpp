@@ -6,7 +6,7 @@
 #endif
 
 #include "Types.h"
-#ifdef OPTIMET_BELOS
+#if defined(OPTIMET_BELOS) && defined(OPTIMET_MPI)
 
 #include "scalapack/Belos.h"
 #include "scalapack/Matrix.h"

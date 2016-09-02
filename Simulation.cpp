@@ -25,11 +25,15 @@ int Simulation::run() {
     return 1;
 
 // Initialize the solver
-#if defined(OPTIMET_BELOS)
+#if defined(OPTIMET_BELOS) && defined(OPTIMET_MPI)
   optimet::scalapack::Context context(run.parallel_params.grid);
-  optimet::Solver solver(&(run.geometry), run.excitation, O3DSolverIndirect, run.nMax,
-                         context, run.belos_params);
+  optimet::Solver solver(&(run.geometry), run.excitation, O3DSolverIndirect, run.nMax, context,
+                         run.belos_params);
   solver.block_size({run.parallel_params.block_size, run.parallel_params.block_size});
+#elif defined(OPTIMET_BELOS)
+  optimet::scalapack::Context context;
+  optimet::Solver solver(&(run.geometry), run.excitation, O3DSolverIndirect, run.nMax, context,
+                         run.belos_params);
 #elif defined(OPTIMET_MPI)
   optimet::scalapack::Context context(run.parallel_params.grid);
   optimet::Solver solver(&(run.geometry), run.excitation, O3DSolverIndirect, run.nMax, context);

@@ -3,10 +3,13 @@
 
 #include "Types.h"
 #include "constants.h"
+#include "mpi/Communicator.h"
+#include <boost/math/special_functions/spherical_harmonic.hpp>
 #include <map>
 #include <vector>
-
-#include <boost/math/special_functions/spherical_harmonic.hpp>
+#ifdef OPTIMET_BELOS
+#include <Teuchos_RCPDecl.hpp>
+#endif
 
 namespace optimet {
 //! \brief Spherical harmonics projects onto rotated Spherical Harmonics
@@ -71,5 +74,16 @@ protected:
   //! Applies caching to recursion
   Complex with_caching(t_uint n, t_int m, t_int mu);
 };
+
+#ifdef OPTIMET_BELOS
+namespace belos {
+//! Creates a map of input and output indices
+Teuchos::RCP<Map const>
+map(t_uint nmax, t_uint nobjects, mpi::Communicator const &comm = mpi::Communicator());
+//! Creates a graph for the rotation matrix
+CrsGraph crs_rotation_graph(t_uint nmax, t_uint nobjects,
+                            mpi::Communicator const &comm = mpi::Communicator());
+}
+#endif
 }
 #endif

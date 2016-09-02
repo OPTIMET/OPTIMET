@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <random>
+#include <HarmonicsIterator.h>
 
 extern std::unique_ptr<std::mt19937_64> mersenne;
 using namespace optimet;
@@ -94,12 +95,11 @@ TEST_CASE("Check recurrence") {
   // Creates a set of n to look at
   Cache cache;
   std::uniform_int_distribution<> ndist(2, 50);
-  std::set<Triplet> triplets = {
-      Triplet{1, 0, 0},  Triplet{1, 0, 1},   Triplet{1, 1, 0},   Triplet{1, 1, 1},
-      Triplet{1, 0, -1}, Triplet{1, -1, 0},  Triplet{1, -1, -1}, Triplet{2, 2, 2},
-      Triplet{2, -2, 2}, Triplet{10, 10, 2}, Triplet{10, -1, 2}, Triplet{15, 15, 2},
-      Triplet{10, 10, 10}, Triplet{15, 15, 5}
-  };
+  std::set<Triplet> triplets = {Triplet{1, 0, 0},    Triplet{1, 0, 1},   Triplet{1, 1, 0},
+                                Triplet{1, 1, 1},    Triplet{1, 0, -1},  Triplet{1, -1, 0},
+                                Triplet{1, -1, -1},  Triplet{2, 2, 2},   Triplet{2, -2, 2},
+                                Triplet{10, 10, 2},  Triplet{10, -1, 2}, Triplet{15, 15, 2},
+                                Triplet{10, 10, 10}, Triplet{15, 15, 5}};
 
   for(auto const triplet : triplets) {
     auto const n = std::get<0>(triplet);
@@ -115,4 +115,40 @@ TEST_CASE("Check recurrence") {
       CHECK(std::abs(actual - expected) < tolerance);
     CHECK(std::abs(rot(n, m, mu) - std::conj(rot(n, -m, -mu))) < 1e-8);
   }
+}
+
+TEST_CASE("Distribution of rows (columns) across procs") {
+  auto const world = mpi::Communicator();
+  auto const nmax = 10;
+  auto const nobjects = 25;
+  auto const map = optimet::belos::map(nmax, nobjects, world);
+  CHECK(map->isContiguous());
+  CHECK(map->isDistributed() == (world.size() > 1));
+  CHECK(map->isOneToOne());
+  CHECK(map->getIndexBase() == 0);
+
+  auto const min_local =
+      (nobjects / world.size()) * world.rank() + std::min(nobjects % world.size(), world.rank());
+  auto const local = (nobjects / world.size()) + (nobjects % world.size() > world.rank() ? 1 : 0);
+  auto const all_harmonics = 2 * nmax * (nmax + 2);
+  CHECK(map->getMinLocalIndex() == 0);
+  CAPTURE(map->getMinLocalIndex());
+  CAPTURE(map->getMaxLocalIndex());
+  CAPTURE(map->getMinGlobalIndex());
+  CAPTURE(map->getMaxGlobalIndex());
+  CHECK(map->getNodeNumElements() == local * all_harmonics);
+  CHECK(map->getMaxLocalIndex() == local * all_harmonics - 1);
+  CHECK(map->getMinGlobalIndex() == min_local * all_harmonics);
+  CHECK(map->getMaxGlobalIndex() == (min_local + local) * all_harmonics - 1);
+}
+
+TEST_CASE("Graph structure of the sparse rotation matrix") {
+  auto const world = mpi::Communicator();
+  auto const nmax = 10;
+  auto const nobjects = 25;
+  auto const graph = optimet::belos::crs_rotation_graph(nmax, nobjects, world);
+  auto const sum_n = [](t_uint x) { return (x * x + x) / 2; };
+  auto const sum_n2 = [](t_uint x) { return (2 * x * x * x + 3 * x * x + x) / 6; };
+  auto const row_entries = nobjects * (4 * sum_n2(nmax) + 4 * sum_n(nmax) + 1);
+  CHECK(graph.getGlobalNumEntries() == row_entries);
 }
