@@ -41,6 +41,15 @@ public:
   t_real phi() const { return static_cast<t_real>(phi_); }
   t_real chi() const { return static_cast<t_real>(chi_); }
 
+  //! Matrix for spherical harmonics of given degree
+  Matrix<t_complex> matrix(t_uint n);
+
+  //! Basis rotation from a to ^a
+  Matrix<t_real> basis_rotation() const {
+    return basis_rotation(theta(), phi(), chi());
+  }
+  static Matrix<t_real> basis_rotation(t_real theta, t_real phi, t_real chi);
+
 protected:
   //! Rotation angle in rad
   Real const theta_;
@@ -70,6 +79,42 @@ protected:
   Complex recursion(t_uint n, t_int m, t_int mu);
   //! Applies caching to recursion
   Complex with_caching(t_uint n, t_int m, t_int mu);
+};
+
+//! \brief Rotation by (phi, psi, chi) for orders up to nmax
+class Rotation {
+   public:
+     Rotation(t_real const &theta, t_real const &phi, t_real const &chi, t_uint nmax);
+
+     t_real theta() const { return theta_; }
+     t_real phi() const { return phi_; }
+     t_real chi() const { return chi_; }
+     t_uint nmax() const { return nmax_; }
+
+     //! creates a rotation matrix for the given input
+     Matrix<t_complex> rotation_matrix(t_real n) {
+       return rotation_matrix(RotationCoefficients(theta(), phi(), chi()), n);
+     }
+     //! creates a rotation matrix for the given input
+     Matrix<t_complex> rotation_matrix(RotationCoefficients &coeffs, t_real n) {
+       return coeffs.matrix(n);
+     }
+     //! creates a rotation matrix for the given input
+     Matrix<t_complex> rotation_matrix(RotationCoefficients &&coeffs, t_real n) {
+       return coeffs.matrix(n);
+     }
+
+   protected:
+     //! Rotation angle in rad
+     t_real const theta_;
+     //! Rotation angle in rad
+     t_real const phi_;
+     //! Rotation angle in rad
+     t_real const chi_;
+     //! Maximum degree of the spherical harmonics
+     t_uint const nmax_;
+     //! Matrices for each spherical harmonic up to given order
+     std::vector<Matrix<t_complex>> order;
 };
 }
 #endif

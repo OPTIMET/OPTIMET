@@ -61,4 +61,34 @@ RotationCoefficients::Complex RotationCoefficients::recursion(t_uint n, t_int m,
          factors(1) * with_caching(n + 1, m - 1, mu - 1) +
          factors(2) * with_caching(n + 1, m - 1, mu);
 }
+
+Matrix<t_complex> RotationCoefficients::matrix(t_uint n) {
+  Matrix<t_complex> result = Matrix<t_complex>::Zero(2 * n + 1, 2 * n + 1);
+  for(t_uint i(0); i < 2 * n + 1; ++i) {
+    t_int const m = static_cast<t_int>(i) - static_cast<t_int>(n);
+    for(t_uint j(0); j < 2 * n + 1; ++j) {
+      t_int const mu = static_cast<t_int>(j) - static_cast<t_int>(n);
+      result(j, i) = operator()(n, m, mu);
+    }
+  }
+  return result;
+}
+
+Rotation::Rotation(t_real const &theta, t_real const &phi, t_real const &chi, t_uint nmax)
+    : theta_(theta), phi_(phi), chi_(chi), nmax_(nmax) {
+  order.reserve(nmax+1);
+  RotationCoefficients coeffs(theta, phi, chi);
+  for(t_uint i(0); i <= nmax; ++i)
+    order.push_back(coeffs.matrix(i));
+}
+
+Matrix<t_real> RotationCoefficients::basis_rotation(t_real theta, t_real phi, t_real chi) {
+  Matrix<t_real> result(3, 3);
+  result << -sin(phi) * sin(chi) - cos(theta) * cos(phi) * cos(chi),
+         sin(phi) * cos(chi) - cos(theta) * cos(phi) * sin(chi), sin(theta) * cos(phi),
+         cos(phi) * sin(chi) - cos(theta) * sin(phi) * cos(chi),
+         -cos(phi) * cos(chi) - cos(theta) * sin(phi) * sin(chi), sin(theta) * sin(phi),
+         sin(theta) * cos(chi), sin(theta) * sin(chi), cos(theta);
+  return result;
+};
 }

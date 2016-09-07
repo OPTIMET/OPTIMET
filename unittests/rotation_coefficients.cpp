@@ -3,6 +3,7 @@
 #include "RotationCoefficients.h"
 #include "Types.h"
 #include "constants.h"
+#include <Eigen/LU>
 #include <boost/math/special_functions/spherical_harmonic.hpp>
 #include <iostream>
 #include <memory>
@@ -16,17 +17,17 @@ TEST_CASE("Check Initials") {
   auto const theta = rdist(*mersenne);
   auto const phi = 2 * rdist(*mersenne);
   auto const chi = rdist(*mersenne);
-  RotationCoefficients rot(theta, phi, chi);
+  RotationCoefficients rotation(theta, phi, chi);
 
-  CHECK(std::abs(rot(0, 1, -1)) < 1e-12);
+  CHECK(std::abs(rotation(0, 1, -1)) < 1e-12);
   for(t_uint n = 5; n > 0; --n) {
     auto const factor = std::sqrt(4 * constant::pi / static_cast<t_real>(2 * n + 1));
     for(t_int mu = -static_cast<t_int>(n); mu <= static_cast<t_int>(n); ++mu) {
       auto const expected = ((-mu > 0 and -mu % 2 == 1) ? -1. : 1.) * factor *
                             boost::math::spherical_harmonic(n, -mu, theta, phi);
-      auto const actual = rot(n, 0, mu);
+      auto const actual = rotation(n, 0, mu);
       CHECK(std::abs(actual - expected) < 1e-8);
-      CHECK(std::abs(rot(n, 0, -mu) - std::conj(rot(n, 0, mu))) < 1e-8);
+      CHECK(std::abs(rotation(n, 0, -mu) - std::conj(rotation(n, 0, mu))) < 1e-8);
     }
   }
 }
@@ -89,30 +90,108 @@ TEST_CASE("Check recurrence") {
   auto const theta = rdist(*mersenne);
   auto const phi = 2 * rdist(*mersenne);
   auto const chi = rdist(*mersenne);
-  RotationCoefficients rot(theta, phi, chi);
+  RotationCoefficients rotation(theta, phi, chi);
 
   // Creates a set of n to look at
   Cache cache;
   std::uniform_int_distribution<> ndist(2, 50);
-  std::set<Triplet> triplets = {
-      Triplet{1, 0, 0},  Triplet{1, 0, 1},   Triplet{1, 1, 0},   Triplet{1, 1, 1},
-      Triplet{1, 0, -1}, Triplet{1, -1, 0},  Triplet{1, -1, -1}, Triplet{2, 2, 2},
-      Triplet{2, -2, 2}, Triplet{10, 10, 2}, Triplet{10, -1, 2}, Triplet{15, 15, 2},
-      Triplet{10, 10, 10}, Triplet{15, 15, 5}
-  };
+  std::set<Triplet> triplets = {Triplet{1, 0, 0},    Triplet{1, 0, 1},   Triplet{1, 1, 0},
+                                Triplet{1, 1, 1},    Triplet{1, 0, -1},  Triplet{1, -1, 0},
+                                Triplet{1, -1, -1},  Triplet{2, 2, 2},   Triplet{2, -2, 2},
+                                Triplet{10, 10, 2},  Triplet{10, -1, 2}, Triplet{15, 15, 2},
+                                Triplet{10, 10, 10}, Triplet{15, 15, 5}};
 
   for(auto const triplet : triplets) {
     auto const n = std::get<0>(triplet);
     auto const m = std::get<1>(triplet);
     auto const mu = std::get<2>(triplet);
     Complex const expected = recurrence(theta, phi, chi, n, m, mu, cache);
-    Complex const actual = rot(n, m, mu);
+    Complex const actual = rotation(n, m, mu);
     INFO("n: " << n << ", m: " << m << ", mu: " << mu << ", actual: " << actual
                << ", expected: " << expected);
     auto const tolerance =
         std::max(static_cast<Real>(1e-12), std::abs(expected) * static_cast<Real>(1e-8));
     if(std::abs(expected) > tolerance)
       CHECK(std::abs(actual - expected) < tolerance);
-    CHECK(std::abs(rot(n, m, mu) - std::conj(rot(n, -m, -mu))) < 1e-8);
+    CHECK(std::abs(rotation(n, m, mu) - std::conj(rotation(n, -m, -mu))) < 1e-8);
+  }
+}
+
+TEST_CASE("Rotation by 0,pi,0 is identity") {
+  std::uniform_real_distribution<> idist(0, 10);
+  auto const n = 2; // std::uniform_int_distribution<>(1, 10)(*mersenne);
+
+  CAPTURE(RotationCoefficients(0, constant::pi, 0).matrix(n));
+  for(t_int i(-static_cast<t_int>(n)); i <= static_cast<t_int>(n); ++i)
+    CAPTURE(boost::math::spherical_harmonic(n, i, 0, 0));
+  CHECK(RotationCoefficients(0, constant::pi, 0)
+            .matrix(n)
+            .isApprox(Matrix<t_complex>::Identity(2 * n + 1, 2 * n + 1)));
+}
+
+Vector<t_real> to_spherical(Vector<t_real> const &x) {
+  assert(x.size() == 3);
+  auto const r = x.stableNorm();
+  auto const theta = std::atan2(x[1], x[0]);
+  auto const phi = r > 1e-12 ? std::acos(x[2] / r) : 0e0;
+  Vector<t_real> result(3);
+  result << r, theta > 0 ? theta: theta + 2 * constant::pi, phi;
+  return result;
+};
+
+TEST_CASE("Basis rotation") {
+  using std::cos;
+  using std::sin;
+  std::uniform_real_distribution<> rdist(0, constant::pi);
+  auto const theta = rdist(*mersenne);
+  auto const phi = 2 * rdist(*mersenne);
+  auto const chi = rdist(*mersenne);
+
+  Vector<t_real> z = Vector<t_real>::Zero(3);
+  z[2] = 1;
+  auto const zp_sphe = to_spherical(
+      RotationCoefficients::basis_rotation(theta, phi, chi) * z);
+  CHECK(zp_sphe[0] == Approx(1));
+  CHECK(zp_sphe[1] == Approx(phi));
+  CHECK(zp_sphe[2] == Approx(theta));
+  auto const z_sphe = to_spherical(
+        RotationCoefficients::basis_rotation(theta, phi, chi).transpose() * z);
+  CHECK(z_sphe[0] == Approx(1));
+  CHECK(z_sphe[1] == Approx(chi));
+  CHECK(z_sphe[2] == Approx(theta));
+}
+
+TEST_CASE("Try a rotation, will ya?") {
+  std::uniform_real_distribution<> rdist(0, constant::pi);
+  auto const theta = 0; // rdist(*mersenne);
+  auto const phi = constant::pi / 2;   // 2 * rdist(*mersenne);
+  auto const chi = 0;   // rdist(*mersenne);
+
+  std::uniform_real_distribution<> idist(0, 10);
+  auto const n = 1; // std::uniform_int_distribution<>(1, 10)(*mersenne);
+
+  RotationCoefficients rotation(theta, phi, chi);
+
+  auto const spherical_harmonics = [n](t_int m, t_real theta, t_real phi) {
+    return (m > 0 and m % 2 == 1) ? -boost::math::spherical_harmonic(n, m, theta, phi) :
+                                    boost::math::spherical_harmonic(n, m, theta, phi);
+  };
+
+  for(t_uint i(0); i < 20; ++i) {
+    auto const cart_x = Vector<t_real>::Random(3).normalized();
+    auto const cart_xp = RotationCoefficients::basis_rotation(theta, phi, chi) * cart_x;
+    auto const sphe_x = to_spherical(cart_x);
+    auto const sphe_xp = to_spherical(cart_xp);
+
+    Vector<t_complex> rotated(2 * n + 1), original(2 * n + 1);
+    for(t_int m(-static_cast<t_int>(n)); m <= n; ++m) {
+      rotated(m + static_cast<t_int>(n)) = spherical_harmonics(m, sphe_xp[2], sphe_xp[1]);
+      original(m + static_cast<t_int>(n)) = spherical_harmonics(m, sphe_x[2], sphe_x[1]);
+    }
+    INFO(rotated.transpose());
+    INFO((rotation.matrix(n) * rotated).transpose());
+    INFO(original.transpose());
+    INFO((rotation.matrix(n) * original).transpose());
+    CHECK(original.isApprox(rotation.matrix(n) * rotated));
   }
 }
