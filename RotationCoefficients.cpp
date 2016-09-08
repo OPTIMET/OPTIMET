@@ -25,9 +25,9 @@ RotationCoefficients::factors(t_uint n, t_int m, t_int mu) const {
   auto const factor = std::exp(Complex(0, chi_)) / b(n + 1, m - 1);
   auto const half_factor = static_cast<Real>(0.5) * factor;
   auto const c0 =
-      half_factor * b(n + 1, -mu - 1) * std::exp(Complex(0, phi_)) * (1 - std::cos(theta_));
+      half_factor * b(n + 1, -mu - 1) * std::exp(Complex(0, -phi_)) * (1 - std::cos(theta_));
   auto const c1 =
-      -half_factor * b(n + 1, mu - 1) * std::exp(Complex(0, -phi_)) * (1 + std::cos(theta_));
+      -half_factor * b(n + 1, mu - 1) * std::exp(Complex(0, phi_)) * (1 + std::cos(theta_));
   auto const c2 = -factor * a(n, mu) * std::sin(theta_);
   return Coefficients(c0, c1, c2);
 }
