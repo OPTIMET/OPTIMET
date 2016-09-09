@@ -141,7 +141,7 @@ Vector<t_real> to_spherical(Vector<t_real> const &x) {
 };
 
 TEST_CASE("Basis rotation from z to zp") {
-  Eigen::Matrix<t_real, 3, 1> const z(0, 0, 1); // = Eigen::Matrix<t_real, 3, 1>::Random().normalized();
+  Eigen::Matrix<t_real, 3, 1> const z(0, 0, 1);
   Eigen::Matrix<t_real, 3, 1> zp = Eigen::Matrix<t_real, 3, 1>::Random().normalized();
   Eigen::Matrix<t_real, 3, 3> rotation(3, 3);
   rotation.col(2) = zp;
@@ -152,7 +152,7 @@ TEST_CASE("Basis rotation from z to zp") {
 
   auto const theta = std::acos(rotation(2, 2));
   auto const phi = std::atan2(rotation(1, 2), rotation(0, 2));
-  auto const chi = constant::pi; //std::atan2(rotation(2, 1), rotation(2, 0));
+  auto const chi = constant::pi;
   RotationCoefficients rotcoeffs(theta, phi, chi);
 
   CHECK((rotation * z).isApprox(zp));
