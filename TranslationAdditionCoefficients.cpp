@@ -2,8 +2,8 @@
 #include "Bessel.h"
 #include "constants.h"
 
-#include <complex>
 #include <cmath>
+#include <complex>
 
 #include <boost/math/special_functions/legendre.hpp>
 #include <boost/math/special_functions/spherical_harmonic.hpp>
@@ -149,12 +149,11 @@ t_complex CachedCoAxialRecurrence::recurrence(t_int n, t_int m, t_int l) {
   else if(l < n) {
     t_complex factor = ((l + n) % 2 == 0 ? 1 : -1);
     return operator()(l, m, n) * factor;
-  }
-  else if(m == n)
+  } else if(m == n)
     return sectorial_recurrence(n, m, l);
-  else if(m==0)
+  else if(m == 0)
     return zonal_recurrence(n, l);
-  else if(m == n-1)
+  else if(m == n - 1)
     return sectorial_recurrence(n, m, l);
   else
     return offdiagonal_recurrence(n, m, l);
@@ -166,38 +165,41 @@ t_complex CachedCoAxialRecurrence::initial(t_int l) {
   auto const bessel = regular ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
   auto const hb = std::get<0>(bessel(wave, l)).back();
 
-  auto const factor = std::sqrt(2*l+1) * (l % 2 == 0 ? 1 : -1);
+  auto const factor = std::sqrt(2 * l + 1) * (l % 2 == 0 ? 1 : -1);
 
   return factor * hb;
 }
 
 t_complex CachedCoAxialRecurrence::sectorial_recurrence(t_int n, t_int m, t_int l) {
-  assert(l > 0 and n > 0 and l >= n and (m == n or m == n-1) and (n+m != 1));
+  assert(l > 0 and n > 0 and l >= n and (m == n or m == n - 1) and (n + m != 1));
   // This formula requires bnm = 0 which is only true from m = n and m = n-1
   // It also requires bn-m to be non zero. This is zero if n+m = 1
   // Gumerov's b coeffs are equal to b_minus from Stout for m >=0 and
   // - b_minus for m < 0. Here m = n or n-1 by definition.
-  return (operator()(n-1, m-1, l-1) * b_minus(l, -m) +
-          operator()(n-1, m-1, l+1) * b_minus(l+1, m-1)) /
-          b_minus(n, -m);
+  return (operator()(n - 1, m - 1, l - 1) * b_minus(l, -m) +
+          operator()(n - 1, m - 1, l + 1) * b_minus(l + 1, m - 1)) /
+         b_minus(n, -m);
 }
 
 t_complex CachedCoAxialRecurrence::offdiagonal_recurrence(t_int n, t_int m, t_int l) {
-  // gumerov 4.80 
+  // gumerov 4.80
   assert(m != 0 and n != 0 and m != n);
-  return (operator()(n-1, m-1, l-1) * b_minus(l, -m) - // minus because -m < 0 to match def
-         operator()(n-2, m, l) * (b_minus(n-1, m-1)) +  // sign ok because m >= 1
-         operator()(n-1, m-1, l+1) * b_minus(l+1, m-1)) /
-         b_minus(n,-m);
+  return (operator()(n - 1, m - 1, l - 1) *
+              b_minus(l, -m) - // minus because -m < 0 to match def
+                               operator()(n - 2, m, l) *
+                                   (b_minus(n - 1, m - 1)) + // sign ok because m >= 1
+                                                             operator()(n - 1, m - 1, l + 1) *
+                                                                 b_minus(l + 1, m - 1)) /
+         b_minus(n, -m);
 }
 
 t_complex CachedCoAxialRecurrence::zonal_recurrence(t_int n, t_int l) {
   // Gumerov 4.79 i.e. m = 0
   assert(l > 0 and n > 0 and l >= n);
-  return (- operator()(n-1, 0, l-1) * a_plus(l-1, 0) +
-          - operator()(n-2, 0, l) * a_plus(n-2, 0) +
-          + operator()(n-1, 0, l+1) * a_plus(l, 0)) /
-          - a_plus(n-1, 0);
+  return (-operator()(n - 1, 0, l - 1) * a_plus(l - 1, 0) +
+          -operator()(n - 2, 0, l) * a_plus(n - 2, 0) +
+          +operator()(n - 1, 0, l + 1) * a_plus(l, 0)) /
+         -a_plus(n - 1, 0);
 }
 
 } // end of detailed namespace
