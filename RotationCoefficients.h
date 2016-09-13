@@ -52,7 +52,7 @@ public:
   //! \note There is a (-1)^m factor (Condon-Shortley phase term) missing with respect to the
   //! definition used int the Gumerov paper (DOI: 10.1137/S1064827501399705).
   Complex spherical_harmonic(t_uint n, t_int m) const {
-    return spherical_harmonic(n, m, theta_, -phi_);
+    return spherical_harmonic(n, m, theta_, phi_);
   }
   //! \brief Simplifies access to spherical harmonics
   //! \note There is a (-1)^m factor (Condon-Shortley phase term) missing with respect to the
@@ -75,7 +75,8 @@ protected:
   std::map<Index, Complex> cache;
   //! Initial values
   Complex initial(t_uint n, t_int mu) const {
-    return std::sqrt(4 * constant::pi / static_cast<Real>(2 * n + 1)) * spherical_harmonic(n, -mu);
+    return std::sqrt(4 * constant::pi / static_cast<Real>(2 * n + 1)) *
+           spherical_harmonic(n, -mu, theta_, -phi_);
   }
   //! Applies recursion
   Complex recursion(t_uint n, t_int m, t_int mu);
