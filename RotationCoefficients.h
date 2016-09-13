@@ -11,7 +11,7 @@
 namespace optimet {
 //! \brief Spherical harmonics projects onto rotated Spherical Harmonics
 //! \details Implementation follows Nail A. Gumerov, Ramani Duraiswami, SIAM J. Sci. Comput. vol
-//! 25, issue 4 pages 1344-1381 (2004), DOI: 10.1137/S1064827501399705.
+//! 25, issue 4 pages 1344-1381 (2004), doi: 10.1137/s1064827501399705.
 class RotationCoefficients {
   //! Inner floating point with higher precision
   typedef long double Real;
@@ -50,13 +50,13 @@ public:
 
   //! \brief Simplifies access to spherical harmonics
   //! \note There is a (-1)^m factor (Condon-Shortley phase term) missing with respect to the
-  //! definition used int the Gumerov paper.
+  //! definition used int the Gumerov paper (DOI: 10.1137/S1064827501399705).
   Complex spherical_harmonic(t_uint n, t_int m) const {
     return spherical_harmonic(n, m, theta_, -phi_);
   }
   //! \brief Simplifies access to spherical harmonics
   //! \note There is a (-1)^m factor (Condon-Shortley phase term) missing with respect to the
-  //! definition used int the Gumerov paper.
+  //! definition used int the Gumerov paper (DOI: 10.1137/S1064827501399705).
   template <class T> static std::complex<T> spherical_harmonic(t_uint n, t_int m, T theta, T phi) {
     return (m > 0 and m % 2 == 1) ? -boost::math::spherical_harmonic(n, m, theta, phi) :
                                     boost::math::spherical_harmonic(n, m, theta, phi);
