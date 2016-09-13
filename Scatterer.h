@@ -52,7 +52,7 @@ public:
    * @param bground background electromagnetic medium
    * @return 0 if successful, 1 otherwise.
    */
-  optimet::Matrix<optimet::t_complex>
+  optimet::Vector<optimet::t_complex>
   getTLocal(optimet::t_real omega_, ElectroMagnetic const &bground) const;
 };
 

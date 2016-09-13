@@ -97,7 +97,7 @@ void Solver::populateDirect() {
     // we are in the FF case -> get the incoming excitation from the geometry
     else
       incWave->getIncLocal(geometry->objects[i].vR, Q_local.data(), nMax);
-    Q.segment(i * 2 * flatMax, 2 * flatMax) = T * Q_local;
+    Q.segment(i * 2 * flatMax, 2 * flatMax) = T.array() * Q_local.array();
 
     for(size_t j = 0; j < geometry->objects.size(); j++)
       if(i == j)
@@ -154,7 +154,7 @@ Vector<t_complex> Solver::convertIndirect(Vector<t_complex> const &scattered) co
   Vector<t_complex> result(N * geometry->objects.size());
   for(size_t i = 0; i < geometry->objects.size(); i++)
     result.segment(i * N, N) =
-        geometry->getTLocal(incWave->omega, i, nMax) * scattered.segment(i * N, N);
+        geometry->getTLocal(incWave->omega, i, nMax).array() * scattered.segment(i * N, N).array();
   return result;
 }
 
@@ -262,7 +262,7 @@ preconditioned_scattering_matrix(std::vector<Scatterer>::const_iterator const &f
   Matrix<t_complex> result(2 * n * (end_first - first), 2 * n * (end_second - second));
   size_t y(0);
   for(auto iterj(second); iterj != end_second; ++iterj, y += 2 * n) {
-    Matrix<t_complex> const factor = -iterj->getTLocal(incWave->omega, bground);
+    Vector<t_complex> const factor = -iterj->getTLocal(incWave->omega, bground);
     size_t x(0);
     for(auto iteri(first); iteri != end_first; ++iteri, x += 2 * n) {
       if(iteri == iterj) {
@@ -273,7 +273,7 @@ preconditioned_scattering_matrix(std::vector<Scatterer>::const_iterator const &f
         result.block(x + n, y + n, n, n) = AB.diagonal.transpose();
         result.block(x, y + n, n, n) = AB.offdiagonal.transpose();
         result.block(x + n, y, n, n) = AB.offdiagonal.transpose();
-        result.block(x, y, 2 * n, 2 * n) *= factor;
+        result.block(x, y, 2 * n, 2 * n).array().transpose().colwise() *= factor.array();
       }
     }
   }

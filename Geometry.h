@@ -76,7 +76,7 @@ public:
    * @param objectIndex_ the index of the object for which T_j is calculated.
    * @param nMax_ the maximum value of the n iterator.
    */
-  optimet::Matrix<optimet::t_complex>
+  optimet::Vector<optimet::t_complex>
   getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet::t_uint nMax_) const;
 
   int getIaux(double omega_, int objectIndex_, int nMax_, std::complex<double> *I_aux_);

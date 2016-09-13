@@ -300,7 +300,7 @@ int Geometry::setSourcesSingle(std::shared_ptr<optimet::Excitation const> incWav
   return 0;
 }
 
-optimet::Matrix<optimet::t_complex> Geometry::getTLocal(optimet::t_real omega_,
+optimet::Vector<optimet::t_complex> Geometry::getTLocal(optimet::t_real omega_,
                                                         optimet::t_int objectIndex_,
                                                         optimet::t_uint nMax_) const {
   if(objectIndex_ >= static_cast<int>(objects.size()))
