@@ -115,7 +115,7 @@ bessel(const std::complex<double> &z, long int max_order) {
   return std::make_tuple(data, ddata);
 }
 
-static std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
+inline std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
 bessel(const std::complex<double> &z, enum BESSEL_TYPE besselType, bool scale, long int nMax) {
   switch(besselType) {
   case Bessel:
