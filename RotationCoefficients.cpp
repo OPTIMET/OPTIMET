@@ -1,34 +1,22 @@
 #include "RotationCoefficients.h"
+#include <Coefficients.h>
 #include <algorithm>
 #include <cmath>
 #include <iterator>
 
 namespace optimet {
 
-RotationCoefficients::Real RotationCoefficients::a(t_uint n, t_int m) {
-  t_uint const absm(std::abs(m));
-  if(n < absm)
-    return static_cast<Real>(0);
-  return std::sqrt(static_cast<Real>((n + 1 + absm) * (n + 1 - absm)) /
-                   static_cast<Real>((2 * n + 1) * (2 * n + 3)));
-}
-
-RotationCoefficients::Real RotationCoefficients::b(t_uint n, t_int m) {
-  if(static_cast<t_uint>(std::abs(m)) > n)
-    return static_cast<Real>(0);
-  return (m >= 0 ? 1 : -1) * std::sqrt(static_cast<Real>((n - m - 1) * (n - m)) /
-                                       static_cast<Real>((2 * n - 1) * (2 * n + 1)));
-}
-
 RotationCoefficients::Coefficients
 RotationCoefficients::factors(t_uint n, t_int m, t_int mu) const {
-  auto const factor = std::exp(Complex(0, chi_)) / b(n + 1, m - 1);
+  using coefficient::a;
+  using coefficient::b;
+  auto const factor = std::exp(Complex(0, chi_)) / b<Real>(n + 1, m - 1);
   auto const half_factor = static_cast<Real>(0.5) * factor;
   auto const c0 =
-      half_factor * b(n + 1, -mu - 1) * std::exp(Complex(0, -phi_)) * (1 - std::cos(theta_));
+      half_factor * b<Real>(n + 1, -mu - 1) * std::exp(Complex(0, -phi_)) * (1 - std::cos(theta_));
   auto const c1 =
-      -half_factor * b(n + 1, mu - 1) * std::exp(Complex(0, phi_)) * (1 + std::cos(theta_));
-  auto const c2 = -factor * a(n, mu) * std::sin(theta_);
+      -half_factor * b<Real>(n + 1, mu - 1) * std::exp(Complex(0, phi_)) * (1 + std::cos(theta_));
+  auto const c2 = -factor * a<Real>(n, mu) * std::sin(theta_);
   return Coefficients(c0, c1, c2);
 }
 
@@ -76,7 +64,7 @@ Matrix<t_complex> RotationCoefficients::matrix(t_uint n) {
 
 Rotation::Rotation(t_real const &theta, t_real const &phi, t_real const &chi, t_uint nmax)
     : theta_(theta), phi_(phi), chi_(chi), nmax_(nmax) {
-  order.reserve(nmax+1);
+  order.reserve(nmax + 1);
   RotationCoefficients coeffs(theta, phi, chi);
   for(t_uint i(0); i <= nmax; ++i)
     order.push_back(coeffs.matrix(i));
@@ -85,10 +73,10 @@ Rotation::Rotation(t_real const &theta, t_real const &phi, t_real const &chi, t_
 Matrix<t_real> RotationCoefficients::basis_rotation(t_real theta, t_real phi, t_real chi) {
   Matrix<t_real> result(3, 3);
   result << -sin(phi) * sin(chi) - cos(theta) * cos(phi) * cos(chi),
-         sin(phi) * cos(chi) - cos(theta) * cos(phi) * sin(chi), sin(theta) * cos(phi),
-         cos(phi) * sin(chi) - cos(theta) * sin(phi) * cos(chi),
-         -cos(phi) * cos(chi) - cos(theta) * sin(phi) * sin(chi), sin(theta) * sin(phi),
-         sin(theta) * cos(chi), sin(theta) * sin(chi), cos(theta);
+      sin(phi) * cos(chi) - cos(theta) * cos(phi) * sin(chi), sin(theta) * cos(phi),
+      cos(phi) * sin(chi) - cos(theta) * sin(phi) * cos(chi),
+      -cos(phi) * cos(chi) - cos(theta) * sin(phi) * sin(chi), sin(theta) * sin(phi),
+      sin(theta) * cos(chi), sin(theta) * sin(chi), cos(theta);
   return result;
 };
 }
