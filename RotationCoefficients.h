@@ -106,6 +106,29 @@ public:
     return coeffs.matrix(n);
   }
 
+  //! \brief Performs rotation (for a single particle pair)
+  //! \details The input and output consist of two-column matrices, where the first columns are the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! coefficients up to nmax.
+  template <class T0, class T1>
+  void operator()(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const;
+  //! \brief Performs rotation (for a single particle pair)
+  //! \details The input and output consist of two-column matrices, where the first columns are the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! coefficients up to nmax.
+  template <class T0> Matrix<typename T0::Scalar> operator()(Eigen::MatrixBase<T0> const &in) const;
+  //! \brief Performs adjoint/inverse rotation (for a single particle pair)
+  //! \details The input and output consist of two-column matrices, where the first columns are the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! coefficients up to nmax.
+  template <class T0, class T1>
+  void adjoint(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const;
+  //! \brief Performs adjoint/inverse rotation (for a single particle pair)
+  //! \details The input and output consist of two-column matrices, where the first columns are the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! coefficients up to nmax.
+  template <class T0> Matrix<typename T0::Scalar> adjoint(Eigen::MatrixBase<T0> const &in) const;
+
 protected:
   //! Rotation angle in rad
   t_real const theta_;
@@ -118,5 +141,41 @@ protected:
   //! Matrices for each spherical harmonic up to given order
   std::vector<Matrix<t_complex>> order;
 };
+
+template <class T0, class T1>
+void Rotation::operator()(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
+  out.resize(in.rows(), in.cols());
+  for(t_uint n(1), i(0); n < order.size(); ++n) {
+    assert(in.rows() > i + order[n].rows());
+    out.block(i, 0, order[n].cols(), in.rows()) =
+        order[n] * in.block(i, 0, order[n].rows(), in.cols());
+    i += order[n].rows();
+  }
+}
+
+template <class T0>
+Matrix<typename T0::Scalar> Rotation::operator()(Eigen::MatrixBase<T0> const &in) const {
+  Matrix<typename T0::Scalar> out = Matrix<typename T0::Scalar>::Zero(in.rows(), in.cols());
+  operator()(in, out);
+  return out;
+}
+
+template <class T0, class T1>
+void Rotation::adjoint(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
+  out.resize(in.rows(), in.cols());
+  for(t_uint n(1), i(0); n < order.size(); ++n) {
+    assert(in.rows() > i + order[n].cols());
+    out.block(i, 0, order[n].cols(), in.cols()) =
+        order[n].adjoint() * in.block(i, 0, order[n].cols(), in.cols());
+    i += order[n].cols();
+  }
+}
+
+template <class T0>
+Matrix<typename T0::Scalar> Rotation::adjoint(Eigen::MatrixBase<T0> const &in) const {
+  Matrix<typename T0::Scalar> out = Matrix<typename T0::Scalar>::Zero(in.rows(), in.cols());
+  adjoint(in, out);
+  return out;
+}
 }
 #endif
