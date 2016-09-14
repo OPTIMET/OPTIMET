@@ -56,7 +56,9 @@ public:
   }
   //! \brief Simplifies access to spherical harmonics
   //! \note There is a (-1)^m factor (Condon-Shortley phase term) missing with respect to the
-  //! definition used int the Gumerov paper (DOI: 10.1137/S1064827501399705).
+  //! definition used int the Gumerov paper (DOI: 10.1137/S1064827501399705). Also, the speherical
+  //! harmonics in Gumerov et al use the legendre polynomial for |m| rather than m. Compared to
+  //! boost, this incurs another (-1)^m for m <0.
   template <class T> static std::complex<T> spherical_harmonic(t_uint n, t_int m, T theta, T phi) {
     return (m > 0 and m % 2 == 1) ? -boost::math::spherical_harmonic(n, m, theta, phi) :
                                     boost::math::spherical_harmonic(n, m, theta, phi);
@@ -74,6 +76,9 @@ protected:
   //! Cache which holds previously computed values
   std::map<Index, Complex> cache;
   //! Initial values
+  //! \note Note that Φ enters the initial result with a negative sign compared to the claim in
+  //! Gumerov et al (DOI: 10.1137/S1064827501399705). This sign change is validated by the
+  //! unit-tests.
   Complex initial(t_uint n, t_int mu) const {
     return std::sqrt(4 * constant::pi / static_cast<Real>(2 * n + 1)) *
            spherical_harmonic(n, -mu, theta_, -phi_);
