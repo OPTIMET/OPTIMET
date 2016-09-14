@@ -340,4 +340,42 @@ TEST_CASE("CoAxial") {
     CHECK(expected.real() == Approx(translated.real()));
     CHECK(expected.imag() == Approx(translated.imag()));
   }
+  SECTION("Simple singular expanded in singular") {
+    t_real start_point = 9.0;
+    t_real end_point = 10.0;
+    Spherical<t_real> const translation(end_point - start_point, 0, 0);
+    t_complex const waveK(1e0, 0);
+    CoAxialTranslationAdditionCoefficients tca(translation, waveK, true); // henkel function
+    auto const bessel = optimet::bessel<Bessel>;
+    auto const henkel = optimet::bessel<Hankel1>;
+    t_complex translated = 0;
+    for(t_int l = 0; l < 10; l++) {
+      translated += tca(0, 0, l) * std::get<0>(henkel(start_point * waveK, l)).back() *
+                    boost::math::spherical_harmonic(l, 0, 0, 0);
+    }
+    auto expected = std::get<0>(henkel(end_point * waveK, 0)).back() *
+                    boost::math::spherical_harmonic(0, 0, 0, 0);
+    ;
+    CHECK(expected.real() == Approx(translated.real()));
+    CHECK(expected.imag() == Approx(translated.imag()));
+  }
+  SECTION("Simple regular expanded in regular") {
+    t_real start_point = 9.0;
+    t_real end_point = 10.0;
+    Spherical<t_real> const translation(end_point - start_point, 0, 0);
+    t_complex const waveK(1e0, 0);
+    CoAxialTranslationAdditionCoefficients tca(translation, waveK, true); // henkel function
+    auto const bessel = optimet::bessel<Bessel>;
+    auto const henkel = optimet::bessel<Hankel1>;
+    t_complex translated = 0;
+    for(t_int l = 0; l < 10; l++) {
+      translated += tca(0, 0, l) * std::get<0>(bessel(start_point * waveK, l)).back() *
+                    boost::math::spherical_harmonic(l, 0, 0, 0);
+    }
+    auto expected = std::get<0>(bessel(end_point * waveK, 0)).back() *
+                    boost::math::spherical_harmonic(0, 0, 0, 0);
+    ;
+    CHECK(expected.real() == Approx(translated.real()));
+    CHECK(expected.imag() == Approx(translated.imag()));
+  }
 }
