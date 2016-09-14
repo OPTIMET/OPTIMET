@@ -1,7 +1,7 @@
 #include "TranslationAdditionCoefficients.h"
 #include "Bessel.h"
 #include "constants.h"
-
+#include <Coefficients.h>
 #include <cmath>
 #include <complex>
 
@@ -171,35 +171,35 @@ t_complex CachedCoAxialRecurrence::initial(t_int l) {
 }
 
 t_complex CachedCoAxialRecurrence::sectorial_recurrence(t_int n, t_int m, t_int l) {
+  using coefficient::b;
   assert(l > 0 and n > 0 and l >= n and (m == n or m == n - 1) and (n + m != 1));
   // This formula requires bnm = 0 which is only true from m = n and m = n-1
   // It also requires bn-m to be non zero. This is zero if n+m = 1
   // Gumerov's b coeffs are equal to b_minus from Stout for m >=0 and
   // - b_minus for m < 0. Here m = n or n-1 by definition.
-  return (operator()(n - 1, m - 1, l - 1) * b_minus(l, -m) +
-          operator()(n - 1, m - 1, l + 1) * b_minus(l + 1, m - 1)) /
-         b_minus(n, -m);
+  return (operator()(n - 1, m - 1, l - 1) * b(l, -m) -
+          operator()(n - 1, m - 1, l + 1) * b(l + 1, m - 1)) /
+         b(n, -m);
 }
 
 t_complex CachedCoAxialRecurrence::offdiagonal_recurrence(t_int n, t_int m, t_int l) {
   // gumerov 4.80
+  using coefficient::b;
   assert(m != 0 and n != 0 and m != n);
-  return (operator()(n - 1, m - 1, l - 1) *
-              b_minus(l, -m) - // minus because -m < 0 to match def
-                               operator()(n - 2, m, l) *
-                                   (b_minus(n - 1, m - 1)) + // sign ok because m >= 1
-                                                             operator()(n - 1, m - 1, l + 1) *
-                                                                 b_minus(l + 1, m - 1)) /
-         b_minus(n, -m);
+  return (+operator()(n - 1, m - 1, l - 1) * b(l, -m) +
+          operator()(n - 2, m, l) * (b(n - 1, m - 1)) -
+          operator()(n - 1, m - 1, l + 1) * b(l + 1, m - 1)) /
+         b(n, -m);
 }
 
 t_complex CachedCoAxialRecurrence::zonal_recurrence(t_int n, t_int l) {
   // Gumerov 4.79 i.e. m = 0
+  using coefficient::a;
   assert(l > 0 and n > 0 and l >= n);
-  return (-operator()(n - 1, 0, l - 1) * a_plus(l - 1, 0) +
-          -operator()(n - 2, 0, l) * a_plus(n - 2, 0) +
-          +operator()(n - 1, 0, l + 1) * a_plus(l, 0)) /
-         -a_plus(n - 1, 0);
+  return (operator()(n - 1, 0, l - 1) * a(l - 1, 0) //
+          + operator()(n - 2, 0, l) * a(n - 2, 0)   //
+          - operator()(n - 1, 0, l + 1) * a(l, 0)) /
+         a(n - 1, 0);
 }
 
 } // end of detailed namespace
