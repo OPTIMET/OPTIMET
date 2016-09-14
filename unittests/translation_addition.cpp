@@ -5,6 +5,7 @@
 #include "constants.h"
 #include <Coefficients.h>
 #include <boost/math/special_functions/legendre.hpp>
+#include <boost/math/special_functions/spherical_harmonic.hpp>
 #include <random>
 
 extern std::unique_ptr<std::mt19937_64> mersenne;
@@ -303,7 +304,7 @@ TEST_CASE("CoAxial") {
     CHECK(tca(3, 1, 3).real() == Approx(expected.real()));
     CHECK(tca(3, 1, 3).imag() == Approx(expected.imag()));
   }
-  SECTION("Check n recurrence") {
+  SECTION("Check n and m recurrence") {
     Spherical<t_real> const R(1e0, 0.42, 0.36);
     t_complex const waveK(1e0, 1.5e0);
     CoAxialTranslationAdditionCoefficients tca(R, waveK, true);
@@ -319,5 +320,24 @@ TEST_CASE("CoAxial") {
         }
       }
     }
+  }
+  SECTION("Simple singular expanded in regular") {
+    t_real start_point = 1.0;
+    t_real end_point = 10.0;
+    Spherical<t_real> const translation(end_point - start_point, 0, 0);
+    t_complex const waveK(1e0, 0);
+    CoAxialTranslationAdditionCoefficients tca(translation, waveK, false); // henkel function
+    auto const bessel = optimet::bessel<Bessel>;
+    auto const henkel = optimet::bessel<Hankel1>;
+    t_complex translated = 0;
+    for(t_int l = 0; l < 10; l++) {
+      translated += tca(0, 0, l) * std::get<0>(bessel(start_point * waveK, l)).back() *
+                    boost::math::spherical_harmonic(l, 0, 0, 0);
+    }
+    auto expected = std::get<0>(henkel(end_point * waveK, 0)).back() *
+                    boost::math::spherical_harmonic(0, 0, 0, 0);
+    ;
+    CHECK(expected.real() == Approx(translated.real()));
+    CHECK(expected.imag() == Approx(translated.imag()));
   }
 }
