@@ -321,61 +321,33 @@ TEST_CASE("CoAxial") {
       }
     }
   }
-  SECTION("Simple singular expanded in regular") {
-    t_real start_point = 1.0;
-    t_real end_point = 10.0;
-    Spherical<t_real> const translation(end_point - start_point, 0, 0);
-    t_complex const waveK(1e0, 0);
-    CoAxialTranslationAdditionCoefficients tca(translation, waveK, false); // henkel function
-    auto const bessel = optimet::bessel<Bessel>;
-    auto const henkel = optimet::bessel<Hankel1>;
-    t_complex translated = 0;
-    for(t_int l = 0; l < 10; l++) {
-      translated += tca(0, 0, l) * std::get<0>(bessel(start_point * waveK, l)).back() *
-                    boost::math::spherical_harmonic(l, 0, 0, 0);
-    }
-    auto expected = std::get<0>(henkel(end_point * waveK, 0)).back() *
-                    boost::math::spherical_harmonic(0, 0, 0, 0);
-    ;
-    CHECK(expected.real() == Approx(translated.real()));
-    CHECK(expected.imag() == Approx(translated.imag()));
+}
+
+void check_00_translation(t_real expansion_pos, t_real reexpansion_pos, bool expansion_regular,
+                          bool reexpansion_regular) {
+  // assert(expansion_regular or reexpansion_regular);
+  bool coeff_regular = expansion_regular == reexpansion_regular;
+  Spherical<t_real> const translation(expansion_pos - reexpansion_pos, 0, 0);
+  t_complex const waveK(1e0, 0);
+  CoAxialTranslationAdditionCoefficients tca(translation, waveK, coeff_regular);
+  auto const basis_func = expansion_regular ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
+  auto const re_basis_func =
+      reexpansion_regular ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
+  t_complex translated = 0;
+  for(t_int l = 0; l < 10; l++) {
+    translated += tca(0, 0, l) * std::get<0>(re_basis_func(reexpansion_pos * waveK, l)).back() *
+                  boost::math::spherical_harmonic(l, 0, 0, 0);
   }
-  SECTION("Simple singular expanded in singular") {
-    t_real start_point = 9.0;
-    t_real end_point = 10.0;
-    Spherical<t_real> const translation(end_point - start_point, 0, 0);
-    t_complex const waveK(1e0, 0);
-    CoAxialTranslationAdditionCoefficients tca(translation, waveK, true); // henkel function
-    auto const bessel = optimet::bessel<Bessel>;
-    auto const henkel = optimet::bessel<Hankel1>;
-    t_complex translated = 0;
-    for(t_int l = 0; l < 10; l++) {
-      translated += tca(0, 0, l) * std::get<0>(henkel(start_point * waveK, l)).back() *
-                    boost::math::spherical_harmonic(l, 0, 0, 0);
-    }
-    auto expected = std::get<0>(henkel(end_point * waveK, 0)).back() *
-                    boost::math::spherical_harmonic(0, 0, 0, 0);
-    ;
-    CHECK(expected.real() == Approx(translated.real()));
-    CHECK(expected.imag() == Approx(translated.imag()));
-  }
-  SECTION("Simple regular expanded in regular") {
-    t_real start_point = 9.0;
-    t_real end_point = 10.0;
-    Spherical<t_real> const translation(end_point - start_point, 0, 0);
-    t_complex const waveK(1e0, 0);
-    CoAxialTranslationAdditionCoefficients tca(translation, waveK, true); // henkel function
-    auto const bessel = optimet::bessel<Bessel>;
-    auto const henkel = optimet::bessel<Hankel1>;
-    t_complex translated = 0;
-    for(t_int l = 0; l < 10; l++) {
-      translated += tca(0, 0, l) * std::get<0>(bessel(start_point * waveK, l)).back() *
-                    boost::math::spherical_harmonic(l, 0, 0, 0);
-    }
-    auto expected = std::get<0>(bessel(end_point * waveK, 0)).back() *
-                    boost::math::spherical_harmonic(0, 0, 0, 0);
-    ;
-    CHECK(expected.real() == Approx(translated.real()));
-    CHECK(expected.imag() == Approx(translated.imag()));
-  }
+  auto expected = std::get<0>(basis_func(expansion_pos * waveK, 0)).back() *
+                  boost::math::spherical_harmonic(0, 0, 0, 0);
+  ;
+  CHECK(expected.real() == Approx(translated.real()));
+  CHECK(expected.imag() == Approx(translated.imag()));
+}
+
+TEST_CASE("Coaxial translation") {
+  SECTION("Simple singular expanded in regular") { check_00_translation(10.0, 1.0, false, true); }
+  SECTION("Simple singular expanded in singular") { check_00_translation(10.0, 9.0, false, false); }
+  SECTION("Simple regular expanded in regular") { check_00_translation(10.0, 9.0, true, true); }
+  SECTION("Simple regular expanded in regular") { check_00_translation(10.0, 1.0, true, true); }
 }
