@@ -2,7 +2,6 @@
 #define COUPLING_H_
 
 #include "Tools.h"
-#include "Spherical.h"
 #include "Types.h"
 
 namespace optimet {

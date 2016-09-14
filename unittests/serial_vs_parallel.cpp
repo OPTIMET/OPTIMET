@@ -15,12 +15,17 @@
 #endif
 
 using namespace optimet;
+#ifndef NDEBUG
+auto const nHarmonics = 5;
+auto const nSpheres = 5;
+#else
+auto const nHarmonics = 10;
+auto const nSpheres = 10;
+#endif
 
 TEST_CASE("N spheres") {
   Geometry geometry;
   // spherical coords, ε, μ, radius, nmax
-  auto const nHarmonics = 10;
-  auto const nSpheres = 10;
   for(t_uint i(0); i < nSpheres; ++i)
     geometry.pushObject(
         {{static_cast<t_real>(i) * 1.5 * 2e-6, 0, 0}, {0.45e0, 1.1e0}, 0.5 * 2e-6, nHarmonics});
@@ -39,9 +44,9 @@ TEST_CASE("N spheres") {
   Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
 #ifdef OPTIMET_BELOS
   solver.belos_parameters()->set("Solver", OPTIMET_SOLVER);
-  solver.belos_parameters()->set<int>("Num Blocks", 100);
+  solver.belos_parameters()->set<int>("Num Blocks", 500);
   solver.belos_parameters()->set("Maximum Iterations", 4000);
-  solver.belos_parameters()->set("Convergence Tolerance", 1.0e-14);
+  solver.belos_parameters()->set("Convergence Tolerance", 1.0e-10);
 #endif
   solver.solve(parallel.scatter_coef, parallel.internal_coef, world);
 
@@ -78,8 +83,7 @@ TEST_CASE("Simultaneous") {
 
   Geometry geometry;
   // spherical coords, ε, μ, radius, nmax
-  auto const nHarmonics = 10;
-  for(t_uint i(0); i < 10; ++i)
+  for(t_uint i(0); i < nSpheres; ++i)
     geometry.pushObject({{static_cast<t_real>(i) * 1.5, 0, 0}, {0.45e0, 1.1e0}, 0.5, nHarmonics});
 
   // Create excitation
@@ -99,31 +103,33 @@ TEST_CASE("Simultaneous") {
 
   scalapack::Context const world_context;
   auto const parallel_context = world_context.subcontext(grid_map);
-  auto const serial_context = world_context.serial();
-  CHECK(parallel_context.is_valid() != serial_context.is_valid());
+  auto const serial_context = world_context.serial(0);
+  if(parallel_context.is_valid())
+    REQUIRE(not serial_context.is_valid());
 
-  CHECK(((serial_context.is_valid() xor parallel_context.is_valid()) or
-         (not(parallel_context.is_valid() and serial_context.is_valid()))));
+  REQUIRE(((serial_context.is_valid() xor parallel_context.is_valid()) or
+           (not(parallel_context.is_valid() and serial_context.is_valid()))));
 
   optimet::Result serial(&geometry, excitation, nHarmonics);
   optimet::Result parallel(&geometry, excitation, nHarmonics);
-  auto const comm = mpi::Communicator().split(serial_context.is_valid());
+  auto const serial_comm = mpi::Communicator().split(serial_context.is_valid());
+  auto const parallel_comm = mpi::Communicator().split(parallel_context.is_valid());
 
   if(parallel_context.is_valid()) {
     Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics, parallel_context);
 #ifdef OPTIMET_BELOS
     solver.belos_parameters()->set("Solver", OPTIMET_SOLVER);
-    solver.belos_parameters()->set<int>("Num Blocks", 100);
+    solver.belos_parameters()->set<int>("Num Blocks", 500);
     solver.belos_parameters()->set("Maximum Iterations", 4000);
-    solver.belos_parameters()->set("Convergence Tolerance", 1.0e-14);
+    solver.belos_parameters()->set("Convergence Tolerance", 1.0e-10);
 #endif
-    solver.solve(parallel.scatter_coef, parallel.internal_coef, comm);
+    solver.solve(parallel.scatter_coef, parallel.internal_coef, parallel_comm);
   } else if(serial_context.is_valid()) {
     Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics, serial_context);
 #ifdef OPTIMET_BELOS
     solver.belos_parameters()->set("Solver", "eigen");
 #endif
-    solver.solve(serial.scatter_coef, serial.internal_coef, comm);
+    solver.solve(serial.scatter_coef, serial.internal_coef, serial_comm);
   }
 
   mpi::Communicator world;

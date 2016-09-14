@@ -1,7 +1,6 @@
 #define CATCH_CONFIG_RUNNER
 
 #include "Types.h"
-#include "mpi/Session.h"
 #include <catch.hpp>
 #include <memory>
 #include <random>
@@ -16,9 +15,6 @@ int main(int argc, const char **argv) {
     return returnCode;
   mersenne.reset(new std::mt19937_64(session.configData().rngSeed));
 
-  optimet::mpi::init(argc, argv);
-
   auto const result = session.run();
-  optimet::mpi::finalize();
   return result;
 }

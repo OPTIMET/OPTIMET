@@ -31,7 +31,8 @@ include_directories(SYSTEM
 
 # list all object files
 file(GLOB SRC *.c*  pugi/*.c*)
-list(REMOVE_ITEM SRC main.cpp)
+file(GLOB EXCLUDE .clang-format main.cpp GPL_Licence.c MainPage.c XML_Manual.c)
+list(REMOVE_ITEM SRC ${EXCLUDE})
 if(dompi)
   set(OPTIMET_MPI TRUE)
   file(GLOB parallel_files scalapack/*.cpp mpi/*.cpp)

@@ -1,7 +1,5 @@
 #include "Tools.h"
 
-#include "gsl/gsl_sf_legendre.h"
-#include "gsl/gsl_sf_gamma.h"
 #include <cmath>
 #include <assert.h>
 
@@ -87,17 +85,6 @@ void Tools::pushToMatrix(std::complex<double> **T_small_, long rows_,
   for (i = 0; i < rows_; i++)
     for (j = 0; j < columns_; j++)
       T_large_[i + row_index_][j + column_index_] = T_small_[i][j];
-}
-
-double Tools::getLegendre(double argument_, int orderN_, int orderM_) {
-  if (orderM_ < 0) {
-    return std::pow(-1.0, std::abs(orderM_)) *
-           (gsl_sf_fact(orderN_ - std::abs(orderM_))) /
-           (gsl_sf_fact(orderN_ + std::abs(orderM_))) *
-           gsl_sf_legendre_Plm(orderN_, std::abs(orderM_), argument_);
-  }
-
-  return gsl_sf_legendre_Plm(orderN_, orderM_, argument_);
 }
 
 std::complex<double> **Tools::Get_2D_c_double(int i_x, int i_y) {
