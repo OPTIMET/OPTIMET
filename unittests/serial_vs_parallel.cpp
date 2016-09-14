@@ -112,7 +112,8 @@ TEST_CASE("Simultaneous") {
 
   optimet::Result serial(&geometry, excitation, nHarmonics);
   optimet::Result parallel(&geometry, excitation, nHarmonics);
-  auto const comm = mpi::Communicator().split(serial_context.is_valid());
+  auto const serial_comm = mpi::Communicator().split(serial_context.is_valid());
+  auto const parallel_comm = mpi::Communicator().split(parallel_context.is_valid());
 
   if(parallel_context.is_valid()) {
     Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics, parallel_context);
@@ -122,13 +123,13 @@ TEST_CASE("Simultaneous") {
     solver.belos_parameters()->set("Maximum Iterations", 4000);
     solver.belos_parameters()->set("Convergence Tolerance", 1.0e-10);
 #endif
-    solver.solve(parallel.scatter_coef, parallel.internal_coef, comm);
+    solver.solve(parallel.scatter_coef, parallel.internal_coef, parallel_comm);
   } else if(serial_context.is_valid()) {
     Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics, serial_context);
 #ifdef OPTIMET_BELOS
     solver.belos_parameters()->set("Solver", "eigen");
 #endif
-    solver.solve(serial.scatter_coef, serial.internal_coef, comm);
+    solver.solve(serial.scatter_coef, serial.internal_coef, serial_comm);
   }
 
   mpi::Communicator world;
