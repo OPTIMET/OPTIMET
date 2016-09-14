@@ -325,7 +325,7 @@ TEST_CASE("CoAxial") {
 
 void check_00_translation(t_real expansion_pos, t_real reexpansion_pos, bool expansion_regular,
                           bool reexpansion_regular) {
-  // assert(expansion_regular or reexpansion_regular);
+  assert(!(expansion_regular and !reexpansion_regular));
   bool coeff_regular = expansion_regular == reexpansion_regular;
   Spherical<t_real> const translation(expansion_pos - reexpansion_pos, 0, 0);
   t_complex const waveK(1e0, 0);
