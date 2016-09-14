@@ -2,10 +2,10 @@
 #define OPTIMET_SCALAPACK_CONTEXT_H
 #include "Types.h"
 
-#include <memory>
-#include "scalapack/Parameters.h"
-#include "scalapack/InitExit.h"
 #include "scalapack/Collectives.h"
+#include "scalapack/InitExit.h"
+#include "scalapack/Parameters.h"
+#include <memory>
 
 namespace optimet {
 namespace scalapack {
@@ -80,6 +80,11 @@ public:
   }
   //! Creates a serial process for process (0, 0)
   Context serial() const { return serial(0, 0); }
+  //! Creates a serial process for process (0, 0)
+  Context serial(int pnum) const {
+    auto const coords = process_coordinates(pnum);
+    return serial(coords.row, coords.col);
+  }
   //! System process number for this context
   t_uint process_number() const { return process_number(row(), col()); }
   //! System process number for given row and colum
