@@ -44,9 +44,9 @@ TEST_CASE("N spheres") {
   Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
 #ifdef OPTIMET_BELOS
   solver.belos_parameters()->set("Solver", OPTIMET_SOLVER);
-  solver.belos_parameters()->set<int>("Num Blocks", 100);
+  solver.belos_parameters()->set<int>("Num Blocks", 500);
   solver.belos_parameters()->set("Maximum Iterations", 4000);
-  solver.belos_parameters()->set("Convergence Tolerance", 1.0e-14);
+  solver.belos_parameters()->set("Convergence Tolerance", 1.0e-10);
 #endif
   solver.solve(parallel.scatter_coef, parallel.internal_coef, world);
 
@@ -117,9 +117,9 @@ TEST_CASE("Simultaneous") {
     Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics, parallel_context);
 #ifdef OPTIMET_BELOS
     solver.belos_parameters()->set("Solver", OPTIMET_SOLVER);
-    solver.belos_parameters()->set<int>("Num Blocks", 100);
+    solver.belos_parameters()->set<int>("Num Blocks", 500);
     solver.belos_parameters()->set("Maximum Iterations", 4000);
-    solver.belos_parameters()->set("Convergence Tolerance", 1.0e-14);
+    solver.belos_parameters()->set("Convergence Tolerance", 1.0e-10);
 #endif
     solver.solve(parallel.scatter_coef, parallel.internal_coef, comm);
   } else if(serial_context.is_valid()) {
