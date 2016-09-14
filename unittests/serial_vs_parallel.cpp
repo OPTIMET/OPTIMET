@@ -104,10 +104,11 @@ TEST_CASE("Simultaneous") {
   scalapack::Context const world_context;
   auto const parallel_context = world_context.subcontext(grid_map);
   auto const serial_context = world_context.serial(0);
-  CHECK(parallel_context.is_valid() != serial_context.is_valid());
+  if(parallel_context.is_valid())
+    REQUIRE(not serial_context.is_valid());
 
-  CHECK(((serial_context.is_valid() xor parallel_context.is_valid()) or
-         (not(parallel_context.is_valid() and serial_context.is_valid()))));
+  REQUIRE(((serial_context.is_valid() xor parallel_context.is_valid()) or
+           (not(parallel_context.is_valid() and serial_context.is_valid()))));
 
   optimet::Result serial(&geometry, excitation, nHarmonics);
   optimet::Result parallel(&geometry, excitation, nHarmonics);
