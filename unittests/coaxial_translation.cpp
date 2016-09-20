@@ -4,7 +4,6 @@
 #include "TranslationAdditionCoefficients.h"
 #include "constants.h"
 #include <Coefficients.h>
-#include <boost/math/special_functions/legendre.hpp>
 #include <boost/math/special_functions/spherical_harmonic.hpp>
 #include <random>
 
@@ -154,8 +153,8 @@ void check_coaxial_translation(t_real expansion_pos, t_real reexpansion_pos, boo
 
 TEST_CASE("Coaxial translation") {
   std::uniform_real_distribution<> small_dist(0, 1);
-  std::uniform_real_distribution<> large_dist(10, 100);
-  std::uniform_real_distribution<> wave_dist(0, 10);
+  std::uniform_real_distribution<> large_dist(10, 50);
+  std::uniform_real_distribution<> wave_dist(0, 5);
   t_real waver = wave_dist(*mersenne);
   t_real wavei = wave_dist(*mersenne);
   t_complex waveK(waver, wavei);
