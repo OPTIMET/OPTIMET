@@ -334,28 +334,29 @@ void check_coaxial_translation(t_real expansion_pos, t_real reexpansion_pos, boo
   auto const re_basis_func =
       reexpansion_regular ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
   t_complex translated = 0;
-  for(t_int l = m; l < m + 10; l++) {
+  for(t_int l = m; l < m + 20; l++) {
     translated += tca(n, m, l) * std::get<0>(re_basis_func(reexpansion_pos * waveK, l)).back() *
                   boost::math::spherical_harmonic(l, m, 0, 0);
   }
   auto expected = std::get<0>(basis_func(expansion_pos * waveK, n)).back() *
                   boost::math::spherical_harmonic(n, m, 0, 0);
-  ;
+  INFO("Testing translation for " << n << " m " << m << " regular " << expansion_regular << " to "
+                                  << reexpansion_regular);
   CHECK(expected.real() == Approx(translated.real()));
   CHECK(expected.imag() == Approx(translated.imag()));
 }
 
 TEST_CASE("Coaxial translation") {
-  SECTION("Simple singular expanded in regular") {
-    check_coaxial_translation(10.0, 1.0, false, true, 0, 0);
-  }
-  SECTION("Simple singular expanded in singular") {
-    check_coaxial_translation(10.0, 9.0, false, false, 0, 0);
-  }
-  SECTION("Simple regular expanded in regular") {
-    check_coaxial_translation(10.0, 9.0, true, true, 0, 0);
-  }
-  SECTION("Simple regular expanded in regular") {
-    check_coaxial_translation(10.0, 1.0, true, true, 0, 0);
+  for(t_int n = 0; n < 10; n++) {
+    for(t_int m = -m; m <= n; m++) {
+      // "Simple singular expanded in regular"
+      check_coaxial_translation(10.0, 1.0, false, true, n, 0);
+      // "Simple singular expanded in singular"
+      check_coaxial_translation(10.0, 9.0, false, false, n, 0);
+      // "Simple regular expanded in regular"
+      check_coaxial_translation(10.0, 9.0, true, true, n, 0);
+      // Simple regular expanded in regular
+      check_coaxial_translation(10.0, 1.0, true, true, n, 0);
+    }
   }
 }
