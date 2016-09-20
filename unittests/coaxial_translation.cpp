@@ -1,7 +1,7 @@
 #include "catch.hpp"
 
 #include "Bessel.h"
-#include "TranslationAdditionCoefficients.h"
+#include "CoAxialTranslationCoefficients.h"
 #include "constants.h"
 #include <Coefficients.h>
 #include <boost/math/special_functions/spherical_harmonic.hpp>
