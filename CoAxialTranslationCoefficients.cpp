@@ -58,7 +58,7 @@ t_complex CachedCoAxialRecurrence::recurrence(t_int n, t_int m, t_int l) {
 
 t_complex CachedCoAxialRecurrence::initial(t_int l) {
   assert(l >= 0);
-  auto const wave = direction.rrr * waveK;
+  auto const wave = distance * waveK;
   auto const bessel = regular ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
   auto const hb = std::get<0>(bessel(wave, l)).back();
 

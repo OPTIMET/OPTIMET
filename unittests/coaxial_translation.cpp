@@ -69,7 +69,7 @@ TEST_CASE("CoAxial") {
   SECTION("Initial values") {
     using coefficient::a;
     using coefficient::b;
-    Spherical<t_real> const R(1e0, 0.42, 0.36);
+    t_real const R(1e0);
     t_complex const waveK(1e0, 1.5e0);
     CoAxialTranslationAdditionCoefficients tca(R, waveK, true);
     // Numbers are generated from the same formula in Scipy
@@ -111,9 +111,8 @@ TEST_CASE("CoAxial") {
     CHECK(tca(3, 1, 3).imag() == Approx(expected.imag()));
   }
   SECTION("Check n and m recurrence") {
-    Spherical<t_real> const R(1e0, 0.42, 0.36);
     t_complex const waveK(1e0, 1.5e0);
-    CoAxialTranslationAdditionCoefficients tca(R, waveK, true);
+    CoAxialTranslationAdditionCoefficients tca(1.0, waveK, true);
     t_int max_recur = 10;
     for(t_int l = 0; l < max_recur; ++l) {
       for(t_int n = 0; n < max_recur; ++n) {
@@ -133,7 +132,7 @@ void check_coaxial_translation(t_real expansion_pos, t_real reexpansion_pos, boo
                                bool reexpansion_regular, t_int n, t_int m, t_complex waveK) {
   assert(!(expansion_regular and !reexpansion_regular));
   bool coeff_regular = expansion_regular == reexpansion_regular;
-  Spherical<t_real> const translation(expansion_pos - reexpansion_pos, 0, 0);
+  t_real const translation(expansion_pos - reexpansion_pos);
   CoAxialTranslationAdditionCoefficients tca(translation, waveK, coeff_regular);
   auto const basis_func = expansion_regular ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
   auto const re_basis_func =
