@@ -324,11 +324,10 @@ TEST_CASE("CoAxial") {
 }
 
 void check_coaxial_translation(t_real expansion_pos, t_real reexpansion_pos, bool expansion_regular,
-                               bool reexpansion_regular, t_int n, t_int m) {
+                               bool reexpansion_regular, t_int n, t_int m, t_complex waveK) {
   assert(!(expansion_regular and !reexpansion_regular));
   bool coeff_regular = expansion_regular == reexpansion_regular;
   Spherical<t_real> const translation(expansion_pos - reexpansion_pos, 0, 0);
-  t_complex const waveK(1e0, 0);
   CoAxialTranslationAdditionCoefficients tca(translation, waveK, coeff_regular);
   auto const basis_func = expansion_regular ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
   auto const re_basis_func =
@@ -349,19 +348,23 @@ void check_coaxial_translation(t_real expansion_pos, t_real reexpansion_pos, boo
 TEST_CASE("Coaxial translation") {
   std::uniform_real_distribution<> small_dist(0, 1);
   std::uniform_real_distribution<> large_dist(10, 100);
+  std::uniform_real_distribution<> wave_dist(0, 10);
+  t_real waver = wave_dist(*mersenne);
+  t_real wavei = wave_dist(*mersenne);
+  t_complex waveK(waver, wavei);
   for(t_int n = 0; n < 10; n++) {
     for(t_int m = -m; m <= n; m++) {
       // "Simple singular expanded in regular"
       t_real small = small_dist(*mersenne);
       t_real large = large_dist(*mersenne);
       t_real large_small_diff = large - small;
-      check_coaxial_translation(large, small, false, true, n, 0);
+      check_coaxial_translation(large, small, false, true, n, 0, waveK);
       // "Simple singular expanded in singular"
-      check_coaxial_translation(large, large_small_diff, false, false, n, 0);
+      check_coaxial_translation(large, large_small_diff, false, false, n, 0, waveK);
       // "Simple regular expanded in regular"
-      check_coaxial_translation(large, large_small_diff, true, true, n, 0);
+      check_coaxial_translation(large, large_small_diff, true, true, n, 0, waveK);
       // Simple regular expanded in regular
-      check_coaxial_translation(large, small, true, true, n, 0);
+      check_coaxial_translation(large, small, true, true, n, 0, waveK);
     }
   }
 }
