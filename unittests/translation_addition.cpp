@@ -347,16 +347,21 @@ void check_coaxial_translation(t_real expansion_pos, t_real reexpansion_pos, boo
 }
 
 TEST_CASE("Coaxial translation") {
+  std::uniform_real_distribution<> small_dist(0, 1);
+  std::uniform_real_distribution<> large_dist(10, 100);
   for(t_int n = 0; n < 10; n++) {
     for(t_int m = -m; m <= n; m++) {
       // "Simple singular expanded in regular"
-      check_coaxial_translation(10.0, 1.0, false, true, n, 0);
+      t_real small = small_dist(*mersenne);
+      t_real large = large_dist(*mersenne);
+      t_real large_small_diff = large - small;
+      check_coaxial_translation(large, small, false, true, n, 0);
       // "Simple singular expanded in singular"
-      check_coaxial_translation(10.0, 9.0, false, false, n, 0);
+      check_coaxial_translation(large, large_small_diff, false, false, n, 0);
       // "Simple regular expanded in regular"
-      check_coaxial_translation(10.0, 9.0, true, true, n, 0);
+      check_coaxial_translation(large, large_small_diff, true, true, n, 0);
       // Simple regular expanded in regular
-      check_coaxial_translation(10.0, 1.0, true, true, n, 0);
+      check_coaxial_translation(large, small, true, true, n, 0);
     }
   }
 }
