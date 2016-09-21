@@ -158,7 +158,7 @@ TEST_CASE("Coaxial translation") {
   t_real wavei = wave_dist(*mersenne);
   t_complex waveK(waver, wavei);
   for(t_int n = 0; n < 10; n++) {
-    for(t_int m = -m; m <= n; m++) {
+    for(t_int m = -n; m <= n; m++) {
       // "Simple singular expanded in regular"
       t_real small = small_dist(*mersenne);
       t_real large = large_dist(*mersenne);
