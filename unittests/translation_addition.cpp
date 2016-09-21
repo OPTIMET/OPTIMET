@@ -37,28 +37,6 @@ TEST_CASE("Check Ynm") {
   CHECK(std::abs(Y32 - Ynm(R, 3, 2)) == Approx(0));
   CHECK(std::abs(Y3m2 - Ynm(R, 3, -2)) == Approx(0));
   CHECK(std::abs(Y40 - Ynm(R, 4, 0)) == Approx(0));
-  CHECK(std::abs(Y00 - Ynmlegacy(R, 0, 0)) == Approx(0));
-  CHECK(std::abs(Y10 - Ynmlegacy(R, 1, 0)) == Approx(0));
-  CHECK(std::abs(Y11 - Ynmlegacy(R, 1, 1)) == Approx(0));
-  CHECK(std::abs(Y1m1 - Ynmlegacy(R, 1, -1)) == Approx(0));
-  CHECK(std::abs(Y2m1 - Ynmlegacy(R, 2, -1)) == Approx(0));
-  CHECK(std::abs(Y32 - Ynmlegacy(R, 3, 2)) == Approx(0));
-  CHECK(std::abs(Y3m2 - Ynmlegacy(R, 3, -2)) == Approx(0));
-  CHECK(std::abs(Y40 - Ynmlegacy(R, 4, 0)) == Approx(0));
-
-  std::uniform_real_distribution<> rdist(0, constant::pi);
-  std::uniform_int_distribution<> ndist(1, 50);
-  std::uniform_real_distribution<> mdist(-1, 1);
-  Spherical<t_real> R2;
-  for(int i = 0; i < 10; ++i) {
-    auto const theta = rdist(*mersenne);
-    auto const phi = 2 * rdist(*mersenne);
-    R2.the = theta;
-    R2.phi = phi;
-    auto const n = ndist(*mersenne);
-    auto const m = int(round(n * mdist(*mersenne)));
-    CHECK(std::abs(Ynm(R2, n, m) - Ynmlegacy(R2, n, m)) == Approx(0));
-  }
 }
 
 template <class RECURRENCE>
