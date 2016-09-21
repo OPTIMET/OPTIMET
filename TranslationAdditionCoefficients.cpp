@@ -1,7 +1,6 @@
 #include "TranslationAdditionCoefficients.h"
 #include "Bessel.h"
 #include "constants.h"
-#include <Coefficients.h>
 #include <cmath>
 #include <complex>
 

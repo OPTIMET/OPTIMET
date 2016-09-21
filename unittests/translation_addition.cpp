@@ -4,7 +4,6 @@
 #include "TranslationAdditionCoefficients.h"
 #include "constants.h"
 #include <boost/math/special_functions/legendre.hpp>
-#include <boost/math/special_functions/spherical_harmonic.hpp>
 #include <random>
 
 extern std::unique_ptr<std::mt19937_64> mersenne;
