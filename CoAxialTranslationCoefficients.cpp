@@ -24,10 +24,8 @@ t_complex CachedCoAxialRecurrence::operator()(t_int n, t_int m, t_int l) {
   if(not is_valid(n, m, l, m))
     return 0e0;
 
-  // For simplicity, coefficients for negative m should be implemented
-  // separately using the symmetry
-  // relationship.
-  assert(m >= 0);
+  // the coaxial recurrence is independent of sign of m Gumerov (4.81)
+  m = std::abs(m);
 
   // Check cache first
   t_indices const indices{{n, m, l}};
