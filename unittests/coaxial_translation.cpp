@@ -5,6 +5,7 @@
 #include "constants.h"
 #include <Coefficients.h>
 #include <boost/math/special_functions/spherical_harmonic.hpp>
+#include <iostream>
 #include <random>
 
 extern std::unique_ptr<std::mt19937_64> mersenne;
@@ -131,6 +132,7 @@ TEST_CASE("CoAxial") {
 void check_coaxial_translation(t_real expansion_pos, t_real reexpansion_pos, bool expansion_regular,
                                bool reexpansion_regular, t_int n, t_int m, t_complex waveK) {
   assert(!(expansion_regular and !reexpansion_regular));
+  assert(m <= n);
   bool coeff_regular = expansion_regular == reexpansion_regular;
   t_real const translation(expansion_pos - reexpansion_pos);
   CoAxialTranslationAdditionCoefficients tca(translation, waveK, coeff_regular);
@@ -138,14 +140,14 @@ void check_coaxial_translation(t_real expansion_pos, t_real reexpansion_pos, boo
   auto const re_basis_func =
       reexpansion_regular ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
   t_complex translated = 0;
-  for(t_int l = m; l < m + 20; l++) {
+  for(t_int l = std::abs(m); l < std::abs(m) + 25; l++) {
     translated += tca(n, m, l) * std::get<0>(re_basis_func(reexpansion_pos * waveK, l)).back() *
                   boost::math::spherical_harmonic(l, m, 0, 0);
   }
   auto expected = std::get<0>(basis_func(expansion_pos * waveK, n)).back() *
                   boost::math::spherical_harmonic(n, m, 0, 0);
-  INFO("Testing translation for " << n << " m " << m << " regular " << expansion_regular << " to "
-                                  << reexpansion_regular);
+  INFO("Testing translation for n: " << n << " m: " << m << " regular: " << expansion_regular
+                                     << " to: " << reexpansion_regular);
   CHECK(expected.real() == Approx(translated.real()));
   CHECK(expected.imag() == Approx(translated.imag()));
 }
@@ -163,13 +165,13 @@ TEST_CASE("Coaxial translation") {
       t_real small = small_dist(*mersenne);
       t_real large = large_dist(*mersenne);
       t_real large_small_diff = large - small;
-      check_coaxial_translation(large, small, false, true, n, 0, waveK);
+      check_coaxial_translation(large, small, false, true, n, m, waveK);
       // "Simple singular expanded in singular"
-      check_coaxial_translation(large, large_small_diff, false, false, n, 0, waveK);
+      check_coaxial_translation(large, large_small_diff, false, false, n, m, waveK);
       // "Simple regular expanded in regular"
-      check_coaxial_translation(large, large_small_diff, true, true, n, 0, waveK);
+      check_coaxial_translation(large, large_small_diff, true, true, n, m, waveK);
       // Simple regular expanded in regular
-      check_coaxial_translation(large, small, true, true, n, 0, waveK);
+      check_coaxial_translation(large, small, true, true, n, m, waveK);
     }
   }
 }
