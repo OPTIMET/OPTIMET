@@ -467,4 +467,62 @@ TEST_CASE("Coaxial translation") {
     }
   }
 }
-//
+
+Vector<t_real> to_spherical(Vector<t_real> const &x) {
+  assert(x.size() == 3);
+  auto const r = x.stableNorm();
+  auto const theta = std::atan2(x[1], x[0]);
+  auto const phi = r > 1e-12 ? std::acos(x[2] / r) : 0e0;
+  Vector<t_real> result(3);
+  result << r, phi, theta > 0 ? theta : theta + 2 * constant::pi;
+  return result;
+};
+
+t_complex
+basis_function(t_complex waveK, bool expansion, Vector<t_real> const &r, t_int n, t_int m) {
+  auto const function = expansion ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
+  auto const spherical = to_spherical(r);
+  return std::get<0>(function(spherical(0) * waveK, n)).back() *
+         boost::math::spherical_harmonic(n, m, spherical(1), spherical(2));
+};
+
+std::function<t_complex(Vector<t_real> const &r)>
+field(bool expansion, t_complex waveK, Vector<t_complex> const &coeffs) {
+
+  t_int const nmax = std::lround(std::sqrt(coeffs.rows() + 1) - 1.0);
+  assert(nmax * (nmax + 2) == coeffs.rows());
+  assert(nmax > 0);
+
+  return [nmax, waveK, expansion, coeffs](Vector<t_real> const &r) {
+    t_complex result = 0;
+    for(auto n = 1; n <= nmax; ++n)
+      for(auto m = -n; m <= n; ++m) {
+        auto const index = std::abs(m) > n ? 0 : n * n - 1 + n + m;
+        result += coeffs(index) * basis_function(waveK, expansion, r, n, m);
+      }
+    return result;
+  };
+}
+
+TEST_CASE("Matrix interface") {
+  auto const nmax = 1;
+  bool const in_regular = true;
+  bool const out_regular = true;
+  t_complex const waveK(1e0, 1.5e0);
+  Vector<t_real> const r_p = Vector<t_real>::Zero(3);
+  Vector<t_real> r_q = (Vector<t_real>::Random(3) * 10).array() - 5e0;
+  r_q(0) = 0;
+  r_q(1) = 0;
+  r_q(2) = 0;
+  CoAxialTranslationAdditionCoefficients tca((r_q - r_p)(2), waveK,
+                                             in_regular == out_regular);
+
+  Matrix<t_complex> const coeffs = Vector<t_complex>::Random(nmax * (nmax + 2), 1);
+  auto const input_field = field(in_regular, waveK, coeffs);
+  auto const output_field = field(out_regular, waveK, tca(coeffs));
+
+  Vector<t_real> x = (Vector<t_real>::Random(3) * 10).array() - 5e0;
+  x(0) = 0; x(1) = 0;
+  CHECK(input_field(x - r_p).real() == Approx(output_field(x - r_q).real()));
+  CHECK(input_field(x - r_p).imag() == Approx(output_field(x - r_q).imag()));
+}

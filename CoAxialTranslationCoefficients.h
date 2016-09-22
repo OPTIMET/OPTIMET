@@ -1,12 +1,12 @@
 #ifndef COAXIAL_TRANSLATION_COEFFICIENTS_H
 #include "Types.h"
 #include <array>
+#include <iostream>
 #include <map>
 
 #include "Spherical.h"
 
 namespace optimet {
-
 class CachedCoAxialRecurrence {
 public:
   //! Inner floating point with higher precision
@@ -26,6 +26,19 @@ public:
 
   bool is_regular() const { return regular; }
 
+  //! \brief Applies recurrence to input vector/matrix
+  //! \details Each input column consists of (n, m) elements arranged in descending order (1, -1),
+  //! (1, 0), (1, 1), (2, -2), ... (nmax, nmax). nmax is determined from the number of rows.
+  template <class T0, class T1>
+  void operator()(Eigen::MatrixBase<T0> &out, Eigen::MatrixBase<T1> const &input);
+
+  //! \brief Applies recurrence to input vector/matrix
+  template <class T> Matrix<typename T::Scalar> operator()(Eigen::MatrixBase<T> const &input) {
+    Matrix<typename T::Scalar> out(input.rows(), input.cols());
+    operator()(out, input);
+    return out;
+  }
+
 protected:
   //! Distance that the solution is to be translated by
   Real const distance;
@@ -44,17 +57,29 @@ protected:
   Complex offdiagonal_recurrence(t_int n, t_int m, t_int l);
 };
 
-// class CoAxialTranslationAdditionCoefficients {
-// public:
-//   CoAxialTranslationAdditionCoefficients(t_real distance, t_complex waveK, bool regular = true)
-//       : cached_recurrence(distance, waveK, regular) {}
-//
-//   //! \brief Computes the coefficients as per Gumerov (2003)
-//   t_complex operator()(t_int n, t_int m, t_int l);
-//
-// protected:
-//   //! Recurrence for all m
-//   CachedCoAxialRecurrence cached_recurrence;
-// };
+template <class T0, class T1>
+void CachedCoAxialRecurrence::
+operator()(Eigen::MatrixBase<T0> &out, Eigen::MatrixBase<T1> const &input) {
+
+  out.resize(input.rows(), input.cols());
+  t_int const nmax = std::lround(std::sqrt(input.rows() + 1) - 1.0);
+  assert(nmax * (nmax + 2) == input.rows());
+  assert(nmax > 0);
+  auto const index = [](t_int n, t_int m) {
+    // for |m| > n, return something valid, e.g. 0.
+    // (n - 1) * (n + 1) --> same as nmax, but for n - 1 --> n * n - 1
+    // n + m => index m in [-n, n] becomes index in [0, 2n]
+    return std::abs(m) > n ? 0 : n * n - 1 + n + m;
+  };
+
+  std::cout << "rows: " << input.rows() << ", " << out.rows() << "\n";
+  for(auto n = 1; n <= nmax; ++n)
+    for(auto m = -n; m <= n; ++m) {
+      auto current_row = out.row(index(n, m));
+      current_row.fill(0);
+      for(auto l = std::max(1, std::abs(m)); l <= nmax; ++l)
+        current_row.array() += operator()(n, m, l) * input.row(index(l, m)).array();
+    }
+}
 }
 #endif
