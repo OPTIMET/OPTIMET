@@ -151,7 +151,7 @@ protected:
 template <class T0, class T1>
 void Rotation::operator()(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
   out.resize(in.rows(), in.cols());
-  for(t_uint n(1), i(0); n < order.size(); ++n) {
+  for(t_uint n(0), i(0); n < order.size(); ++n) {
     assert(in.rows() >= i + order[n].rows());
     out.block(i, 0, order[n].cols(), in.rows()) =
         order[n] * in.block(i, 0, order[n].rows(), in.cols());
@@ -169,7 +169,7 @@ Matrix<typename T0::Scalar> Rotation::operator()(Eigen::MatrixBase<T0> const &in
 template <class T0, class T1>
 void Rotation::adjoint(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
   out.resize(in.rows(), in.cols());
-  for(t_uint n(1), i(0); n < order.size(); ++n) {
+  for(t_uint n(0), i(0); n < order.size(); ++n) {
     assert(in.rows() >= i + order[n].cols());
     out.block(i, 0, order[n].cols(), in.cols()) =
         order[n].adjoint() * in.block(i, 0, order[n].cols(), in.cols());

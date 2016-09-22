@@ -166,7 +166,7 @@ TEST_CASE("Basis rotation from z to zp") {
   auto const sphe1 = to_spherical(x1);
 
   SECTION("Rotation matrix for each n") {
-    for(t_uint n(1); n < 10; ++n) {
+    for(t_uint n(0); n < 10; ++n) {
       Vector<t_complex> rotated(2 * n + 1), original(2 * n + 1);
       for(t_int m(-static_cast<t_int>(n)); m <= static_cast<t_int>(n); ++m) {
         rotated(m + static_cast<t_int>(n)) = rotcoeffs.spherical_harmonic(n, m, sphe1[1], sphe1[2]);
@@ -184,10 +184,10 @@ TEST_CASE("Basis rotation from z to zp") {
 
   SECTION("Rotation helper class") {
     auto const nmax = 5;
-    Matrix<t_complex> const original = Matrix<t_complex>::Random(nmax * (nmax + 2), 2);
+    Matrix<t_complex> const original = Matrix<t_complex>::Random(nmax * (nmax + 2) + 1, 2);
     Rotation const sphe_rot(theta, phi, chi, nmax);
     auto const rotated = sphe_rot.adjoint(original);
-    for(t_uint n(1), i(0); n <= nmax; ++n) {
+    for(t_uint n(0), i(0); n <= nmax; ++n) {
       auto const inc = 2 * n + 1;
       CAPTURE(n);
       CAPTURE(original.col(0).transpose());
