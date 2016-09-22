@@ -5,6 +5,7 @@
 #include "constants.h"
 #include <Coefficients.h>
 #include <boost/math/special_functions/spherical_harmonic.hpp>
+#include <cmath>
 #include <iostream>
 #include <random>
 
@@ -129,8 +130,9 @@ TEST_CASE("CoAxial") {
   }
 }
 
-void check_coaxial_translation(t_real expansion_pos, t_real reexpansion_pos, bool expansion_regular,
-                               bool reexpansion_regular, t_int n, t_int m, t_complex waveK) {
+void check_coaxial_translation_onaxis(t_real expansion_pos, t_real reexpansion_pos,
+                                      bool expansion_regular, bool reexpansion_regular, t_int n,
+                                      t_int m, t_complex waveK) {
   assert(!(expansion_regular and !reexpansion_regular));
   assert(m <= n);
   bool coeff_regular = expansion_regular == reexpansion_regular;
@@ -152,6 +154,34 @@ void check_coaxial_translation(t_real expansion_pos, t_real reexpansion_pos, boo
   CHECK(expected.imag() == Approx(translated.imag()));
 }
 
+void check_coaxial_translation_off_axis_reexpand_iregular(t_real r_p, t_real r_q, t_int n, t_int m,
+                                                          t_complex waveK) {
+  assert(m <= n);
+  std::uniform_real_distribution<> theta_dist(0, consPi);
+  std::uniform_real_distribution<> phi_dist(0, 2 * consPi);
+  t_real theta_p = consPi / 10;
+  t_real phi = phi_dist(*mersenne);
+  t_real theta_q = asin(sin(theta_p) * r_p / r_q);
+  t_real z1 = cos(theta_p) * r_p;
+  t_real z2 = cos(theta_q) * r_q;
+  t_real const translation(z1 - z2);
+  std::cout << "translation " << translation << " z1 " << z1 << " theta_p " << theta_p << " z2 "
+            << z2 << " theta_q " << theta_q << " r_p " << r_p << " r_q " << r_q << std::endl;
+  CoAxialTranslationAdditionCoefficients tca(translation, waveK, false);
+  auto const basis_func = optimet::bessel<Hankel1>;
+  auto const re_basis_func = optimet::bessel<Bessel>;
+  t_complex translated = 0;
+  for(t_int l = std::abs(m); l < std::abs(m) + 25; l++) {
+    translated += tca(n, m, l) * std::get<0>(re_basis_func(r_q * waveK, l)).back() *
+                  boost::math::spherical_harmonic(l, m, theta_q, phi);
+  }
+  auto expected = std::get<0>(basis_func(r_p * waveK, n)).back() *
+                  boost::math::spherical_harmonic(n, m, theta_p, phi);
+  INFO("Testing translation for n: " << n << " m: " << m);
+  CHECK(expected.real() == Approx(translated.real()));
+  CHECK(expected.imag() == Approx(translated.imag()));
+}
+
 TEST_CASE("Coaxial translation") {
   std::uniform_real_distribution<> small_dist(0, 1);
   std::uniform_real_distribution<> large_dist(10, 50);
@@ -165,13 +195,14 @@ TEST_CASE("Coaxial translation") {
       t_real small = small_dist(*mersenne);
       t_real large = large_dist(*mersenne);
       t_real large_small_diff = large - small;
-      check_coaxial_translation(large, small, false, true, n, m, waveK);
+      check_coaxial_translation_onaxis(large, small, false, true, n, m, waveK);
       // "Simple singular expanded in singular"
-      check_coaxial_translation(large, large_small_diff, false, false, n, m, waveK);
+      check_coaxial_translation_onaxis(large, large_small_diff, false, false, n, m, waveK);
       // "Simple regular expanded in regular"
-      check_coaxial_translation(large, large_small_diff, true, true, n, m, waveK);
-      // Simple regular expanded in regular
-      check_coaxial_translation(large, small, true, true, n, m, waveK);
+      check_coaxial_translation_onaxis(large, large_small_diff, true, true, n, m, waveK);
+      // "Simple regular expanded in regular"
+      check_coaxial_translation_onaxis(large, small, true, true, n, m, waveK);
     }
   }
+  check_coaxial_translation_off_axis_reexpand_iregular(10, 4, 0, 0, waveK);
 }
