@@ -15,10 +15,6 @@ constexpr bool is_valid(t_int n, t_int m) { return n >= 0 and std::abs(m) <= n; 
 constexpr bool is_valid(t_int n, t_int m, t_int l, t_int k) {
   return is_valid(n, m) and is_valid(l, k);
 }
-//! Eases computing ratios of two factorials
-inline t_real factorial_ratio(t_int n, t_int m) {
-  return n == m ? 1 : std::tgamma(n + 1) / std::tgamma(m + 1);
-}
 //! Coefficient of Stout (2004) Appendix C recurrence relationship
 inline t_real a_plus(t_int n, t_int m) {
   if(not is_valid(n, m))
