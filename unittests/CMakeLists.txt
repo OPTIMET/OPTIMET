@@ -10,6 +10,7 @@ endif()
 add_catch_test(translation_addition LIBRARIES optilib ${library_dependencies})
 add_catch_test(harmonics_iterator LIBRARIES optilib ${library_dependencies})
 add_catch_test(aux_coefficients LIBRARIES optilib ${library_dependencies})
+add_catch_test(rotation_coaxial_decomposition LIBRARIES optilib ${library_dependencies})
 
 add_catch_test(rotation_coefficients LIBRARIES optilib ${library_dependencies})
 

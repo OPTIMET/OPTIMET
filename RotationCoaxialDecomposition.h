@@ -4,7 +4,6 @@
 #include "Coefficients.h"
 #include "Types.h"
 #include "constants.h"
-#include <iostream>
 
 #include <boost/math/special_functions/spherical_harmonic.hpp>
 
@@ -21,26 +20,28 @@ void rotation_coaxial_decomposition(t_real wavenumber, t_real tz, Eigen::MatrixB
                                     Eigen::MatrixBase<T1> &out) {
   using coefficient::a;
   // solves nmax * (nmax + 2) = in.rows()
-  t_int const nmax = std::lround(std::sqrt(in.rows() + 1) - 1.0);
-  assert(nmax * (nmax + 2) == in.rows());
-  assert(nmax > 0);
+  t_int const nmax = std::lround(std::sqrt(in.rows()) - 1.0);
+  assert((nmax + 1) * (nmax + 1) == in.rows());
+  assert(nmax >= 0);
   out.resize(in.rows(), in.cols());
-  auto const index = [](t_int n, t_int m) {
-    // for |m| > n, return something valid, e.g. 0.
-    // (n - 1) * (n + 1) --> same as nmax, but for n - 1 --> n * n - 1
-    // n + m => index m in [-n, n] becomes index in [0, 2n]
-    return std::abs(m) > n ? 0 : n * n - 1 + n + m;
+  auto const index = [](t_int n, t_int m) { return std::abs(m) > n ? 0 : n * n + n + m; };
+  auto const in_phi = [&in, nmax, index](t_int n, t_int m) -> t_complex {
+    return n > nmax ? 0 : in(index(n, m), 0);
   };
-  auto const in_phi = [&in, index](t_int n, t_int m) -> t_complex { return in(index(n, m), 0); };
-  auto const in_psi = [&in, index](t_int n, t_int m) -> t_complex { return in(index(n, m), 1); };
+  auto const in_psi = [&in, nmax, index](t_int n, t_int m) -> t_complex {
+    return n > nmax ? 0 : in(index(n, m), 1);
+  };
   auto const out_phi = [&out, index](t_int n, t_int m) -> t_complex & {
     return out(index(n, m), 0);
   };
   auto const out_psi = [&out, index](t_int n, t_int m) -> t_complex & {
     return out(index(n, m), 1);
   };
+  // n = m = 0
+  out.row(0) = in.row(0);
+  // n ≥ 1
   for(t_int n(1); n <= nmax; ++n) {
-    for(t_int m(-n); m < n; ++m) {
+    for(t_int m(-n); m <= n; ++m) {
       auto const c0 = n * a<t_real>(n, m);
       auto const c1 = (n + 1) * a<t_real>(n - 1, m);
       // clang-format off
