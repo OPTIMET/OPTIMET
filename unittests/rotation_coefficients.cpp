@@ -140,6 +140,25 @@ Vector<t_real> to_spherical(Vector<t_real> const &x) {
   return result;
 };
 
+std::function<t_complex(Vector<t_real> const &r)> field(Vector<t_complex> const &coeffs) {
+  t_int const nmax = std::lround(std::sqrt(coeffs.rows()) - 1.0);
+  assert(nmax * (nmax + 2) + 1 == coeffs.rows());
+  assert(nmax >= 0);
+
+  return [nmax, coeffs](Vector<t_real> const &r) {
+    auto const spherical = to_spherical(r);
+    t_complex result = 0;
+    for(auto n = 0, i = 0; n <= nmax; ++n)
+      for(auto m = -n; m <= n; ++m, ++i) {
+        auto const sh = (m > 0 and m % 2 == 1) ?
+                            -boost::math::spherical_harmonic(n, m, spherical(1), spherical(2)) :
+                            boost::math::spherical_harmonic(n, m, spherical(1), spherical(2));
+        result += coeffs(i) * sh;
+      }
+    return result;
+  };
+};
+
 TEST_CASE("Basis rotation from z to zp") {
   Eigen::Matrix<t_real, 3, 1> const z(0, 0, 1);
   Eigen::Matrix<t_real, 3, 1> zp = Eigen::Matrix<t_real, 3, 1>::Random().normalized();
@@ -184,19 +203,31 @@ TEST_CASE("Basis rotation from z to zp") {
 
   SECTION("Rotation helper class") {
     auto const nmax = 5;
-    Matrix<t_complex> const original = Matrix<t_complex>::Random(nmax * (nmax + 2) + 1, 2);
+    Matrix<t_complex> const original = Matrix<t_complex>::Ones(nmax * (nmax + 2) + 1, 2);
     Rotation const sphe_rot(theta, phi, chi, nmax);
     auto const rotated = sphe_rot.adjoint(original);
-    for(t_uint n(0), i(0); n <= nmax; ++n) {
-      auto const inc = 2 * n + 1;
-      CAPTURE(n);
-      CAPTURE(original.col(0).transpose());
-      CAPTURE(rotated.col(0).transpose());
-      CHECK(rotated.block(i, 0, inc, 2)
-                .isApprox(rotcoeffs.matrix(n).adjoint() * original.block(i, 0, inc, 2)));
-      CHECK(
-          original.block(i, 0, inc, 2).isApprox(rotcoeffs.matrix(n) * rotated.block(i, 0, inc, 2)));
-      i += inc;
+    SECTION("Check coefficients") {
+      for(t_uint n(0), i(0); n <= nmax; ++n) {
+        auto const inc = 2 * n + 1;
+        CAPTURE(n);
+        CAPTURE(original.col(0).transpose());
+        CAPTURE(rotated.col(0).transpose());
+        CHECK(rotated.block(i, 0, inc, 2)
+                  .isApprox(rotcoeffs.matrix(n).adjoint() * original.block(i, 0, inc, 2)));
+        CHECK(original.block(i, 0, inc, 2)
+                  .isApprox(rotcoeffs.matrix(n) * rotated.block(i, 0, inc, 2)));
+        i += inc;
+      }
+    }
+
+    SECTION("Field rotation") {
+      RotationCoefficients coeffs(theta, phi, chi);
+      Vector<t_complex> original = Vector<t_complex>::Random(nmax * (nmax + 2) + 1);
+      auto const rotated = sphe_rot.transpose(original);
+      auto const in_field = field(original.col(0));
+      auto const out_field = field(rotated.col(0));
+      CHECK(in_field(x0).real() == Approx(out_field(x1).real()));
+      CHECK(in_field(x0).imag() == Approx(out_field(x1).imag()));
     }
   }
 }

@@ -134,6 +134,17 @@ public:
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
   //! coefficients up to nmax.
   template <class T0> Matrix<typename T0::Scalar> adjoint(Eigen::MatrixBase<T0> const &in) const;
+  //! \brief Applies transpose of rotation matrix (for a single particle pair)
+  //! \details The input and output consist of two-column matrices, where the first columns are the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! coefficients up to nmax.
+  template <class T0, class T1>
+    void transpose(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const;
+  //! \brief Applies transpose of rotation matrix (for a single particle pair)
+  //! \details The input and output consist of two-column matrices, where the first columns are the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! coefficients up to nmax.
+  template <class T0> Matrix<typename T0::Scalar> transpose(Eigen::MatrixBase<T0> const &in) const;
 
 protected:
   //! Rotation angle in rad
@@ -182,6 +193,24 @@ template <class T0>
 Matrix<typename T0::Scalar> Rotation::adjoint(Eigen::MatrixBase<T0> const &in) const {
   Matrix<typename T0::Scalar> out = Matrix<typename T0::Scalar>::Zero(in.rows(), in.cols());
   adjoint(in, out);
+  return out;
+}
+
+template <class T0, class T1>
+void Rotation::transpose(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
+  out.resize(in.rows(), in.cols());
+  for(t_uint n(0), i(0); n < order.size(); ++n) {
+    assert(in.rows() >= i + order[n].cols());
+    out.block(i, 0, order[n].cols(), in.cols()) =
+      order[n].transpose() * in.block(i, 0, order[n].cols(), in.cols());
+    i += order[n].cols();
+  }
+}
+
+template <class T0>
+Matrix<typename T0::Scalar> Rotation::transpose(Eigen::MatrixBase<T0> const &in) const {
+  Matrix<typename T0::Scalar> out = Matrix<typename T0::Scalar>::Zero(in.rows(), in.cols());
+  transpose(in, out);
   return out;
 }
 }
