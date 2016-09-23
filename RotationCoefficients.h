@@ -153,8 +153,9 @@ void Rotation::operator()(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1>
   out.resize(in.rows(), in.cols());
   for(t_uint n(0), i(0); n < order.size(); ++n) {
     assert(in.rows() >= i + order[n].rows());
-    out.block(i, 0, order[n].cols(), in.rows()) =
-        order[n] * in.block(i, 0, order[n].rows(), in.cols());
+    assert(out.rows() >= i + order[n].cols());
+    out.block(i, 0, order[n].rows(), in.cols()) =
+        order[n] * in.block(i, 0, order[n].cols(), in.cols());
     i += order[n].rows();
   }
 }
