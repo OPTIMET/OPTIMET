@@ -112,6 +112,18 @@ TEST_CASE("CoAxial") {
     CHECK(tca(3, 1, 3).real() == Approx(expected.real()));
     CHECK(tca(3, 1, 3).imag() == Approx(expected.imag()));
   }
+  SECTION("R zero") {
+    using coefficient::a;
+    using coefficient::b;
+    t_real const R(0.0);
+    t_complex const waveK(1e0, 0.0);
+    CoAxialTranslationAdditionCoefficients tca(R, waveK, true);
+    // Check that the simple 0,0 coeff is as expected. This revealed
+    // an issue in the bessel function implementation for (0,0)
+    CHECK(tca(0, 0, 0).real() == Approx(1.0));
+    CHECK(tca(0, 0, 0).imag() == Approx(0.0));
+    CHECK(std::get<0>(optimet::bessel<Bessel>(0, 0))[0].real() == Approx(1.0));
+  }
   SECTION("Check n and m recurrence") {
     t_complex const waveK(1e0, 1.5e0);
     CoAxialTranslationAdditionCoefficients tca(1.0, waveK, true);
