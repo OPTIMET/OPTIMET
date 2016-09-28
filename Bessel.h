@@ -1,11 +1,11 @@
 #ifndef OPTIMET_BESSEL_H
 #define OPTIMET_BESSEL_H
 
+#include "constants.h"
 #include <complex>
+#include <iostream>
 #include <tuple>
 #include <vector>
-
-#include "constants.h"
 
 extern "C" {
 int zbesj_(const double *, const double *, const double *, const long int *, const long int *,
@@ -54,6 +54,9 @@ bessel(const std::complex<double> &z, long int max_order) {
   if(std::abs(z) <= errEpsilon) {
     for(int i = 0; i <= max_order; i++)
       data[i] = ddata[i] = std::complex<double>(0.0, 0.0);
+    if(BesselType == Bessel)
+      // The
+      data[0] = std::complex<double>(1, 0);
   } else {
     const double zr = z.real();
     const double zi = z.imag();
