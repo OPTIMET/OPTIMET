@@ -214,6 +214,8 @@ TEST_CASE("Coaxial translation") {
       check_coaxial_translation_onaxis(large, large_small_diff, true, true, n, m, waveK);
       // "Simple regular expanded in regular"
       check_coaxial_translation_onaxis(large, small, true, true, n, m, waveK);
+      // Zero translation
+      check_coaxial_translation_onaxis(large, large, true, true, n, m, waveK);
     }
   }
   check_coaxial_translation_off_axis_reexpand_iregular(10, 4, 0, 0, waveK);
