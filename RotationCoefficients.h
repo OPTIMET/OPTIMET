@@ -56,7 +56,9 @@ public:
   }
   //! \brief Simplifies access to spherical harmonics
   //! \note There is a (-1)^m factor (Condon-Shortley phase term) missing with respect to the
-  //! definition used int the Gumerov paper (DOI: 10.1137/S1064827501399705).
+  //! definition used int the Gumerov paper (DOI: 10.1137/S1064827501399705). Also, the speherical
+  //! harmonics in Gumerov et al use the legendre polynomial for |m| rather than m. Compared to
+  //! boost, this incurs another (-1)^m for m <0.
   template <class T> static std::complex<T> spherical_harmonic(t_uint n, t_int m, T theta, T phi) {
     return (m > 0 and m % 2 == 1) ? -boost::math::spherical_harmonic(n, m, theta, phi) :
                                     boost::math::spherical_harmonic(n, m, theta, phi);
@@ -74,6 +76,9 @@ protected:
   //! Cache which holds previously computed values
   std::map<Index, Complex> cache;
   //! Initial values
+  //! \note Note that Φ enters the initial result with a negative sign compared to the claim in
+  //! Gumerov et al (DOI: 10.1137/S1064827501399705). This sign change is validated by the
+  //! unit-tests.
   Complex initial(t_uint n, t_int mu) const {
     return std::sqrt(4 * constant::pi / static_cast<Real>(2 * n + 1)) *
            spherical_harmonic(n, -mu, theta_, -phi_);
@@ -129,6 +134,17 @@ public:
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
   //! coefficients up to nmax.
   template <class T0> Matrix<typename T0::Scalar> adjoint(Eigen::MatrixBase<T0> const &in) const;
+  //! \brief Applies transpose of rotation matrix (for a single particle pair)
+  //! \details The input and output consist of two-column matrices, where the first columns are the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! coefficients up to nmax.
+  template <class T0, class T1>
+    void transpose(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const;
+  //! \brief Applies transpose of rotation matrix (for a single particle pair)
+  //! \details The input and output consist of two-column matrices, where the first columns are the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! coefficients up to nmax.
+  template <class T0> Matrix<typename T0::Scalar> transpose(Eigen::MatrixBase<T0> const &in) const;
 
 protected:
   //! Rotation angle in rad
@@ -146,10 +162,11 @@ protected:
 template <class T0, class T1>
 void Rotation::operator()(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
   out.resize(in.rows(), in.cols());
-  for(t_uint n(1), i(0); n < order.size(); ++n) {
+  for(t_uint n(0), i(0); n < order.size(); ++n) {
     assert(in.rows() >= i + order[n].rows());
-    out.block(i, 0, order[n].cols(), in.rows()) =
-        order[n] * in.block(i, 0, order[n].rows(), in.cols());
+    assert(out.rows() >= i + order[n].cols());
+    out.block(i, 0, order[n].rows(), in.cols()) =
+        order[n] * in.block(i, 0, order[n].cols(), in.cols());
     i += order[n].rows();
   }
 }
@@ -164,7 +181,7 @@ Matrix<typename T0::Scalar> Rotation::operator()(Eigen::MatrixBase<T0> const &in
 template <class T0, class T1>
 void Rotation::adjoint(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
   out.resize(in.rows(), in.cols());
-  for(t_uint n(1), i(0); n < order.size(); ++n) {
+  for(t_uint n(0), i(0); n < order.size(); ++n) {
     assert(in.rows() >= i + order[n].cols());
     out.block(i, 0, order[n].cols(), in.cols()) =
         order[n].adjoint() * in.block(i, 0, order[n].cols(), in.cols());
@@ -176,6 +193,24 @@ template <class T0>
 Matrix<typename T0::Scalar> Rotation::adjoint(Eigen::MatrixBase<T0> const &in) const {
   Matrix<typename T0::Scalar> out = Matrix<typename T0::Scalar>::Zero(in.rows(), in.cols());
   adjoint(in, out);
+  return out;
+}
+
+template <class T0, class T1>
+void Rotation::transpose(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
+  out.resize(in.rows(), in.cols());
+  for(t_uint n(0), i(0); n < order.size(); ++n) {
+    assert(in.rows() >= i + order[n].cols());
+    out.block(i, 0, order[n].cols(), in.cols()) =
+      order[n].transpose() * in.block(i, 0, order[n].cols(), in.cols());
+    i += order[n].cols();
+  }
+}
+
+template <class T0>
+Matrix<typename T0::Scalar> Rotation::transpose(Eigen::MatrixBase<T0> const &in) const {
+  Matrix<typename T0::Scalar> out = Matrix<typename T0::Scalar>::Zero(in.rows(), in.cols());
+  transpose(in, out);
   return out;
 }
 }

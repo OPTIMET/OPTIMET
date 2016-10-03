@@ -25,6 +25,8 @@ RotationCoefficients::Complex RotationCoefficients::with_caching(t_uint n, t_int
     return static_cast<Real>(0);
   if(m < 0)
     return std::conj(with_caching(n, -m, -mu));
+  if(n == 0)
+    return 1;
 
   auto const prior = cache.find(std::make_tuple(n, m, mu));
   if(prior != cache.end())
