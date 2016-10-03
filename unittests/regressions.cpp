@@ -44,9 +44,8 @@ TEST_CASE("Regression for getTLocal") {
   // The new way
   auto const Tnew = geometry.getTLocal(excitation.omega, 0, nMax);
 
-  CHECK(Tnew.rows() == Told.rows());
-  CHECK(Tnew.cols() == Told.cols());
-  CHECK(Tnew.isApprox(Told, 1e-12));
+  CHECK(Tnew.size() == Told.diagonal().size());
+  CHECK(Tnew.isApprox(Told.diagonal(), 1e-12));
 }
 
 //! Makes some protected method available publicly for testing
