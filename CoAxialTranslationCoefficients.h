@@ -7,8 +7,6 @@
 
 namespace optimet {
 
-namespace details {
-
 class CachedCoAxialRecurrence {
 public:
   //! Inner floating point with higher precision
@@ -45,18 +43,18 @@ protected:
   Complex zonal_recurrence(t_int n, t_int l);
   Complex offdiagonal_recurrence(t_int n, t_int m, t_int l);
 };
-}
-class CoAxialTranslationAdditionCoefficients {
-public:
-  CoAxialTranslationAdditionCoefficients(t_real distance, t_complex waveK, bool regular = true)
-      : cached_recurrence(distance, waveK, regular) {}
 
-  //! \brief Computes the coefficients as per Gumerov (2003)
-  t_complex operator()(t_int n, t_int m, t_int l);
-
-protected:
-  //! Recurrence for all m
-  details::CachedCoAxialRecurrence cached_recurrence;
-};
+// class CoAxialTranslationAdditionCoefficients {
+// public:
+//   CoAxialTranslationAdditionCoefficients(t_real distance, t_complex waveK, bool regular = true)
+//       : cached_recurrence(distance, waveK, regular) {}
+//
+//   //! \brief Computes the coefficients as per Gumerov (2003)
+//   t_complex operator()(t_int n, t_int m, t_int l);
+//
+// protected:
+//   //! Recurrence for all m
+//   CachedCoAxialRecurrence cached_recurrence;
+// };
 }
 #endif

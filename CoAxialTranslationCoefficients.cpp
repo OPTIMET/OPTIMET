@@ -17,7 +17,7 @@ constexpr bool is_valid(t_int n, t_int m, t_int l, t_int k) {
   return is_valid(n, m) and is_valid(l, k);
 }
 }
-namespace details {
+
 CachedCoAxialRecurrence::Complex CachedCoAxialRecurrence::operator()(t_int n, t_int m, t_int l) {
   // It simplifies the recurrence if we assume zero outside the domain of
   // validity
@@ -98,7 +98,7 @@ CachedCoAxialRecurrence::Complex CachedCoAxialRecurrence::zonal_recurrence(t_int
           - operator()(n - 1, 0, l + 1) * a<Real>(l, 0)) /
          a<Real>(n - 1, 0);
 }
-}
+
 t_complex CoAxialTranslationAdditionCoefficients::operator()(t_int n, t_int m, t_int l) {
   // the coaxial recurrence is independent of sign of m Gumerov (4.81)
   return static_cast<t_complex>(cached_recurrence(n, std::abs(m), l));
