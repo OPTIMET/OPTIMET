@@ -11,6 +11,10 @@ namespace details {
 
 class CachedCoAxialRecurrence {
 public:
+  //! Inner floating point with higher precision
+  typedef long double Real;
+  //! Inner complex floating point with higher precision
+  typedef std::complex<Real> Complex;
   //! Indices tuple
   typedef std::array<t_int, 3> t_indices;
 
@@ -20,26 +24,26 @@ public:
   //! \brief Returns coaxial translation coefficients
   //! \details n, l and m correspond to the same variables in Gumerov (2002),
   //! s = m by definition.
-  t_complex operator()(t_int n, t_int m, t_int l);
+  Complex operator()(t_int n, t_int m, t_int l);
 
   bool is_regular() const { return regular; }
 
 protected:
   //! Distance that the solution is to be translated by
-  t_real const distance;
+  Real const distance;
   //! Wavenumber of the incident wave
-  t_complex const waveK;
+  Complex const waveK;
   //! Whether this is for regular or irregular coeffs
   bool const regular;
   //! Caches known coefficients
-  std::map<t_indices, t_complex> cache;
+  std::map<t_indices, Complex> cache;
 
   //! Switches between recurrence relationships
-  t_complex recurrence(t_int n, t_int m, t_int l);
-  t_complex initial(t_int l);
-  t_complex sectorial_recurrence(t_int n, t_int m, t_int l);
-  t_complex zonal_recurrence(t_int n, t_int l);
-  t_complex offdiagonal_recurrence(t_int n, t_int m, t_int l);
+  Complex recurrence(t_int n, t_int m, t_int l);
+  Complex initial(t_int l);
+  Complex sectorial_recurrence(t_int n, t_int m, t_int l);
+  Complex zonal_recurrence(t_int n, t_int l);
+  Complex offdiagonal_recurrence(t_int n, t_int m, t_int l);
 };
 }
 class CoAxialTranslationAdditionCoefficients {
