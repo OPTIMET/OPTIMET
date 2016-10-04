@@ -145,6 +145,17 @@ public:
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
   //! coefficients up to nmax.
   template <class T0> Matrix<typename T0::Scalar> transpose(Eigen::MatrixBase<T0> const &in) const;
+  //! \brief Applies conjugate of rotation matrix (for a single particle pair)
+  //! \details The input and output consist of two-column matrices, where the first columns are the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! coefficients up to nmax.
+  template <class T0, class T1>
+    void conjugate(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const;
+  //! \brief Applies conjugate of rotation matrix (for a single particle pair)
+  //! \details The input and output consist of two-column matrices, where the first columns are the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! coefficients up to nmax.
+  template <class T0> Matrix<typename T0::Scalar> conjugate(Eigen::MatrixBase<T0> const &in) const;
 
 protected:
   //! Rotation angle in rad
@@ -220,6 +231,28 @@ template <class T0>
 Matrix<typename T0::Scalar> Rotation::transpose(Eigen::MatrixBase<T0> const &in) const {
   Matrix<typename T0::Scalar> out = Matrix<typename T0::Scalar>::Zero(in.rows(), in.cols());
   transpose(in, out);
+  return out;
+}
+
+template <class T0, class T1>
+void Rotation::conjugate(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
+  out.resize(in.rows(), in.cols());
+  t_uint const nmax = std::lround(std::sqrt(in.rows()) - 1.0);
+  assert((nmax + 1) * (nmax + 1) == in.rows());
+  assert(nmax >= 0 and nmax < order.size());
+  for(t_uint n(0), i(0); n < nmax; ++n) {
+    assert(in.rows() >= i + order[n].rows());
+    assert(out.rows() >= i + order[n].cols());
+    out.block(i, 0, order[n].rows(), in.cols()) =
+      order[n].conjugate() * in.block(i, 0, order[n].cols(), in.cols());
+    i += order[n].rows();
+  }
+}
+
+template <class T0>
+Matrix<typename T0::Scalar> Rotation::conjugate(Eigen::MatrixBase<T0> const &in) const {
+  Matrix<typename T0::Scalar> out = Matrix<typename T0::Scalar>::Zero(in.rows(), in.cols());
+  conjugate(in, out);
   return out;
 }
 }
