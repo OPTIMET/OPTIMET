@@ -14,41 +14,42 @@ extern std::unique_ptr<std::mt19937_64> mersenne;
 
 using namespace optimet;
 
-void check_coaxial_n_recurrence(CoAxialTranslationAdditionCoefficients tca, t_int n, t_int m,
-                                t_int l) {
+void check_coaxial_n_recurrence(CachedCoAxialRecurrence tca, t_int n, t_int m, t_int l) {
   // This aims to check that we correctly implement formula 4.79
   using coefficient::a;
-  auto left0 = a(n - 1, m) * tca(n - 1, m, l) - a(n, m) * tca(n + 1, m, l);
-  auto right0 = a(l, m) * tca(n, m, l + 1) - a(l - 1, m) * tca(n, m, l - 1);
+  auto left0 = a(n - 1, m) * static_cast<t_complex>(tca(n - 1, m, l)) -
+               a(n, m) * static_cast<t_complex>(tca(n + 1, m, l));
+  auto right0 = a(l, m) * static_cast<t_complex>(tca(n, m, l + 1)) -
+                a(l - 1, m) * static_cast<t_complex>(tca(n, m, l - 1));
   INFO("Testing n recurrence for n " << n << " m " << m << " l " << l);
   CHECK(left0.real() == Approx(right0.real()));
   CHECK(left0.imag() == Approx(right0.imag()));
 }
 
-void check_coaxial_m_recurrence(CoAxialTranslationAdditionCoefficients tca, t_int n, t_int m,
-                                t_int l) {
+void check_coaxial_m_recurrence(CachedCoAxialRecurrence tca, t_int n, t_int m, t_int l) {
   // This aims to check that we correctly implement formula 4.80
   using coefficient::b;
-  auto left0 = b(n, m) * tca(n - 1, m + 1, l) - b(n + 1, -m - 1) * tca(n + 1, m + 1, l);
-  auto right0 = b(l + 1, m) * tca(n, m, l + 1) - b(l, -m - 1) * tca(n, m, l - 1);
+  auto left0 = b(n, m) * static_cast<t_complex>(tca(n - 1, m + 1, l)) -
+               b(n + 1, -m - 1) * static_cast<t_complex>(tca(n + 1, m + 1, l));
+  auto right0 = b(l + 1, m) * static_cast<t_complex>(tca(n, m, l + 1)) -
+                b(l, -m - 1) * static_cast<t_complex>(tca(n, m, l - 1));
   INFO("Testing m recurrence for n " << n << " m " << m << " l " << l);
   CHECK(left0.real() == Approx(right0.real()));
   CHECK(left0.imag() == Approx(right0.imag()));
 }
 
-void check_coaxial_mn_recurrence(CoAxialTranslationAdditionCoefficients tca, t_int n, t_int m,
-                                 t_int l) {
+void check_coaxial_mn_recurrence(CachedCoAxialRecurrence tca, t_int n, t_int m, t_int l) {
   // This aims to check that we correctly implement formula 4.84
   using coefficient::b;
-  auto left0 = b(n + 1, -m - 1) * tca(n + 1, m + 1, l);
-  auto right0 = b(l, -m - 1) * tca(n, m, l - 1) - b(l + 1, m) * tca(n, m, l + 1);
+  auto left0 = b(n + 1, -m - 1) * static_cast<t_complex>(tca(n + 1, m + 1, l));
+  auto right0 = b(l, -m - 1) * static_cast<t_complex>(tca(n, m, l - 1)) -
+                b(l + 1, m) * static_cast<t_complex>(tca(n, m, l + 1));
   INFO("Testing m=n recurrence for n " << n << " m " << m << " l " << l);
   CHECK(left0.real() == Approx(right0.real()));
   CHECK(left0.imag() == Approx(right0.imag()));
 }
 
-void check_coaxial_m_symmetry(CoAxialTranslationAdditionCoefficients tca, t_int n, t_int m,
-                              t_int l) {
+void check_coaxial_m_symmetry(CachedCoAxialRecurrence tca, t_int n, t_int m, t_int l) {
   // check that value is independent of m
   auto left0 = tca(n, m, l);
   auto right0 = tca(n, -m, l);
@@ -57,12 +58,11 @@ void check_coaxial_m_symmetry(CoAxialTranslationAdditionCoefficients tca, t_int 
   CHECK(left0.imag() == Approx(right0.imag()));
 }
 
-void check_coaxial_ln_symmetry(CoAxialTranslationAdditionCoefficients tca, t_int n, t_int m,
-                               t_int l) {
+void check_coaxial_ln_symmetry(CachedCoAxialRecurrence tca, t_int n, t_int m, t_int l) {
   // check that value has the right sign change for m<->l
-  auto left0 = tca(n, m, l);
+  auto left0 = static_cast<t_complex>(tca(n, m, l));
   t_complex sign = ((n + l) % 2 == 0 ? 1 : -1);
-  auto right0 = tca(l, m, n) * sign;
+  auto right0 = static_cast<t_complex>(tca(l, m, n)) * sign;
   INFO("Testing l to n symmetry n " << n << " m " << m << " l " << l);
   CHECK(left0.real() == Approx(right0.real()));
   CHECK(left0.imag() == Approx(right0.imag()));
@@ -74,60 +74,70 @@ TEST_CASE("CoAxial") {
     using coefficient::b;
     t_real const R(1e0);
     t_complex const waveK(1e0, 1.5e0);
-    CoAxialTranslationAdditionCoefficients tca(R, waveK, true);
+    CachedCoAxialRecurrence tca(R, waveK, true);
     // Numbers are generated from the same formula in Scipy
-    CHECK(tca(0, 0, 0).real() == Approx(1.1400511799225792));
-    CHECK(tca(0, 0, 0).imag() == Approx(-0.55962217045848206));
-    CHECK(tca(0, 0, 4).real() == Approx(-0.028191522402192234));
-    CHECK(tca(0, 0, 4).imag() == Approx(-0.02162885905593049));
-    CHECK(tca(1, 0, 1).real() == Approx(1.2274819687880665));
-    CHECK(tca(1, 0, 1).imag() == Approx(-1.0271756758800463));
-    CHECK(tca(-1, 1, 3).real() == Approx(0));
-    CHECK(tca(-1, 1, 3).imag() == Approx(0));
-    CHECK(tca(1, 0, -1).real() == Approx(0));
-    CHECK(tca(1, 0, -1).imag() == Approx(0));
-    CHECK(tca(1, 1, 3).real() == Approx(-0.085169586217943016));
-    CHECK(tca(1, 1, 3).imag() == Approx(0.36331568009355053));
+    CHECK(static_cast<t_complex>(tca(0, 0, 0)).real() == Approx(1.1400511799225792));
+    CHECK(static_cast<t_complex>(tca(0, 0, 0)).imag() == Approx(-0.55962217045848206));
+    CHECK(static_cast<t_complex>(tca(0, 0, 4)).real() == Approx(-0.028191522402192234));
+    CHECK(static_cast<t_complex>(tca(0, 0, 4)).imag() == Approx(-0.02162885905593049));
+    CHECK(static_cast<t_complex>(tca(1, 0, 1)).real() == Approx(1.2274819687880665));
+    CHECK(static_cast<t_complex>(tca(1, 0, 1)).imag() == Approx(-1.0271756758800463));
+    CHECK(static_cast<t_complex>(tca(-1, 1, 3)).real() == Approx(0));
+    CHECK(static_cast<t_complex>(tca(-1, 1, 3)).imag() == Approx(0));
+    CHECK(static_cast<t_complex>(tca(1, 0, -1)).real() == Approx(0));
+    CHECK(static_cast<t_complex>(tca(1, 0, -1)).imag() == Approx(0));
+    CHECK(static_cast<t_complex>(tca(1, 1, 3)).real() == Approx(-0.085169586217943016));
+    CHECK(static_cast<t_complex>(tca(1, 1, 3)).imag() == Approx(0.36331568009355053));
 
     t_complex expected;
-    expected =
-        (tca(1, 0, 1) * a(1, 0) + tca(0, 0, 2) * a(0, 0) - tca(1, 0, 3) * a(2, 0)) / (a(1, 0));
-    CHECK(tca(2, 0, 2).real() == Approx(expected.real()));
-    CHECK(tca(2, 0, 2).imag() == Approx(expected.imag()));
+    expected = (static_cast<t_complex>(tca(1, 0, 1)) * a(1, 0) +
+                static_cast<t_complex>(tca(0, 0, 2)) * a(0, 0) -
+                static_cast<t_complex>(tca(1, 0, 3)) * a(2, 0)) /
+               (a(1, 0));
+    CHECK(static_cast<t_complex>(tca(2, 0, 2)).real() == Approx(expected.real()));
+    CHECK(static_cast<t_complex>(tca(2, 0, 2)).imag() == Approx(expected.imag()));
 
-    expected = (tca(0, 0, 2) * a(2, 0) - tca(0, 0, 4) * a(3, 0)) / (a(0, 0));
-    CHECK(tca(1, 0, 3).real() == Approx(expected.real()));
-    CHECK(tca(1, 0, 3).imag() == Approx(expected.imag()));
+    expected = (static_cast<t_complex>(tca(0, 0, 2)) * a(2, 0) -
+                static_cast<t_complex>(tca(0, 0, 4)) * a(3, 0)) /
+               (a(0, 0));
+    CHECK(static_cast<t_complex>(tca(1, 0, 3)).real() == Approx(expected.real()));
+    CHECK(static_cast<t_complex>(tca(1, 0, 3)).imag() == Approx(expected.imag()));
 
-    expected =
-        (tca(1, 0, 3) * a(3, 0) + tca(0, 0, 4) * a(0, 0) - tca(1, 0, 5) * a(4, 0)) / (a(1, 0));
-    CHECK(tca(2, 0, 4).real() == Approx(expected.real()));
-    CHECK(tca(2, 0, 4).imag() == Approx(expected.imag()));
+    expected = (static_cast<t_complex>(tca(1, 0, 3)) * a(3, 0) +
+                static_cast<t_complex>(tca(0, 0, 4)) * a(0, 0) -
+                static_cast<t_complex>(tca(1, 0, 5)) * a(4, 0)) /
+               (a(1, 0));
+    CHECK(static_cast<t_complex>(tca(2, 0, 4)).real() == Approx(expected.real()));
+    CHECK(static_cast<t_complex>(tca(2, 0, 4)).imag() == Approx(expected.imag()));
 
-    expected = (-tca(0, 0, 2) * b(3, -1) + tca(0, 0, 4) * b(4, 0)) / (-b(1, -1));
-    CHECK(tca(1, 1, 3).real() == Approx(expected.real()));
-    CHECK(tca(1, 1, 3).imag() == Approx(expected.imag()));
+    expected = (-static_cast<t_complex>(tca(0, 0, 2)) * b(3, -1) +
+                static_cast<t_complex>(tca(0, 0, 4)) * b(4, 0)) /
+               (-b(1, -1));
+    CHECK(static_cast<t_complex>(tca(1, 1, 3)).real() == Approx(expected.real()));
+    CHECK(static_cast<t_complex>(tca(1, 1, 3)).imag() == Approx(expected.imag()));
 
-    expected =
-        (-tca(2, 0, 2) * b(3, -1) - tca(1, 1, 3) * b(2, 0) + tca(2, 0, 4) * b(4, 0)) / (-b(3, -1));
-    CHECK(tca(3, 1, 3).real() == Approx(expected.real()));
-    CHECK(tca(3, 1, 3).imag() == Approx(expected.imag()));
+    expected = (-static_cast<t_complex>(tca(2, 0, 2)) * b(3, -1) -
+                static_cast<t_complex>(tca(1, 1, 3)) * b(2, 0) +
+                static_cast<t_complex>(tca(2, 0, 4)) * b(4, 0)) /
+               (-b(3, -1));
+    CHECK(static_cast<t_complex>(tca(3, 1, 3)).real() == Approx(expected.real()));
+    CHECK(static_cast<t_complex>(tca(3, 1, 3)).imag() == Approx(expected.imag()));
   }
   SECTION("R zero") {
     using coefficient::a;
     using coefficient::b;
     t_real const R(0.0);
     t_complex const waveK(1e0, 0.0);
-    CoAxialTranslationAdditionCoefficients tca(R, waveK, true);
+    CachedCoAxialRecurrence tca(R, waveK, true);
     // Check that the simple 0,0 coeff is as expected. This revealed
     // an issue in the bessel function implementation for (0,0)
-    CHECK(tca(0, 0, 0).real() == Approx(1.0));
-    CHECK(tca(0, 0, 0).imag() == Approx(0.0));
+    CHECK(static_cast<t_complex>(tca(0, 0, 0)).real() == Approx(1.0));
+    CHECK(static_cast<t_complex>(tca(0, 0, 0)).imag() == Approx(0.0));
     CHECK(std::get<0>(optimet::bessel<Bessel>(0, 0))[0].real() == Approx(1.0));
   }
   SECTION("Check n and m recurrence") {
     t_complex const waveK(1e0, 1.5e0);
-    CoAxialTranslationAdditionCoefficients tca(1.0, waveK, true);
+    CachedCoAxialRecurrence tca(1.0, waveK, true);
     t_int max_recur = 10;
     for(t_int l = 0; l < max_recur; ++l) {
       for(t_int n = 0; n < max_recur; ++n) {
@@ -166,10 +176,11 @@ void check_coaxial_translation_zero(t_int n, t_int m, t_complex waveK, bool regu
     re_basis_func = optimet::bessel<Hankel1>;
   }
 
-  CoAxialTranslationAdditionCoefficients tca(r_pq, waveK, coeffs_regular);
+  CachedCoAxialRecurrence tca(r_pq, waveK, coeffs_regular);
   t_complex translated = 0;
   for(t_int l = std::abs(m); l < std::abs(m) + 105; l++) {
-    translated += tca(n, m, l) * std::get<0>(re_basis_func(r_q * waveK, l)).back() *
+    translated += static_cast<t_complex>(tca(n, m, l)) *
+                  std::get<0>(re_basis_func(r_q * waveK, l)).back() *
                   boost::math::spherical_harmonic(l, m, theta_q, phi);
   }
   auto expected = std::get<0>(basis_func(r_p * waveK, n)).back() *
@@ -187,13 +198,14 @@ void check_coaxial_translation_onaxis(t_real expansion_pos, t_real reexpansion_p
   assert(m <= n);
   bool coeff_regular = expansion_regular == reexpansion_regular;
   t_real const translation(expansion_pos - reexpansion_pos);
-  CoAxialTranslationAdditionCoefficients tca(translation, waveK, coeff_regular);
+  CachedCoAxialRecurrence tca(translation, waveK, coeff_regular);
   auto const basis_func = expansion_regular ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
   auto const re_basis_func =
       reexpansion_regular ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
   t_complex translated = 0;
   for(t_int l = std::abs(m); l < std::abs(m) + 25; l++) {
-    translated += tca(n, m, l) * std::get<0>(re_basis_func(reexpansion_pos * waveK, l)).back() *
+    translated += static_cast<t_complex>(tca(n, m, l)) *
+                  std::get<0>(re_basis_func(reexpansion_pos * waveK, l)).back() *
                   boost::math::spherical_harmonic(l, m, 0, 0);
   }
   auto expected = std::get<0>(basis_func(expansion_pos * waveK, n)).back() *
@@ -265,10 +277,11 @@ void check_coaxial_translation_off_axis_reexpand_fixed_r(t_int n, t_int m, t_com
   }
   CHECK(sin(theta_p) * r_p == Approx(sin(theta_q) * r_q));
 
-  CoAxialTranslationAdditionCoefficients tca(r_pq, waveK, coeffs_regular);
+  CachedCoAxialRecurrence tca(r_pq, waveK, coeffs_regular);
   t_complex translated = 0;
   for(t_int l = std::abs(m); l < std::abs(m) + 105; l++) {
-    translated += tca(n, m, l) * std::get<0>(re_basis_func(r_q * waveK, l)).back() *
+    translated += static_cast<t_complex>(tca(n, m, l)) *
+                  std::get<0>(re_basis_func(r_q * waveK, l)).back() *
                   boost::math::spherical_harmonic(l, m, theta_q, phi);
   }
   auto expected = std::get<0>(basis_func(r_p * waveK, n)).back() *
@@ -337,10 +350,11 @@ void check_coaxial_translation_off_axis_reexpand_iregular(t_int n, t_int m, t_co
     coeffs_regular = true;
     re_basis_func = optimet::bessel<Hankel1>;
   }
-  CoAxialTranslationAdditionCoefficients tca(r_pq, waveK, coeffs_regular);
+  CachedCoAxialRecurrence tca(r_pq, waveK, coeffs_regular);
   Complex translated = 0;
   for(t_int l = std::abs(m); l < std::abs(m) + 105; l++) {
-    translated += tca(n, m, l) * std::get<0>(re_basis_func(r_q * waveK, l)).back() *
+    translated += static_cast<t_complex>(tca(n, m, l)) *
+                  std::get<0>(re_basis_func(r_q * waveK, l)).back() *
                   boost::math::spherical_harmonic(l, m, theta_q, phi);
   }
   auto expected = std::get<0>(basis_func(r_p * waveK, n)).back() *
@@ -396,10 +410,11 @@ void check_coaxial_translation_off_axis_reexpand_regular(t_int n, t_int m, t_com
   auto const re_basis_func = optimet::bessel<Bessel>;
   coeffs_regular = true;
 
-  CoAxialTranslationAdditionCoefficients tca(r_pq, waveK, coeffs_regular);
+  CachedCoAxialRecurrence tca(r_pq, waveK, coeffs_regular);
   t_complex translated = 0;
   for(t_int l = std::abs(m); l < std::abs(m) + 105; l++) {
-    translated += tca(n, m, l) * std::get<0>(re_basis_func(r_q * waveK, l)).back() *
+    translated += static_cast<t_complex>(tca(n, m, l)) *
+                  std::get<0>(re_basis_func(r_q * waveK, l)).back() *
                   boost::math::spherical_harmonic(l, m, theta_q, phi);
   }
   auto expected = std::get<0>(basis_func(r_p * waveK, n)).back() *
