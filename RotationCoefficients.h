@@ -162,7 +162,10 @@ protected:
 template <class T0, class T1>
 void Rotation::operator()(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
   out.resize(in.rows(), in.cols());
-  for(t_uint n(0), i(0); n < order.size(); ++n) {
+  t_uint const nmax = std::lround(std::sqrt(in.rows()) - 1.0);
+  assert((nmax + 1) * (nmax + 1) == in.rows());
+  assert(nmax >= 0 and nmax < order.size());
+  for(t_uint n(0), i(0); n < nmax; ++n) {
     assert(in.rows() >= i + order[n].rows());
     assert(out.rows() >= i + order[n].cols());
     out.block(i, 0, order[n].rows(), in.cols()) =
@@ -181,7 +184,10 @@ Matrix<typename T0::Scalar> Rotation::operator()(Eigen::MatrixBase<T0> const &in
 template <class T0, class T1>
 void Rotation::adjoint(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
   out.resize(in.rows(), in.cols());
-  for(t_uint n(0), i(0); n < order.size(); ++n) {
+  t_uint const nmax = std::lround(std::sqrt(in.rows()) - 1.0);
+  assert((nmax + 1) * (nmax + 1) == in.rows());
+  assert(nmax >= 0 and nmax < order.size());
+  for(t_uint n(0), i(0); n < nmax; ++n) {
     assert(in.rows() >= i + order[n].cols());
     out.block(i, 0, order[n].cols(), in.cols()) =
         order[n].adjoint() * in.block(i, 0, order[n].cols(), in.cols());
@@ -199,7 +205,10 @@ Matrix<typename T0::Scalar> Rotation::adjoint(Eigen::MatrixBase<T0> const &in) c
 template <class T0, class T1>
 void Rotation::transpose(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
   out.resize(in.rows(), in.cols());
-  for(t_uint n(0), i(0); n < order.size(); ++n) {
+  t_uint const nmax = std::lround(std::sqrt(in.rows()) - 1.0);
+  assert((nmax + 1) * (nmax + 1) == in.rows());
+  assert(nmax >= 0 and nmax < order.size());
+  for(t_uint n(0), i(0); n <= nmax; ++n) {
     assert(in.rows() >= i + order[n].cols());
     out.block(i, 0, order[n].cols(), in.cols()) =
       order[n].transpose() * in.block(i, 0, order[n].cols(), in.cols());
