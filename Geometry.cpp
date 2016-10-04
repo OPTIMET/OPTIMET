@@ -12,10 +12,10 @@
 
 #include <cmath>
 #include <iostream>
+#include <numeric>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
-#include <numeric>
 
 Geometry::~Geometry() {}
 Geometry::Geometry() {}
@@ -24,14 +24,10 @@ void Geometry::pushObject(Scatterer const &object_) {
   for(auto const &obj : objects)
     if(Tools::findDistance(obj.vR, object_.vR) <= (object_.radius + obj.radius)) {
       std::ostringstream sstr;
-      sstr << "The sphere at ("
-           << Tools::toCartesian(object_.vR).x << ", "
-           << Tools::toCartesian(object_.vR).y << ", "
-           << Tools::toCartesian(object_.vR).z << ") "
-           << "overlaps with the one at ("
-           << Tools::toCartesian(obj.vR).x << ", "
-           << Tools::toCartesian(obj.vR).y << ", "
-           << Tools::toCartesian(obj.vR).z << "), "
+      sstr << "The sphere at (" << Tools::toCartesian(object_.vR).x << ", "
+           << Tools::toCartesian(object_.vR).y << ", " << Tools::toCartesian(object_.vR).z << ") "
+           << "overlaps with the one at (" << Tools::toCartesian(obj.vR).x << ", "
+           << Tools::toCartesian(obj.vR).y << ", " << Tools::toCartesian(obj.vR).z << "), "
            << "with radii " << object_.radius << " and " << obj.radius;
       throw std::runtime_error(sstr.str());
     }
@@ -50,7 +46,6 @@ bool Geometry::is_valid() const {
 }
 
 void Geometry::initBground(ElectroMagnetic bground_) { bground = bground_; }
-
 
 optimet::t_uint Geometry::scatterer_size() const {
   auto const object_size = [](optimet::t_uint current, Scatterer const &scatterer) {
@@ -271,25 +266,26 @@ int Geometry::setSourcesSingle(std::shared_ptr<optimet::Excitation const> incWav
   std::complex<double> *sourceU = new std::complex<double>[2 * pMax];
   std::complex<double> *sourceV = new std::complex<double>[2 * pMax];
 
+  auto const omega = incWave_->omega();
   for(size_t j = 0; j < objects.size(); j++) {
-    getNLSources(incWave_->omega, j, nMax_, sourceU, sourceV);
+    getNLSources(omega, j, nMax_, sourceU, sourceV);
 
     for(p = 0; p < pMax; p++) {
       objects[j].sourceCoef[static_cast<int>(p)] =
           sourceU[p] * optimet::symbol::up_mn(p.second, p.first, nMax_,
                                               internalCoef_FF_[j * 2 * pMax + p.compound],
                                               internalCoef_FF_[pMax + j * 2 * pMax + p.compound],
-                                              incWave_->omega, objects[j], bground) +
+                                              omega, objects[j], bground) +
           sourceV[p] * optimet::symbol::vp_mn(p.second, p.first, nMax_,
                                               internalCoef_FF_[j * 2 * pMax + p.compound],
                                               internalCoef_FF_[pMax + j * 2 * pMax + p.compound],
-                                              incWave_->omega, objects[j], bground);
+                                              omega, objects[j], bground);
 
       objects[j].sourceCoef[static_cast<int>(p) + pMax] =
           sourceU[p + pMax] *
               optimet::symbol::upp_mn(
                   p.second, p.first, nMax_, internalCoef_FF_[j * 2 * pMax + p.compound],
-                  internalCoef_FF_[pMax + j * 2 * pMax + p.compound], incWave_->omega, objects[j]) +
+                  internalCoef_FF_[pMax + j * 2 * pMax + p.compound], omega, objects[j]) +
           sourceV[p + pMax]; //<- this last bit is zero for the moment
     }
   }
@@ -367,7 +363,7 @@ int Geometry::getSourceLocal(int objectIndex_, std::shared_ptr<optimet::Excitati
 void Geometry::update(std::shared_ptr<optimet::Excitation const> incWave_) {
   // Update the ElectroMagnetic properties of each object
   for(auto &object : objects)
-    object.elmag.update(incWave_->lambda);
+    object.elmag.update(incWave_->lambda());
 }
 
 void Geometry::updateRadius(double radius_, int object_) { objects[object_].radius = radius_; }

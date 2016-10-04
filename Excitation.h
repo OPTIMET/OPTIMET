@@ -4,6 +4,7 @@
 #include "Spherical.h"
 
 #include "Types.h"
+#include "constants.h"
 #include <complex>
 
 namespace optimet {
@@ -29,8 +30,6 @@ public:
   Vector<t_complex> dataIncBp; /**< The incoming wave b_n^m coefficients. */
 
   std::complex<double> waveK; /**< The incoming wave wavenumber. */
-  double lambda;              /**< The incoming wave wavelength (calculated). */
-  double omega;               /**< The incoming wave frequency (calculated). */
 
   /**
    * Initialization constructor for the Excitation class.
@@ -80,6 +79,12 @@ public:
    * @param lambda_ the new value of the wavelength.
    */
   void updateWavelength(double lambda_);
+
+  //! The incoming wave wavelength
+  t_real lambda() const { return 2 * constant::pi / std::real(vKInc.rrr); }
+  //! The incoming wave frequency (calculated)
+  optimet::t_real omega() const { return constant::c * std::real(vKInc.rrr); }
+
 };
 }
 #endif /* EXCITATION_H_ */

@@ -90,7 +90,7 @@ void Solver::populateDirect() {
     Vector<t_complex> Q_local(2 * flatMax);
 
     // Get the T and IncLocal matrices first
-    auto const T = geometry->getTLocal(incWave->omega, i, nMax);
+    auto const T = geometry->getTLocal(incWave->omega(), i, nMax);
     // we are in the SH case -> get the local sources from the geometry
     if(result_FF)
       geometry->getSourceLocal(i, incWave, nMax, Q_local.data());
@@ -153,8 +153,8 @@ Vector<t_complex> Solver::convertIndirect(Vector<t_complex> const &scattered) co
   auto const N = 2 * (HarmonicsIterator::max_flat(nMax) - 1);
   Vector<t_complex> result(N * geometry->objects.size());
   for(size_t i = 0; i < geometry->objects.size(); i++)
-    result.segment(i * N, N) =
-        geometry->getTLocal(incWave->omega, i, nMax).array() * scattered.segment(i * N, N).array();
+    result.segment(i * N, N) = geometry->getTLocal(incWave->omega(), i, nMax).array() *
+                               scattered.segment(i * N, N).array();
   return result;
 }
 
@@ -173,7 +173,7 @@ Vector<t_complex> Solver::solveInternal(Vector<t_complex> const &scattered) cons
   Vector<t_complex> result(scattered.size());
   // sets each result.segment(j * N, N) to something
   for(size_t j = 0; j < geometry->objects.size(); j++)
-    geometry->getIaux(incWave->omega, j, nMax, result.data() + j * N);
+    geometry->getIaux(incWave->omega(), j, nMax, result.data() + j * N);
   // then multiply by incomming array
   result.array() *= scattered.array();
   return result;
@@ -262,7 +262,7 @@ preconditioned_scattering_matrix(std::vector<Scatterer>::const_iterator const &f
   Matrix<t_complex> result(2 * n * (end_first - first), 2 * n * (end_second - second));
   size_t y(0);
   for(auto iterj(second); iterj != end_second; ++iterj, y += 2 * n) {
-    Vector<t_complex> const factor = -iterj->getTLocal(incWave->omega, bground);
+    Vector<t_complex> const factor = -iterj->getTLocal(incWave->omega(), bground);
     size_t x(0);
     for(auto iteri(first); iteri != end_first; ++iteri, x += 2 * n) {
       if(iteri == iterj) {

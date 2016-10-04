@@ -506,9 +506,10 @@ double Result::getAbsorptionCrossSection() {
   double temp1(0.), temp2(0.);
   double *Cabs_aux = new double[2 * pMax];
 
+  auto const omega = excitation->omega();
   for (size_t j = 0; j < geometry->objects.size(); j++) {
 
-    geometry->getCabsAux(excitation->omega, j, nMax, Cabs_aux);
+    geometry->getCabsAux(omega, j, nMax, Cabs_aux);
 
     for (p = 0; p < pMax; p++) {
       temp1 = abs(scatter_coef[j * 2 * pMax + p.compound]);
