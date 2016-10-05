@@ -14,6 +14,7 @@ add_catch_test(aux_coefficients LIBRARIES optilib ${library_dependencies})
 add_catch_test(rotation_coaxial_decomposition LIBRARIES optilib ${library_dependencies})
 
 add_catch_test(rotation_coefficients LIBRARIES optilib ${library_dependencies})
+add_catch_test(fast_matrix_multiply LIBRARIES optilib ${library_dependencies})
 
 if(dompi)
   if(MPIEXEC_MAX_NUMPROCS LESS 2)

@@ -16,6 +16,18 @@ public:
   //! Range of incident/scattering objects
   typedef std::pair<t_int, t_int> Range;
 
+  //! Creates the fast matrix multiply object
+  //! \param[in] em_background: Electro-magnetic properties of the background material
+  //! \param[in] wavenumber: Wave-number of the incident plane-wave
+  //! \param[in] scatterers: all spherical scatterers in the problem
+  //! \param[in] incident: Indices defining the scatterers this instance will take care of.
+  //!     In practice, the input vector to the multiplication will contain the coefficients of the
+  //!     effective incident field expanded on a spherical basis set at the location of the
+  //!     scatterers in this range.
+  //! \param[in] translate: Indices defining the location for which to expand the field on output.
+  //!     In practice, the output vector of the multiplication will contain the coefficients of the
+  //!     spherical basis set used to expand the field at the location of the scatterers in this
+  //!     range.
   FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
                      std::vector<Scatterer> const &scatterers, Range incident, Range translate)
       : em_background_(em_background), wavenumber_(wavenumber), scatterers_(scatterers),
@@ -24,10 +36,15 @@ public:
         rotations_(compute_rotations(scatterers_, incident_range_, translate_range_)),
         mie_coefficients_(
             compute_mie_coefficients(em_background, wavenumber, scatterers_, incident_range_)) {}
+  FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers, Range incident,
+                     Range translate)
+      : FastMatrixMultiply(ElectroMagnetic(), wavenumber, scatterers, incident, translate) {}
   FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
                      std::vector<Scatterer> const &scatterers)
       : FastMatrixMultiply(em_background, wavenumber, scatterers, {0, scatterers.size()},
                            {0, scatterers.size()}) {}
+  FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers)
+    : FastMatrixMultiply(ElectroMagnetic(), wavenumber, scatterers) {}
 
   //! Computes index of each particle i in global input vector
   static std::vector<t_uint> compute_indices(std::vector<Scatterer> const &scatterers);

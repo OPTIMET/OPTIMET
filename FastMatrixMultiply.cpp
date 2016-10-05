@@ -1,5 +1,7 @@
 #include "FastMatrixMultiply.h"
 #include "RotationCoaxialDecomposition.h"
+#include "Types.h"
+#include <Eigen/Dense>
 
 namespace optimet {
 std::vector<t_uint> FastMatrixMultiply::compute_indices(std::vector<Scatterer> const &scatterers) {
@@ -52,14 +54,26 @@ Vector<t_complex>
 FastMatrixMultiply::compute_mie_coefficients(ElectroMagnetic const &background, t_real wavenumber,
                                              std::vector<Scatterer> const &scatterers,
                                              Range incident) {
-  Vector<t_complex> result(incident.second - incident.first);
   auto in_begin = scatterers.cbegin() + incident.first;
   auto const in_end = scatterers.cbegin() + incident.second;
+  // First figure out total size
+  t_uint total_size = 0;
+  for(; in_begin != in_end; ++in_begin)
+    total_size += in_begin->nMax * (in_begin->nMax + 2);
+  Vector<t_complex> result(2 * total_size);
+
+  // then actually compute vector
+  in_begin = scatterers.cbegin() + incident.first;
   for(t_uint i(0); in_begin != in_end; ++in_begin) {
-    auto const nMax = in_begin->nMax;
-    result.segment(i, nMax) = in_begin->getTLocal(wavenumber * constant::pi, background);
+    auto const rows = in_begin->nMax * (in_begin->nMax + 2);
+    auto const v = in_begin->getTLocal(wavenumber * constant::pi, background);
+    assert(result.size() >= i + rows);
+    assert(v.size() >= 2 * total_size);
+
+    result.segment(i, rows) = v.head(rows);
+    result.segment(i + total_size, rows) = v.tail(rows);
     // incrementing here avoids problems with variable incrementation order
-    i += nMax;
+    i += rows;
   }
   return result;
 }
@@ -109,42 +123,42 @@ void FastMatrixMultiply::operator()(Vector<t_complex> const &in, Vector<t_comple
   // e.g. for each scatterer and particle on which the EM field impinges.
   auto rotation = rotations_.cbegin();
   for(t_int i(0); in_begin != in_end; ++in_begin) {
-    auto const in_nMax = in_begin->nMax;
-    auto const incident = matrix_scattered.topRows(i + in_nMax).bottomRows(in_nMax);
+    auto const in_rows = 2 * in_begin->nMax + 1;
+    auto const incident = matrix_scattered.topRows(i + in_rows).bottomRows(in_rows);
     auto out_begin = scatterers_.cbegin() + translate_range_.first;
     auto const out_end = scatterers_.cbegin() + translate_range_.second;
     for(t_int j(0); out_begin != out_end; ++out_begin, ++rotation) {
-      auto const out_nMax = out_begin->nMax;
-      auto const nMax = std::max(out_nMax, in_nMax);
+      auto const out_rows = 2 * out_begin->nMax + 1;
+      auto const rows = std::max(out_rows, in_rows);
       // Apply rotation from external basis to basis with z = q -> q'
-      auto rotated = work0.topRows(in_nMax);
+      auto rotated = work0.topRows(in_rows);
       rotation->transpose(incident, rotated);
-      // if in_nMax < out_nMax fill missing coefficients with zeros
-      if(in_nMax < nMax)
-        rotated.bottomRows(nMax - in_nMax).fill(0);
+      // if in_rows < out_rows fill missing coefficients with zeros
+      if(in_rows < rows)
+        rotated.bottomRows(rows - in_rows).fill(0);
 
       // Apply S|R coaxial translation from q to q'
-      auto translated = work1.topRows(nMax);
-      apply_translation(translated, work0.topRows(nMax));
+      auto translated = work1.topRows(rows);
+      apply_translation(translated, work0.topRows(rows));
 
       // Apply field coaxial translation
       auto const tz =
           (out_begin->vR.toEigenCartesian() - in_begin->vR.toEigenCartesian()).stableNorm();
-      auto cotranslated = work1.topRows(nMax);
+      auto cotranslated = work1.topRows(rows);
       rotation_coaxial_decomposition(wavenumber_, tz, translated, cotranslated);
 
       // Apply rotation from basis with z = q -> q' to external basis
-      auto rotated_back = out_matrix.topRows(j + out_nMax).bottomRows(out_nMax);
-      if(out_nMax < nMax) {
-        // if in_nMax > out_nMax, then we need only some of the coefficients we have computed
-        auto rotated_large = work0.topRows(nMax);
+      auto rotated_back = out_matrix.topRows(j + out_rows).bottomRows(out_rows);
+      if(out_rows < rows) {
+        // if in_rows > out_rows, then we need only some of the coefficients we have computed
+        auto rotated_large = work0.topRows(rows);
         rotation->conjugate(cotranslated, rotated_large);
-        rotated_back = rotated_large.topLeftCorner(out_nMax, out_nMax);
+        rotated_back = rotated_large.topLeftCorner(out_rows, out_rows);
       } else
         rotation->conjugate(cotranslated, rotated_back);
-      j += out_nMax;
+      j += out_rows;
     }
-    i += in_nMax;
+    i += in_rows;
   }
 }
 
