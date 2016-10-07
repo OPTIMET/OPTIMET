@@ -203,16 +203,16 @@ TEST_CASE("Basis rotation from z to zp") {
 
   SECTION("Rotation helper class") {
     auto const nmax = 5;
-    Matrix<t_complex> const original = Matrix<t_complex>::Ones(nmax * (nmax + 2) + 1, 2);
+    Matrix<t_complex> const original = Matrix<t_complex>::Random(nmax * (nmax + 2) + 1, 2);
     Rotation const sphe_rot(theta, phi, chi, nmax);
     auto const rotated = sphe_rot.adjoint(original);
     SECTION("Check coefficients") {
       for(t_uint n(0), i(0); n <= nmax; ++n) {
         auto const inc = 2 * n + 1;
-        CAPTURE(n);
-        CAPTURE(original.col(0).transpose());
-        CAPTURE(rotated.col(0).transpose());
-        CHECK(rotated.block(i, 0, inc, 2)
+        CAPTURE(original.block(i, 0, inc, 2));
+        CAPTURE(rotated.block(i, 0, inc, 2));
+        CAPTURE(rotcoeffs.matrix(n).adjoint() * original.block(i, 0, inc, 2));
+        REQUIRE(rotated.block(i, 0, inc, 2)
                   .isApprox(rotcoeffs.matrix(n).adjoint() * original.block(i, 0, inc, 2)));
         CHECK(original.block(i, 0, inc, 2)
                   .isApprox(rotcoeffs.matrix(n) * rotated.block(i, 0, inc, 2)));

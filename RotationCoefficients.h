@@ -176,7 +176,8 @@ void Rotation::operator()(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1>
   t_uint const nmax = std::lround(std::sqrt(in.rows()) - 1.0);
   assert((nmax + 1) * (nmax + 1) == in.rows());
   assert(nmax >= 0 and nmax < order.size());
-  for(t_uint n(0), i(0); n < nmax; ++n) {
+  for(t_uint n(0), i(0); n <= nmax; ++n) {
+    assert(order[n].rows() == order[n].cols());
     assert(in.rows() >= i + order[n].rows());
     assert(out.rows() >= i + order[n].cols());
     out.block(i, 0, order[n].rows(), in.cols()) =
@@ -198,10 +199,11 @@ void Rotation::adjoint(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &o
   t_uint const nmax = std::lround(std::sqrt(in.rows()) - 1.0);
   assert((nmax + 1) * (nmax + 1) == in.rows());
   assert(nmax >= 0 and nmax < order.size());
-  for(t_uint n(0), i(0); n < nmax; ++n) {
+  for(t_uint n(0), i(0); n <= nmax; ++n) {
+    assert(order[n].cols() == order[n].rows());
     assert(in.rows() >= i + order[n].cols());
     out.block(i, 0, order[n].cols(), in.cols()) =
-        order[n].adjoint() * in.block(i, 0, order[n].cols(), in.cols());
+        order[n].adjoint() * in.block(i, 0, order[n].rows(), in.cols());
     i += order[n].cols();
   }
 }
@@ -240,7 +242,7 @@ void Rotation::conjugate(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> 
   t_uint const nmax = std::lround(std::sqrt(in.rows()) - 1.0);
   assert((nmax + 1) * (nmax + 1) == in.rows());
   assert(nmax >= 0 and nmax < order.size());
-  for(t_uint n(0), i(0); n < nmax; ++n) {
+  for(t_uint n(0), i(0); n <= nmax; ++n) {
     assert(in.rows() >= i + order[n].rows());
     assert(out.rows() >= i + order[n].cols());
     out.block(i, 0, order[n].rows(), in.cols()) =
