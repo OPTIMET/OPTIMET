@@ -15,7 +15,7 @@ class FastMatrixMultiply: public optimet::FastMatrixMultiply {
 TEST_CASE("Single object") {
   using namespace optimet;
   ElectroMagnetic const elmag{13.1, 1.0};
-  auto const wavenumber = 3;
+  auto const wavenumber = 2 * constant::pi / (1200 * 1e-9);
   auto const radius = 500e-9;
   auto const nHarmonics = 5;
   std::vector<Scatterer> const scatterers{{{0, 0, 0}, elmag, radius, nHarmonics}};
@@ -25,7 +25,19 @@ TEST_CASE("Single object") {
 
   SECTION("Internal constructed object sanity") {
     CHECK(fmm.indices().size() == 2);
-    CHECK(fmm.rotations().size() == 1);
+    CHECK(fmm.indices().front() == 0);
+    CHECK(fmm.indices().back() == nHarmonics * (nHarmonics + 2));
+
     CHECK(fmm.mie_coefficients().size() == 2 * nHarmonics * (nHarmonics + 2));
+    CHECK(fmm.mie_coefficients().isApprox(
+          scatterers.front().getTLocal(wavenumber * constant::c, ElectroMagnetic())));
+
+    CHECK(fmm.rotations().size() == 0);
+  }
+
+  SECTION("Matrix is identity") {
+    Vector<t_complex> const input = Vector<t_complex>::Random(2 * nHarmonics * (nHarmonics + 2));
+    auto const result = fmm(input);
+    CHECK(result.isApprox(input));
   }
 }

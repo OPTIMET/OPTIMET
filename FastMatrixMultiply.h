@@ -44,7 +44,7 @@ public:
       : FastMatrixMultiply(em_background, wavenumber, scatterers, {0, scatterers.size()},
                            {0, scatterers.size()}) {}
   FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers)
-    : FastMatrixMultiply(ElectroMagnetic(), wavenumber, scatterers) {}
+      : FastMatrixMultiply(ElectroMagnetic(), wavenumber, scatterers) {}
 
   //! Computes index of each particle i in global input vector
   static std::vector<t_uint> compute_indices(std::vector<Scatterer> const &scatterers);
@@ -60,9 +60,12 @@ public:
 
   //! \brief Applies fast matrix multiplication to effective incident field
   void operator()(Vector<t_complex> const &in, Vector<t_complex> &out) const;
+  //! \brief Applies fast matrix multiplication to effective incident field
+  Vector<t_complex> operator()(Vector<t_complex> const &in) const;
 
   //! Applies Mie coefficient to incident values
-  Vector<t_complex> apply_mie_coefficients(Vector<t_complex> const &in) const;
+  Eigen::Matrix<t_complex, Eigen::Dynamic, 2>
+  apply_mie_coefficients(Vector<t_complex> const &in) const;
 
   //! Apply translation
   template <class T0, class T1>
