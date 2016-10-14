@@ -111,6 +111,10 @@ public:
   Matrix<t_complex> rotation_matrix(RotationCoefficients &&coeffs, t_real n) {
     return coeffs.matrix(n);
   }
+  //! Matrix from one basis to another
+  Matrix<t_real> basis_rotation() const {
+    return RotationCoefficients::basis_rotation(theta(), phi(), chi());
+  }
 
   //! \brief Performs rotation (for a single particle pair)
   //! \details The input and output consist of two-column matrices, where the first columns are the
@@ -139,7 +143,7 @@ public:
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
   //! coefficients up to nmax.
   template <class T0, class T1>
-    void transpose(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const;
+  void transpose(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const;
   //! \brief Applies transpose of rotation matrix (for a single particle pair)
   //! \details The input and output consist of two-column matrices, where the first columns are the
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
@@ -150,7 +154,7 @@ public:
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
   //! coefficients up to nmax.
   template <class T0, class T1>
-    void conjugate(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const;
+  void conjugate(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const;
   //! \brief Applies conjugate of rotation matrix (for a single particle pair)
   //! \details The input and output consist of two-column matrices, where the first columns are the
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
@@ -224,7 +228,7 @@ void Rotation::transpose(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> 
   for(t_uint n(0), i(0); n <= nmax; ++n) {
     assert(in.rows() >= i + order[n].cols());
     out.block(i, 0, order[n].cols(), in.cols()) =
-      order[n].transpose() * in.block(i, 0, order[n].cols(), in.cols());
+        order[n].transpose() * in.block(i, 0, order[n].cols(), in.cols());
     i += order[n].cols();
   }
 }
@@ -246,7 +250,7 @@ void Rotation::conjugate(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> 
     assert(in.rows() >= i + order[n].rows());
     assert(out.rows() >= i + order[n].cols());
     out.block(i, 0, order[n].rows(), in.cols()) =
-      order[n].conjugate() * in.block(i, 0, order[n].cols(), in.cols());
+        order[n].conjugate() * in.block(i, 0, order[n].cols(), in.cols());
     i += order[n].rows();
   }
 }
