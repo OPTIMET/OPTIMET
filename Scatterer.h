@@ -1,9 +1,9 @@
 #ifndef SCATTERER_H_
 #define SCATTERER_H_
 
-#include "Types.h"
 #include "ElectroMagnetic.h"
 #include "Spherical.h"
+#include "Types.h"
 #include <vector>
 
 /**
@@ -32,6 +32,22 @@ public:
    * @see init()
    */
   Scatterer(Spherical<double> vR_, ElectroMagnetic elmag_, double radius_, int nMax_);
+
+  /**
+   * Initialization constructor for Scatterer.
+   * Creates a sphere scatterer centered in vR with properties elmag and
+   * radius r.
+   * @param pos the position in cartesian coordinates
+   * @param elmag_ the electromagnetic properties of the scatterer.
+   * @param radius_ the radius of the virtual sphere.
+   * @param nMax_ the maximum value of the n iterator.
+   * @see init()
+   */
+  template <class T>
+  Scatterer(Eigen::MatrixBase<T> const &pos, ElectroMagnetic elmag, double radius, int nMax)
+      : Scatterer(Spherical<optimet::t_real>::toSpherical(
+                      Cartesian<optimet::t_real>(pos[0], pos[1], pos[2])),
+                  elmag, radius, nMax) {}
 
   /**
    * Default scatterer destructor.
