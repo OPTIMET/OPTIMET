@@ -38,14 +38,9 @@ FastMatrixMultiply::compute_rotations(std::vector<Scatterer> const &scatterers, 
     for(; out_begin != out_end; ++out_begin) {
       if(out_begin == in_begin)
         continue;
-      auto const a2 = (x0 - out_begin->vR.toEigenCartesian()).eval();
-      auto const a1 = z.cross(a2).normalized().eval();
-      auto const a0 = (a1.stableNorm() > 1e-12 ? a1 : Eigen::Matrix<t_real, 3, 1>(0, 1, 0))
-                          .cross(a2)
-                          .normalized()
-                          .eval();
-      auto const theta = a2(2);
-      auto const phi = std::atan2(a2(1), a0(2));
+      auto const a2 = (out_begin->vR.toEigenCartesian() - x0).normalized().eval();
+      auto const theta = std::acos(a2(2));
+      auto const phi = std::atan2(a2(1), a2(0));
       result.emplace_back(theta, phi, chi, std::max(in_begin->nMax, out_begin->nMax));
     }
   }
