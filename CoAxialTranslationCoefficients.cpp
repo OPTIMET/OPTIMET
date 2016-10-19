@@ -98,4 +98,14 @@ CachedCoAxialRecurrence::Complex CachedCoAxialRecurrence::zonal_recurrence(t_int
           - coeff(n - 1, 0, l + 1) * a<Real>(l, 0)) /
          a<Real>(n - 1, 0);
 }
+
+CachedCoAxialRecurrence::Functor CachedCoAxialRecurrence::functor(t_int N) {
+  // now assign them
+  std::vector<t_complex> coefficients;
+  for(auto n = 0; n <= N; ++n)
+    for(auto m = -n; m <= n; ++m)
+      for(auto l = std::abs(m); l <= N; ++l)
+        coefficients.push_back(operator()(n, m, l));
+  return Functor(N, std::move(coefficients));
+}
 }
