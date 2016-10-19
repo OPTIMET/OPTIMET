@@ -1,5 +1,5 @@
-#include "CoAxialTranslationCoefficients.h"
 #include "Bessel.h"
+#include "CoAxialTranslationCoefficients.h"
 #include "constants.h"
 #include <Coefficients.h>
 #include <cmath>
@@ -18,7 +18,7 @@ constexpr bool is_valid(t_int n, t_int m, t_int l, t_int k) {
 }
 }
 
-CachedCoAxialRecurrence::Complex CachedCoAxialRecurrence::operator()(t_int n, t_int m, t_int l) {
+CachedCoAxialRecurrence::Complex CachedCoAxialRecurrence::coeff(t_int n, t_int m, t_int l) {
   // It simplifies the recurrence if we assume zero outside the domain of
   // validity
   if(not is_valid(n, m, l, m))
@@ -43,7 +43,7 @@ CachedCoAxialRecurrence::Complex CachedCoAxialRecurrence::recurrence(t_int n, t_
     return initial(l);
   else if(l < n) {
     CachedCoAxialRecurrence::Complex factor = static_cast<Complex>((l + n) % 2 == 0 ? 1 : -1);
-    return operator()(l, m, n) * factor;
+    return coeff(l, m, n) * factor;
   } else if(m == n)
     return sectorial_recurrence(n, m, l);
   else if(m == 0)
@@ -73,8 +73,8 @@ CachedCoAxialRecurrence::sectorial_recurrence(t_int n, t_int m, t_int l) {
   // It also requires bn-m to be non zero. This is zero if n+m = 1
   // Gumerov's b coeffs are equal to b_minus from Stout for m >=0 and
   // - b_minus for m < 0. Here m = n or n-1 by definition.
-  return (operator()(n - 1, m - 1, l - 1) * b<Real>(l, -m) -
-          operator()(n - 1, m - 1, l + 1) * b<Real>(l + 1, m - 1)) /
+  return (coeff(n - 1, m - 1, l - 1) * b<Real>(l, -m) -
+          coeff(n - 1, m - 1, l + 1) * b<Real>(l + 1, m - 1)) /
          b<Real>(n, -m);
 }
 
@@ -83,9 +83,9 @@ CachedCoAxialRecurrence::offdiagonal_recurrence(t_int n, t_int m, t_int l) {
   // gumerov 4.80
   using coefficient::b;
   assert(m != 0 and n != 0 and m != n);
-  return (+operator()(n - 1, m - 1, l - 1) * b<Real>(l, -m) +
-          operator()(n - 2, m, l) * (b<Real>(n - 1, m - 1)) -
-          operator()(n - 1, m - 1, l + 1) * b<Real>(l + 1, m - 1)) /
+  return (+coeff(n - 1, m - 1, l - 1) * b<Real>(l, -m) +
+          coeff(n - 2, m, l) * (b<Real>(n - 1, m - 1)) -
+          coeff(n - 1, m - 1, l + 1) * b<Real>(l + 1, m - 1)) /
          b<Real>(n, -m);
 }
 
@@ -93,14 +93,9 @@ CachedCoAxialRecurrence::Complex CachedCoAxialRecurrence::zonal_recurrence(t_int
   // Gumerov 4.79 i.e. m = 0
   using coefficient::a;
   assert(l > 0 and n > 0 and l >= n);
-  return (operator()(n - 1, 0, l - 1) * a<Real>(l - 1, 0) //
-          + operator()(n - 2, 0, l) * a<Real>(n - 2, 0)   //
-          - operator()(n - 1, 0, l + 1) * a<Real>(l, 0)) /
+  return (coeff(n - 1, 0, l - 1) * a<Real>(l - 1, 0) //
+          + coeff(n - 2, 0, l) * a<Real>(n - 2, 0)   //
+          - coeff(n - 1, 0, l + 1) * a<Real>(l, 0)) /
          a<Real>(n - 1, 0);
-}
-
-t_complex CoAxialTranslationAdditionCoefficients::operator()(t_int n, t_int m, t_int l) {
-  // the coaxial recurrence is independent of sign of m Gumerov (4.81)
-  return static_cast<t_complex>(cached_recurrence(n, std::abs(m), l));
 }
 }
