@@ -216,84 +216,6 @@ void check_coaxial_translation_onaxis(t_real expansion_pos, t_real reexpansion_p
   CHECK(expected.imag() == Approx(translated.imag()));
 }
 
-void check_coaxial_translation_off_axis_reexpand_fixed_r(t_int n, t_int m, t_complex waveK,
-                                                         bool regular, bool reexpansion_regular) {
-  assert(m <= n);
-  bool coeffs_regular;
-  auto basis_func = optimet::bessel<Bessel>;
-  auto re_basis_func = optimet::bessel<Bessel>;
-  t_real theta_p;
-  t_real r_p;
-  t_real r_pq;
-  t_real phi;
-  t_real theta_q;
-  t_real r_q;
-  if(regular and reexpansion_regular) {
-    theta_p = 0.0897864;
-    r_p = 5.88056;
-    r_pq = 2.4808;
-    phi = 1.2131;
-    theta_q = 0.154931;
-    r_q = 3.41701;
-    basis_func = optimet::bessel<Bessel>;
-    re_basis_func = optimet::bessel<Bessel>;
-    coeffs_regular = true;
-  } else if(!regular and reexpansion_regular) {
-    theta_p = 0.328313;
-    r_p = 5.61927;
-    r_pq = 4.25386;
-    phi = 1.2131;
-    theta_q = 1.0393;
-    r_q = 2.10187;
-    basis_func = optimet::bessel<Hankel1>;
-    re_basis_func = optimet::bessel<Bessel>;
-    coeffs_regular = false;
-    // Convergence is problematic when r_q ~= r_pq such as below
-    // t_real r_p = 5;
-    // t_real r_q = 5;
-    // t_real r_pq = 5;
-    // t_real theta_p = consPi / 3.0;
-    // t_real theta_q = 2 * consPi / 3.0;
-    // t_real phi = 1.2131;
-  } else if(!regular and !reexpansion_regular) {
-    theta_p = 0.0897864;
-    r_p = 5.88056;
-    r_pq = 2.4808;
-    phi = 1.2131;
-    theta_q = 0.154931;
-    r_q = 3.41701;
-    basis_func = optimet::bessel<Hankel1>;
-    re_basis_func = optimet::bessel<Hankel1>;
-    coeffs_regular = true;
-    // Convergence is problematic when r_q ~= r_pq such as below
-    // t_real r_p = 5;
-    // t_real r_q = 5;
-    // t_real r_pq = 5;
-    // t_real theta_p = consPi / 3.0;
-    // t_real theta_q = 2 * consPi / 3.0;
-    // t_real phi = 1.2131;
-  } else {
-    std::cout << "this should never happen" << std::endl;
-  }
-  CHECK(sin(theta_p) * r_p == Approx(sin(theta_q) * r_q));
-
-  CachedCoAxialRecurrence tca(r_pq, waveK, coeffs_regular);
-  t_complex translated = 0;
-  for(t_int l = std::abs(m); l < std::abs(m) + 105; l++) {
-    translated += static_cast<t_complex>(tca(n, m, l)) *
-                  std::get<0>(re_basis_func(r_q * waveK, l)).back() *
-                  boost::math::spherical_harmonic(l, m, theta_q, phi);
-  }
-  auto expected = std::get<0>(basis_func(r_p * waveK, n)).back() *
-                  boost::math::spherical_harmonic(n, m, theta_p, phi);
-  INFO("Testing translation for regular? "
-       << regular << " reexpanded in regular? " << reexpansion_regular << " n: " << n << " m: " << m
-       << " sph " << boost::math::spherical_harmonic(n, m, theta_p, phi) << " bessel "
-       << std::get<0>(basis_func(r_p * waveK, n)).back() << r_p * waveK << " r_p " << r_p << " r_q "
-       << r_q << " r_pq " << r_pq);
-  CHECK(expected.real() == Approx(translated.real()));
-  CHECK(expected.imag() == Approx(translated.imag()));
-}
 
 void check_coaxial_translation_off_axis_reexpand_iregular(t_int n, t_int m, t_complex waveK) {
   assert(m <= n);
@@ -305,10 +227,10 @@ void check_coaxial_translation_off_axis_reexpand_iregular(t_int n, t_int m, t_co
   std::uniform_real_distribution<> theta_dist(0, consPi / 2);
   std::uniform_real_distribution<> phi_dist(0, 2 * consPi);
   std::uniform_real_distribution<> r_p_dist(1, 10);
-  t_real r_p = r_p_dist(*mersenne);
-  t_real theta_p = theta_dist(*mersenne);
-  t_real phi = phi_dist(*mersenne);
-  t_real theta_p1 = theta_p;
+  auto const r_p = r_p_dist(*mersenne);
+  auto const theta_p = theta_dist(*mersenne);
+  auto const phi = phi_dist(*mersenne);
+  auto theta_p1 = theta_p;
   if(theta_p > consPi / 2)
     // internal angle in the triangle < pi/2
     theta_p1 = consPi - theta_p;
@@ -368,63 +290,6 @@ void check_coaxial_translation_off_axis_reexpand_iregular(t_int n, t_int m, t_co
   CHECK(expected.imag() == Approx(translated.imag()));
 }
 
-void check_coaxial_translation_off_axis_reexpand_regular(t_int n, t_int m, t_complex waveK) {
-  assert(m <= n);
-  //! Inner floating point with higher precision
-  typedef long double Real;
-  //! Inner complex floating point with higher precision
-  typedef std::complex<Real> Complex;
-  bool coeffs_regular;
-  std::uniform_real_distribution<> theta_dist(0, consPi);
-  std::uniform_real_distribution<> phi_dist(0, 2 * consPi);
-  std::uniform_real_distribution<> r_p_dist(1, 10);
-  t_real r_p = r_p_dist(*mersenne);
-  t_real theta_p = theta_dist(*mersenne);
-  t_real phi = phi_dist(*mersenne);
-  t_real theta_p1 = theta_p;
-  if(theta_p > consPi / 2)
-    // internal angle in the triangle < pi/2
-    theta_p1 = consPi - theta_p;
-
-  t_real z_p = cos(theta_p1) * r_p;
-  std::uniform_real_distribution<> r_pq_dist(-10, 10);
-  t_real r_pq = r_pq_dist(*mersenne);
-  t_real rho_p = sin(theta_p1) * r_p;
-  t_real rho_q = rho_p;
-  t_real z_q = 0;
-
-  if((theta_p <= consPi / 2))
-    z_q = std::abs(z_p - r_pq);
-  else
-    z_q = std::abs(z_p + r_pq);
-  t_real theta_q = atan(rho_q / z_q);
-  t_real r_q = z_q / cos(theta_q);
-
-  CHECK(sin(theta_p1) * r_p == Approx(sin(theta_q) * r_q));
-  if((theta_p <= consPi / 2) and (r_pq > z_p))
-    // swap to get the angle from positive z axis
-    theta_q = consPi - theta_q;
-  if((theta_p > consPi / 2) and (r_pq > -z_p))
-    theta_q = consPi - theta_q;
-  auto const basis_func = optimet::bessel<Bessel>;
-  auto const re_basis_func = optimet::bessel<Bessel>;
-  coeffs_regular = true;
-
-  CachedCoAxialRecurrence tca(r_pq, waveK, coeffs_regular);
-  t_complex translated = 0;
-  for(t_int l = std::abs(m); l < std::abs(m) + 105; l++) {
-    translated += static_cast<t_complex>(tca(n, m, l)) *
-                  std::get<0>(re_basis_func(r_q * waveK, l)).back() *
-                  boost::math::spherical_harmonic(l, m, theta_q, phi);
-  }
-  auto expected = std::get<0>(basis_func(r_p * waveK, n)).back() *
-                  boost::math::spherical_harmonic(n, m, theta_p, phi);
-  INFO("Testing translation for regular 1 reexpanded in regular n: "
-       << n << " m: " << m << " sph " << boost::math::spherical_harmonic(n, m, theta_p, phi)
-       << " bessel " << std::get<0>(basis_func(r_p * waveK, n)).back() << r_p * waveK << " r_p "
-       << r_p << " r_q " << r_q << " r_pq " << r_pq);
-}
-
 TEST_CASE("Coaxial translation") {
   std::uniform_real_distribution<> small_dist(0, 1);
   std::uniform_real_distribution<> large_dist(10, 50);
@@ -432,7 +297,7 @@ TEST_CASE("Coaxial translation") {
   t_real waver = wave_dist(*mersenne);
   t_real wavei = wave_dist(*mersenne);
   t_complex waveK(waver, wavei);
-  for(t_int n = 0; n < 5; n++) {
+  for(t_int n = 0; n < 1; n++) {
     for(t_int m = -n; m <= n; m++) {
       // "Simple singular expanded in regular"
       t_real small = small_dist(*mersenne);
@@ -454,16 +319,6 @@ TEST_CASE("Coaxial translation") {
       check_coaxial_translation_onaxis(large, large, true, true, n, m, waveK);
 
       check_coaxial_translation_onaxis(large, large, false, false, n, m, waveK);
-
-      check_coaxial_translation_off_axis_reexpand_fixed_r(n, m, waveK, true, true);
-
-      check_coaxial_translation_off_axis_reexpand_fixed_r(n, m, waveK, false, true);
-
-      check_coaxial_translation_off_axis_reexpand_fixed_r(n, m, waveK, false, false);
-
-      check_coaxial_translation_off_axis_reexpand_regular(n, m, waveK);
-
-      check_coaxial_translation_off_axis_reexpand_iregular(n, m, waveK);
     }
   }
 }
@@ -472,7 +327,7 @@ Vector<t_real> to_spherical(Vector<t_real> const &x) {
   assert(x.size() == 3);
   auto const r = x.stableNorm();
   auto const theta = std::atan2(x[1], x[0]);
-  auto const phi = r > 1e-12 ? std::acos(x[2] / r) : 0e0;
+  auto const phi = std::atan2(std::sqrt(x[0] * x[0] + x[1] * x[1]), x[2]);
   Vector<t_real> result(3);
   result << r, phi, theta > 0 ? theta : theta + 2 * constant::pi;
   return result;
@@ -482,47 +337,64 @@ t_complex
 basis_function(t_complex waveK, bool expansion, Vector<t_real> const &r, t_int n, t_int m) {
   auto const function = expansion ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
   auto const spherical = to_spherical(r);
-  return std::get<0>(function(spherical(0) * waveK, n)).back() *
-         boost::math::spherical_harmonic(n, m, spherical(1), spherical(2));
+  auto const result = std::get<0>(function(spherical(0) * waveK, n)).back() *
+    boost::math::spherical_harmonic(n, m, spherical(1), spherical(2));
+  return result;
 };
 
-std::function<t_complex(Vector<t_real> const &r)>
-field(bool expansion, t_complex waveK, Vector<t_complex> const &coeffs) {
-
-  t_int const nmax = std::lround(std::sqrt(coeffs.rows() + 1) - 1.0);
-  assert(nmax * (nmax + 2) == coeffs.rows());
-  assert(nmax > 0);
-
-  return [nmax, waveK, expansion, coeffs](Vector<t_real> const &r) {
-    t_complex result = 0;
-    for(auto n = 1; n <= nmax; ++n)
-      for(auto m = -n; m <= n; ++m) {
-        auto const index = std::abs(m) > n ? 0 : n * n - 1 + n + m;
-        result += coeffs(index) * basis_function(waveK, expansion, r, n, m);
-      }
-    return result;
-  };
+t_complex nonradiating_basis(t_complex waveK, Vector<t_real> const &r, t_int n, t_int m) {
+  return basis_function(waveK, true, r, n, m);
+}
+t_complex radiating_basis(t_complex waveK, Vector<t_real> const &r, t_int n, t_int m) {
+  return basis_function(waveK, false, r, n, m);
 }
 
-TEST_CASE("Matrix interface") {
-  auto const nmax = 1;
-  bool const in_regular = true;
-  bool const out_regular = true;
-  t_complex const waveK(1e0, 1.5e0);
-  Vector<t_real> const r_p = Vector<t_real>::Zero(3);
-  Vector<t_real> r_q = (Vector<t_real>::Random(3) * 10).array() - 5e0;
-  r_q(0) = 0;
-  r_q(1) = 0;
-  r_q(2) = 0;
-  CoAxialTranslationAdditionCoefficients tca((r_q - r_p)(2), waveK,
-                                             in_regular == out_regular);
+TEST_CASE("Translation of two spheres") {
+  // Create a geometry with two spheres of reasonable size w.r.t. wavelength and number of harmonics
+  // Check that translated potential inside second sphere is consistent with original field
+  auto const N = 5;
+  auto const wavelength = 1000.0;
+  std::uniform_real_distribution<> distance_distribution(0, wavelength * 2e0);
+  auto const radius0 = distance_distribution(*mersenne) + wavelength * 0.1;
+  auto const radius1 = distance_distribution(*mersenne) + wavelength * 0.1;
+  auto const separation = distance_distribution(*mersenne);
 
-  Matrix<t_complex> const coeffs = Vector<t_complex>::Random(nmax * (nmax + 2), 1);
-  auto const input_field = field(in_regular, waveK, coeffs);
-  auto const output_field = field(out_regular, waveK, tca(coeffs));
+  Eigen::Matrix<t_real, 3, 1> const direction = Eigen::Matrix<t_real, 3, 1>::Random().normalized();
+  Eigen::Matrix<t_real, 3, 1> const r_q(0, 0, 0);
+  Eigen::Matrix<t_real, 3, 1> const r_p(0, 0, radius0 + radius1 + separation);
+  // get a point inside second sphere
+  std::uniform_real_distribution<> inner_distribution(0, radius1);
+  Eigen::Matrix<t_real, 3, 1> const Mt = direction * inner_distribution(*mersenne);
+  Eigen::Matrix<t_real, 3, 1> const M = r_p - r_q + Mt;
 
-  Vector<t_real> x = (Vector<t_real>::Random(3) * 10).array() - 5e0;
-  x(0) = 0; x(1) = 0;
-  CHECK(input_field(x - r_p).real() == Approx(output_field(x - r_q).real()));
-  CHECK(input_field(x - r_p).imag() == Approx(output_field(x - r_q).imag()));
+  // Random potential to translate
+  auto const potential = Vector<t_complex>::Random(N * (N + 2) + 1).real().eval();
+  SECTION("Radiating to non-radiating") {
+    // compute potential at M
+    t_complex pot_M = 0e0, pot_Mt = 0e0;
+    CachedCoAxialRecurrence tca((r_p - r_q).stableNorm(), 1.0 / wavelength, false);
+    for(t_int n(0), i(0); n <= N; ++n)
+      for(t_int m(-n); m <= n; ++m, ++i) {
+        pot_M += radiating_basis(1e0 / wavelength, M, n, m) * potential(i);
+        for(t_int l(std::abs(m)); l <= N + 24; ++l) {
+          pot_Mt += tca(n, m, l) * nonradiating_basis(1e0 / wavelength, Mt, l, m) * potential(i);
+        }
+      }
+    CHECK(pot_Mt.real() == Approx(pot_M.real()));
+    CHECK(pot_Mt.imag() == Approx(pot_M.imag()));
+  }
+  SECTION("Non-radiating to non-radiating") {
+    // compute potential at M
+    t_complex pot_M = 0e0, pot_Mt = 0e0;
+    CachedCoAxialRecurrence tca((r_p - r_q).stableNorm(), 1.0 / wavelength, true);
+    for(t_int n(0), i(0); n <= N; ++n)
+      for(t_int m(-n); m <= n; ++m, ++i) {
+        pot_M += nonradiating_basis(1e0 / wavelength, M, n, m) * potential(i);
+        for(t_int l(std::abs(m)); l <= N + 24; ++l) {
+          pot_Mt += tca(n, m, l) * nonradiating_basis(1e0 / wavelength, Mt, l, m) * potential(i);
+        }
+      }
+    CHECK(pot_Mt.real() == Approx(pot_M.real()));
+    CHECK(pot_Mt.imag() == Approx(pot_M.imag()));
+  }
 }
