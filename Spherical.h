@@ -3,6 +3,7 @@
 
 #include "Cartesian.h"
 #include "SphericalP.h"
+#include <Eigen/Core>
 #include <cmath>
 
 /**
@@ -12,7 +13,7 @@
  * @warning Do not use without initialization.
  */
 template <class sphType> class Spherical {
-private:
+public:
   /**
    * Returns the point in Cartesian format.
    * @return the Cartesian coordinate object.
@@ -38,7 +39,7 @@ private:
    * @param point the Cartesian vector to be converted.
    * @return the vector in Spherical format.
    */
-  Spherical<sphType> toSpherical(Cartesian<sphType> point) const {
+  static Spherical<sphType> toSpherical(Cartesian<sphType> point) {
     double r_l =
         std::sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
     if (r_l > 0.0) {
@@ -48,6 +49,10 @@ private:
 
     return Spherical<double>(0.0, 0.0, 0.0);
   }
+  template<class T>
+    static Spherical<sphType> toSpherical(Eigen::MatrixBase<T> const &x) {
+      return toSpherical(Cartesian<sphType>(x(0), x(1), x(2)));
+    }
 
 public:
   sphType rrr; /**< The R spherical coordinate. */
