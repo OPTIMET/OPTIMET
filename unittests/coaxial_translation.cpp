@@ -216,7 +216,6 @@ void check_coaxial_translation_onaxis(t_real expansion_pos, t_real reexpansion_p
   CHECK(expected.imag() == Approx(translated.imag()));
 }
 
-
 void check_coaxial_translation_off_axis_reexpand_iregular(t_int n, t_int m, t_complex waveK) {
   assert(m <= n);
   //! Inner floating point with higher precision
@@ -338,7 +337,7 @@ basis_function(t_complex waveK, bool expansion, Vector<t_real> const &r, t_int n
   auto const function = expansion ? optimet::bessel<Bessel> : optimet::bessel<Hankel1>;
   auto const spherical = to_spherical(r);
   auto const result = std::get<0>(function(spherical(0) * waveK, n)).back() *
-    boost::math::spherical_harmonic(n, m, spherical(1), spherical(2));
+                      boost::math::spherical_harmonic(n, m, spherical(1), spherical(2));
   return result;
 };
 
@@ -352,7 +351,8 @@ t_complex radiating_basis(t_complex waveK, Vector<t_real> const &r, t_int n, t_i
 TEST_CASE("Translation of two spheres") {
   // Create a geometry with two spheres of reasonable size w.r.t. wavelength and number of harmonics
   // Check that translated potential inside second sphere is consistent with original field
-  auto const N = 5;
+  auto const N = 30;
+  auto const Nnz = 10;
   auto const wavelength = 1000.0;
   std::uniform_real_distribution<> distance_distribution(0, wavelength * 2e0);
   auto const radius0 = distance_distribution(*mersenne) + wavelength * 0.1;
@@ -368,7 +368,8 @@ TEST_CASE("Translation of two spheres") {
   Eigen::Matrix<t_real, 3, 1> const M = r_p - r_q + Mt;
 
   // Random potential to translate
-  auto const potential = Vector<t_complex>::Random(N * (N + 2) + 1).real().eval();
+  auto potential = Vector<t_complex>::Zero((N + 1) * (N + 1)).eval();
+  potential.head((Nnz + 1) * (Nnz + 1)) = Vector<t_complex>::Random((Nnz + 1) * (Nnz + 1));
   SECTION("Radiating to non-radiating") {
     // compute potential at M
     t_complex pot_M = 0e0, pot_Mt = 0e0;
@@ -376,13 +377,13 @@ TEST_CASE("Translation of two spheres") {
     for(t_int n(0), i(0); n <= N; ++n)
       for(t_int m(-n); m <= n; ++m, ++i) {
         pot_M += radiating_basis(1e0 / wavelength, M, n, m) * potential(i);
-        for(t_int l(std::abs(m)); l <= N + 24; ++l) {
+        for(t_int l(std::abs(m)); l <= N; ++l)
           pot_Mt += tca(n, m, l) * nonradiating_basis(1e0 / wavelength, Mt, l, m) * potential(i);
-        }
       }
     CHECK(pot_Mt.real() == Approx(pot_M.real()));
     CHECK(pot_Mt.imag() == Approx(pot_M.imag()));
   }
+
   SECTION("Non-radiating to non-radiating") {
     // compute potential at M
     t_complex pot_M = 0e0, pot_Mt = 0e0;
@@ -390,9 +391,22 @@ TEST_CASE("Translation of two spheres") {
     for(t_int n(0), i(0); n <= N; ++n)
       for(t_int m(-n); m <= n; ++m, ++i) {
         pot_M += nonradiating_basis(1e0 / wavelength, M, n, m) * potential(i);
-        for(t_int l(std::abs(m)); l <= N + 24; ++l) {
+        for(t_int l(std::abs(m)); l <= N; ++l) {
           pot_Mt += tca(n, m, l) * nonradiating_basis(1e0 / wavelength, Mt, l, m) * potential(i);
         }
+      }
+    CHECK(pot_Mt.real() == Approx(pot_M.real()));
+    CHECK(pot_Mt.imag() == Approx(pot_M.imag()));
+  }
+
+  SECTION("Matrix interface") {
+    CachedCoAxialRecurrence tca((r_p - r_q).stableNorm(), 1.0 / wavelength, false);
+    auto const out = tca(potential);
+    t_complex pot_M = 0e0, pot_Mt = 0e0;
+    for(t_int n(0), i(0); n <= N; ++n)
+      for(t_int m(-n); m <= n; ++m, ++i) {
+        pot_M += radiating_basis(1e0 / wavelength, M, n, m) * potential(i);
+        pot_Mt += nonradiating_basis(1e0 / wavelength, Mt, n, m) * out(i);
       }
     CHECK(pot_Mt.real() == Approx(pot_M.real()));
     CHECK(pot_Mt.imag() == Approx(pot_M.imag()));
