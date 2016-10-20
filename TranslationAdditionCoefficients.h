@@ -1,8 +1,8 @@
 #ifndef TRANSLATION_ADDITION_COEFFICIENTS_H
 
 #include "Types.h"
-#include <map>
 #include <array>
+#include <map>
 
 #include "Spherical.h"
 

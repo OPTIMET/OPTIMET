@@ -1,9 +1,12 @@
 #include "catch.hpp"
 
+#include "Bessel.h"
 #include "TranslationAdditionCoefficients.h"
 #include "constants.h"
-#include "Bessel.h"
 #include <boost/math/special_functions/legendre.hpp>
+#include <random>
+
+extern std::unique_ptr<std::mt19937_64> mersenne;
 
 using namespace optimet;
 

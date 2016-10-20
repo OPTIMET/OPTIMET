@@ -1,11 +1,11 @@
 #include "TranslationAdditionCoefficients.h"
 #include "Bessel.h"
 #include "constants.h"
-
-#include <complex>
 #include <cmath>
+#include <complex>
 
 #include <boost/math/special_functions/legendre.hpp>
+#include <boost/math/special_functions/spherical_harmonic.hpp>
 
 namespace optimet {
 namespace {
@@ -14,10 +14,6 @@ constexpr bool is_valid(t_int n, t_int m) { return n >= 0 and std::abs(m) <= n; 
 //! True if both pairs are valid
 constexpr bool is_valid(t_int n, t_int m, t_int l, t_int k) {
   return is_valid(n, m) and is_valid(l, k);
-}
-//! Eases computing ratios of two factorials
-inline t_real factorial_ratio(t_int n, t_int m) {
-  return n == m ? 1 : std::tgamma(n + 1) / std::tgamma(m + 1);
 }
 //! Coefficient of Stout (2004) Appendix C recurrence relationship
 inline t_real a_plus(t_int n, t_int m) {
@@ -52,10 +48,7 @@ inline t_real b_minus(t_int n, t_int m) {
 t_complex Ynm(Spherical<t_real> const &R, t_int n, t_int m) {
   if(not is_valid(n, m))
     return 0;
-  auto const gamma = static_cast<t_real>(2 * n + 1) / (constant::pi * static_cast<t_real>(4)) *
-                     factorial_ratio(n - m, n + m);
-  return std::sqrt(gamma) * std::exp(constant::i * (m * R.phi)) *
-         boost::math::legendre_p(n, m, std::cos(R.the));
+  return boost::math::spherical_harmonic(n, m, R.the, R.phi);
 }
 
 namespace details {
@@ -113,6 +106,7 @@ t_complex CachedRecurrence::offdiagonal_recurrence(t_int n, t_int m, t_int l, t_
           operator()(n - 1, m, l + 1, k) * a_minus(l + 1, k)) /
          a_plus(n - 1, m);
 }
+
 } // end of detailed namespace
 
 t_complex TranslationAdditionCoefficients::operator()(t_int n, t_int m, t_int l, t_int k) {
@@ -123,4 +117,5 @@ t_complex TranslationAdditionCoefficients::operator()(t_int n, t_int m, t_int l,
   auto const result = std::conj(negative(n, -m, l, -k));
   return sign % 2 == 0 ? result : -result;
 }
+
 } // end of optimet namespace
