@@ -401,8 +401,8 @@ TEST_CASE("Translation of two spheres") {
   auto const wavelength = 1000.0;
   std::uniform_real_distribution<> distance_distribution(0, wavelength * 2e0);
   auto const radius_rad = distance_distribution(*mersenne) + wavelength * 0.1;
-  auto const radius_nonrad = distance_distribution(*mersenne) + wavelength * 0.1;
-  auto const separation = distance_distribution(*mersenne);
+  auto const radius_nonrad = radius_rad * 1.1;
+  auto const separation = 0e0;
 
   std::uniform_real_distribution<> inner_distribution(0, radius_nonrad);
   auto const Oz = distance_distribution(*mersenne) - wavelength;
@@ -414,62 +414,58 @@ TEST_CASE("Translation of two spheres") {
   auto potential = Vector<t_complex>::Zero((N + 1) * (N + 1)).eval();
   potential.head((Nnz + 1) * (Nnz + 1)) = Vector<t_complex>::Random((Nnz + 1) * (Nnz + 1));
 
-  auto const Ntrials = 20;
-  auto failures = 0;
-  for(auto i = 0; i < Ntrials; ++i) {
-    // get a point inside second sphere
-    Eigen::Matrix<t_real, 3, 1> const direction = Eigen::Matrix<t_real, 3, 1>::Random().normalized();
-    auto const dist = inner_distribution(*mersenne);
-    Eigen::Matrix<t_real, 3, 1> const Mnonrad = direction * dist;
-    Eigen::Matrix<t_real, 3, 1> const Mrad = Ononrad - Orad + Mnonrad;
+  // get a point inside second sphere
+  Eigen::Matrix<t_real, 3, 1> const direction = Eigen::Matrix<t_real, 3, 1>::Random().normalized();
+  auto const dist = inner_distribution(*mersenne);
+  Eigen::Matrix<t_real, 3, 1> const Mnonrad = direction * dist;
+  Eigen::Matrix<t_real, 3, 1> const Mrad = Ononrad - Orad + Mnonrad;
 
 
-    // compute input field
-    t_complex pot_rad = 0e0, pot_nonrad = 0e0, nonconv = 0e0;
+  // compute input field
+  t_complex pot_rad = 0e0, pot_nonrad = 0e0, nonconv = 0e0;
+  for(t_int n(0), i(0); n <= N; ++n)
+    for(t_int m(-n); m <= n; ++m, ++i)
+      pot_rad += radiating_basis(1e0 / wavelength, Mrad, n, m) * potential(i);
+
+  // translation coefficients
+  CAPTURE(radius_rad);
+  CAPTURE(radius_nonrad);
+  CAPTURE(separation);
+  CAPTURE(dist);
+  CAPTURE(Orad.transpose());
+  CAPTURE(Ononrad.transpose());
+  CAPTURE(Mrad.transpose());
+  CAPTURE(Mnonrad.transpose());
+
+  /* "Radiating to non-radiating" */ {
+    for(t_int n(0), i(0); n <= N; ++n)
+      for(t_int m(-n); m <= n; ++m, ++i) {
+        for(t_int l(std::abs(m)); l <= N; ++l)
+          nonconv +=
+            tca(n, m, l) * nonradiating_basis(1e0 / wavelength, Mnonrad, l, m) * potential(i);
+      }
+    CHECK(nonconv.real() == Approx(pot_rad.real()).epsilon(std::abs(pot_rad.real() * 1e-4)));
+    CHECK(nonconv.imag() == Approx(pot_rad.imag()).epsilon(std::abs(pot_rad.imag() * 1e-4)));
+    CHECK((std::abs(nonconv - pot_rad) < 1e-4 * std::abs(pot_rad)));
+  }
+
+  /* "Matrix interface" */ {
+    auto const out = tca(potential);
     for(t_int n(0), i(0); n <= N; ++n)
       for(t_int m(-n); m <= n; ++m, ++i)
-        pot_rad += radiating_basis(1e0 / wavelength, Mrad, n, m) * potential(i);
-
-    // translation coefficients
-    CAPTURE(radius_rad);
-    CAPTURE(radius_nonrad);
-    CAPTURE(separation);
-    CAPTURE(dist);
-    CAPTURE(Orad.transpose());
-    CAPTURE(Ononrad.transpose());
-    CAPTURE(Mrad.transpose());
-    CAPTURE(Mnonrad.transpose());
-
-    /* "Radiating to non-radiating" */ {
-      // compute potential at Mrad
-      for(t_int n(0), i(0); n <= N; ++n)
-        for(t_int m(-n); m <= n; ++m, ++i) {
-          for(t_int l(std::abs(m)); l <= N; ++l)
-            nonconv +=
-              tca(n, m, l) * nonradiating_basis(1e0 / wavelength, Mnonrad, l, m) * potential(i);
-        }
-      if(std::abs(nonconv - pot_rad) > 1e-4 * std::abs(pot_rad) and std::abs(pot_rad) > 1e-4)
-        ++failures;
-    }
-
-    SECTION("Matrix interface") {
-      auto const out = tca(potential);
-      for(t_int n(0), i(0); n <= N; ++n)
-        for(t_int m(-n); m <= n; ++m, ++i)
-          pot_nonrad += nonradiating_basis(1e0 / wavelength, Mnonrad, n, m) * out(i);
-      CHECK(pot_nonrad.real() == Approx(pot_rad.real()).epsilon(std::abs(nonconv.real() * 1e-4)));
-      CHECK(pot_nonrad.imag() == Approx(pot_rad.imag()).epsilon(std::abs(nonconv.imag() * 1e-4)));
-    }
-
-    SECTION("functor interface") {
-      auto const functor = tca.functor(N);
-      auto const out = functor(potential);
-      for(t_int n(0), i(0); n <= N; ++n)
-        for(t_int m(-n); m <= n; ++m, ++i)
-          pot_nonrad += nonradiating_basis(1e0 / wavelength, Mnonrad, n, m) * out(i);
-      CHECK(pot_nonrad.real() == Approx(pot_rad.real()).epsilon(std::abs(nonconv.real() * 1e-4)));
-      CHECK(pot_nonrad.imag() == Approx(pot_rad.imag()).epsilon(std::abs(nonconv.imag() * 1e-4)));
-    }
+        pot_nonrad += nonradiating_basis(1e0 / wavelength, Mnonrad, n, m) * out(i);
+    CHECK(pot_nonrad.real() == Approx(nonconv.real()).epsilon(std::abs(nonconv.real() * 1e-4)));
+    CHECK(pot_nonrad.imag() == Approx(nonconv.imag()).epsilon(std::abs(nonconv.imag() * 1e-4)));
   }
-  CHECK(failures < Ntrials / 5);
+
+  /* "functor interface" */ {
+    pot_nonrad = 0e0;
+    auto const functor = tca.functor(N);
+    auto const out = functor(potential);
+    for(t_int n(0), i(0); n <= N; ++n)
+      for(t_int m(-n); m <= n; ++m, ++i)
+        pot_nonrad += nonradiating_basis(1e0 / wavelength, Mnonrad, n, m) * out(i);
+    CHECK(pot_nonrad.real() == Approx(nonconv.real()).epsilon(std::abs(nonconv.real() * 1e-4)));
+    CHECK(pot_nonrad.imag() == Approx(nonconv.imag()).epsilon(std::abs(nonconv.imag() * 1e-4)));
+  }
 }
