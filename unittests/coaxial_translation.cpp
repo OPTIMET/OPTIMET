@@ -328,7 +328,7 @@ Vector<t_real> to_spherical(Vector<t_real> const &x) {
   auto const theta = std::atan2(x[1], x[0]);
   auto const phi = std::atan2(std::sqrt(x[0] * x[0] + x[1] * x[1]), x[2]);
   Vector<t_real> result(3);
-  result << r, phi, theta > 0 ? theta : theta + 2 * constant::pi;
+  result << r, phi, theta;
   return result;
 };
 
@@ -349,80 +349,127 @@ t_complex radiating_basis(t_complex waveK, Vector<t_real> const &r, t_int n, t_i
 }
 
 TEST_CASE("Translation of two spheres") {
-  // Create a geometry with two spheres of reasonable size w.r.t. wavelength and number of harmonics
-  // Check that translated potential inside second sphere is consistent with original field
-  auto const N = 40;
-  auto const Nnz = 10;
+  //  ┌────────────────────────────────────────┐
+  //  │⠀⠀⢀⠎⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠱⡀⠀⠀│ Create a geometry with two spheres of reasonable
+  //  │⠀⢠⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⡄⠀│ size w.r.t. wavelength and number of harmonics
+  //  │⢠⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⡄│
+  //  │⡜⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢱│ Check that translated potential inside second
+  //  │⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀Ononrad ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸│ sphere is consistent with original field.
+  //  │⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀X⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘│
+  //  │⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠢⢄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸│ Translation is from Orad to Ononrad.
+  //  │⢣⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠑⢄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡎│ It is along the z-axis.
+  //  │⠈⢆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠑⢄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡸⠁│
+  //  │⠀⠈⢆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠢⡀⠀⠀⠀⠀⠀⠀⡰⠁⠀│ The field is evaluated at a point M within
+  //  │⠀⠀⠀⠣⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠢⡀⠀⠀⢀⠜⠀⠀⠀│ the sphere at Ononrad. Under that condition, the
+  //  │⠀⠀⠀⠀⠈⢆⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢑x⠃⠀⠀⠀⠀│ distance M to Ononrad is always smaller than the
+  //  │⠀⠀⠀⠀⠀⠀⠈⠢⢄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡤⠖⠁⠀M⠀⠀⠀⠀│ distance Ononrad to Orad.
+  //  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠒⠤⢄⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣠⠤⠚⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀│
+  //  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠑⡲⠶⠒⠒⠶⢖⠚⣉⠕⠊⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ On input, the field is given in the basis with
+  //  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡎⠀⠀⠀⠀⡠⠔⢻⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ origin Orad. It is radiating (S). And on output,
+  //  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀X⠀⠀⢸⠁⠀Orad⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ the field is given in the basis centered at
+  //  │⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠦⣀⣀⣀⣀⠴⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀│ Ononrad. It is non-radiating/local (R).
+  //  └────────────────────────────────────────┘
+  //
+  // Julia code to generate comment.
+  //     using UnicodePlots
+  //     circle!(plot, radius, ; N=100, Ω=(0, 0), kwargs...) =
+  //       lineplot!(
+  //         plot,
+  //         [radius * cos(t) + Ω[1] for t in 0:2pi/N:2pi],
+  //         [radius * sin(t) + Ω[2] for t in 0:2pi/N:2pi]
+  //         ; kwargs...
+  //     )
+  //     canvas = BrailleCanvas(40, 18, # number of columns and rows (characters)
+  //                            origin_x = 0., origin_y = 0., # position in virtual space
+  //                            width = 1., height = 1.)
+  //     plot = Plot(canvas)
+  //     radius_rad = 0.1
+  //     radius_nonrad = 0.5
+  //     Ωrad = [0.5, radius_rad]
+  //     Ωnonrad = [0.5, 2radius_rad + radius_nonrad]
+  //     M = Ωnonrad + radius_nonrad * [cos(-pi/4), sin(-pi/4)]
+  //     circle!(plot, radius_rad, Ω=Ωrad)
+  //     circle!(plot, radius_nonrad, Ω=Ωnonrad)
+  //     lineplot!(plot, [Ωrad[1], M[1]], [Ωrad[2], M[2]])
+  //     lineplot!(plot, [Ωnonrad[1], M[1]], [Ωnonrad[2], M[2]])
+
+  auto const N = 50;
+  // Only lowest components are non-zero
+  // Higher order components should approach-zero in practical applications
+  // This replicates that in a simple way
+  auto const Nnz = 5;
   auto const wavelength = 1000.0;
   std::uniform_real_distribution<> distance_distribution(0, wavelength * 2e0);
-  auto const radius0 = distance_distribution(*mersenne) + wavelength * 0.1;
-  auto const radius1 = distance_distribution(*mersenne) + wavelength * 0.1;
+  auto const radius_rad = distance_distribution(*mersenne) + wavelength * 0.1;
+  auto const radius_nonrad = distance_distribution(*mersenne) + wavelength * 0.1;
   auto const separation = distance_distribution(*mersenne);
 
-  Eigen::Matrix<t_real, 3, 1> const direction = Eigen::Matrix<t_real, 3, 1>::Random().normalized();
-  Eigen::Matrix<t_real, 3, 1> const r_q(0, 0, 0);
-  Eigen::Matrix<t_real, 3, 1> const r_p(0, 0, radius0 + radius1 + separation);
-  // get a point inside second sphere
-  std::uniform_real_distribution<> inner_distribution(0, radius1);
-  Eigen::Matrix<t_real, 3, 1> const Mt = direction * inner_distribution(*mersenne);
-  Eigen::Matrix<t_real, 3, 1> const M = r_p - r_q + Mt;
+  std::uniform_real_distribution<> inner_distribution(0, radius_nonrad);
+  auto const Oz = distance_distribution(*mersenne) - wavelength;
+  Eigen::Matrix<t_real, 3, 1> const Orad(0, 0, Oz);
+  Eigen::Matrix<t_real, 3, 1> const Ononrad(0, 0, radius_rad + radius_nonrad + separation + Oz);
 
+  CachedCoAxialRecurrence tca((Orad - Ononrad).stableNorm(), 1.0 / wavelength, false);
   // Random potential to translate
   auto potential = Vector<t_complex>::Zero((N + 1) * (N + 1)).eval();
   potential.head((Nnz + 1) * (Nnz + 1)) = Vector<t_complex>::Random((Nnz + 1) * (Nnz + 1));
-  /* "Radiating to non-radiating" */ {
-    // compute potential at M
-    t_complex pot_M = 0e0, pot_Mt = 0e0;
-    CachedCoAxialRecurrence tca((r_p - r_q).stableNorm(), 1.0 / wavelength, false);
-    for(t_int n(0), i(0); n <= N; ++n)
-      for(t_int m(-n); m <= n; ++m, ++i) {
-        pot_M += radiating_basis(1e0 / wavelength, M, n, m) * potential(i);
-        for(t_int l(std::abs(m)); l <= N; ++l)
-          pot_Mt += tca(n, m, l) * nonradiating_basis(1e0 / wavelength, Mt, l, m) * potential(i);
-      }
-    CHECK(pot_Mt.real() == Approx(pot_M.real()).epsilon(std::abs(pot_M.real() * 1e-6)));
-    CHECK(pot_Mt.imag() == Approx(pot_M.imag()).epsilon(std::abs(pot_M.imag() * 1e-6)));
-  }
 
-  /* "Non-radiating to non-radiating" */ {
-    // compute potential at M
-    t_complex pot_M = 0e0, pot_Mt = 0e0;
-    CachedCoAxialRecurrence tca((r_p - r_q).stableNorm(), 1.0 / wavelength, true);
+  auto const Ntrials = 20;
+  auto failures = 0;
+  for(auto i = 0; i < Ntrials; ++i) {
+    // get a point inside second sphere
+    Eigen::Matrix<t_real, 3, 1> const direction = Eigen::Matrix<t_real, 3, 1>::Random().normalized();
+    auto const dist = inner_distribution(*mersenne);
+    Eigen::Matrix<t_real, 3, 1> const Mnonrad = direction * dist;
+    Eigen::Matrix<t_real, 3, 1> const Mrad = Ononrad - Orad + Mnonrad;
+
+
+    // compute input field
+    t_complex pot_rad = 0e0, pot_nonrad = 0e0, nonconv = 0e0;
     for(t_int n(0), i(0); n <= N; ++n)
-      for(t_int m(-n); m <= n; ++m, ++i) {
-        pot_M += nonradiating_basis(1e0 / wavelength, M, n, m) * potential(i);
-        for(t_int l(std::abs(m)); l <= N; ++l) {
-          pot_Mt += tca(n, m, l) * nonradiating_basis(1e0 / wavelength, Mt, l, m) * potential(i);
+      for(t_int m(-n); m <= n; ++m, ++i)
+        pot_rad += radiating_basis(1e0 / wavelength, Mrad, n, m) * potential(i);
+
+    // translation coefficients
+    CAPTURE(radius_rad);
+    CAPTURE(radius_nonrad);
+    CAPTURE(separation);
+    CAPTURE(dist);
+    CAPTURE(Orad.transpose());
+    CAPTURE(Ononrad.transpose());
+    CAPTURE(Mrad.transpose());
+    CAPTURE(Mnonrad.transpose());
+
+    /* "Radiating to non-radiating" */ {
+      // compute potential at Mrad
+      for(t_int n(0), i(0); n <= N; ++n)
+        for(t_int m(-n); m <= n; ++m, ++i) {
+          for(t_int l(std::abs(m)); l <= N; ++l)
+            nonconv +=
+              tca(n, m, l) * nonradiating_basis(1e0 / wavelength, Mnonrad, l, m) * potential(i);
         }
-      }
-    CHECK(pot_Mt.real() == Approx(pot_M.real()).epsilon(std::abs(pot_M.real() * 1e-6)));
-    CHECK(pot_Mt.imag() == Approx(pot_M.imag()).epsilon(std::abs(pot_M.imag() * 1e-6)));
-  }
+      if(std::abs(nonconv - pot_rad) > 1e-4 * std::abs(pot_rad) and std::abs(pot_rad) > 1e-4)
+        ++failures;
+    }
 
-  /* "Matrix interface" */ {
-    CachedCoAxialRecurrence tca((r_p - r_q).stableNorm(), 1.0 / wavelength, false);
-    auto const out = tca(potential);
-    t_complex pot_M = 0e0, pot_Mt = 0e0;
-    for(t_int n(0), i(0); n <= N; ++n)
-      for(t_int m(-n); m <= n; ++m, ++i) {
-        pot_M += radiating_basis(1e0 / wavelength, M, n, m) * potential(i);
-        pot_Mt += nonradiating_basis(1e0 / wavelength, Mt, n, m) * out(i);
-      }
-    CHECK(pot_Mt.real() == Approx(pot_M.real()).epsilon(std::abs(pot_M.real() * 1e-6)));
-    CHECK(pot_Mt.imag() == Approx(pot_M.imag()).epsilon(std::abs(pot_M.imag() * 1e-6)));
-  }
+    SECTION("Matrix interface") {
+      auto const out = tca(potential);
+      for(t_int n(0), i(0); n <= N; ++n)
+        for(t_int m(-n); m <= n; ++m, ++i)
+          pot_nonrad += nonradiating_basis(1e0 / wavelength, Mnonrad, n, m) * out(i);
+      CHECK(pot_nonrad.real() == Approx(pot_rad.real()).epsilon(std::abs(nonconv.real() * 1e-4)));
+      CHECK(pot_nonrad.imag() == Approx(pot_rad.imag()).epsilon(std::abs(nonconv.imag() * 1e-4)));
+    }
 
-  /* "functor interface" */ {
-    auto const functor =
-        CachedCoAxialRecurrence((r_p - r_q).stableNorm(), 1.0 / wavelength, false).functor(N);
-    auto const out = functor(potential);
-    t_complex pot_M = 0e0, pot_Mt = 0e0;
-    for(t_int n(0), i(0); n <= N; ++n)
-      for(t_int m(-n); m <= n; ++m, ++i) {
-        pot_M += radiating_basis(1e0 / wavelength, M, n, m) * potential(i);
-        pot_Mt += nonradiating_basis(1e0 / wavelength, Mt, n, m) * out(i);
-      }
-    CHECK(pot_Mt.real() == Approx(pot_M.real()).epsilon(std::abs(pot_M.real() * 1e-6)));
-    CHECK(pot_Mt.imag() == Approx(pot_M.imag()).epsilon(std::abs(pot_M.imag() * 1e-6)));
+    SECTION("functor interface") {
+      auto const functor = tca.functor(N);
+      auto const out = functor(potential);
+      for(t_int n(0), i(0); n <= N; ++n)
+        for(t_int m(-n); m <= n; ++m, ++i)
+          pot_nonrad += nonradiating_basis(1e0 / wavelength, Mnonrad, n, m) * out(i);
+      CHECK(pot_nonrad.real() == Approx(pot_rad.real()).epsilon(std::abs(nonconv.real() * 1e-4)));
+      CHECK(pot_nonrad.imag() == Approx(pot_rad.imag()).epsilon(std::abs(nonconv.imag() * 1e-4)));
+    }
   }
+  CHECK(failures < Ntrials / 5);
 }
