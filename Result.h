@@ -1,12 +1,12 @@
 #ifndef RESULT_H_
 #define RESULT_H_
 
-#include "SphericalP.h"
-#include "Spherical.h"
 #include "CompoundIterator.h"
+#include "Excitation.h"
 #include "Geometry.h"
 #include "OutputGrid.h"
-#include "Excitation.h"
+#include "Spherical.h"
+#include "SphericalP.h"
 
 #include <complex>
 
@@ -20,15 +20,15 @@ namespace optimet {
 
 class Result {
 private:
-  int nMax;                   /**< Maximum number of harmonics. */
-  Geometry *geometry;         /**< Pointer to the Geometry. */
-  std::shared_ptr<Excitation> excitation;     /**< Pointer to the Excitation. */
-  std::complex<double> waveK; /**< The std::complex wave number. */
-  bool flagSH;       /**< Specifies if handling Second Harmonic results. */
-  Result *result_FF; /**< The Fundamental Frequency results vector. */
+  int nMax;                               /**< Maximum number of harmonics. */
+  Geometry *geometry;                     /**< Pointer to the Geometry. */
+  std::shared_ptr<Excitation> excitation; /**< Pointer to the Excitation. */
+  std::complex<double> waveK;             /**< The std::complex wave number. */
+  bool flagSH;                            /**< Specifies if handling Second Harmonic results. */
+  Result *result_FF;                      /**< The Fundamental Frequency results vector. */
 public:
-  Vector<t_complex> scatter_coef;  /**< The scattering coefficients. */
-  Vector<t_complex> internal_coef; /**< The internal coefficients. */
+  Vector<t_complex> scatter_coef;   /**< The scattering coefficients. */
+  Vector<t_complex> internal_coef;  /**< The internal coefficients. */
   Vector<t_complex> c_scatter_coef; /**< The cluster centered scattering coefficients. */
 
   /**
@@ -54,7 +54,7 @@ public:
   /**
    * Default destructor for the Result class.
    */
-  virtual ~Result() {};
+  virtual ~Result(){};
 
   /**
    * Initialization method for the Result class.
@@ -81,8 +81,8 @@ public:
    * @param result_FF_ the pointer to the Fundamental Frequency results.
    * @param nMax_ the maximum number of harmonics.
    */
-  void init(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, Result *result_FF_,
-            int nMax_);
+  void
+  init(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, Result *result_FF_, int nMax_);
 
   /**
    * Returns the E field at a given point using the cluster centered
@@ -92,8 +92,7 @@ public:
    * @param projection_ defines spherical (1) or cartezian (0) projection.
    * @return the value of the E field
    */
-  SphericalP<std::complex<double>> getEFieldC(Spherical<double> R_,
-                                              int projection_);
+  SphericalP<std::complex<double>> getEFieldC(Spherical<double> R_, int projection_);
 
   /**
    * Returns the E and H fields at a given point.
@@ -102,8 +101,7 @@ public:
    * @param HField_ SphericalP vector that will store the H field.
    * @param projection_ defines spherical (1) or cartezian (0) projection.
    */
-  void getEHFields(Spherical<double> R_,
-                   SphericalP<std::complex<double>> &EField_,
+  void getEHFields(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
                    SphericalP<std::complex<double>> &HField_, int projection_);
 
   /**
@@ -115,11 +113,9 @@ public:
    * @param p_ the harmonic to be used.
    * @param singleComponent_ return TE+TM (0), TE(1) or TM(2).
    */
-  void getEHFieldsModal(Spherical<double> R_,
-                        SphericalP<std::complex<double>> &EField_,
-                        SphericalP<std::complex<double>> &HField_,
-                        int projection_, CompoundIterator p_,
-                        int singleComponent_);
+  void getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
+                        SphericalP<std::complex<double>> &HField_, int projection_,
+                        CompoundIterator p_, int singleComponent_);
 
   /**
    * Center the scattering coefficients.
@@ -158,8 +154,8 @@ public:
    * @param singleComponent_ return TE+TM (0), TE(1) or TM(2).
    * @return 0 if succesful, 1 otherwise.
    */
-  int setFieldsModal(OutputGrid &oEGrid_, OutputGrid &oHGrid_, int projection_,
-                     CompoundIterator p_, int singleComponent_);
+  int setFieldsModal(OutputGrid &oEGrid_, OutputGrid &oHGrid_, int projection_, CompoundIterator p_,
+                     int singleComponent_);
 
   /**
    * Return the dominant harmonic.
@@ -178,10 +174,9 @@ public:
    * @param projection_ defines spherical (1) or cartezian (0) projection.
    * @param inside_ uses the internal (1) or external (0) field calculations.
    */
-  void getEHFieldsContCheck(Spherical<double> R_,
-                            SphericalP<std::complex<double>> &EField_,
-                            SphericalP<std::complex<double>> &HField_,
-                            int projection_, int inside_);
+  void getEHFieldsContCheck(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
+                            SphericalP<std::complex<double>> &HField_, int projection_,
+                            int inside_);
 
   /**
    * Writes a set of files that check the field continuity around a particular
