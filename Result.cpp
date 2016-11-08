@@ -56,7 +56,7 @@ void Result::init(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, 
 }
 
 void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
-                              SphericalP<std::complex<double>> &HField_, int projection_,
+                              SphericalP<std::complex<double>> &HField_, bool projection_,
                               CompoundIterator p, int singleComponent_) {
   SphericalP<std::complex<double>> Efield = SphericalP<std::complex<double>>(
       std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
@@ -223,7 +223,7 @@ void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<doub
 }
 
 void Result::getEHFields(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
-                         SphericalP<std::complex<double>> &HField_, int projection_) {
+                         SphericalP<std::complex<double>> &HField_, bool projection_) const {
   SphericalP<std::complex<double>> Efield = SphericalP<std::complex<double>>(
       std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
       std::complex<double>(0.0, 0.0));
@@ -473,7 +473,7 @@ double Result::getAbsorptionCrossSection() {
   return (1 / (std::real(waveK) * std::real(waveK))) * Cabs;
 }
 
-int Result::setFields(OutputGrid &oEGrid_, OutputGrid &oHGrid_, int projection_) {
+int Result::setFields(OutputGrid &oEGrid_, OutputGrid &oHGrid_, bool projection_) {
   Spherical<double> Rloc;
 
   // centerScattering();
@@ -497,7 +497,7 @@ int Result::setFields(OutputGrid &oEGrid_, OutputGrid &oHGrid_, int projection_)
   return 0;
 }
 
-int Result::setFieldsModal(OutputGrid &oEGrid_, OutputGrid &oHGrid_, int projection_,
+int Result::setFieldsModal(OutputGrid &oEGrid_, OutputGrid &oHGrid_, bool projection_,
                            CompoundIterator p_, int singleComponent_) {
   Spherical<double> Rloc;
 
@@ -594,7 +594,7 @@ CompoundIterator Result::getDominant() {
 }
 
 void Result::getEHFieldsContCheck(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
-                                  SphericalP<std::complex<double>> &HField_, int projection_,
+                                  SphericalP<std::complex<double>> &HField_, bool projection_,
                                   int inside_) {
   SphericalP<std::complex<double>> Efield = SphericalP<std::complex<double>>(
       std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),

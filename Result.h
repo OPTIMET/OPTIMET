@@ -92,7 +92,7 @@ public:
    * @param projection_ defines spherical (1) or cartesian (0) projection.
    * @return the value of the E field
    */
-  SphericalP<std::complex<double>> getEFieldC(Spherical<double> R_, int projection_);
+  SphericalP<std::complex<double>> getEFieldC(Spherical<double> R_, bool projection_);
 
   /**
    * Returns the E and H fields at a given point.
@@ -102,7 +102,7 @@ public:
    * @param projection_ defines spherical (1) or cartesian (0) projection.
    */
   void getEHFields(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
-                   SphericalP<std::complex<double>> &HField_, int projection_) const;
+                   SphericalP<std::complex<double>> &HField_, bool projection_) const;
 
   /**
    * Returns the E and H fields for a single harmonic and/or TE/TM component.
@@ -114,7 +114,7 @@ public:
    * @param singleComponent_ return TE+TM (0), TE(1) or TM(2).
    */
   void getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
-                        SphericalP<std::complex<double>> &HField_, int projection_,
+                        SphericalP<std::complex<double>> &HField_, bool projection_,
                         CompoundIterator p_, int singleComponent_);
 
   /**
@@ -142,7 +142,7 @@ public:
    * @param projection_ defines spherical (1) or cartesian (0) projection.
    * @return 0 if succesful, 1 otherwise.
    */
-  int setFields(OutputGrid &oEGrid_, OutputGrid &oHGrid_, int projection_);
+  int setFields(OutputGrid &oEGrid_, OutputGrid &oHGrid_, bool projection_);
 
   /**
    * Populate a grid with E and H fields for a single harmonic and/or TE/TM
@@ -154,8 +154,8 @@ public:
    * @param singleComponent_ return TE+TM (0), TE(1) or TM(2).
    * @return 0 if succesful, 1 otherwise.
    */
-  int setFieldsModal(OutputGrid &oEGrid_, OutputGrid &oHGrid_, int projection_, CompoundIterator p_,
-                     int singleComponent_);
+  int setFieldsModal(OutputGrid &oEGrid_, OutputGrid &oHGrid_, bool projection_,
+                     CompoundIterator p_, int singleComponent_);
 
   /**
    * Return the dominant harmonic.
@@ -175,7 +175,7 @@ public:
    * @param inside_ uses the internal (1) or external (0) field calculations.
    */
   void getEHFieldsContCheck(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
-                            SphericalP<std::complex<double>> &HField_, int projection_,
+                            SphericalP<std::complex<double>> &HField_, bool projection_,
                             int inside_);
 
   /**
