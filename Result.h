@@ -89,7 +89,7 @@ public:
    * formulation.
    * @warning Testing method only. DO NOT USE IN PRODUCTION CODE!
    * @param R_ the position of the point.
-   * @param projection_ defines spherical (1) or cartezian (0) projection.
+   * @param projection_ defines spherical (1) or cartesian (0) projection.
    * @return the value of the E field
    */
   SphericalP<std::complex<double>> getEFieldC(Spherical<double> R_, int projection_);
@@ -99,17 +99,17 @@ public:
    * @param R_ the coordinates of the point.
    * @param EField_ SphericalP vector that will store the E field.
    * @param HField_ SphericalP vector that will store the H field.
-   * @param projection_ defines spherical (1) or cartezian (0) projection.
+   * @param projection_ defines spherical (1) or cartesian (0) projection.
    */
   void getEHFields(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
-                   SphericalP<std::complex<double>> &HField_, int projection_);
+                   SphericalP<std::complex<double>> &HField_, int projection_) const;
 
   /**
    * Returns the E and H fields for a single harmonic and/or TE/TM component.
    * @param R_ the coordinates of the point.
    * @param EField_ SphericalP vector that will store the E field.
    * @param HField_ SphericalP vector that will store the H field.
-   * @param projection_ defines spherical (1) or cartezian (0) projection.
+   * @param projection_ defines spherical (1) or cartesian (0) projection.
    * @param p_ the harmonic to be used.
    * @param singleComponent_ return TE+TM (0), TE(1) or TM(2).
    */
@@ -139,7 +139,7 @@ public:
    * Populate a grid with E and H fields.
    * @param oEGrid_ the OutputGrid object for the E fields.
    * @param oHGrid_ the OutputGrid object for the H fields.
-   * @param projection_ defines spherical (1) or cartezian (0) projection.
+   * @param projection_ defines spherical (1) or cartesian (0) projection.
    * @return 0 if succesful, 1 otherwise.
    */
   int setFields(OutputGrid &oEGrid_, OutputGrid &oHGrid_, int projection_);
@@ -149,7 +149,7 @@ public:
    * component.
    * @param oEGrid_ the OutputGrid object for the E fields.
    * @param oHGrid_ the OutputGrid object for the H fields.
-   * @param projection_ defines spherical (1) or cartezian (0) projection.
+   * @param projection_ defines spherical (1) or cartesian (0) projection.
    * @param p_ the harmonic to be used.
    * @param singleComponent_ return TE+TM (0), TE(1) or TM(2).
    * @return 0 if succesful, 1 otherwise.
@@ -171,7 +171,7 @@ public:
    * @param R_ the coordinates of the point.
    * @param EField_ SphericalP vector that will store the E field.
    * @param HField_ SphericalP vector that will store the H field.
-   * @param projection_ defines spherical (1) or cartezian (0) projection.
+   * @param projection_ defines spherical (1) or cartesian (0) projection.
    * @param inside_ uses the internal (1) or external (0) field calculations.
    */
   void getEHFieldsContCheck(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
