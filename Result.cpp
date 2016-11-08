@@ -338,7 +338,20 @@ void Result::getEHFields(Spherical<double> R_, SphericalP<std::complex<double>> 
   }
 }
 
-SphericalP<std::complex<double>> Result::getEFieldC(Spherical<double> R_, int projection) {
+Eigen::Matrix<t_complex, 3, 2> Result::getEHFields(Spherical<double> R_, bool projection_) const {
+  SphericalP<t_complex> simple_things, made_complicated;
+  getEHFields(R_, simple_things, made_complicated, projection_);
+  Eigen::Matrix<t_complex, 3, 2> result;
+  result(0, 0) = simple_things.rrr;
+  result(0, 1) = made_complicated.rrr;
+  result(1, 0) = simple_things.the;
+  result(1, 1) = made_complicated.the;
+  result(2, 0) = simple_things.phi;
+  result(2, 1) = made_complicated.phi;
+  return result;
+}
+
+SphericalP<std::complex<double>> Result::getEFieldC(Spherical<double> R_, bool projection) {
   /* TEST FUNCTION. NOT USED IN PRODUCTION CODE! */
 
   SphericalP<std::complex<double>> Efield = SphericalP<std::complex<double>>(
@@ -717,7 +730,7 @@ void Result::writeContinuityCheck(int objectIndex_) {
   SphericalP<std::complex<double>> AnEField_in, AnEField_out;
   SphericalP<std::complex<double>> AnHField_in, AnHField_out;
   Spherical<double> APoint(0.0, 0.0, 0.0);
-  int projection = 1; // Spherical projection - True - projection is internally
+  auto const projection = true; // Spherical projection - True - projection is internally
                       // set to be evaluated w.r.t. object[0]
   int outside = -1;   // Forces result to be outside an object
   int inside = 0;     // Forces result to be inside an object

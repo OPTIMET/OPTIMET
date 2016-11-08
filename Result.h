@@ -103,6 +103,17 @@ public:
    */
   void getEHFields(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
                    SphericalP<std::complex<double>> &HField_, bool projection_) const;
+  /**
+   * Returns the E and H fields at a given point.
+   * @param R_ the coordinates of the point.
+   * @param projection_ defines spherical (1) or cartesian (0) projection.
+   */
+  Eigen::Matrix<t_complex, 3, 2> getEHFields(Spherical<double> R_, bool projection_ = false) const;
+  template <class T>
+  Eigen::Matrix<t_complex, 3, 2>
+  getEHFields(Eigen::MatrixBase<T> const &R_, bool projection_ = false) const {
+    return getEHFields(Spherical<double>::toSpherical(R_), projection_);
+  }
 
   /**
    * Returns the E and H fields for a single harmonic and/or TE/TM component.
