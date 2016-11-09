@@ -4,6 +4,7 @@
 #include <map>
 #include <type_traits>
 #include <vector>
+#include <iostream>
 
 #include "Spherical.h"
 
@@ -87,18 +88,24 @@ template <class T0, class T1>
 typename std::enable_if<std::is_same<typename T0::Scalar, t_complex>::value>::type
 CachedCoAxialRecurrence::
 operator()(Eigen::MatrixBase<T0> const &input, Eigen::MatrixBase<T1> &out) {
+  auto const nr = input.rows();
+  auto const with_n0 = std::abs(std::sqrt(nr) - std::lround(std::sqrt(nr))) <
+                       std::abs(std::sqrt(nr + 1) - std::lround(std::sqrt(nr + 1)));
+  t_int const N = std::lround(std::sqrt(with_n0 ? nr : nr + 1)) - 1;
+  auto const min_n = with_n0 ? 0 : 1;
+  assert((with_n0 and (N + 1) * (N + 1) == input.size()) or N * (N + 2) == input.size());
   out.resize(input.rows(), input.cols());
   out.fill(0);
-  t_int const nmax = std::lround(std::sqrt(input.rows()) - 1.0);
-  assert((nmax + 1) * (nmax + 1) == input.rows());
-  assert(nmax >= 0);
-  auto const index = [](t_int n, t_int m) { return std::abs(m) > n ? 0 : n * n + n + m; };
-  for(auto n = 0, i = 0; n <= nmax; ++n)
+  assert(N >= min_n);
+  auto const index = with_n0 ?
+                         [](t_int n, t_int m) { return std::abs(m) > n ? 0 : n * (n + 1) + m; } :
+                         [](t_int n, t_int m) { return std::abs(m) > n ? 0 : n * (n + 1) + m - 1; };
+  assert(index(min_n, -min_n) == 0);
+  assert(index(N, N) + 1 == input.rows());
+  for(auto n = min_n, i = 0; n <= N; ++n)
     for(auto m = -n; m <= n; ++m, ++i)
-      for(auto l = std::abs(m); l <= nmax; ++l) {
-        assert(i == index(n, m));
-        out.row(index(l, m)) += operator()(n, m, l) * input.row(index(n, m));
-      }
+      for(auto l = std::max(std::abs(m), min_n); l <= N; ++l)
+        out.row(index(l, m)) += operator()(n, m, l) * input.row(i);
 }
 
 template <class T>
@@ -115,15 +122,28 @@ template <class T0, class T1>
 typename std::enable_if<std::is_same<typename T0::Scalar, t_complex>::value>::type
 CachedCoAxialRecurrence::Functor::
 operator()(Eigen::MatrixBase<T0> const &input, Eigen::MatrixBase<T1> &out) const {
-  assert((N + 1) * (N + 1) == input.size());
+  auto const nr = input.rows();
+  auto const with_n0 = std::abs(std::sqrt(nr) - std::lround(std::sqrt(nr))) <
+                       std::abs(std::sqrt(nr + 1) - std::lround(std::sqrt(nr + 1)));
+  t_int const N = std::lround(std::sqrt(with_n0 ? nr : nr + 1)) - 1;
+  assert(N <= this->N);
+  assert((with_n0 and (N + 1) * (N + 1) == input.size()) or N * (N + 2) == input.size());
+  int const min_n = with_n0 ? 0 : 1;
+  auto const index = with_n0 ?
+                         [](t_int n, t_int m) { return std::abs(m) > n ? 0 : n * (n + 1) + m; } :
+                         [](t_int n, t_int m) { return std::abs(m) > n ? 0 : n * (n + 1) + m - 1; };
+  assert(index(min_n, -min_n) == 0);
+  assert(index(N, N) + 1 == input.rows());
   out.resize(input.rows(), input.cols());
   out.fill(0);
-  auto i_coeff = coefficients.begin();
-  for(auto n = 0, i = 0; n <= N; ++n)
+  auto i_coeff = with_n0 ? coefficients.begin() : (coefficients.begin() + N + 1);
+  for(auto n = min_n, i = 0; n <= N; ++n)
     for(auto m = -n; m <= n; ++m, ++i)
       for(auto l = std::abs(m); l <= N; ++l, ++i_coeff) {
         assert(i_coeff != coefficients.end());
-        out.row(l * (l + 1) + m) += (*i_coeff) * input.row(i);
+        auto const i_out = index(l, m);
+        if(i_out >= 0)
+          out.row(i_out) += (*i_coeff) * input.row(i);
       }
 }
 

@@ -412,7 +412,7 @@ TEST_CASE("Translation of two spheres") {
   CachedCoAxialRecurrence tca((Orad - Ononrad).stableNorm(), 1.0 / wavelength, false);
   // Random potential to translate
   auto potential = Vector<t_complex>::Zero((N + 1) * (N + 1)).eval();
-  potential.head((Nnz + 1) * (Nnz + 1)) = Vector<t_complex>::Random((Nnz + 1) * (Nnz + 1));
+  potential.segment(1, Nnz * (Nnz + 2)) = Vector<t_complex>::Random(Nnz * (Nnz + 2));
 
   // get a point inside second sphere
   Eigen::Matrix<t_real, 3, 1> const direction = Eigen::Matrix<t_real, 3, 1>::Random().normalized();
@@ -451,11 +451,15 @@ TEST_CASE("Translation of two spheres") {
 
   /* "Matrix interface" */ {
     auto const out = tca(potential);
+    // Creates a non-zero monopole term
+    CHECK(std::abs(out(0)) > 1e-8);
     for(t_int n(0), i(0); n <= N; ++n)
       for(t_int m(-n); m <= n; ++m, ++i)
         pot_nonrad += nonradiating_basis(1e0 / wavelength, Mnonrad, n, m) * out(i);
     CHECK(pot_nonrad.real() == Approx(nonconv.real()).epsilon(std::abs(nonconv.real() * 1e-4)));
     CHECK(pot_nonrad.imag() == Approx(nonconv.imag()).epsilon(std::abs(nonconv.imag() * 1e-4)));
+
+    CHECK(tca(potential.tail(potential.size() - 1)).isApprox(out.tail(out.size() - 1)));
   }
 
   /* "functor interface" */ {
@@ -467,5 +471,7 @@ TEST_CASE("Translation of two spheres") {
         pot_nonrad += nonradiating_basis(1e0 / wavelength, Mnonrad, n, m) * out(i);
     CHECK(pot_nonrad.real() == Approx(nonconv.real()).epsilon(std::abs(nonconv.real() * 1e-4)));
     CHECK(pot_nonrad.imag() == Approx(nonconv.imag()).epsilon(std::abs(nonconv.imag() * 1e-4)));
+
+    CHECK(functor(potential.tail(potential.size() - 1)).isApprox(out.tail(out.size() - 1)));
   }
 }
