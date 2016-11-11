@@ -398,7 +398,7 @@ TEST_CASE("Translation of two spheres") {
   // Higher order components should approach-zero in practical applications
   // This replicates that in a simple way
   auto const Nnz = 5;
-  auto const wavelength = 1000.0;
+  auto const wavelength = 1000.e-9;
   std::uniform_real_distribution<> distance_distribution(0, wavelength * 2e0);
   auto const radius_rad = distance_distribution(*mersenne) + wavelength * 0.1;
   auto const radius_nonrad = radius_rad * 1.1;
