@@ -70,6 +70,10 @@ public:
    */
   optimet::Vector<optimet::t_complex>
   getTLocal(optimet::t_real omega_, ElectroMagnetic const &bground) const;
+
+  //! Coefficients for field inside a sphere
+  optimet::Vector<optimet::t_complex>
+  getIaux(optimet::t_real omega_, ElectroMagnetic const &bground) const;
 };
 
 #endif /* SCATTERER_H_ */

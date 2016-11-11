@@ -128,58 +128,6 @@ int Geometry::getNLSources(double omega_, int objectIndex_, int nMax_,
   return 0;
 }
 
-int Geometry::getIaux(double omega_, int objectIndex_, int nMax_, std::complex<double> *I_aux_) {
-
-  std::complex<double> k_s =
-      omega_ * std::sqrt(objects[objectIndex_].elmag.epsilon * objects[objectIndex_].elmag.mu);
-  std::complex<double> k_b = omega_ * std::sqrt(bground.epsilon * bground.mu);
-
-  std::complex<double> rho = k_s / k_b;
-
-  std::complex<double> r_0 = k_b * objects[objectIndex_].radius;
-
-  std::complex<double> mu_j = objects[objectIndex_].elmag.mu;
-  std::complex<double> mu_0 = bground.mu;
-
-  std::complex<double> psi(0., 0.), ksi(0., 0.);
-  std::complex<double> dpsi(0., 0.), dksi(0., 0.);
-  std::complex<double> psirho(0., 0.);
-  std::complex<double> dpsirho(0., 0.);
-
-  std::vector<std::complex<double>> J_n_data, J_n_ddata;
-  std::vector<std::complex<double>> Jrho_n_data, Jrho_n_ddata;
-
-  try {
-    std::tie(J_n_data, J_n_ddata) = optimet::bessel<optimet::Bessel>(r_0, nMax_);
-    std::tie(Jrho_n_data, Jrho_n_ddata) = optimet::bessel<optimet::Bessel>(rho * r_0, nMax_);
-  } catch(std::range_error &e) {
-    std::cerr << e.what() << std::endl;
-    return 1;
-  }
-
-  CompoundIterator p;
-
-  int pMax = p.max(nMax_);
-
-  for(p = 0; (int)p < pMax; p++) {
-    // obtain Riccati-Bessel functions
-    psi = r_0 * J_n_data[p.first];
-    dpsi = r_0 * J_n_ddata[p.first] + J_n_data[p.first];
-
-    psirho = r_0 * rho * Jrho_n_data[p.first];
-    dpsirho = r_0 * rho * Jrho_n_ddata[p.first] + Jrho_n_data[p.first];
-
-    // TE Part
-    I_aux_[p] = (mu_j * rho) / (mu_0 * rho * dpsirho * psi - mu_j * psirho * dpsi);
-    I_aux_[p] *= std::complex<double>(0., 1.);
-
-    // TM part
-    I_aux_[(int)p + pMax] = (mu_j * rho) / (mu_j * psi * dpsirho - mu_0 * rho * psirho * dpsi);
-    I_aux_[(int)p + pMax] *= std::complex<double>(0., 1.);
-  }
-  return 0;
-}
-
 int Geometry::getCabsAux(double omega_, int objectIndex_, int nMax_, double *Cabs_aux_) {
 
   std::complex<double> temp1(0., 0.);

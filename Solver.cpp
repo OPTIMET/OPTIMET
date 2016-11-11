@@ -149,15 +149,6 @@ void Solver::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
   broadcast_to_out_of_context(X_int_, context(), comm);
 }
 
-Vector<t_complex> Solver::convertIndirect(Vector<t_complex> const &scattered) const {
-  auto const N = 2 * (HarmonicsIterator::max_flat(nMax) - 1);
-  Vector<t_complex> result(N * geometry->objects.size());
-  for(size_t i = 0; i < geometry->objects.size(); i++)
-    result.segment(i * N, N) = geometry->getTLocal(incWave->omega(), i, nMax).array() *
-                               scattered.segment(i * N, N).array();
-  return result;
-}
-
 Solver &Solver::SH(Result *r) {
 
   if(r != result_FF) {
@@ -166,17 +157,6 @@ Solver &Solver::SH(Result *r) {
   }
 
   return *this;
-}
-
-Vector<t_complex> Solver::solveInternal(Vector<t_complex> const &scattered) const {
-  auto const N = 2 * (HarmonicsIterator::max_flat(nMax) - 1);
-  Vector<t_complex> result(scattered.size());
-  // sets each result.segment(j * N, N) to something
-  for(size_t j = 0; j < geometry->objects.size(); j++)
-    geometry->getIaux(incWave->omega(), j, nMax, result.data() + j * N);
-  // then multiply by incomming array
-  result.array() *= scattered.array();
-  return result;
 }
 
 void Solver::populateIndirect() {
@@ -420,4 +400,31 @@ t_uint Solver::scattering_size() const {
   return 2 * (HarmonicsIterator::max_flat(nMax) - 1) * geometry->objects.size();
 }
 
+Vector<t_complex> convertInternal(Vector<t_complex> const &scattered, t_real const &omega,
+    ElectroMagnetic const &bground,
+    std::vector<Scatterer> const &objects) {
+  Vector<t_complex> result(scattered.size());
+  size_t i = 0;
+  for(auto const &object : objects) {
+    auto const N = 2 * object.nMax * (object.nMax + 2);
+    result.segment(i, N).array() =
+      scattered.segment(i, N).array() * object.getIaux(omega, bground).array();
+    i += N;
+  }
+  return result;
+}
+
+Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered, t_real const &omega,
+    ElectroMagnetic const &bground,
+    std::vector<Scatterer> const &objects) {
+  Vector<t_complex> result(scattered.size());
+  size_t i(0);
+  for(auto const &object : objects) {
+    auto const N = 2 * object.nMax * (object.nMax + 2);
+    result.segment(i, N) =
+      object.getTLocal(omega, bground).array() * scattered.segment(i, N).array();
+    i += N;
+  }
+  return result;
+}
 } // optimet namespace

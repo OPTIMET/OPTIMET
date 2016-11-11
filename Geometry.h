@@ -79,8 +79,6 @@ public:
   optimet::Vector<optimet::t_complex>
   getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet::t_uint nMax_) const;
 
-  int getIaux(double omega_, int objectIndex_, int nMax_, std::complex<double> *I_aux_);
-
   int getCabsAux(double omega_, int objectIndex_, int nMax_, double *Cabs_aux_);
 
   int getNLSources(double omega_, int objectIndex_, int nMax_, std::complex<double> *sourceU,

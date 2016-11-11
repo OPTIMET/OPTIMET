@@ -9,8 +9,8 @@
 #include "mpi/Collectives.h"
 #include "mpi/Communicator.h"
 #include "scalapack/Context.h"
-#include "scalapack/Parameters.h"
 #include "scalapack/Matrix.h"
+#include "scalapack/Parameters.h"
 #include <complex>
 #include <exception>
 #include <memory>
@@ -20,6 +20,12 @@
 #endif
 
 namespace optimet {
+//! Computes coeffs scattered from spheres
+Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered, t_real const &omega,
+                                  ElectroMagnetic const &bground, std::vector<Scatterer> const &);
+//! Computes coeffs internal to spheres
+Vector<t_complex> convertInternal(Vector<t_complex> const &scattered, t_real const &omega,
+                                  ElectroMagnetic const &bground, std::vector<Scatterer> const &);
 /**
  * The Solver class builds and solves the scattering matrix equation.
  */
@@ -97,10 +103,16 @@ public:
   void update() { populate(); }
 
   //! Converts back to the scattered result from the indirect calculation
-  Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered) const;
+  Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered) const {
+    return optimet::convertIndirect(scattered, incWave->omega(), geometry->bground,
+                                    geometry->objects);
+  }
 
   //! Solves for the internal coefficients.
-  Vector<t_complex> solveInternal(Vector<t_complex> const &X_sca_) const;
+  Vector<t_complex> solveInternal(Vector<t_complex> const &scattered) const {
+    return optimet::convertInternal(scattered, incWave->omega(), geometry->bground,
+                                    geometry->objects);
+  }
 
   scalapack::Context context() const { return context_; }
   scalapack::Sizes const &block_size() const { return block_size_; }
