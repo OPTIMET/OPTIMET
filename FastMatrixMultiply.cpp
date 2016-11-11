@@ -1,7 +1,12 @@
+#include "Bessel.h"
+#include "Coefficients.h"
 #include "FastMatrixMultiply.h"
 #include "RotationCoaxialDecomposition.h"
 #include "Types.h"
 #include <Eigen/Dense>
+#include <boost/math/special_functions/bessel.hpp>
+#include <boost/math/special_functions/spherical_harmonic.hpp>
+#include <iostream>
 
 namespace optimet {
 namespace {
@@ -22,7 +27,7 @@ void range_sanity(t_int Nscatterers, FastMatrixMultiply::Range incident,
 std::vector<t_uint> FastMatrixMultiply::compute_indices(std::vector<Scatterer> const &scatterers) {
   std::vector<t_uint> result{0u};
   for(auto const &scatterer : scatterers)
-    result.push_back(result.back() + scatterer.nMax * (scatterer.nMax + 2));
+    result.push_back(result.back() + 2 * scatterer.nMax * (scatterer.nMax + 2));
   return result;
 }
 
@@ -70,7 +75,7 @@ FastMatrixMultiply::compute_coaxial_translations(t_complex wavenumber,
         continue;
       auto const Ononrad = out_begin->vR.toEigenCartesian();
       CachedCoAxialRecurrence tca((Orad - Ononrad).stableNorm(), wavenumber, false);
-      result.push_back(tca.functor(std::max(in_begin->nMax, out_begin->nMax)));
+      result.push_back(tca.functor(std::max(in_begin->nMax, out_begin->nMax) + nplus));
     }
   }
   return result;
@@ -91,15 +96,11 @@ FastMatrixMultiply::compute_mie_coefficients(ElectroMagnetic const &background, 
   // then actually compute vector
   in_begin = scatterers.cbegin() + incident.first;
   for(t_uint i(0); in_begin != in_end; ++in_begin) {
-    auto const rows = in_begin->nMax * (in_begin->nMax + 2);
     auto const v = in_begin->getTLocal(wavenumber * constant::c, background);
-    assert(result.size() >= i + rows);
-    assert(v.size() == 2 * rows);
-
-    result.segment(i, rows) = v.head(rows);
-    result.segment(i + total_size, rows) = v.tail(rows);
+    assert(result.size() >= i + v.size());
+    result.segment(i, v.size()) = v;
     // incrementing here avoids problems with variable incrementation order
-    i += rows;
+    i += v.size();
   }
   return result;
 }
@@ -109,9 +110,9 @@ void FastMatrixMultiply::operator()(Vector<t_complex> const &in, Vector<t_comple
       global_indices_[incident_range_.second] - global_indices_[incident_range_.first];
   auto const out_offset =
       global_indices_[translate_range_.second] - global_indices_[translate_range_.first];
-  if(in.size() != 2 * in_offset)
+  if(in.size() != in_offset)
     throw std::runtime_error("Incorrect incident vector size");
-  out.resize(2 * out_offset);
+  out.resize(out_offset);
   out.fill(0);
 
   // Adds identity component (left-hand-side of Eq 106 in Gumerov, Duraiswami 2007)
@@ -121,47 +122,34 @@ void FastMatrixMultiply::operator()(Vector<t_complex> const &in, Vector<t_comple
     auto const end = global_indices_[std::min(translate_range_.second, incident_range_.second)];
     auto const n = end - start;
     out.segment(start - translate_range_.first, n) = in.segment(start - incident_range_.first, n);
-    out.segment(start - translate_range_.first + out_offset, n) =
-        in.segment(start - incident_range_.first + in_offset, n);
   }
 
   // Adds right-hand-side of Eq 106 in Gumerov, Duraiswami 2007
-  // first applies Mie coefficients to effective incident field
-  // It transforms incident from R to S basis (S is radiating component)
-  // The matrix form makes it easier to focus on one scattering particle at a time
-  // Φ in first column and Ψ in second
-  auto const scattered = apply_mie_coefficients(in);
-
-  // then apply translation
-  translation(scattered, out);
+  translation(mie_coefficients_.array() * in.array(), out);
 }
 
 void FastMatrixMultiply::translation(Vector<t_complex> const &input, Vector<t_complex> &out) const {
 
-  auto const in_offset =
+  auto const in_size =
       global_indices_[incident_range_.second] - global_indices_[incident_range_.first];
-  auto const out_offset =
+  auto const out_size =
       global_indices_[translate_range_.second] - global_indices_[translate_range_.first];
-  if(input.size() != 2 * in_offset)
+  if(input.size() != in_size)
     throw std::runtime_error("Incorrect incident vector size");
-  if(out.size() != 2 * out_offset)
+  if(out.size() != out_size)
     throw std::runtime_error("Incorrect outgoing vector size");
 
   typedef Eigen::Matrix<t_complex, Eigen::Dynamic, 2> Matrixified;
-  // The matrix form makes it easier to focus on one scattering particle at a time
-  // Φ in first column and Ψ in second
-  Eigen::Map<Matrixified> out_matrix(out.data(), out_offset, 2);
-  Eigen::Map<const Matrixified> input_matrix(input.data(), in_offset, 2);
 
   // create a work matrix with appropriate size
   auto in_begin = scatterers_.cbegin() + incident_range_.first;
   auto const in_end = scatterers_.cbegin() + incident_range_.second;
   auto const cmp_nmax = [](Scatterer const &a, Scatterer const &b) { return a.nMax < b.nMax; };
   auto const max_nMax =
-      2 * std::max(std::max_element(in_begin, in_end, cmp_nmax)->nMax,
-                   std::max_element(scatterers_.begin() + translate_range_.first,
-                                    scatterers_.begin() + translate_range_.second, cmp_nmax)
-                       ->nMax);
+      std::max(std::max_element(in_begin, in_end, cmp_nmax)->nMax,
+               std::max_element(scatterers_.begin() + translate_range_.first,
+                                scatterers_.begin() + translate_range_.second, cmp_nmax)
+                   ->nMax) + nplus;
   Eigen::Matrix<t_complex, Eigen::Dynamic, 4> work(nfunctions(max_nMax), 4);
 
   // Adds left-hand-side of Eq 106 in Gumerov, Duraiswami 2007
@@ -171,36 +159,26 @@ void FastMatrixMultiply::translation(Vector<t_complex> const &input, Vector<t_co
   auto i_translation = coaxial_translations_.cbegin();
   for(t_int i(0); in_begin != in_end; ++in_begin) {
     auto const in_rows = nfunctions(in_begin->nMax);
-    auto const incident = input_matrix.block(0, i, 2, in_rows);
+    Eigen::Map<const Matrixified> const incident(input.data() + i, in_rows, 2);
     auto out_begin = scatterers_.cbegin() + translate_range_.first;
     auto const out_end = scatterers_.cbegin() + translate_range_.second;
     for(t_int j(0); out_begin != out_end; ++out_begin) {
+      auto const out_rows = nfunctions(out_begin->nMax);
       // no self-interaction
       if(in_begin == out_begin) {
-        j += nfunctions(out_begin->nMax);
+        j += 2 * out_rows;
         continue;
       }
-      auto const out_rows = nfunctions(out_begin->nMax);
-      auto outgoing = out_matrix.block(0, j, 2, in_rows);
+      // add field from j to i
+      Eigen::Map<Matrixified> outgoing(out.data() + j, out_rows, 2);
       add_translation(incident, *in_begin, *out_begin, *i_rotation, *i_translation, wavenumber_,
                       outgoing, work);
-      j += out_rows;
+      j += 2 * out_rows;
       ++i_rotation;
       ++i_translation;
     }
-    i += in_rows;
+    i += 2 * in_rows;
   }
-}
-
-Vector<t_complex> FastMatrixMultiply::apply_mie_coefficients(Vector<t_complex> const &in) const {
-  assert(2 * (global_indices_[incident_range_.second] - global_indices_[incident_range_.first]));
-  auto const size = in.size() / 2;
-  Vector<t_complex> result(in.size());
-  // Φ coeffs
-  result.head(size) = mie_coefficients_.head(size).array() * in.head(size).array();
-  // Ψ coeffs
-  result.tail(size) = mie_coefficients_.tail(size).array() * in.tail(size).array();
-  return result;
 }
 
 Vector<t_complex> FastMatrixMultiply::operator()(Vector<t_complex> const &in) const {
@@ -210,5 +188,44 @@ Vector<t_complex> FastMatrixMultiply::operator()(Vector<t_complex> const &in) co
   operator()(in, result);
   return result;
 }
+
+Matrix<t_complex> field_coefficients(t_real wavenumber, Vector<t_complex> const &coeffs,
+                                     std::vector<Scatterer> const &objects) {
+  Matrix<t_complex> results(coeffs.size() / 2, 6);
+  t_int row(0);
+  for(auto const &object : objects) {
+    auto const N = object.nMax;
+    auto const size = N * (N + 2);
+    auto qcoeffs = coeffs.segment(2 * row, 2 * size);
+    auto qout = results.middleRows(row, size);
+    field_coefficients(wavenumber, qcoeffs, qout);
+    row += size;
+  }
+  return results;
+}
+
+Fields::Result Fields::operator()(Position const &position) const {
+  t_int row(0);
+  for(auto const &object : objects) {
+    auto const N = 2 * object.nMax * (object.nMax + 2);
+    auto const r = position - object.vR.toEigenCartesian();
+    if(r.stableNorm() <= object.radius)
+      return single_sphere(r, object.nMax, inside.middleRows(row, N));
+    row += N;
+  }
+  return compute_outside(position);
+}
+
+Fields::Result Fields::compute_outside(Position const &position) const {
+  Result result = Result::Zero();
+  t_int row(0);
+  for(auto const &object : objects) {
+    auto const N = 2 * object.nMax * (object.nMax + 2);
+    auto const r = position - object.vR.toEigenCartesian();
+    result += single_sphere(r, object.nMax, outside.middleRows(row, N));
+    row += N;
+  }
+  return result;
+};
 
 } // optimet namespace
