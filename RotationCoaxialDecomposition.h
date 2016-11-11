@@ -26,17 +26,16 @@ void rotation_coaxial_decomposition(t_real wavenumber, t_real tz,
   t_int const N = std::lround(std::sqrt(with_n0 ? nr : nr + 1)) - 1;
   assert((with_n0 and (N + 1) * (N + 1) == input.rows()) or N * (N + 2) == input.rows());
   int const min_n = with_n0 ? 0 : 1;
-  auto const index = with_n0 ?
-                         [](t_int n, t_int m) { return std::abs(m) > n ? 0 : n * (n + 1) + m; } :
-                         [](t_int n, t_int m) { return std::abs(m) > n ? 0 : n * (n + 1) + m - 1; };
+  auto const index = with_n0 ? [](t_int n, t_int m) { return n * (n + 1) + m; } :
+                               [](t_int n, t_int m) { return n * (n + 1) + m - 1; };
   assert(index(min_n, -min_n) == 0);
   assert(index(N, N) + 1 == input.rows());
   out.resize(input.rows(), input.cols());
   auto const in_phi = [&input, N, index](t_int n, t_int m) -> t_complex {
-    return n > N ? 0 : input(index(n, m), 0);
+    return n > N or std::abs(m) > n ? 0 : input(index(n, m), 0);
   };
   auto const in_psi = [&input, N, index](t_int n, t_int m) -> t_complex {
-    return n > N ? 0 : input(index(n, m), 1);
+    return n > N or std::abs(m) > n ? 0 : input(index(n, m), 1);
   };
   auto const out_phi = [&out, index](t_int n, t_int m) -> t_complex & {
     return out(index(n, m), 0);
@@ -44,8 +43,10 @@ void rotation_coaxial_decomposition(t_real wavenumber, t_real tz,
   auto const out_psi = [&out, index](t_int n, t_int m) -> t_complex & {
     return out(index(n, m), 1);
   };
+  if(with_n0)
+    out.row(0).fill(0);
   // n ≥ 1
-  for(t_int n(min_n); n <= N; ++n) {
+  for(t_int n(1); n <= N; ++n) {
     for(t_int m(-n); m <= n; ++m) {
       auto const c0 = n * a<t_real>(n, m);
       auto const c1 = (n + 1) * a<t_real>(n - 1, m);
