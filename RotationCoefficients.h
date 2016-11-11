@@ -121,7 +121,7 @@ public:
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
   //! coefficients up to nmax.
   template <class T0, class T1>
-  void operator()(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const;
+  void operator()(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> const &out) const;
   //! \brief Performs rotation (for a single particle pair)
   //! \details The input and output consist of two-column matrices, where the first columns are the
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
@@ -132,7 +132,7 @@ public:
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
   //! coefficients up to nmax.
   template <class T0, class T1>
-  void adjoint(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const;
+  void adjoint(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> const &out) const;
   //! \brief Performs adjoint/inverse rotation (for a single particle pair)
   //! \details The input and output consist of two-column matrices, where the first columns are the
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
@@ -143,7 +143,7 @@ public:
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
   //! coefficients up to nmax.
   template <class T0, class T1>
-  void transpose(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const;
+  void transpose(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> const &out) const;
   //! \brief Applies transpose of rotation matrix (for a single particle pair)
   //! \details The input and output consist of two-column matrices, where the first columns are the
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
@@ -154,7 +154,7 @@ public:
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
   //! coefficients up to nmax.
   template <class T0, class T1>
-  void conjugate(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const;
+  void conjugate(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> const &out) const;
   //! \brief Applies conjugate of rotation matrix (for a single particle pair)
   //! \details The input and output consist of two-column matrices, where the first columns are the
   //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
@@ -175,8 +175,8 @@ protected:
 };
 
 template <class T0, class T1>
-void Rotation::operator()(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
-  out.resize(in.rows(), in.cols());
+void Rotation::operator()(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> const &out) const {
+  const_cast<Eigen::MatrixBase<T1> &>(out).resize(in.rows(), in.cols());
   t_uint const nmax = std::lround(std::sqrt(in.rows()) - 1.0);
   assert(nmax * (nmax + 2) == in.rows());
   assert(nmax > 0 and nmax < order.size());
@@ -184,7 +184,7 @@ void Rotation::operator()(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1>
     assert(order[n].rows() == order[n].cols());
     assert(in.rows() >= i + order[n].rows());
     assert(out.rows() >= i + order[n].cols());
-    out.block(i, 0, order[n].rows(), in.cols()) =
+    const_cast<Eigen::MatrixBase<T1> &>(out).block(i, 0, order[n].rows(), in.cols()) =
         order[n] * in.block(i, 0, order[n].cols(), in.cols());
     i += order[n].rows();
   }
@@ -198,15 +198,15 @@ Matrix<typename T0::Scalar> Rotation::operator()(Eigen::MatrixBase<T0> const &in
 }
 
 template <class T0, class T1>
-void Rotation::adjoint(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
-  out.resize(in.rows(), in.cols());
+void Rotation::adjoint(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> const &out) const {
+  const_cast<Eigen::MatrixBase<T1> &>(out).resize(in.rows(), in.cols());
   t_uint const nmax = std::lround(std::sqrt(in.rows()) - 1.0);
   assert(nmax * (nmax + 2) == in.rows());
   assert(nmax >= 1 and nmax < order.size());
   for(t_uint n(1), i(0); n <= nmax; ++n) {
     assert(order[n].cols() == order[n].rows());
     assert(in.rows() >= i + order[n].cols());
-    out.block(i, 0, order[n].cols(), in.cols()) =
+    const_cast<Eigen::MatrixBase<T1> &>(out).block(i, 0, order[n].cols(), in.cols()) =
         order[n].adjoint() * in.block(i, 0, order[n].rows(), in.cols());
     i += order[n].cols();
   }
@@ -220,14 +220,14 @@ Matrix<typename T0::Scalar> Rotation::adjoint(Eigen::MatrixBase<T0> const &in) c
 }
 
 template <class T0, class T1>
-void Rotation::transpose(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
-  out.resize(in.rows(), in.cols());
+void Rotation::transpose(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> const &out) const {
+  const_cast<Eigen::MatrixBase<T1> &>(out).resize(in.rows(), in.cols());
   t_uint const nmax = std::lround(std::sqrt(in.rows()) - 1.0);
   assert(nmax * (nmax + 2) == in.rows());
   assert(nmax >= 1 and nmax < order.size());
   for(t_uint n(1), i(0); n <= nmax; ++n) {
     assert(in.rows() >= i + order[n].cols());
-    out.block(i, 0, order[n].cols(), in.cols()) =
+    const_cast<Eigen::MatrixBase<T1> &>(out).block(i, 0, order[n].cols(), in.cols()) =
         order[n].transpose() * in.block(i, 0, order[n].cols(), in.cols());
     i += order[n].cols();
   }
@@ -241,15 +241,15 @@ Matrix<typename T0::Scalar> Rotation::transpose(Eigen::MatrixBase<T0> const &in)
 }
 
 template <class T0, class T1>
-void Rotation::conjugate(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> &out) const {
-  out.resize(in.rows(), in.cols());
+void Rotation::conjugate(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> const &out) const {
+  const_cast<Eigen::MatrixBase<T1> &>(out).resize(in.rows(), in.cols());
   t_uint const nmax = std::lround(std::sqrt(in.rows()) - 1.0);
   assert(nmax * (nmax + 2) == in.rows());
   assert(nmax >= 1 and nmax < order.size());
   for(t_uint n(1), i(0); n <= nmax; ++n) {
     assert(in.rows() >= i + order[n].rows());
     assert(out.rows() >= i + order[n].cols());
-    out.block(i, 0, order[n].rows(), in.cols()) =
+    const_cast<Eigen::MatrixBase<T1> &>(out).block(i, 0, order[n].rows(), in.cols()) =
         order[n].conjugate() * in.block(i, 0, order[n].cols(), in.cols());
     i += order[n].rows();
   }
