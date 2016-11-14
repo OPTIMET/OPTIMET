@@ -52,11 +52,11 @@ void rotation_coaxial_decomposition(t_real wavenumber, t_real tz,
       auto const c1 = (n + 1) * a<t_real>(n - 1, m);
       // clang-format off
       out_phi(n, m) = in_phi(n, m) + tz / static_cast<t_real>(n * n + n) * (
-          t_complex(0, wavenumber * wavenumber * m) * in_psi(n, m)
+          t_complex(0, wavenumber * m) * in_psi(n, m)
           + wavenumber * (c0 * in_phi(n + 1, m) + (n > min_n ? c1 * in_phi(n - 1, m): 0))
       );
-      out_psi(n, m) = in_psi(n, m) + tz / static_cast<t_real>(n * n + n) * (
-          t_complex(0, m) * in_phi(n, m)
+      out_psi(n, m) = in_psi(n, m) + tz/ static_cast<t_real>(n * n + n) * (
+          t_complex(0, m  * wavenumber) * in_phi(n, m)
           + wavenumber * (c0 * in_psi(n + 1, m) + (n > min_n ? c1 * in_psi(n - 1, m): 0))
       );
       // clang-format on
