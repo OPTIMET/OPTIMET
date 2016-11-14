@@ -149,7 +149,8 @@ void FastMatrixMultiply::translation(Vector<t_complex> const &input, Vector<t_co
       std::max(std::max_element(in_begin, in_end, cmp_nmax)->nMax,
                std::max_element(scatterers_.begin() + translate_range_.first,
                                 scatterers_.begin() + translate_range_.second, cmp_nmax)
-                   ->nMax) + nplus;
+                   ->nMax) +
+      nplus;
   Eigen::Matrix<t_complex, Eigen::Dynamic, 4> work(nfunctions(max_nMax), 4);
 
   // Adds left-hand-side of Eq 106 in Gumerov, Duraiswami 2007
@@ -171,8 +172,8 @@ void FastMatrixMultiply::translation(Vector<t_complex> const &input, Vector<t_co
       }
       // add field from j to i
       Eigen::Map<Matrixified> outgoing(out.data() + j, out_rows, 2);
-      add_translation(incident, *in_begin, *out_begin, *i_rotation, *i_translation, wavenumber_,
-                      outgoing, work);
+      remove_translation(incident, *in_begin, *out_begin, *i_rotation, *i_translation, wavenumber_,
+                         outgoing, work);
       j += 2 * out_rows;
       ++i_rotation;
       ++i_translation;

@@ -1,12 +1,12 @@
 #ifndef FAST_MATRIX_MULTIPLY_H
 
+#include "Bessel.h"
 #include "CoAxialTranslationCoefficients.h"
 #include "RotationCoaxialDecomposition.h"
 #include "RotationCoefficients.h"
 #include "Scatterer.h"
 #include "Solver.h"
 #include "Types.h"
-#include "Bessel.h"
 #include <utility>
 #include <vector>
 
@@ -130,18 +130,18 @@ public:
   //! \details the coefficients from input are projected from iScatt to oScatt using the given
   //! rotation translation functors. The result are added to the out-going coefficients.
   template <class T0, class T1>
-  static void add_translation(Eigen::MatrixBase<T0> const &input, Scatterer const &iScatt,
-                              Scatterer const &oScatt, Rotation const &rotation,
-                              CachedCoAxialRecurrence::Functor const &translation,
-                              t_real wavenumber, Eigen::MatrixBase<T1> const &out);
+  static void remove_translation(Eigen::MatrixBase<T0> const &input, Scatterer const &iScatt,
+                                 Scatterer const &oScatt, Rotation const &rotation,
+                                 CachedCoAxialRecurrence::Functor const &translation,
+                                 t_real wavenumber, Eigen::MatrixBase<T1> const &out);
 
   //! Adds co-axial rotation/translation for a given particle pair
   template <class T0, class T1, class T2>
   static void
-  add_translation(Eigen::MatrixBase<T0> const &input, Scatterer const &iScatt,
-                  Scatterer const &oScatt, Rotation const &rotation,
-                  CachedCoAxialRecurrence::Functor const &translation, t_real wavenumber,
-                  Eigen::MatrixBase<T1> const &out, Eigen::MatrixBase<T2> const &work);
+  remove_translation(Eigen::MatrixBase<T0> const &input, Scatterer const &iScatt,
+                     Scatterer const &oScatt, Rotation const &rotation,
+                     CachedCoAxialRecurrence::Functor const &translation, t_real wavenumber,
+                     Eigen::MatrixBase<T1> const &out, Eigen::MatrixBase<T2> const &work);
 
   //! Apply translation to each particle pair
   void translation(Vector<t_complex> const &in, Vector<t_complex> &out) const;
@@ -176,11 +176,11 @@ protected:
 };
 
 template <class T0, class T1>
-void FastMatrixMultiply::add_translation(Eigen::MatrixBase<T0> const &input,
-                                         Scatterer const &iScatt, Scatterer const &oScatt,
-                                         Rotation const &rotation,
-                                         CachedCoAxialRecurrence::Functor const &translation,
-                                         t_real wavenumber, Eigen::MatrixBase<T1> const &out) {
+void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
+                                            Scatterer const &iScatt, Scatterer const &oScatt,
+                                            Rotation const &rotation,
+                                            CachedCoAxialRecurrence::Functor const &translation,
+                                            t_real wavenumber, Eigen::MatrixBase<T1> const &out) {
   if(input.cols() != 2)
     throw std::runtime_error("input should have two columns");
   if(out.cols() != 2)
@@ -188,16 +188,16 @@ void FastMatrixMultiply::add_translation(Eigen::MatrixBase<T0> const &input,
 
   auto const nmax = std::max(iScatt.nMax, oScatt.nMax) + nplus;
   Eigen::Matrix<t_complex, Eigen::Dynamic, 4> work((nmax + 1) * (nmax + 1), 4);
-  FastMatrixMultiply::add_translation(input, iScatt, oScatt, rotation, translation, out, work);
+  FastMatrixMultiply::remove_translation(input, iScatt, oScatt, rotation, translation, out, work);
 }
 
 template <class T0, class T1, class T2>
-void FastMatrixMultiply::add_translation(Eigen::MatrixBase<T0> const &input,
-                                         Scatterer const &iScatt, Scatterer const &oScatt,
-                                         Rotation const &rotation,
-                                         CachedCoAxialRecurrence::Functor const &translation,
-                                         t_real wavenumber, Eigen::MatrixBase<T1> const &out,
-                                         Eigen::MatrixBase<T2> const &work) {
+void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
+                                            Scatterer const &iScatt, Scatterer const &oScatt,
+                                            Rotation const &rotation,
+                                            CachedCoAxialRecurrence::Functor const &translation,
+                                            t_real wavenumber, Eigen::MatrixBase<T1> const &out,
+                                            Eigen::MatrixBase<T2> const &work) {
   auto const in_rows = nfunctions(iScatt.nMax);
   auto const out_rows = nfunctions(oScatt.nMax);
 
@@ -231,7 +231,7 @@ void FastMatrixMultiply::add_translation(Eigen::MatrixBase<T0> const &input,
   // Finally, rotate back and adds to out-going coeffs
   auto unrotated = const_cast<Eigen::MatrixBase<T2> &>(work).block(0, 2, out_rows, 2);
   rotation.conjugate(field_translated.topRows(out_rows), unrotated);
-  const_cast<Eigen::MatrixBase<T1> &>(out) += unrotated;
+  const_cast<Eigen::MatrixBase<T1> &>(out) -= unrotated;
 }
 
 template <class T0, class T1>
