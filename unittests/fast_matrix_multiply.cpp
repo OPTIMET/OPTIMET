@@ -18,7 +18,7 @@ public:
 
 ElectroMagnetic const elmag{13.1, 1.0};
 auto const wavenumber = 2 * optimet::constant::pi / (1200 * 1e-9);
-auto const nHarmonics = 2;
+auto const nHarmonics = 8;
 auto const radius = 500e-9;
 
 TEST_CASE("Single object") {
@@ -135,12 +135,11 @@ TEST_CASE("Standard vs Fast matrix multiply") {
   optimet::FastMatrixMultiply fmm(geometry.bground, excitation->omega() / constant::c,
                                   geometry.objects);
 
-  Vector<t_complex> input = Vector<t_complex>::Zero(solver.Q.size());
-  input(5) = 1;
-  Vector<t_complex> const expected = solver.S * input;
-  auto const actual = fmm * input;
-  CAPTURE(actual.transpose());
-  CAPTURE(expected.transpose());
-  CAPTURE((actual - expected).transpose());
-  CHECK(expected.isApprox(actual));
+  auto const N = nHarmonics * (nHarmonics + 2);
+  for(t_int i(0); i < solver.Q.size(); ++i) {
+    auto const input = Vector<t_complex>::Unit(solver.Q.size(), i);
+    Vector<t_complex> const expected = solver.S * input;
+    Vector<t_complex> const actual = fmm * input;
+    CHECK(expected.isApprox(actual));
+  }
 }

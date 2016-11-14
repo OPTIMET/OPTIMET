@@ -6,7 +6,6 @@
 #include <Eigen/Dense>
 #include <boost/math/special_functions/bessel.hpp>
 #include <boost/math/special_functions/spherical_harmonic.hpp>
-#include <iostream>
 
 namespace optimet {
 namespace {
@@ -172,8 +171,8 @@ void FastMatrixMultiply::translation(Vector<t_complex> const &input, Vector<t_co
       }
       // add field from j to i
       Eigen::Map<Matrixified> outgoing(out.data() + j, out_rows, 2);
-      remove_translation(incident, *in_begin, *out_begin, *i_rotation, *i_translation, wavenumber_,
-                         outgoing, work);
+      remove_translation(incident, *in_begin, *out_begin, *i_rotation, *i_translation, outgoing,
+                         work);
       j += 2 * out_rows;
       ++i_rotation;
       ++i_translation;

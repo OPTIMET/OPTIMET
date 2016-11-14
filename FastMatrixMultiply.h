@@ -112,7 +112,6 @@ public:
   compute_coaxial_translations(t_complex wavenumber_, std::vector<Scatterer> const &scatterers,
                                Range incident, Range translate);
   //! Computes mie coefficient for each particles
-  //! Computes mie coefficient for each particles
   static Vector<t_complex>
   compute_mie_coefficients(ElectroMagnetic const &background, t_real wavenumber,
                            std::vector<Scatterer> const &scatterers, Range incident);
@@ -130,18 +129,18 @@ public:
   //! \details the coefficients from input are projected from iScatt to oScatt using the given
   //! rotation translation functors. The result are added to the out-going coefficients.
   template <class T0, class T1>
-  static void remove_translation(Eigen::MatrixBase<T0> const &input, Scatterer const &iScatt,
-                                 Scatterer const &oScatt, Rotation const &rotation,
-                                 CachedCoAxialRecurrence::Functor const &translation,
-                                 t_real wavenumber, Eigen::MatrixBase<T1> const &out);
+  void remove_translation(Eigen::MatrixBase<T0> const &input, Scatterer const &iScatt,
+                          Scatterer const &oScatt, Rotation const &rotation,
+                          CachedCoAxialRecurrence::Functor const &translation,
+                          Eigen::MatrixBase<T1> const &out) const;
 
   //! Adds co-axial rotation/translation for a given particle pair
   template <class T0, class T1, class T2>
-  static void
+  void
   remove_translation(Eigen::MatrixBase<T0> const &input, Scatterer const &iScatt,
                      Scatterer const &oScatt, Rotation const &rotation,
-                     CachedCoAxialRecurrence::Functor const &translation, t_real wavenumber,
-                     Eigen::MatrixBase<T1> const &out, Eigen::MatrixBase<T2> const &work);
+                     CachedCoAxialRecurrence::Functor const &translation,
+                     Eigen::MatrixBase<T1> const &out, Eigen::MatrixBase<T2> const &work) const;
 
   //! Apply translation to each particle pair
   void translation(Vector<t_complex> const &in, Vector<t_complex> &out) const;
@@ -180,7 +179,7 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
                                             Scatterer const &iScatt, Scatterer const &oScatt,
                                             Rotation const &rotation,
                                             CachedCoAxialRecurrence::Functor const &translation,
-                                            t_real wavenumber, Eigen::MatrixBase<T1> const &out) {
+                                            Eigen::MatrixBase<T1> const &out) const {
   if(input.cols() != 2)
     throw std::runtime_error("input should have two columns");
   if(out.cols() != 2)
@@ -196,8 +195,8 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
                                             Scatterer const &iScatt, Scatterer const &oScatt,
                                             Rotation const &rotation,
                                             CachedCoAxialRecurrence::Functor const &translation,
-                                            t_real wavenumber, Eigen::MatrixBase<T1> const &out,
-                                            Eigen::MatrixBase<T2> const &work) {
+                                            Eigen::MatrixBase<T1> const &out,
+                                            Eigen::MatrixBase<T2> const &work) const {
   auto const in_rows = nfunctions(iScatt.nMax);
   auto const out_rows = nfunctions(oScatt.nMax);
 
@@ -210,28 +209,39 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
          iScatt.radius + oScatt.radius);
 
   // First apply rotation - without n=0 term
-  std::cout << "input:\n" << input << "\n";
   auto rotated = const_cast<Eigen::MatrixBase<T2> &>(work).leftCols(2);
   rotation.transpose(input, rotated.middleRows(1, in_rows));
-  std::cout << "rotated:\n" << rotated << "\n";
+
+  // Then add normalization coming from ???
+  // But appears when comparing to original calculation
+  // We add it second since: (i) the normalization is same for the same n, (ii) it avoids a copy
+  for(t_int j(1), n(1); n <= iScatt.nMax; j += 2 * n + 1, ++n) {
+    rotated.col(0).segment(j, 2 * n + 1) /= std::sqrt((n * (n + 1)) / 2);
+    rotated.col(1).segment(j, 2 * n + 1) /= -std::sqrt((n * (n + 1)) / 2);
+  }
 
   // Then perform co-axial translation - this may create n=0 term
   auto ztrans = const_cast<Eigen::MatrixBase<T2> &>(work).rightCols(2);
   translation(rotated, ztrans);
-  std::cout << "translated:\n";
-  std::cout << ztrans << "\n";
 
   // Then apply field-coaxial-tranlation transform thing - n=0 term may be used to create n=1 term.
   // n=0 term itself becomes zero (thereby choosing a gauge, apparently)
   auto const tz = (oScatt.vR.toEigenCartesian() - iScatt.vR.toEigenCartesian()).stableNorm();
   auto &field_translated = rotated;
-  rotation_coaxial_decomposition(wavenumber, tz, ztrans, field_translated);
-  std::cout << "field trans: " << tz << ", " << wavenumber << "\n";
-  std::cout << field_translated << "\n";
+  rotation_coaxial_decomposition(wavenumber_, tz, ztrans, field_translated);
 
-  // Finally, rotate back and adds to out-going coeffs - remove n=0 term since it is zero
+  // Rotate back - remove n=0 term since it is zero
   auto unrotated = const_cast<Eigen::MatrixBase<T2> &>(work).block(1, 2, out_rows, 2);
   rotation.conjugate(field_translated.middleRows(1, out_rows), unrotated);
+
+  // Add normalization coming from ???
+  // But appears when comparing to original calculation
+  for(t_int j(0), n(1); n <= oScatt.nMax; j += 2 * n + 1, ++n) {
+    unrotated.col(0).segment(j, 2 * n + 1) *= std::sqrt((n * (n + 1)) / 2);
+    unrotated.col(1).segment(j, 2 * n + 1) *= -std::sqrt((n * (n + 1)) / 2);
+  }
+
+  // Finally, add back into output vector
   const_cast<Eigen::MatrixBase<T1> &>(out) -= unrotated;
 }
 
