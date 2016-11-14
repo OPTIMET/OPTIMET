@@ -187,7 +187,7 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
     throw std::runtime_error("output should have two columns");
 
   auto const nmax = std::max(iScatt.nMax, oScatt.nMax) + nplus;
-  Eigen::Matrix<t_complex, Eigen::Dynamic, 4> work((nmax + 1) * (nmax + 1), 4);
+  Eigen::Matrix<t_complex, Eigen::Dynamic, 4> work(nfunctions(nmax) + 1, 4);
   FastMatrixMultiply::remove_translation(input, iScatt, oScatt, rotation, translation, out, work);
 }
 
@@ -201,36 +201,37 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
   auto const in_rows = nfunctions(iScatt.nMax);
   auto const out_rows = nfunctions(oScatt.nMax);
 
-  auto const max_rows = std::max(in_rows, out_rows) + nplus;
-  if(work.rows() < max_rows or work.cols() != 4)
-    const_cast<Eigen::MatrixBase<T2> &>(work).resize(max_rows, 4);
+  auto const max_rows = nfunctions(std::max(iScatt.nMax, oScatt.nMax) + nplus);
+  if(work.rows() <= max_rows or work.cols() != 4)
+    const_cast<Eigen::MatrixBase<T2> &>(work).resize(max_rows + 1, 4);
   const_cast<Eigen::MatrixBase<T2> &>(work).fill(0);
 
   assert((iScatt.vR.toEigenCartesian() - oScatt.vR.toEigenCartesian()).stableNorm() >=
          iScatt.radius + oScatt.radius);
 
-  // First apply rotation
+  // First apply rotation - without n=0 term
   std::cout << "input:\n" << input << "\n";
   auto rotated = const_cast<Eigen::MatrixBase<T2> &>(work).leftCols(2);
-  rotation.transpose(input, rotated.topRows(in_rows));
+  rotation.transpose(input, rotated.middleRows(1, in_rows));
   std::cout << "rotated:\n" << rotated << "\n";
 
-  // Then perform co-axial translation
+  // Then perform co-axial translation - this may create n=0 term
   auto ztrans = const_cast<Eigen::MatrixBase<T2> &>(work).rightCols(2);
   translation(rotated, ztrans);
   std::cout << "translated:\n";
   std::cout << ztrans << "\n";
 
-  // Then apply field-coaxial-tranlation transform thing
+  // Then apply field-coaxial-tranlation transform thing - n=0 term may be used to create n=1 term.
+  // n=0 term itself becomes zero (thereby choosing a gauge, apparently)
   auto const tz = (oScatt.vR.toEigenCartesian() - iScatt.vR.toEigenCartesian()).stableNorm();
   auto &field_translated = rotated;
   rotation_coaxial_decomposition(wavenumber, tz, ztrans, field_translated);
   std::cout << "field trans: " << tz << ", " << wavenumber << "\n";
   std::cout << field_translated << "\n";
 
-  // Finally, rotate back and adds to out-going coeffs
-  auto unrotated = const_cast<Eigen::MatrixBase<T2> &>(work).block(0, 2, out_rows, 2);
-  rotation.conjugate(field_translated.topRows(out_rows), unrotated);
+  // Finally, rotate back and adds to out-going coeffs - remove n=0 term since it is zero
+  auto unrotated = const_cast<Eigen::MatrixBase<T2> &>(work).block(1, 2, out_rows, 2);
+  rotation.conjugate(field_translated.middleRows(1, out_rows), unrotated);
   const_cast<Eigen::MatrixBase<T1> &>(out) -= unrotated;
 }
 

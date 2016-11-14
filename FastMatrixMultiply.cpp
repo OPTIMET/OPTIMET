@@ -151,7 +151,7 @@ void FastMatrixMultiply::translation(Vector<t_complex> const &input, Vector<t_co
                                 scatterers_.begin() + translate_range_.second, cmp_nmax)
                    ->nMax) +
       nplus;
-  Eigen::Matrix<t_complex, Eigen::Dynamic, 4> work(nfunctions(max_nMax), 4);
+  Eigen::Matrix<t_complex, Eigen::Dynamic, 4> work(nfunctions(max_nMax) + 1, 4);
 
   // Adds left-hand-side of Eq 106 in Gumerov, Duraiswami 2007
   // This is done one at a time for each scatterer -> translated location pair
