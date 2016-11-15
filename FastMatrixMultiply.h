@@ -91,7 +91,8 @@ public:
         mie_coefficients_(
             compute_mie_coefficients(em_background, wavenumber, scatterers_, incident_range_)),
         coaxial_translations_(compute_coaxial_translations(wavenumber_, scatterers_,
-                                                           incident_range_, translate_range_)) {}
+                                                           incident_range_, translate_range_)),
+        normalization_(compute_normalization(scatterers)) {}
   FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers, Range incident,
                      Range translate)
       : FastMatrixMultiply(ElectroMagnetic(), wavenumber, scatterers, incident, translate) {}
@@ -145,6 +146,10 @@ public:
   //! Apply translation to each particle pair
   void translation(Vector<t_complex> const &in, Vector<t_complex> &out) const;
 
+  //! Normalization factors between Gumerov and Stout
+  static Eigen::Array<t_real, Eigen::Dynamic, 2>
+  compute_normalization(std::vector<Scatterer> const &scatterers);
+
 protected:
   static int const nplus = 1;
   //! The properties of the background
@@ -169,6 +174,8 @@ protected:
   Vector<t_complex> const mie_coefficients_;
   //! Co-axial translations
   std::vector<CachedCoAxialRecurrence::Functor> coaxial_translations_;
+  //! Normalization factors between Gumerov and Stout
+  Eigen::Array<t_real, Eigen::Dynamic, 2> const normalization_;
 
   //! Number of basis function for given nmax
   static constexpr t_int nfunctions(t_int nmax) { return nmax * (nmax + 2); }
@@ -208,20 +215,20 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
   assert((iScatt.vR.toEigenCartesian() - oScatt.vR.toEigenCartesian()).stableNorm() >=
          iScatt.radius + oScatt.radius);
 
-  // First apply rotation - without n=0 term
-  auto rotated = const_cast<Eigen::MatrixBase<T2> &>(work).leftCols(2);
-  rotation.transpose(input, rotated.middleRows(1, in_rows));
-
-  // Then add normalization coming from ???
+  // First, we take into account Gumerov's very special normalization and notations
+  // It adds +/-1 factors, as well as normalization constants
   // But appears when comparing to original calculation
   // We add it second since: (i) the normalization is same for the same n, (ii) it avoids a copy
-  for(t_int j(1), n(1); n <= iScatt.nMax; j += 2 * n + 1, ++n) {
-    rotated.col(0).segment(j, 2 * n + 1) /= std::sqrt((n * (n + 1)) / 2);
-    rotated.col(1).segment(j, 2 * n + 1) /= -std::sqrt((n * (n + 1)) / 2);
-  }
+  // There is no n=0 term at this juncture
+  auto normalization = const_cast<Eigen::MatrixBase<T2> &>(work).block(1, 0, in_rows, 2);
+  normalization = input.array() * normalization_.topRows(in_rows);
+
+  // Then we apply the rotation - without n=0 term
+  auto rotated = const_cast<Eigen::MatrixBase<T2> &>(work).rightCols(2);
+  rotation.transpose(normalization, rotated.middleRows(1, in_rows));
 
   // Then perform co-axial translation - this may create n=0 term
-  auto ztrans = const_cast<Eigen::MatrixBase<T2> &>(work).rightCols(2);
+  auto ztrans = const_cast<Eigen::MatrixBase<T2> &>(work).leftCols(2);
   translation(rotated, ztrans);
 
   // Then apply field-coaxial-tranlation transform thing - n=0 term may be used to create n=1 term.
@@ -231,15 +238,12 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
   rotation_coaxial_decomposition(wavenumber_, tz, ztrans, field_translated);
 
   // Rotate back - remove n=0 term since it is zero
-  auto unrotated = const_cast<Eigen::MatrixBase<T2> &>(work).block(1, 2, out_rows, 2);
+  auto unrotated = const_cast<Eigen::MatrixBase<T2> &>(work).block(1, 0, out_rows, 2);
   rotation.conjugate(field_translated.middleRows(1, out_rows), unrotated);
 
   // Add normalization coming from ???
   // But appears when comparing to original calculation
-  for(t_int j(0), n(1); n <= oScatt.nMax; j += 2 * n + 1, ++n) {
-    unrotated.col(0).segment(j, 2 * n + 1) *= std::sqrt((n * (n + 1)) / 2);
-    unrotated.col(1).segment(j, 2 * n + 1) *= -std::sqrt((n * (n + 1)) / 2);
-  }
+  unrotated.array() /= normalization_.topRows(out_rows);
 
   // Finally, add back into output vector
   const_cast<Eigen::MatrixBase<T1> &>(out) -= unrotated;

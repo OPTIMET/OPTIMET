@@ -104,6 +104,21 @@ FastMatrixMultiply::compute_mie_coefficients(ElectroMagnetic const &background, 
   return result;
 }
 
+Eigen::Array<t_real, Eigen::Dynamic, 2>
+FastMatrixMultiply::compute_normalization(std::vector<Scatterer> const &scatterers) {
+  auto const cmp = [](Scatterer const &a, Scatterer const &b) { return a.nMax < b.nMax; };
+  auto const nMax = std::max_element(scatterers.begin(), scatterers.end(), cmp)->nMax + nplus;
+  Eigen::Array<t_real, Eigen::Dynamic, 2> result(nfunctions(nMax), 2);
+  for(t_int n(1), i(0); n <= nMax; ++n) {
+    result.col(0).segment(i, 2 * n + 1).fill(1e0 / std::sqrt((n * (n + 1)) / 2));
+    result.col(1).segment(i, 2 * n + 1).fill(-1e0 / std::sqrt((n * (n + 1)) / 2));
+    for(t_int m(-n); m <= n; ++m, ++i)
+      if(m > 0 and m % 2 == 1)
+        result.row(i) *= -1;
+  }
+  return result;
+}
+
 void FastMatrixMultiply::operator()(Vector<t_complex> const &in, Vector<t_complex> &out) const {
   auto const in_offset =
       global_indices_[incident_range_.second] - global_indices_[incident_range_.first];
