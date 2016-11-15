@@ -204,43 +204,4 @@ Vector<t_complex> FastMatrixMultiply::operator()(Vector<t_complex> const &in) co
   return result;
 }
 
-Matrix<t_complex> field_coefficients(t_real wavenumber, Vector<t_complex> const &coeffs,
-                                     std::vector<Scatterer> const &objects) {
-  Matrix<t_complex> results(coeffs.size() / 2, 6);
-  t_int row(0);
-  for(auto const &object : objects) {
-    auto const N = object.nMax;
-    auto const size = N * (N + 2);
-    auto qcoeffs = coeffs.segment(2 * row, 2 * size);
-    auto qout = results.middleRows(row, size);
-    field_coefficients(wavenumber, qcoeffs, qout);
-    row += size;
-  }
-  return results;
-}
-
-Fields::Result Fields::operator()(Position const &position) const {
-  t_int row(0);
-  for(auto const &object : objects) {
-    auto const N = 2 * object.nMax * (object.nMax + 2);
-    auto const r = position - object.vR.toEigenCartesian();
-    if(r.stableNorm() <= object.radius)
-      return single_sphere(r, object.nMax, inside.middleRows(row, N));
-    row += N;
-  }
-  return compute_outside(position);
-}
-
-Fields::Result Fields::compute_outside(Position const &position) const {
-  Result result = Result::Zero();
-  t_int row(0);
-  for(auto const &object : objects) {
-    auto const N = 2 * object.nMax * (object.nMax + 2);
-    auto const r = position - object.vR.toEigenCartesian();
-    result += single_sphere(r, object.nMax, outside.middleRows(row, N));
-    row += N;
-  }
-  return result;
-};
-
 } // optimet namespace

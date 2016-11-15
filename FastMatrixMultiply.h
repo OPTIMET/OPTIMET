@@ -11,54 +11,6 @@
 #include <vector>
 
 namespace optimet {
-//! Electric and Magnetic field coefficients, from scalar potentials of a single particle
-template <class T0, class T1>
-void field_coefficients(t_real wavenumber, Eigen::MatrixBase<T0> const &coeffs,
-                        Eigen::MatrixBase<T1> const &out);
-
-//! Computes fields at a given position
-class Fields {
-public:
-  //! Position in cartesian coordinates
-  typedef Eigen::Matrix<t_real, 3, 1> Position;
-  //! First column holds E, second H
-  typedef Eigen::Matrix<t_complex, 3, 2> Result;
-
-  template <class T>
-  Fields(std::vector<Scatterer> const &objects, t_real wavenumber, ElectroMagnetic const &bground,
-         Eigen::DenseBase<T> const &coeffs)
-      : outside(coeffs.size(), 6), inside(coeffs.size(), 6), objects(objects),
-        wavenumber(wavenumber) {
-    auto const coutside = convertIndirect(coeffs, wavenumber * constant::c, bground, objects);
-    auto const cinside = convertInternal(outside, wavenumber * constant::c, bground, objects);
-
-    t_int row(0);
-    for(auto const &object : objects) {
-      auto const N = 2 * object.nMax * (object.nMax + 2);
-      field_coefficients(wavenumber, coutside.segment(row, N), outside.middleRows(row, N));
-      field_coefficients(wavenumber, cinside.segment(row, N), inside.middleRows(row, N));
-      row += N;
-    }
-  }
-
-  //! Computes field at given position
-  Result operator()(Position const &position) const;
-
-protected:
-  Matrix<t_complex> outside;
-  Matrix<t_complex> inside;
-  std::vector<Scatterer> objects;
-  t_real wavenumber;
-  Result compute_outside(Position const &position) const;
-  template <class T>
-  Result
-  single_sphere(Position const &position, t_int nMax, Eigen::MatrixBase<T> const &coeffs) const;
-};
-
-//! Returns function to compute the fields at a given position
-std::function<Eigen::Matrix<t_complex, 3, 2>(Eigen::Matrix<t_real, 3, 1> const &)>
-fields(t_real wavenumber, Vector<t_complex> const &coeffs, std::vector<Scatterer> const &objects);
-
 //! \brief Fast multiplication of effective incident field by transfer matrix
 //! \details The multiplication occurs for a set of scattering particles receiving the EM
 //! radiation
@@ -247,82 +199,6 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
 
   // Finally, add back into output vector
   const_cast<Eigen::MatrixBase<T1> &>(out) -= unrotated;
-}
-
-template <class T0, class T1>
-void field_coefficients(t_real wavenumber, Eigen::MatrixBase<T0> const &coeffs,
-                        Eigen::MatrixBase<T1> const &out) {
-  using coefficient::a;
-  using coefficient::b;
-  using coefficient::c;
-
-  assert(coeffs.size() % 2 == 0);
-  t_int const N = std::lround(std::sqrt(coeffs.size() / 2 + 1)) - 1;
-  assert(N * (N + 2) == coeffs.size());
-  auto const index = [](t_int n, t_int m) { return std::abs(m) > n ? 0 : n * (n + 1) + m - 1; };
-  assert(index(0, 0) == 0);
-  assert(index(N, N) + 1 == coeffs.rows());
-
-  const_cast<Eigen::MatrixBase<T1> &>(out).resize(coeffs.rows(), 6);
-  auto E = const_cast<Eigen::MatrixBase<T1> &>(out).leftCols(3);
-  auto H = const_cast<Eigen::MatrixBase<T1> &>(out).rightCols(3);
-
-#define OPTIMET_X(PHI, PSI)                                                                        \
-  t_complex(0, 0.5) * (c(n, m - 1) * PHI(n, m - 1) + c(n, m) * PHI(n, m)) -                        \
-      wavenumber / 2 * ((n + 2) * b(n + 1, m - 1) * PSI(n + 1, m - 1) +                            \
-                        (n - 1) * b(n, -m) * PSI(n - 1, m - 1) +                                   \
-                        (n + 2) * b(n + 1, -m - 1) * PSI(n + 1, m + 1) +                           \
-                        (n - 1) * b(n, m) * PSI(n - 1, m + 1));
-#define OPTIMET_Y(PHI, PSI)                                                                        \
-  -0.5 * (-c(n, m - 1) * PHI(n, m - 1) + c(n, m) * PHI(n, m)) +                                    \
-      wavenumber *t_complex(0, 0.5) * ((n + 2) * b(n + 1, m - 1) * PSI(n + 1, m - 1) +             \
-                                       (n - 1) * b(n, -m) * PSI(n - 1, m - 1) -                    \
-                                       (n + 2) * b(n + 1, -m - 1) * PSI(n + 1, m + 1) -            \
-                                       (n - 1) * b(n, m) * PSI(n - 1, m + 1));
-#define OPTIMET_Z(PHI, PSI)                                                                        \
-  t_complex(0, -m) * PHI(n, m) +                                                                   \
-      wavenumber *((n + 2) * a(n, m) * PSI(n + 1, m) + (n - 1) * a(n - 1, m) * PSI(n - 1, m));
-
-  auto const phi = [&coeffs](t_int n, t_int m) {
-    return std::abs(m) > n ? 0 : coeffs(n * (n + 1) + m - 1);
-  };
-  auto const psi = [&coeffs, &N](t_int n, t_int m) {
-    return std::abs(m) > n ? 0 : coeffs(n * (n + 1) + m - 1 + N * (N + 2));
-  };
-  t_complex const factor(0, 1 / (wavenumber * constant::c * constant::mu0));
-  auto const factor_psi = factor * std::real(wavenumber * std::conj(wavenumber));
-  auto const phiH = [&psi, factor_psi](t_int n, t_int m) { return factor_psi * psi(n, m); };
-  auto const psiH = [&phi, factor](t_int n, t_int m) { return factor * phi(n, m); };
-
-  for(t_int n(1), i(0); n <= N; ++n)
-    for(t_int m(-n); m <= n; ++m, ++i) {
-      E(i, 0) = OPTIMET_X(phi, psi);
-      E(i, 1) = OPTIMET_Y(phi, psi);
-      E(i, 2) = OPTIMET_Z(phi, psi);
-      H(i, 0) = OPTIMET_X(phiH, psiH);
-      H(i, 1) = OPTIMET_Y(phiH, psiH);
-      H(i, 2) = OPTIMET_Z(phiH, psiH);
-    }
-}
-
-template <class T>
-Fields::Result Fields::single_sphere(Position const &position, t_int nMax,
-                                     Eigen::MatrixBase<T> const &coeffs) const {
-  Result result = Result::Zero();
-  Eigen::Matrix<t_real, 3, 1> const spherical(
-      position.stableNorm(), // r
-      std::atan2(std::sqrt(position[0] * position[0] + position[1] * position[1]),
-                 position[2]), // phi
-      std::atan2(position[1], position[0]));
-  for(t_int n(1), row(0); n <= nMax; ++n)
-    for(t_int m(-n); m <= n; ++m, ++row) {
-      auto const value =
-          std::get<0>(optimet::bessel<Hankel1>(spherical(0) * wavenumber, n)).back() *
-          boost::math::spherical_harmonic(n, m, spherical(1), spherical(2));
-      result.col(0) += value * coeffs.row(row).head(3);
-      result.col(1) += value * coeffs.row(row).tail(3);
-    }
-  return result;
 }
 }
 
