@@ -45,8 +45,10 @@ FastMatrixMultiply::compute_rotations(std::vector<Scatterer> const &scatterers, 
     auto const out_end = scatterers.cbegin() + translate.second;
     auto const x0 = in_begin->vR.toEigenCartesian();
     for(; out_begin != out_end; ++out_begin) {
-      if(out_begin == in_begin)
+      if(out_begin == in_begin) {
+        result.emplace_back(0, 0, 0, 1);
         continue;
+      }
       auto const a2 = (out_begin->vR.toEigenCartesian() - x0).normalized().eval();
       auto const theta = std::acos(a2(2));
       auto const phi = std::atan2(a2(1), a2(0));
@@ -70,8 +72,10 @@ FastMatrixMultiply::compute_coaxial_translations(t_complex wavenumber,
     auto const out_end = scatterers.cbegin() + translate.second;
     auto const Orad = in_begin->vR.toEigenCartesian();
     for(; out_begin != out_end; ++out_begin) {
-      if(out_begin == in_begin)
+      if(out_begin == in_begin) {
+        result.push_back(CachedCoAxialRecurrence(0, 10, false).functor(1));
         continue;
+      }
       auto const Ononrad = out_begin->vR.toEigenCartesian();
       CachedCoAxialRecurrence tca((Orad - Ononrad).stableNorm(), wavenumber, false);
       result.push_back(tca.functor(std::max(in_begin->nMax, out_begin->nMax) + nplus));
@@ -142,6 +146,17 @@ void FastMatrixMultiply::operator()(Vector<t_complex> const &in, Vector<t_comple
   translation(mie_coefficients_.array() * in.array(), out);
 }
 
+t_int FastMatrixMultiply::max_nmax() const {
+  auto const cmp_nmax = [](Scatterer const &a, Scatterer const &b) { return a.nMax < b.nMax; };
+  auto const in_max = std::max_element(scatterers_.cbegin() + incident_range_.first,
+                                       scatterers_.cbegin() + incident_range_.second, cmp_nmax)
+                          ->nMax;
+  auto const out_max = std::max_element(scatterers_.cbegin() + translate_range_.first,
+                                        scatterers_.cbegin() + translate_range_.second, cmp_nmax)
+                           ->nMax;
+  return std::max(in_max, out_max) + nplus;
+}
+
 void FastMatrixMultiply::translation(Vector<t_complex> const &input, Vector<t_complex> &out) const {
 
   auto const in_size =
@@ -156,41 +171,25 @@ void FastMatrixMultiply::translation(Vector<t_complex> const &input, Vector<t_co
   typedef Eigen::Matrix<t_complex, Eigen::Dynamic, 2> Matrixified;
 
   // create a work matrix with appropriate size
-  auto in_begin = scatterers_.cbegin() + incident_range_.first;
-  auto const in_end = scatterers_.cbegin() + incident_range_.second;
-  auto const cmp_nmax = [](Scatterer const &a, Scatterer const &b) { return a.nMax < b.nMax; };
-  auto const max_nMax =
-      std::max(std::max_element(in_begin, in_end, cmp_nmax)->nMax,
-               std::max_element(scatterers_.begin() + translate_range_.first,
-                                scatterers_.begin() + translate_range_.second, cmp_nmax)
-                   ->nMax) +
-      nplus;
-  Eigen::Matrix<t_complex, Eigen::Dynamic, 4> work(nfunctions(max_nMax) + 1, 4);
+  Eigen::Matrix<t_complex, Eigen::Dynamic, 4> work(nfunctions(max_nmax()) + 1, 4);
 
   // Adds left-hand-side of Eq 106 in Gumerov, Duraiswami 2007
   // This is done one at a time for each scatterer -> translated location pair
   // e.g. for each scatterer and particle on which the EM field impinges.
-  auto i_rotation = rotations_.cbegin();
-  auto i_translation = coaxial_translations_.cbegin();
-  for(t_int i(0); in_begin != in_end; ++in_begin) {
-    auto const in_rows = nfunctions(in_begin->nMax);
+  auto const ntranslates = translate_range_.second - translate_range_.first;
+  auto const nincidents = incident_range_.second - incident_range_.first;
+  for(t_int i(0), iparticle(0); iparticle < nincidents; ++iparticle) {
+    auto const in_rows = nfunctions(incident_nmax(iparticle));
     Eigen::Map<const Matrixified> const incident(input.data() + i, in_rows, 2);
-    auto out_begin = scatterers_.cbegin() + translate_range_.first;
-    auto const out_end = scatterers_.cbegin() + translate_range_.second;
-    for(t_int j(0); out_begin != out_end; ++out_begin) {
-      auto const out_rows = nfunctions(out_begin->nMax);
+    for(t_int j(0), jparticle(0); jparticle < ntranslates; ++jparticle) {
+      auto const out_rows = nfunctions(translate_nmax(jparticle));
       // no self-interaction
-      if(in_begin == out_begin) {
-        j += 2 * out_rows;
-        continue;
+      if(incident_range_.first + iparticle != translate_range_.first + jparticle) {
+        // add field from j to i
+        Eigen::Map<Matrixified> outgoing(out.data() + j, out_rows, 2);
+        remove_translation(incident, outgoing, work, iparticle, jparticle);
       }
-      // add field from j to i
-      Eigen::Map<Matrixified> outgoing(out.data() + j, out_rows, 2);
-      remove_translation(incident, *in_begin, *out_begin, *i_rotation, *i_translation, outgoing,
-                         work);
       j += 2 * out_rows;
-      ++i_rotation;
-      ++i_translation;
     }
     i += 2 * in_rows;
   }

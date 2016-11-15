@@ -78,22 +78,6 @@ public:
   //! \brief Applies fast matrix multiplication to effective incident field
   Vector<t_complex> operator*(Vector<t_complex> const &in) const { return operator()(in); }
 
-  //! \brief Adds co-axial rotation/translation for a given particle pair
-  //! \details the coefficients from input are projected from iScatt to oScatt using the given
-  //! rotation translation functors. The result are added to the out-going coefficients.
-  template <class T0, class T1>
-  void remove_translation(Eigen::MatrixBase<T0> const &input, Scatterer const &iScatt,
-                          Scatterer const &oScatt, Rotation const &rotation,
-                          CachedCoAxialRecurrence::Functor const &translation,
-                          Eigen::MatrixBase<T1> const &out) const;
-
-  //! Adds co-axial rotation/translation for a given particle pair
-  template <class T0, class T1, class T2>
-  void
-  remove_translation(Eigen::MatrixBase<T0> const &input, Scatterer const &iScatt,
-                     Scatterer const &oScatt, Rotation const &rotation,
-                     CachedCoAxialRecurrence::Functor const &translation,
-                     Eigen::MatrixBase<T1> const &out, Eigen::MatrixBase<T2> const &work) const;
 
   //! Apply translation to each particle pair
   void translation(Vector<t_complex> const &in, Vector<t_complex> &out) const;
@@ -131,41 +115,48 @@ protected:
 
   //! Number of basis function for given nmax
   static constexpr t_int nfunctions(t_int nmax) { return nmax * (nmax + 2); }
+
+  //! Max nmax across incident and translate range
+  t_int max_nmax() const;
+
+  //! nMax for given incident particle
+  t_int incident_nmax(t_uint i) const { return scatterers_[incident_range_.first + i].nMax; }
+  //! nMax for given translate particle
+  t_int translate_nmax(t_uint j) const { return scatterers_[translate_range_.first + j].nMax; }
+
+  //! Coaxial translation operation for particle pair (i, j)
+  CachedCoAxialRecurrence::Functor const &coaxial(t_uint i, t_uint j) const {
+    return coaxial_translations_[i * (translate_range_.second - translate_range_.first) + j];
+  }
+  //! Rotation operation for particle pair (i, j)
+  Rotation const &rotation(t_uint i, t_uint j) const {
+    return rotations_[i * (translate_range_.second - translate_range_.first) + j];
+  }
+  t_real tz(t_uint i, t_uint j) const {
+    return (scatterers_[translate_range_.first + j].vR.toEigenCartesian() -
+            scatterers_[incident_range_.first + i].vR.toEigenCartesian())
+        .stableNorm();
+  }
+
+  //! Adds co-axial rotation/translation for a given particle pair
+  template <class T0, class T1, class T2>
+  void remove_translation(Eigen::MatrixBase<T0> const &input, Eigen::MatrixBase<T1> const &out,
+                          Eigen::MatrixBase<T2> const &work, t_uint i, t_uint j) const;
 };
-
-template <class T0, class T1>
-void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
-                                            Scatterer const &iScatt, Scatterer const &oScatt,
-                                            Rotation const &rotation,
-                                            CachedCoAxialRecurrence::Functor const &translation,
-                                            Eigen::MatrixBase<T1> const &out) const {
-  if(input.cols() != 2)
-    throw std::runtime_error("input should have two columns");
-  if(out.cols() != 2)
-    throw std::runtime_error("output should have two columns");
-
-  auto const nmax = std::max(iScatt.nMax, oScatt.nMax) + nplus;
-  Eigen::Matrix<t_complex, Eigen::Dynamic, 4> work(nfunctions(nmax) + 1, 4);
-  FastMatrixMultiply::remove_translation(input, iScatt, oScatt, rotation, translation, out, work);
-}
 
 template <class T0, class T1, class T2>
 void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
-                                            Scatterer const &iScatt, Scatterer const &oScatt,
-                                            Rotation const &rotation,
-                                            CachedCoAxialRecurrence::Functor const &translation,
                                             Eigen::MatrixBase<T1> const &out,
-                                            Eigen::MatrixBase<T2> const &work) const {
-  auto const in_rows = nfunctions(iScatt.nMax);
-  auto const out_rows = nfunctions(oScatt.nMax);
+                                            Eigen::MatrixBase<T2> const &work, t_uint i,
+                                            t_uint j) const {
+  auto const in_rows = input.rows();
+  auto const out_rows = out.rows();
 
-  auto const max_rows = nfunctions(std::max(iScatt.nMax, oScatt.nMax) + nplus);
+  auto const max_rows =
+      nfunctions(std::lround(std::sqrt(std::max(in_rows, out_rows) + 1)) - 1 + nplus);
   if(work.rows() <= max_rows or work.cols() != 4)
     const_cast<Eigen::MatrixBase<T2> &>(work).resize(max_rows + 1, 4);
   const_cast<Eigen::MatrixBase<T2> &>(work).fill(0);
-
-  assert((iScatt.vR.toEigenCartesian() - oScatt.vR.toEigenCartesian()).stableNorm() >=
-         iScatt.radius + oScatt.radius);
 
   // First, we take into account Gumerov's very special normalization and notations
   // It adds +/-1 factors, as well as normalization constants
@@ -177,21 +168,20 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
 
   // Then we apply the rotation - without n=0 term
   auto rotated = const_cast<Eigen::MatrixBase<T2> &>(work).rightCols(2);
-  rotation.transpose(normalization, rotated.middleRows(1, in_rows));
+  rotation(i, j).transpose(normalization, rotated.middleRows(1, in_rows));
 
   // Then perform co-axial translation - this may create n=0 term
   auto ztrans = const_cast<Eigen::MatrixBase<T2> &>(work).leftCols(2);
-  translation(rotated, ztrans);
+  coaxial(i, j)(rotated, ztrans);
 
   // Then apply field-coaxial-tranlation transform thing - n=0 term may be used to create n=1 term.
   // n=0 term itself becomes zero (thereby choosing a gauge, apparently)
-  auto const tz = (oScatt.vR.toEigenCartesian() - iScatt.vR.toEigenCartesian()).stableNorm();
   auto &field_translated = rotated;
-  rotation_coaxial_decomposition(wavenumber_, tz, ztrans, field_translated);
+  rotation_coaxial_decomposition(wavenumber_, tz(i, j), ztrans, field_translated);
 
   // Rotate back - remove n=0 term since it is zero
   auto unrotated = const_cast<Eigen::MatrixBase<T2> &>(work).block(1, 0, out_rows, 2);
-  rotation.conjugate(field_translated.middleRows(1, out_rows), unrotated);
+  rotation(i, j).conjugate(field_translated.middleRows(1, out_rows), unrotated);
 
   // Add normalization coming from ???
   // But appears when comparing to original calculation
