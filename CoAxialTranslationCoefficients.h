@@ -3,6 +3,7 @@
 #include <array>
 #include <map>
 #include <type_traits>
+#include <iostream>
 #include <vector>
 
 #include "Spherical.h"
@@ -14,12 +15,22 @@ public:
   public:
     //! Creates from coefficients that are moved here
     Functor(t_int N, std::vector<t_complex> &&coeffs) : N(N), coefficients(std::move(coeffs)) {}
+    //! Applies direct functor
     template <class T0, class T1>
     typename std::enable_if<std::is_same<typename T0::Scalar, t_complex>::value>::type
     operator()(Eigen::MatrixBase<T0> const &input, Eigen::MatrixBase<T1> const &out) const;
+    //! Applies direct functor
     template <class T>
     typename std::conditional<T::ColsAtCompileTime == 1, Vector<t_complex>, Matrix<t_complex>>::type
     operator()(Eigen::MatrixBase<T> const &input) const;
+    //! Applies transpose functor
+    template <class T0, class T1>
+    typename std::enable_if<std::is_same<typename T0::Scalar, t_complex>::value>::type
+    transpose(Eigen::MatrixBase<T0> const &input, Eigen::MatrixBase<T1> const &out) const;
+    //! Applies transpose functor
+    template <class T>
+    typename std::conditional<T::ColsAtCompileTime == 1, Vector<t_complex>, Matrix<t_complex>>::type
+    transpose(Eigen::MatrixBase<T> const &input) const;
 
   private:
     t_int N;
@@ -140,8 +151,38 @@ operator()(Eigen::MatrixBase<T0> const &input, Eigen::MatrixBase<T1> const &out)
       for(auto l = std::abs(m); l <= N; ++l, ++i_coeff) {
         assert(i_coeff != coefficients.end());
         auto const i_out = index(l, m);
-        if(i_out >= 0)
+        assert(i < input.rows());
+        if(i_out >= 0 and i_out < out.rows())
           const_cast<Eigen::MatrixBase<T1> &>(out).row(i_out) += (*i_coeff) * input.row(i);
+      }
+}
+
+template <class T0, class T1>
+typename std::enable_if<std::is_same<typename T0::Scalar, t_complex>::value>::type
+CachedCoAxialRecurrence::Functor::transpose(Eigen::MatrixBase<T0> const &input,
+                                            Eigen::MatrixBase<T1> const &out) const {
+  auto const nr = input.rows();
+  auto const with_n0 = std::abs(std::sqrt(nr) - std::lround(std::sqrt(nr))) <
+                       std::abs(std::sqrt(nr + 1) - std::lround(std::sqrt(nr + 1)));
+  t_int const N = std::lround(std::sqrt(with_n0 ? nr : nr + 1)) - 1;
+  assert(N <= this->N);
+  assert((with_n0 and (N + 1) * (N + 1) == input.rows()) or N * (N + 2) == input.rows());
+  int const min_n = with_n0 ? 0 : 1;
+  auto const index = with_n0 ? [](t_int n, t_int m) { return n * (n + 1) + m; } :
+                               [](t_int n, t_int m) { return n * (n + 1) + m - 1; };
+  assert(index(min_n, -min_n) == 0);
+  assert(index(N, N) + 1 == input.rows());
+  const_cast<Eigen::MatrixBase<T1> &>(out).resize(input.rows(), input.cols());
+  const_cast<Eigen::MatrixBase<T1> &>(out).fill(0);
+  auto i_coeff = with_n0 ? coefficients.begin() : (coefficients.begin() + N + 1);
+  for(auto n = min_n, i = 0; n <= N; ++n)
+    for(auto m = -n; m <= n; ++m, ++i)
+      for(auto l = std::abs(m); l <= N; ++l, ++i_coeff) {
+        assert(i_coeff != coefficients.end());
+        assert(i < out.rows());
+        auto const i_in = index(l, m);
+        if(i_in >= 0 and i_in < input.rows())
+          const_cast<Eigen::MatrixBase<T1> &>(out).row(i) += (*i_coeff) * input.row(i_in);
       }
 }
 
@@ -152,6 +193,16 @@ CachedCoAxialRecurrence::Functor::operator()(Eigen::MatrixBase<T> const &input) 
                                     Matrix<t_complex>>::type Out;
   Out out(input.rows(), input.cols());
   operator()(input, out);
+  return out;
+}
+
+template <class T>
+typename std::conditional<T::ColsAtCompileTime == 1, Vector<t_complex>, Matrix<t_complex>>::type
+CachedCoAxialRecurrence::Functor::transpose(Eigen::MatrixBase<T> const &input) const {
+  typedef typename std::conditional<T::ColsAtCompileTime == 1, Vector<t_complex>,
+          Matrix<t_complex>>::type Out;
+  Out out(input.rows(), input.cols());
+  transpose(input, out);
   return out;
 }
 }

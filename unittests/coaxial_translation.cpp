@@ -420,7 +420,6 @@ TEST_CASE("Translation of two spheres") {
   Eigen::Matrix<t_real, 3, 1> const Mnonrad = direction * dist;
   Eigen::Matrix<t_real, 3, 1> const Mrad = Ononrad - Orad + Mnonrad;
 
-
   // compute input field
   t_complex pot_rad = 0e0, pot_nonrad = 0e0, nonconv = 0e0;
   for(t_int n(0), i(0); n <= N; ++n)
@@ -442,7 +441,7 @@ TEST_CASE("Translation of two spheres") {
       for(t_int m(-n); m <= n; ++m, ++i) {
         for(t_int l(std::abs(m)); l <= N; ++l)
           nonconv +=
-            tca(n, m, l) * nonradiating_basis(1e0 / wavelength, Mnonrad, l, m) * potential(i);
+              tca(n, m, l) * nonradiating_basis(1e0 / wavelength, Mnonrad, l, m) * potential(i);
       }
     CHECK(nonconv.real() == Approx(pot_rad.real()).epsilon(std::abs(pot_rad.real() * 1e-4)));
     CHECK(nonconv.imag() == Approx(pot_rad.imag()).epsilon(std::abs(pot_rad.imag() * 1e-4)));
@@ -474,4 +473,32 @@ TEST_CASE("Translation of two spheres") {
 
     CHECK(functor(potential.tail(potential.size() - 1)).isApprox(out.tail(out.size() - 1)));
   }
+}
+
+TEST_CASE("Transpose operation") {
+  auto const N = 10;
+  // Only lowest components are non-zero
+  // Higher order components should approach-zero in practical applications
+  // This replicates that in a simple way
+  auto const wavelength = 1000.e-9;
+  std::uniform_real_distribution<> distance_distribution(0, wavelength * 2e0);
+  auto const radius_rad = distance_distribution(*mersenne) + wavelength * 0.1;
+  auto const radius_nonrad = radius_rad * 1.1;
+  auto const separation = 0e0;
+
+  std::uniform_real_distribution<> inner_distribution(0, radius_nonrad);
+  auto const Oz = distance_distribution(*mersenne) - wavelength;
+  Eigen::Matrix<t_real, 3, 1> const Orad(0, 0, Oz);
+  Eigen::Matrix<t_real, 3, 1> const Ononrad(0, 0, radius_rad + radius_nonrad + separation + Oz);
+
+  auto const functor =
+      CachedCoAxialRecurrence((Orad - Ononrad).stableNorm(), 1.0 / wavelength, false).functor(N);
+  auto const size = N * (N + 2);
+
+  Matrix<t_complex> actual(size, size), expected(size, size);
+  for(t_int i(0); i < size; ++i) {
+    expected.col(i) = functor(Vector<t_complex>::Unit(size, i));
+    actual.col(i) = functor.transpose(Vector<t_complex>::Unit(size, i));
+  }
+  CHECK(actual.transpose().isApprox(expected));
 }
