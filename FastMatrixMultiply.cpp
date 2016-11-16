@@ -146,6 +146,31 @@ void FastMatrixMultiply::operator()(Vector<t_complex> const &in, Vector<t_comple
   translation(mie_coefficients_.array() * in.array(), out);
 }
 
+void FastMatrixMultiply::transpose(Vector<t_complex> const &in, Vector<t_complex> &out) const {
+  auto const out_offset =
+      global_indices_[incident_range_.second] - global_indices_[incident_range_.first];
+  auto const in_offset =
+      global_indices_[translate_range_.second] - global_indices_[translate_range_.first];
+  if(in.size() != in_offset)
+    throw std::runtime_error("Incorrect incident vector size");
+  out.resize(out_offset);
+  out.fill(0);
+
+  // Adds right-hand-side of Eq 106 in Gumerov, Duraiswami 2007
+  translation_transpose(in, out);
+  // Adds mie coefficient last when transposing
+  out.array() *= mie_coefficients_.array();
+
+  // Adds identity component (left-hand-side of Eq 106 in Gumerov, Duraiswami 2007)
+  if(std::max(translate_range_.first, incident_range_.first) <
+     std::min(translate_range_.second, incident_range_.second)) {
+    auto const start = global_indices_[std::max(translate_range_.first, incident_range_.first)];
+    auto const end = global_indices_[std::min(translate_range_.second, incident_range_.second)];
+    auto const n = end - start;
+    out.segment(start - translate_range_.first, n) += in.segment(start - incident_range_.first, n);
+  }
+}
+
 t_int FastMatrixMultiply::max_nmax() const {
   auto const cmp_nmax = [](Scatterer const &a, Scatterer const &b) { return a.nMax < b.nMax; };
   auto const in_max = std::max_element(scatterers_.cbegin() + incident_range_.first,
@@ -158,16 +183,6 @@ t_int FastMatrixMultiply::max_nmax() const {
 }
 
 void FastMatrixMultiply::translation(Vector<t_complex> const &input, Vector<t_complex> &out) const {
-
-  auto const in_size =
-      global_indices_[incident_range_.second] - global_indices_[incident_range_.first];
-  auto const out_size =
-      global_indices_[translate_range_.second] - global_indices_[translate_range_.first];
-  if(input.size() != in_size)
-    throw std::runtime_error("Incorrect incident vector size");
-  if(out.size() != out_size)
-    throw std::runtime_error("Incorrect outgoing vector size");
-
   typedef Eigen::Matrix<t_complex, Eigen::Dynamic, 2> Matrixified;
 
   // create a work matrix with appropriate size
@@ -195,11 +210,48 @@ void FastMatrixMultiply::translation(Vector<t_complex> const &input, Vector<t_co
   }
 }
 
+void FastMatrixMultiply::translation_transpose(Vector<t_complex> const &input,
+                                               Vector<t_complex> &out) const {
+  typedef Eigen::Matrix<t_complex, Eigen::Dynamic, 2> Matrixified;
+
+  // create a work matrix with appropriate size
+  Eigen::Matrix<t_complex, Eigen::Dynamic, 4> work(nfunctions(max_nmax()) + 1, 4);
+
+  // Adds left-hand-side of Eq 106 in Gumerov, Duraiswami 2007
+  // This is done one at a time for each scatterer -> translated location pair
+  // e.g. for each scatterer and particle on which the EM field impinges.
+  auto const ntranslates = translate_range_.second - translate_range_.first;
+  auto const nincidents = incident_range_.second - incident_range_.first;
+  for(t_int i(0), iparticle(0); iparticle < nincidents; ++iparticle) {
+    auto const in_rows = nfunctions(incident_nmax(iparticle));
+    Eigen::Map<Matrixified> const incident(out.data() + i, in_rows, 2);
+    for(t_int j(0), jparticle(0); jparticle < ntranslates; ++jparticle) {
+      auto const out_rows = nfunctions(translate_nmax(jparticle));
+      // no self-interaction
+      if(incident_range_.first + iparticle != translate_range_.first + jparticle) {
+        // add field from j to i
+        Eigen::Map<const Matrixified> translate(input.data() + j, out_rows, 2);
+        remove_translation_transpose(translate, incident, work, iparticle, jparticle);
+      }
+      j += 2 * out_rows;
+    }
+    i += 2 * in_rows;
+  }
+}
+
 Vector<t_complex> FastMatrixMultiply::operator()(Vector<t_complex> const &in) const {
   auto const offset =
       global_indices_[translate_range_.second] - global_indices_[translate_range_.first];
   Vector<t_complex> result(offset * 2);
   operator()(in, result);
+  return result;
+}
+
+Vector<t_complex> FastMatrixMultiply::transpose(Vector<t_complex> const &in) const {
+  auto const offset =
+      global_indices_[incident_range_.second] - global_indices_[incident_range_.first];
+  Vector<t_complex> result(offset * 2);
+  transpose(in, result);
   return result;
 }
 

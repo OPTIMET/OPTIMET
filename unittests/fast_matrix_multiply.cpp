@@ -18,7 +18,7 @@ public:
 
 ElectroMagnetic const elmag{13.1, 1.0};
 auto const wavenumber = 2 * optimet::constant::pi / (1200 * 1e-9);
-auto const nHarmonics = 8;
+auto const nHarmonics = 1;
 auto const radius = 500e-9;
 
 TEST_CASE("Single object") {
@@ -36,7 +36,7 @@ TEST_CASE("Single object") {
     CHECK(fmm.mie_coefficients().isApprox(
         scatterers.front().getTLocal(wavenumber * constant::c, ElectroMagnetic())));
 
-    CHECK(fmm.rotations().size() == 0);
+    CHECK(fmm.rotations().size() == 1);
   }
 
   SECTION("Matrix is identity") {
@@ -71,16 +71,16 @@ TEST_CASE("Two objects") {
     auto const T1 = scatterers.back().getTLocal(wavenumber * constant::c, ElectroMagnetic());
     CHECK(fmm.mie_coefficients().segment(n0, n1).isApprox(T1));
 
-    CHECK(fmm.rotations().size() == 2);
-    auto const r0 = fmm.rotations().front().basis_rotation();
-    auto const r1 = fmm.rotations().back().basis_rotation();
+    CHECK(fmm.rotations().size() == 4);
+    auto const r0 = fmm.rotations()[1].basis_rotation();
+    auto const r1 = fmm.rotations()[2].basis_rotation();
     Eigen::Matrix<t_real, 3, 1> const x(0, 0, 1);
     auto const theta = std::acos(-direction(2));
     auto const phi = std::atan2(-direction(1), -direction(0));
-    CHECK(fmm.rotations().front().theta() == Approx(std::acos(direction(2))));
-    CHECK(fmm.rotations().back().theta() == Approx(std::acos(-direction(2))));
-    CHECK(fmm.rotations().front().phi() == Approx(std::atan2(direction(1), direction(0))));
-    CHECK(fmm.rotations().back().phi() == Approx(std::atan2(-direction(1), -direction(0))));
+    CHECK(fmm.rotations()[1].theta() == Approx(std::acos(direction(2))));
+    CHECK(fmm.rotations()[2].theta() == Approx(std::acos(-direction(2))));
+    CHECK(fmm.rotations()[1].phi() == Approx(std::atan2(direction(1), direction(0))));
+    CHECK(fmm.rotations()[2].phi() == Approx(std::atan2(-direction(1), -direction(0))));
     CHECK((r0 * x).isApprox(-(r1 * x)));
     CHECK((r0.transpose() * direction).isApprox(x));
     CHECK((r0 * r1.transpose() * r0 * r1.transpose()).isApprox(Matrix<t_real>::Identity(3, 3)));
@@ -142,4 +142,35 @@ TEST_CASE("Standard vs Fast matrix multiply") {
     Vector<t_complex> const actual = fmm * input;
     CHECK(expected.isApprox(actual));
   }
+}
+
+TEST_CASE("Transpose of the fast matrix multiply") {
+  using namespace optimet;
+  auto const radius = 500.0e-9;
+  Eigen::Matrix<t_real, 3, 1> const direction(2, 1, 1); // = Vector<t_real>::Random(3).normalized();
+  Geometry geometry;
+  geometry.pushObject({{0, 0, 0}, elmag, radius, nHarmonics});
+  geometry.pushObject({direction * 3 * radius * 1.500001, elmag, 2 * radius, nHarmonics});
+
+  auto const wavelength = 1490.0e-9;
+  Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
+  SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
+  auto excitation =
+    std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
+  excitation->populate();
+  geometry.update(excitation);
+
+  Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
+  optimet::FastMatrixMultiply fmm(geometry.bground, excitation->omega() / constant::c,
+      geometry.objects);
+
+  auto const size = geometry.objects.size() * nHarmonics * (nHarmonics + 2) * 2;
+  Matrix<t_complex> actual(size, size), expected(size, size);
+  for(t_int i(0); i < size; ++i) {
+    expected.col(i) = fmm(Vector<t_complex>::Unit(size, i));
+    actual.col(i) = fmm.transpose(Vector<t_complex>::Unit(size, i));
+  }
+  CAPTURE(actual.col(1).transpose());
+  CAPTURE(expected.row(1));
+  CHECK(actual.transpose().isApprox(expected));
 }

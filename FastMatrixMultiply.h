@@ -78,9 +78,10 @@ public:
   //! \brief Applies fast matrix multiplication to effective incident field
   Vector<t_complex> operator*(Vector<t_complex> const &in) const { return operator()(in); }
 
-
-  //! Apply translation to each particle pair
-  void translation(Vector<t_complex> const &in, Vector<t_complex> &out) const;
+  //! \brief computes transpose operation
+  void transpose(Vector<t_complex> const &in, Vector<t_complex> &out) const;
+  //! \brief Applies fast matrix multiplication to effective incident field
+  Vector<t_complex> transpose(Vector<t_complex> const &in) const;
 
   //! Normalization factors between Gumerov and Stout
   static Eigen::Array<t_real, Eigen::Dynamic, 2>
@@ -142,6 +143,15 @@ protected:
   template <class T0, class T1, class T2>
   void remove_translation(Eigen::MatrixBase<T0> const &input, Eigen::MatrixBase<T1> const &out,
                           Eigen::MatrixBase<T2> const &work, t_uint i, t_uint j) const;
+  //! Adds co-axial rotation/translation for a given particle pair
+  template <class T0, class T1, class T2>
+  void
+  remove_translation_transpose(Eigen::MatrixBase<T0> const &input, Eigen::MatrixBase<T1> const &out,
+                               Eigen::MatrixBase<T2> const &work, t_uint i, t_uint j) const;
+  //! Apply translation to each particle pair
+  void translation(Vector<t_complex> const &in, Vector<t_complex> &out) const;
+  //! Apply translation to each particle pair
+  void translation_transpose(Vector<t_complex> const &in, Vector<t_complex> &out) const;
 };
 
 template <class T0, class T1, class T2>
@@ -189,6 +199,47 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
 
   // Finally, add back into output vector
   const_cast<Eigen::MatrixBase<T1> &>(out) -= unrotated;
+}
+
+template <class T0, class T1, class T2>
+void FastMatrixMultiply::remove_translation_transpose(Eigen::MatrixBase<T0> const &input,
+                                                      Eigen::MatrixBase<T1> const &out,
+                                                      Eigen::MatrixBase<T2> const &work, t_uint i,
+                                                      t_uint j) const {
+  auto const in_rows = input.rows();
+  auto const out_rows = out.rows();
+  const_cast<Eigen::MatrixBase<T2> &>(work).fill(0);
+
+  // work matrices: we will alternatively use one then the other for input and output
+  auto alpha = const_cast<Eigen::MatrixBase<T2> &>(work).leftCols(2);
+  auto beta = const_cast<Eigen::MatrixBase<T2> &>(work).rightCols(2);
+
+  // First, we take into account Gumerov's very special normalization and notations
+  // It adds +/-1 factors, as well as normalization constants
+  // But appears when comparing to original calculation
+  // We add it second since: (i) the normalization is same for the same n, (ii) it avoids a copy
+  // There is no n=0 term at this juncture
+  alpha.middleRows(1, in_rows) = input.array() / normalization_.topRows(in_rows);
+
+  // Then we apply the rotation - without n=0 term
+  rotation(i, j).adjoint(alpha.middleRows(1, in_rows), beta.middleRows(1, in_rows));
+
+  // Then apply field-coaxial-tranlation transform thing - n=0 term may be used to create n=1 term.
+  // n=0 term itself becomes zero (thereby choosing a gauge, apparently)
+  rotation_coaxial_decomposition_transpose(wavenumber_, tz(i, j), beta, alpha);
+
+  // Then perform co-axial translation - this may create n=0 term
+  coaxial(i, j).transpose(alpha, beta);
+
+  // Rotate back - remove n=0 term since it is zero
+  rotation(i, j)(beta.middleRows(1, out_rows), alpha.middleRows(1, out_rows));
+
+  // Add normalization coming from ???
+  // But appears when comparing to original calculation
+  alpha.middleRows(1, out_rows).array() *= normalization_.topRows(out_rows);
+
+  // Finally, add back into output vector
+  const_cast<Eigen::MatrixBase<T1> &>(out) -= alpha.middleRows(1, out_rows);
 }
 }
 
