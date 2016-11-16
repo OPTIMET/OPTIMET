@@ -119,8 +119,7 @@ TEST_CASE("Check recurrence") {
 }
 
 TEST_CASE("Rotation by 0,pi,0 is identity") {
-  std::uniform_real_distribution<> idist(0, 10);
-  auto const n = 2; // std::uniform_int_distribution<>(1, 10)(*mersenne);
+  auto const n = 2;
 
   CAPTURE(RotationCoefficients(0, constant::pi, 0).matrix(n));
   for(t_int i(-static_cast<t_int>(n)); i <= static_cast<t_int>(n); ++i)
@@ -213,7 +212,7 @@ TEST_CASE("Basis rotation from z to zp") {
         CAPTURE(rotated.block(i, 0, inc, 2));
         CAPTURE(rotcoeffs.matrix(n).adjoint() * original.block(i, 0, inc, 2));
         REQUIRE(rotated.block(i, 0, inc, 2)
-                  .isApprox(rotcoeffs.matrix(n).adjoint() * original.block(i, 0, inc, 2)));
+                    .isApprox(rotcoeffs.matrix(n).adjoint() * original.block(i, 0, inc, 2)));
         CHECK(original.block(i, 0, inc, 2)
                   .isApprox(rotcoeffs.matrix(n) * rotated.block(i, 0, inc, 2)));
         i += inc;
@@ -224,10 +223,35 @@ TEST_CASE("Basis rotation from z to zp") {
       RotationCoefficients coeffs(theta, phi, chi);
       Vector<t_complex> original = Vector<t_complex>::Random(nmax * (nmax + 2));
       auto const rotated = sphe_rot.transpose(original);
-      auto const in_field = field(original.col(0));
-      auto const out_field = field(rotated.col(0));
-      CHECK(in_field(x0).real() == Approx(out_field(x1).real()));
-      CHECK(in_field(x0).imag() == Approx(out_field(x1).imag()));
+      auto const in_field = field(original);
+      auto const out_field = field(rotated);
+      for(t_int i(0); i < 10; ++i) {
+        Eigen::Matrix<t_real, 3, 1> const x0 = Eigen::Matrix<t_real, 3, 1>::Random().normalized();
+        CHECK(in_field(x0).real() == Approx(out_field(rotation.transpose() * x0).real()));
+        CHECK(in_field(x0).imag() == Approx(out_field(rotation.transpose() * x0).imag()));
+      }
     }
   }
+}
+
+TEST_CASE("Direct vs transpose, conjugate, adjoint") {
+  auto const theta = 2e0 * std::uniform_real_distribution<>(0, constant::pi)(*mersenne);
+  auto const phi = std::uniform_real_distribution<>(0, constant::pi)(*mersenne);
+  auto const N = 10;
+  auto const size = N * (N + 2);
+  Rotation const sphe_rot(theta, phi, constant::pi, N);
+
+  Matrix<t_complex> direct(size, size), transpose(size, size), conjugate(size, size),
+      adjoint(size, size);
+  for(t_int i(0); i < size; ++i) {
+    direct.col(i) = sphe_rot(Vector<t_complex>::Unit(size, i));
+    transpose.col(i) = sphe_rot.transpose(Vector<t_complex>::Unit(size, i));
+    conjugate.col(i) = sphe_rot.conjugate(Vector<t_complex>::Unit(size, i));
+    adjoint.col(i) = sphe_rot.adjoint(Vector<t_complex>::Unit(size, i));
+  }
+  CHECK(transpose.isApprox(direct.transpose()));
+  CHECK(conjugate.isApprox(direct.conjugate()));
+  CHECK(adjoint.isApprox(direct.adjoint()));
+  CHECK((adjoint * direct).isApprox(Matrix<t_complex>::Identity(size, size)));
+  CHECK((transpose * conjugate).isApprox(Matrix<t_complex>::Identity(size, size)));
 }
