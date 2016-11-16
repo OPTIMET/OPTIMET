@@ -186,6 +186,8 @@ void FastMatrixMultiply::translation(Vector<t_complex> const &input, Vector<t_co
   typedef Eigen::Matrix<t_complex, Eigen::Dynamic, 2> Matrixified;
 
   // create a work matrix with appropriate size
+  // It should have nplus (degree) more harmonics than the maximum object + the n = 0 term (1
+  // element)
   Eigen::Matrix<t_complex, Eigen::Dynamic, 4> work(nfunctions(max_nmax()) + 1, 4);
 
   // Adds left-hand-side of Eq 106 in Gumerov, Duraiswami 2007
