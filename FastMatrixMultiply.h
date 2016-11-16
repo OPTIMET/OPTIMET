@@ -182,43 +182,38 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
   auto const in_rows = input.rows();
   auto const out_rows = out.rows();
 
-  auto const max_rows =
-      nfunctions(std::lround(std::sqrt(std::max(in_rows, out_rows) + 1)) - 1 + nplus);
-  if(work.rows() <= max_rows or work.cols() != 4)
-    const_cast<Eigen::MatrixBase<T2> &>(work).resize(max_rows + 1, 4);
+  assert(work.rows() <=
+         nfunctions(std::lround(std::sqrt(std::max(in_rows, out_rows) + 1)) - 1 + nplus) + 1);
+  assert(work.cols() == 4);
   const_cast<Eigen::MatrixBase<T2> &>(work).fill(0);
+
+  // work matrices: we will alternatively use one then the other for input and output
+  auto alpha = const_cast<Eigen::MatrixBase<T2> &>(work).leftCols(2);
+  auto beta = const_cast<Eigen::MatrixBase<T2> &>(work).rightCols(2);
 
   // First, we take into account Gumerov's very special normalization and notations
   // It adds +/-1 factors, as well as normalization constants
   // But appears when comparing to original calculation
   // We add it second since: (i) the normalization is same for the same n, (ii) it avoids a copy
   // There is no n=0 term at this juncture
-  auto normalization = const_cast<Eigen::MatrixBase<T2> &>(work).block(1, 0, in_rows, 2);
-  normalization = input.array() * normalization_.topRows(in_rows);
+  alpha.middleRows(1, in_rows) = input.array() * normalization_.topRows(in_rows);
 
   // Then we apply the rotation - without n=0 term
-  auto rotated = const_cast<Eigen::MatrixBase<T2> &>(work).rightCols(2);
-  rotation(i, j).transpose(normalization, rotated.middleRows(1, in_rows));
+  rotation(i, j).transpose(alpha.middleRows(1, in_rows), beta.middleRows(1, in_rows));
 
   // Then perform co-axial translation - this may create n=0 term
-  auto ztrans = const_cast<Eigen::MatrixBase<T2> &>(work).leftCols(2);
-  coaxial(i, j)(rotated, ztrans);
+  coaxial(i, j)(beta, alpha);
 
   // Then apply field-coaxial-tranlation transform thing - n=0 term may be used to create n=1 term.
   // n=0 term itself becomes zero (thereby choosing a gauge, apparently)
-  auto &field_translated = rotated;
-  rotation_coaxial_decomposition(wavenumber_, tz(i, j), ztrans, field_translated);
+  rotation_coaxial_decomposition(wavenumber_, tz(i, j), alpha, beta);
 
   // Rotate back - remove n=0 term since it is zero
-  auto unrotated = const_cast<Eigen::MatrixBase<T2> &>(work).block(1, 0, out_rows, 2);
-  rotation(i, j).conjugate(field_translated.middleRows(1, out_rows), unrotated);
+  rotation(i, j).conjugate(beta.middleRows(1, out_rows), alpha.middleRows(1, out_rows));
 
-  // Add normalization coming from ???
-  // But appears when comparing to original calculation
-  unrotated.array() /= normalization_.topRows(out_rows);
-
-  // Finally, add back into output vector
-  const_cast<Eigen::MatrixBase<T1> &>(out) -= unrotated;
+  // Finally, add back into output vector with normalization
+  const_cast<Eigen::MatrixBase<T1> &>(out).array() -=
+      alpha.middleRows(1, out_rows).array() / normalization_.topRows(out_rows).array();
 }
 
 template <class T0, class T1, class T2>
@@ -228,6 +223,10 @@ void FastMatrixMultiply::remove_translation_transpose(Eigen::MatrixBase<T0> cons
                                                       t_uint j) const {
   auto const in_rows = input.rows();
   auto const out_rows = out.rows();
+
+  assert(work.rows() <=
+         nfunctions(std::lround(std::sqrt(std::max(in_rows, out_rows) + 1)) - 1 + nplus) + 1);
+  assert(work.cols() == 4);
   const_cast<Eigen::MatrixBase<T2> &>(work).fill(0);
 
   // work matrices: we will alternatively use one then the other for input and output
