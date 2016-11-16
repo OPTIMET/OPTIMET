@@ -62,35 +62,42 @@ TEST_CASE("Brute check") {
   }
 }
 
+// returns unit matrix
+Matrix<t_complex> unit_matrix(t_uint nx, t_uint ny, t_uint i, t_uint j) {
+  Matrix<t_complex> result(nx, ny);
+  result.fill(0);
+  result(i, j) = 1;
+  return result;
+}
+
+Vector<t_complex> rotcoax(t_real wavenumber, t_real tz, Matrix<t_complex> const &input) {
+  Vector<t_complex> output(input.size());
+  Eigen::Map<Matrix<t_complex>>(output.data(), input.rows(), input.cols()) =
+      rotation_coaxial_decomposition(wavenumber, tz, input);
+  return output;
+};
+
+Vector<t_complex> rotcoax_transpose(t_real wavenumber, t_real tz, Matrix<t_complex> const &input) {
+  Vector<t_complex> output(input.size());
+  Eigen::Map<Matrix<t_complex>>(output.data(), input.rows(), input.cols()) =
+      rotation_coaxial_decomposition_transpose(wavenumber, tz, input);
+  return output;
+};
+
 TEST_CASE("Transpose operation") {
   auto const wavenumber = 10;
   auto const tz = 7;
   auto const N = 10;
-  auto const size = N * (N + 2);
+  auto const size = N * (N + 2) + 1;
 
   Matrix<t_complex> actual(2 * size, 2 * size), expected(2 * size, 2 * size);
   for(t_int i(0); i < size; ++i) {
-    Matrix<t_complex> input = Matrix<t_complex>::Zero(size, 2);
-    input.col(0) = Vector<t_complex>::Unit(size, i);
-
-    auto const phi = rotation_coaxial_decomposition(wavenumber, tz, input);
-    expected.col(i).head(size) = phi.col(0);
-    expected.col(i).tail(size) = phi.col(1);
-
-    auto const phiT = rotation_coaxial_decomposition_transpose(wavenumber, tz, input);
-    actual.col(i).head(size) = phiT.col(0);
-    actual.col(i).tail(size) = phiT.col(1);
-
-    input.col(1) = Vector<t_complex>::Unit(size, i);
-    input.col(0) = Vector<t_complex>::Zero(size);
-
-    auto const psi = rotation_coaxial_decomposition(wavenumber, tz, input);
-    expected.col(i + size).head(size) = psi.col(0);
-    expected.col(i + size).tail(size) = psi.col(1);
-
-    auto const psiT = rotation_coaxial_decomposition_transpose(wavenumber, tz, input);
-    actual.col(i + size).head(size) = psiT.col(0);
-    actual.col(i + size).tail(size) = psiT.col(1);
+    expected.col(i) = rotcoax(wavenumber, tz, unit_matrix(size, 2, i, 0));
+    expected.col(i + size) = rotcoax(wavenumber, tz, unit_matrix(size, 2, i, 1));
+    actual.col(i) = rotcoax_transpose(wavenumber, tz, unit_matrix(size, 2, i, 0));
+    actual.col(i + size) = rotcoax_transpose(wavenumber, tz, unit_matrix(size, 2, i, 1));
   }
+  CAPTURE(actual.row(0));
+  CAPTURE(expected.col(0).transpose());
   CHECK(actual.transpose().isApprox(expected));
 }

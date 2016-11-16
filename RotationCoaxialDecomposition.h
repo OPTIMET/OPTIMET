@@ -19,7 +19,7 @@ namespace optimet {
 template <class T0, class T1>
 void rotation_coaxial_decomposition(t_real wavenumber, t_real tz,
                                     Eigen::MatrixBase<T0> const &input,
-                                    Eigen::MatrixBase<T1> &out) {
+                                    Eigen::MatrixBase<T1> const &out) {
   using coefficient::a;
   auto const nr = input.rows();
   auto const with_n0 = std::abs(std::sqrt(nr) - std::lround(std::sqrt(nr))) <
@@ -32,7 +32,7 @@ void rotation_coaxial_decomposition(t_real wavenumber, t_real tz,
                                [](t_int n, t_int m) { return n * (n + 1) + m - 1; };
   assert(index(min_n, -min_n) == 0);
   assert(index(N, N) + 1 == input.rows());
-  out.resize(input.rows(), input.cols());
+  const_cast<Eigen::MatrixBase<T1> &>(out).resize(input.rows(), input.cols());
   auto const in_phi = [&input, N, index, min_n](t_int n, t_int m) -> t_complex {
     return n > N or std::abs(m) > n or n < min_n ? 0 : input(index(n, m), 0);
   };
@@ -40,13 +40,13 @@ void rotation_coaxial_decomposition(t_real wavenumber, t_real tz,
     return n > N or std::abs(m) > n or n < min_n ? 0 : input(index(n, m), 1);
   };
   auto const out_phi = [&out, index](t_int n, t_int m) -> t_complex & {
-    return out(index(n, m), 0);
+    return const_cast<Eigen::MatrixBase<T1> &>(out)(index(n, m), 0);
   };
   auto const out_psi = [&out, index](t_int n, t_int m) -> t_complex & {
-    return out(index(n, m), 1);
+    return const_cast<Eigen::MatrixBase<T1> &>(out)(index(n, m), 1);
   };
   if(with_n0)
-    out.row(0).fill(0);
+    const_cast<Eigen::MatrixBase<T1> &>(out).row(0).fill(0);
   // n ≥ 1
   for(t_int n(1); n <= N; ++n) {
     auto const factor = tz * wavenumber / static_cast<t_real>(n * n + n);
@@ -72,7 +72,7 @@ void rotation_coaxial_decomposition(t_real wavenumber, t_real tz,
 template <class T0, class T1>
 void rotation_coaxial_decomposition_transpose(t_real wavenumber, t_real tz,
                                               Eigen::MatrixBase<T0> const &input,
-                                              Eigen::MatrixBase<T1> &out) {
+                                              Eigen::MatrixBase<T1> const &out) {
   using coefficient::a;
   auto const nr = input.rows();
   auto const with_n0 = std::abs(std::sqrt(nr) - std::lround(std::sqrt(nr))) <
@@ -84,22 +84,19 @@ void rotation_coaxial_decomposition_transpose(t_real wavenumber, t_real tz,
                                [](t_int n, t_int m) { return n * (n + 1) + m - 1; };
   assert(index(min_n, -min_n) == 0);
   assert(index(N, N) + 1 == input.rows());
-  out.resize(input.rows(), input.cols());
-  auto const in_phi = [&input, N, index, min_n](t_int n, t_int m) -> t_complex {
-    return n > N or std::abs(m) > n or n < min_n ? 0 : input(index(n, m), 0);
+  const_cast<Eigen::MatrixBase<T1> &>(out).resize(input.rows(), input.cols());
+  auto const in_phi = [&input, N, index](t_int n, t_int m) -> t_complex {
+    return n > N or std::abs(m) > n or n <= 0 ? 0 : input(index(n, m), 0);
   };
-  auto const in_psi = [&input, N, index, min_n](t_int n, t_int m) -> t_complex {
-    return n > N or std::abs(m) > n or n < min_n ? 0 : input(index(n, m), 1);
+  auto const in_psi = [&input, N, index](t_int n, t_int m) -> t_complex {
+    return n > N or std::abs(m) > n or n <= 0 ? 0 : input(index(n, m), 1);
   };
   auto const out_phi = [&out, index](t_int n, t_int m) -> t_complex & {
-    return out(index(n, m), 0);
+    return const_cast<Eigen::MatrixBase<T1> &>(out)(index(n, m), 0);
   };
   auto const out_psi = [&out, index](t_int n, t_int m) -> t_complex & {
-    return out(index(n, m), 1);
+    return const_cast<Eigen::MatrixBase<T1> &>(out)(index(n, m), 1);
   };
-  if(with_n0)
-    out.row(0).fill(0);
-  // n ≥ 1
   for(t_int n(1); n <= N; ++n) {
     auto const factor = tz * wavenumber / static_cast<t_real>(n * n + n);
     for(t_int m(-n); m <= n; ++m) {
@@ -111,6 +108,10 @@ void rotation_coaxial_decomposition_transpose(t_real wavenumber, t_real tz,
       out_psi(n, m) =
           in_psi(n, m) + cm * in_phi(n, m) + c0 * in_psi(n - 1, m) + c1 * in_psi(n + 1, m);
     }
+  }
+  if(with_n0) {
+    out_phi(0, 0) = tz * wavenumber * a<t_real>(0, 0) * in_phi(1, 0);
+    out_psi(0, 0) = tz * wavenumber * a<t_real>(0, 0) * in_psi(1, 0);
   }
 }
 
