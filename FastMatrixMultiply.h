@@ -83,6 +83,26 @@ public:
   //! \brief Applies fast matrix multiplication to effective incident field
   Vector<t_complex> transpose(Vector<t_complex> const &in) const;
 
+  //! \brief computes conjugate operation
+  void conjugate(Vector<t_complex> const &in, Vector<t_complex> &out) const {
+    operator()(in.conjugate(), out);
+    out = out.conjugate();
+  }
+  //! \brief Applies fast matrix multiplication to effective incident field
+  Vector<t_complex> conjugate(Vector<t_complex> const &in) const {
+    return operator()(in.conjugate()).conjugate();
+  }
+
+  //! \brief computes conjugate operation
+  void adjoint(Vector<t_complex> const &in, Vector<t_complex> &out) const {
+    transpose(in.conjugate(), out);
+    out = out.conjugate();
+  }
+  //! \brief Applies fast matrix multiplication to effective incident field
+  Vector<t_complex> adjoint(Vector<t_complex> const &in) const {
+    return transpose(in.conjugate()).conjugate();
+  }
+
   //! Normalization factors between Gumerov and Stout
   static Eigen::Array<t_real, Eigen::Dynamic, 2>
   compute_normalization(std::vector<Scatterer> const &scatterers);

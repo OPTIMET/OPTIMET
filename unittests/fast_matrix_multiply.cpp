@@ -144,7 +144,7 @@ TEST_CASE("Standard vs Fast matrix multiply") {
   }
 }
 
-TEST_CASE("Transpose of the fast matrix multiply") {
+TEST_CASE("Transpose/conjugate/adjoint of the fast matrix multiply") {
   using namespace optimet;
   auto const radius = 500.0e-9;
   Eigen::Matrix<t_real, 3, 1> const direction(2, 1, 1); // = Vector<t_real>::Random(3).normalized();
@@ -156,21 +156,24 @@ TEST_CASE("Transpose of the fast matrix multiply") {
   Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
   SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
   auto excitation =
-    std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
+      std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
   excitation->populate();
   geometry.update(excitation);
 
   Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
   optimet::FastMatrixMultiply fmm(geometry.bground, excitation->omega() / constant::c,
-      geometry.objects);
+                                  geometry.objects);
 
   auto const size = geometry.objects.size() * nHarmonics * (nHarmonics + 2) * 2;
-  Matrix<t_complex> actual(size, size), expected(size, size);
+  Matrix<t_complex> expected(size, size), transpose(size, size), conjugate(size, size),
+      adjoint(size, size);
   for(t_int i(0); i < size; ++i) {
     expected.col(i) = fmm(Vector<t_complex>::Unit(size, i));
-    actual.col(i) = fmm.transpose(Vector<t_complex>::Unit(size, i));
+    transpose.col(i) = fmm.transpose(Vector<t_complex>::Unit(size, i));
+    conjugate.col(i) = fmm.conjugate(Vector<t_complex>::Unit(size, i));
+    adjoint.col(i) = fmm.adjoint(Vector<t_complex>::Unit(size, i));
   }
-  CAPTURE(actual.col(1).transpose());
-  CAPTURE(expected.row(1));
-  CHECK(actual.transpose().isApprox(expected));
+  CHECK(transpose.isApprox(expected.transpose()));
+  CHECK(conjugate.isApprox(expected.conjugate()));
+  CHECK(adjoint.isApprox(expected.adjoint()));
 }
