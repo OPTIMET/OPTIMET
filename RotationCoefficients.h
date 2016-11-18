@@ -4,7 +4,7 @@
 #include "Types.h"
 #include "constants.h"
 #include <map>
-#include <vector>
+#include <tuple>
 
 #include <boost/math/special_functions/spherical_harmonic.hpp>
 
@@ -20,11 +20,18 @@ class RotationCoefficients {
 
 public:
   typedef std::tuple<t_uint, t_int, t_int> Index;
-  typedef Eigen::Matrix<Complex, 3, 1> Coefficients;
 
+  //! Rotation coefficients for given angles
   RotationCoefficients(t_real const &theta, t_real const &phi, t_real const &chi)
       : theta_(static_cast<Real>(theta)), phi_(static_cast<Real>(phi)),
         chi_(static_cast<Real>(chi)) {}
+  //! Rotation coefficients for given angles
+  RotationCoefficients(std::tuple<t_real, t_real, t_real> const &angles)
+      : RotationCoefficients(std::get<0>(angles), std::get<1>(angles), std::get<2>(angles)) {}
+  //! Rotation coefficients for given axis or rotation matrix
+  template <class T>
+  RotationCoefficients(Eigen::MatrixBase<T> const &axis_or_matrix)
+      : RotationCoefficients(RotationCoefficients::rotation_angles(axis_or_matrix)) {}
 
   //! \brief Spherical Harmonic Y^m_n projected onto Y^\mu_n
   //! \details from Y^m_n = \sum_\mu T_n^{\mu,n}Y^\mu_n. This operator gives T_n^{\mu, n}.
@@ -45,8 +52,33 @@ public:
   Matrix<t_complex> matrix(t_uint n);
 
   //! Basis rotation from a to ^a
-  Matrix<t_real> basis_rotation() const { return basis_rotation(theta(), phi(), chi()); }
-  static Matrix<t_real> basis_rotation(t_real theta, t_real phi, t_real chi);
+  Eigen::Matrix<t_real, 3, 3> basis_rotation() const {
+    return basis_rotation(theta(), phi(), chi());
+  }
+  //! Rotation matrix from the three angles
+  static Eigen::Matrix<t_real, 3, 3> basis_rotation(t_real theta, t_real phi, t_real chi);
+  //! Rotation matrix from the three angles
+  static Eigen::Matrix<t_real, 3, 3>
+  basis_rotation(std::tuple<t_real, t_real, t_real> const &angles) {
+    return basis_rotation(std::get<0>(angles), std::get<1>(angles), std::get<2>(angles));
+  }
+  //! Rotation matrix for rotating coordinates such that input axis is z
+  static Eigen::Matrix<t_real, 3, 3> basis_rotation(Eigen::Matrix<t_real, 3, 1> const &axis);
+  //! \brief Angles ϑ', φ', and χ for the rotation from axis or matrix
+  //! \angles Makes it easier to call the function from expression by distinguishing between
+  //! ambiguous calls (expression cannot be resolved to vector or matrix before evalation).
+  template <class T>
+  static std::tuple<t_real, t_real, t_real> rotation_angles(Eigen::MatrixBase<T> const &axis) {
+    return rotation_angles(axis.eval());
+  };
+  //! Angles ϑ', φ', and χ for the rotation from z to input axis
+  static std::tuple<t_real, t_real, t_real>
+      rotation_angles(Eigen::Matrix<t_real, 3, 1> const &axis) {
+    return rotation_angles(basis_rotation(axis));
+  }
+  //! Angles ϑ', φ', and χ for arbitrary rotation
+  static std::tuple<t_real, t_real, t_real>
+      rotation_angles(Eigen::Matrix<t_real, 3, 3> const &matrix);
 
   //! \brief Simplifies access to spherical harmonics
   //! \note There is a (-1)^m factor (Condon-Shortley phase term) missing with respect to the
@@ -72,7 +104,6 @@ protected:
   //! Rotation angle in rad
   Real const chi_;
 
-  Coefficients factors(t_uint n, t_int m, t_int mu) const;
   //! Cache which holds previously computed values
   std::map<Index, Complex> cache;
   //! Initial values
@@ -81,7 +112,7 @@ protected:
   //! unit-tests.
   Complex initial(t_uint n, t_int mu) const {
     return std::sqrt(4 * constant::pi / static_cast<Real>(2 * n + 1)) *
-           spherical_harmonic(n, -mu, theta_, -phi_);
+           spherical_harmonic(n, -mu, theta_, phi_);
   }
   //! Applies recursion
   Complex recursion(t_uint n, t_int m, t_int mu);
@@ -92,7 +123,15 @@ protected:
 //! \brief Rotation by (phi, psi, chi) for orders up to nmax
 class Rotation {
 public:
+  //! Rotation coefficients for given angles
   Rotation(t_real const &theta, t_real const &phi, t_real const &chi, t_uint nmax);
+  //! Rotation coefficients for given angles
+  Rotation(std::tuple<t_real, t_real, t_real> const &angles, t_uint nmax)
+      : Rotation(std::get<0>(angles), std::get<1>(angles), std::get<2>(angles), nmax) {}
+  //! Rotation coefficients for given axis or rotation matrix
+  template <class T>
+  Rotation(Eigen::MatrixBase<T> const &axis_or_matrix, t_uint nmax)
+      : Rotation(RotationCoefficients::rotation_angles(axis_or_matrix), nmax) {}
 
   t_real theta() const { return theta_; }
   t_real phi() const { return phi_; }
@@ -117,47 +156,63 @@ public:
   }
 
   //! \brief Performs rotation (for a single particle pair)
-  //! \details The input and output consist of two-column matrices, where the first columns are the
-  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! \details The input and output consist of two-column matrices, where the first columns are
+  //! the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain
+  //! all
   //! coefficients up to nmax.
   template <class T0, class T1>
   void operator()(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> const &out) const;
   //! \brief Performs rotation (for a single particle pair)
-  //! \details The input and output consist of two-column matrices, where the first columns are the
-  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! \details The input and output consist of two-column matrices, where the first columns are
+  //! the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain
+  //! all
   //! coefficients up to nmax.
   template <class T0> Matrix<typename T0::Scalar> operator()(Eigen::MatrixBase<T0> const &in) const;
   //! \brief Performs adjoint/inverse rotation (for a single particle pair)
-  //! \details The input and output consist of two-column matrices, where the first columns are the
-  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! \details The input and output consist of two-column matrices, where the first columns are
+  //! the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain
+  //! all
   //! coefficients up to nmax.
   template <class T0, class T1>
   void adjoint(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> const &out) const;
   //! \brief Performs adjoint/inverse rotation (for a single particle pair)
-  //! \details The input and output consist of two-column matrices, where the first columns are the
-  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! \details The input and output consist of two-column matrices, where the first columns are
+  //! the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain
+  //! all
   //! coefficients up to nmax.
   template <class T0> Matrix<typename T0::Scalar> adjoint(Eigen::MatrixBase<T0> const &in) const;
   //! \brief Applies transpose of rotation matrix (for a single particle pair)
-  //! \details The input and output consist of two-column matrices, where the first columns are the
-  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! \details The input and output consist of two-column matrices, where the first columns are
+  //! the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain
+  //! all
   //! coefficients up to nmax.
   template <class T0, class T1>
   void transpose(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> const &out) const;
   //! \brief Applies transpose of rotation matrix (for a single particle pair)
-  //! \details The input and output consist of two-column matrices, where the first columns are the
-  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! \details The input and output consist of two-column matrices, where the first columns are
+  //! the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain
+  //! all
   //! coefficients up to nmax.
   template <class T0> Matrix<typename T0::Scalar> transpose(Eigen::MatrixBase<T0> const &in) const;
   //! \brief Applies conjugate of rotation matrix (for a single particle pair)
-  //! \details The input and output consist of two-column matrices, where the first columns are the
-  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! \details The input and output consist of two-column matrices, where the first columns are
+  //! the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain
+  //! all
   //! coefficients up to nmax.
   template <class T0, class T1>
   void conjugate(Eigen::MatrixBase<T0> const &in, Eigen::MatrixBase<T1> const &out) const;
   //! \brief Applies conjugate of rotation matrix (for a single particle pair)
-  //! \details The input and output consist of two-column matrices, where the first columns are the
-  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain all
+  //! \details The input and output consist of two-column matrices, where the first columns are
+  //! the
+  //! Φ coefficients, and the second columns are the Ψ coefficients. The columns should contain
+  //! all
   //! coefficients up to nmax.
   template <class T0> Matrix<typename T0::Scalar> conjugate(Eigen::MatrixBase<T0> const &in) const;
 
