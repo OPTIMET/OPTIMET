@@ -16,14 +16,14 @@ public:
   const decltype(mie_coefficients_) &mie_coefficients() const { return mie_coefficients_; }
 };
 
-ElectroMagnetic const elmag{13.1, 1.0};
+ElectroMagnetic const silicon{13.1, 1.0};
 auto const wavenumber = 2 * optimet::constant::pi / (1200 * 1e-9);
 auto const nHarmonics = 5;
 auto const radius = 500e-9;
 
 TEST_CASE("Single object") {
   using namespace optimet;
-  std::vector<Scatterer> const scatterers{{{0, 0, 0}, elmag, radius, nHarmonics}};
+  std::vector<Scatterer> const scatterers{{{0, 0, 0}, silicon, radius, nHarmonics}};
 
   ::FastMatrixMultiply fmm{wavenumber, scatterers};
 
@@ -51,8 +51,8 @@ TEST_CASE("Two objects") {
   auto const radius = 500e-9;
   Eigen::Matrix<t_real, 3, 1> const direction = Vector<t_real>::Random(3).normalized();
   std::vector<Scatterer> const scatterers{
-      {{0, 0, 0}, elmag, radius, nHarmonics},
-      {direction * 3 * radius, elmag, 2 * radius, nHarmonics + 1}};
+      {{0, 0, 0}, silicon, radius, nHarmonics},
+      {direction * 3 * radius, silicon, 2 * radius, nHarmonics + 1}};
 
   ::FastMatrixMultiply fmm{wavenumber, scatterers};
 
@@ -119,8 +119,8 @@ TEST_CASE("Standard vs Fast matrix multiply") {
   auto const radius = 500.0e-9;
   Eigen::Matrix<t_real, 3, 1> const direction = Vector<t_real>::Random(3).normalized();
   Geometry geometry;
-  geometry.pushObject({{0, 0, 0}, elmag, radius, nHarmonics});
-  geometry.pushObject({direction * 3 * radius * 1.500001, elmag, 2 * radius, nHarmonics});
+  geometry.pushObject({{0, 0, 0}, silicon, radius, nHarmonics});
+  geometry.pushObject({direction * 3 * radius * 1.500001, silicon, 2 * radius, nHarmonics});
 
   auto const wavelength = 1490.0e-9;
   Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
@@ -130,16 +130,36 @@ TEST_CASE("Standard vs Fast matrix multiply") {
   excitation->populate();
   geometry.update(excitation);
 
-  Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
-  optimet::FastMatrixMultiply fmm(geometry.bground, excitation->omega() / constant::c,
-                                  geometry.objects);
+  SECTION("Two particles") {
+    Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
+    optimet::FastMatrixMultiply fmm(geometry.bground, excitation->omega() / constant::c,
+                                    geometry.objects);
 
-  auto const N = nHarmonics * (nHarmonics + 2);
-  for(t_int i(0); i < solver.Q.size(); ++i) {
-    auto const input = Vector<t_complex>::Unit(solver.Q.size(), i);
-    Vector<t_complex> const expected = solver.S * input;
-    Vector<t_complex> const actual = fmm * input;
-    CHECK(expected.isApprox(actual));
+    auto const N = nHarmonics * (nHarmonics + 2);
+    for(t_int i(0); i < solver.Q.size(); ++i) {
+      auto const input = Vector<t_complex>::Unit(solver.Q.size(), i);
+      Vector<t_complex> const expected = solver.S * input;
+      Vector<t_complex> const actual = fmm * input;
+      CHECK(expected.isApprox(actual));
+    }
+  }
+
+  SECTION("Three particles") {
+    ElectroMagnetic const other{9, 2.0};
+    auto const x = Eigen::Matrix<t_real, 3, 1>::Unit(0).eval();
+    geometry.pushObject(
+        {direction * 1.5 * radius * 1.500001 + x * radius * 8, other, 0.5 * radius, nHarmonics});
+    Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
+    optimet::FastMatrixMultiply fmm(geometry.bground, excitation->omega() / constant::c,
+        geometry.objects);
+
+    auto const N = nHarmonics * (nHarmonics + 2);
+    for(t_int i(0); i < solver.Q.size(); ++i) {
+      auto const input = Vector<t_complex>::Unit(solver.Q.size(), i);
+      Vector<t_complex> const expected = solver.S * input;
+      Vector<t_complex> const actual = fmm * input;
+      CHECK(expected.isApprox(actual));
+    }
   }
 }
 
@@ -148,8 +168,8 @@ TEST_CASE("Transpose/conjugate/adjoint of the fast matrix multiply") {
   auto const radius = 500.0e-9;
   Eigen::Matrix<t_real, 3, 1> const direction(2, 1, 1); // = Vector<t_real>::Random(3).normalized();
   Geometry geometry;
-  geometry.pushObject({{0, 0, 0}, elmag, radius, nHarmonics});
-  geometry.pushObject({direction * 3 * radius * 1.500001, elmag, 2 * radius, nHarmonics});
+  geometry.pushObject({{0, 0, 0}, silicon, radius, nHarmonics});
+  geometry.pushObject({direction * 3 * radius * 1.500001, silicon, 2 * radius, nHarmonics});
 
   auto const wavelength = 1490.0e-9;
   Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
