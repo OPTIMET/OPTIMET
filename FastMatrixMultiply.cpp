@@ -140,7 +140,8 @@ void FastMatrixMultiply::operator()(Vector<t_complex> const &in, Vector<t_comple
     auto const start = global_indices_[std::max(translate_range_.first, incident_range_.first)];
     auto const end = global_indices_[std::min(translate_range_.second, incident_range_.second)];
     auto const n = end - start;
-    out.segment(start - translate_range_.first, n) = in.segment(start - incident_range_.first, n);
+    out.segment(start - global_indices_[translate_range_.first], n) =
+        in.segment(start - global_indices_[incident_range_.first], n);
   }
 
   // Adds right-hand-side of Eq 106 in Gumerov, Duraiswami 2007
@@ -164,7 +165,8 @@ void FastMatrixMultiply::transpose(Vector<t_complex> const &in, Vector<t_complex
     auto const start = global_indices_[std::max(translate_range_.first, incident_range_.first)];
     auto const end = global_indices_[std::min(translate_range_.second, incident_range_.second)];
     auto const n = end - start;
-    out.segment(start - translate_range_.first, n) += in.segment(start - incident_range_.first, n);
+    out.segment(start - global_indices_[incident_range_.first], n) +=
+        in.segment(start - global_indices_[translate_range_.first], n);
   }
 }
 
