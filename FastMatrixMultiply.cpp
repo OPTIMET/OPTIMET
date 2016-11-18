@@ -17,9 +17,9 @@ void range_sanity(t_int Nscatterers, FastMatrixMultiply::Range incident,
     throw std::out_of_range("End of range before beginning of range");
   if(translate.first > translate.second)
     throw std::out_of_range("End of range before beginning of range");
-  if(incident.second < Nscatterers)
+  if(incident.second > Nscatterers)
     throw std::out_of_range("End of range past last item");
-  if(translate.second < Nscatterers)
+  if(translate.second > Nscatterers)
     throw std::out_of_range("End of range past last item");
 }
 }
