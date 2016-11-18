@@ -114,6 +114,42 @@ TEST_CASE("Transparent objects") {
   CHECK(expected.isApprox(input));
 }
 
+TEST_CASE("Transpose/conjugate/adjoint of the fast matrix multiply") {
+  using namespace optimet;
+  auto const radius = 500.0e-9;
+  Eigen::Matrix<t_real, 3, 1> const direction(2, 1, 1); // = Vector<t_real>::Random(3).normalized();
+  Geometry geometry;
+  geometry.pushObject({{0, 0, 0}, silicon, radius, nHarmonics});
+  geometry.pushObject({direction * 3 * radius * 1.500001, silicon, 2 * radius, nHarmonics});
+
+  auto const wavelength = 1490.0e-9;
+  Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
+  SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
+  auto excitation =
+      std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
+  excitation->populate();
+  geometry.update(excitation);
+
+  Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
+  optimet::FastMatrixMultiply fmm(geometry.bground, excitation->omega() / constant::c,
+                                  geometry.objects);
+
+  auto const size = geometry.objects.size() * nHarmonics * (nHarmonics + 2) * 2;
+  Matrix<t_complex> expected(size, size), transpose(size, size), conjugate(size, size),
+      adjoint(size, size);
+  for(t_int i(0); i < size; ++i) {
+    expected.col(i) = fmm(Vector<t_complex>::Unit(size, i));
+    transpose.col(i) = fmm.transpose(Vector<t_complex>::Unit(size, i));
+    conjugate.col(i) = fmm.conjugate(Vector<t_complex>::Unit(size, i));
+    adjoint.col(i) = fmm.adjoint(Vector<t_complex>::Unit(size, i));
+  }
+  CAPTURE(transpose.row(0));
+  CAPTURE(expected.col(0).transpose());
+  CHECK(transpose.isApprox(expected.transpose()));
+  CHECK(conjugate.isApprox(expected.conjugate()));
+  CHECK(adjoint.isApprox(expected.adjoint()));
+}
+
 TEST_CASE("Standard vs Fast matrix multiply") {
   using namespace optimet;
   auto const radius = 500.0e-9;
@@ -151,7 +187,7 @@ TEST_CASE("Standard vs Fast matrix multiply") {
         {direction * 1.5 * radius * 1.500001 + x * radius * 8, other, 0.5 * radius, nHarmonics});
     Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
     optimet::FastMatrixMultiply fmm(geometry.bground, excitation->omega() / constant::c,
-        geometry.objects);
+                                    geometry.objects);
 
     auto const N = nHarmonics * (nHarmonics + 2);
     for(t_int i(0); i < solver.Q.size(); ++i) {
@@ -163,38 +199,3 @@ TEST_CASE("Standard vs Fast matrix multiply") {
   }
 }
 
-TEST_CASE("Transpose/conjugate/adjoint of the fast matrix multiply") {
-  using namespace optimet;
-  auto const radius = 500.0e-9;
-  Eigen::Matrix<t_real, 3, 1> const direction(2, 1, 1); // = Vector<t_real>::Random(3).normalized();
-  Geometry geometry;
-  geometry.pushObject({{0, 0, 0}, silicon, radius, nHarmonics});
-  geometry.pushObject({direction * 3 * radius * 1.500001, silicon, 2 * radius, nHarmonics});
-
-  auto const wavelength = 1490.0e-9;
-  Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
-  SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
-  auto excitation =
-      std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
-  excitation->populate();
-  geometry.update(excitation);
-
-  Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
-  optimet::FastMatrixMultiply fmm(geometry.bground, excitation->omega() / constant::c,
-                                  geometry.objects);
-
-  auto const size = geometry.objects.size() * nHarmonics * (nHarmonics + 2) * 2;
-  Matrix<t_complex> expected(size, size), transpose(size, size), conjugate(size, size),
-      adjoint(size, size);
-  for(t_int i(0); i < size; ++i) {
-    expected.col(i) = fmm(Vector<t_complex>::Unit(size, i));
-    transpose.col(i) = fmm.transpose(Vector<t_complex>::Unit(size, i));
-    conjugate.col(i) = fmm.conjugate(Vector<t_complex>::Unit(size, i));
-    adjoint.col(i) = fmm.adjoint(Vector<t_complex>::Unit(size, i));
-  }
-  CAPTURE(transpose.row(0));
-  CAPTURE(expected.col(0).transpose());
-  CHECK(transpose.isApprox(expected.transpose()));
-  CHECK(conjugate.isApprox(expected.conjugate()));
-  CHECK(adjoint.isApprox(expected.adjoint()));
-}
