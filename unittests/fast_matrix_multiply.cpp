@@ -18,7 +18,7 @@ public:
 
 ElectroMagnetic const elmag{13.1, 1.0};
 auto const wavenumber = 2 * optimet::constant::pi / (1200 * 1e-9);
-auto const nHarmonics = 1;
+auto const nHarmonics = 5;
 auto const radius = 500e-9;
 
 TEST_CASE("Single object") {
@@ -116,9 +116,8 @@ TEST_CASE("Transparent objects") {
 
 TEST_CASE("Standard vs Fast matrix multiply") {
   using namespace optimet;
-  CHECK(HarmonicsIterator::max_flat(nHarmonics) - 1 == nHarmonics * (nHarmonics + 2));
   auto const radius = 500.0e-9;
-  Eigen::Matrix<t_real, 3, 1> const direction(0, 0, 1); //= Vector<t_real>::Random(3).normalized();
+  Eigen::Matrix<t_real, 3, 1> const direction = Vector<t_real>::Random(3).normalized();
   Geometry geometry;
   geometry.pushObject({{0, 0, 0}, elmag, radius, nHarmonics});
   geometry.pushObject({direction * 3 * radius * 1.500001, elmag, 2 * radius, nHarmonics});
@@ -173,6 +172,8 @@ TEST_CASE("Transpose/conjugate/adjoint of the fast matrix multiply") {
     conjugate.col(i) = fmm.conjugate(Vector<t_complex>::Unit(size, i));
     adjoint.col(i) = fmm.adjoint(Vector<t_complex>::Unit(size, i));
   }
+  CAPTURE(transpose.row(0));
+  CAPTURE(expected.col(0).transpose());
   CHECK(transpose.isApprox(expected.transpose()));
   CHECK(conjugate.isApprox(expected.conjugate()));
   CHECK(adjoint.isApprox(expected.adjoint()));

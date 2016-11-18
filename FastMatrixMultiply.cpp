@@ -53,6 +53,8 @@ FastMatrixMultiply::compute_rotations(std::vector<Scatterer> const &scatterers, 
       auto const theta = std::acos(a2(2));
       auto const phi = std::atan2(a2(1), a2(0));
       result.emplace_back(theta, phi, chi, std::max(in_begin->nMax, out_begin->nMax));
+      assert((result.back().basis_rotation().adjoint() * a2).isApprox(Vector<t_real>::Unit(3, 2)));
+      assert((result.back().basis_rotation() * Vector<t_real>::Unit(3, 2)).isApprox(a2));
     }
   }
   return result;
@@ -113,12 +115,15 @@ FastMatrixMultiply::compute_normalization(std::vector<Scatterer> const &scattere
   auto const cmp = [](Scatterer const &a, Scatterer const &b) { return a.nMax < b.nMax; };
   auto const nMax = std::max_element(scatterers.begin(), scatterers.end(), cmp)->nMax + nplus;
   Eigen::Array<t_real, Eigen::Dynamic, 2> result(nfunctions(nMax), 2);
-  for(t_int n(1), i(0); n <= nMax; ++n) {
+  for(t_int n(1), i(0); n <= nMax; i += 2 * n + 1, ++n) {
     result.col(0).segment(i, 2 * n + 1).fill(1e0 / std::sqrt((n * (n + 1)) / 2));
-    result.col(1).segment(i, 2 * n + 1).fill(-1e0 / std::sqrt((n * (n + 1)) / 2));
-    for(t_int m(-n); m <= n; ++m, ++i)
-      if(m > 0 and m % 2 == 1)
-        result.row(i) *= -1;
+    result.col(1).segment(i, 2 * n + 1).fill(1e0 / std::sqrt((n * (n + 1)) / 2));
+    for(t_int m(-n); m <= n; ++m) {
+      if(m >= 0 or m % 2 == 0)
+        result(i + n + m, 0) *= -1;
+      else
+        result(i + n + m, 1) *= -1;
+    }
   }
   return result;
 }

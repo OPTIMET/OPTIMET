@@ -196,10 +196,10 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
   // But appears when comparing to original calculation
   // We add it second since: (i) the normalization is same for the same n, (ii) it avoids a copy
   // There is no n=0 term at this juncture
-  alpha.middleRows(1, in_rows) = input.array() * normalization_.topRows(in_rows);
+  alpha.middleRows(1, in_rows) = input.array() * normalization_.topRows(in_rows).array();
 
   // Then we apply the rotation - without n=0 term
-  rotation(i, j).transpose(alpha.middleRows(1, in_rows), beta.middleRows(1, in_rows));
+  rotation(i, j)(alpha.middleRows(1, in_rows), beta.middleRows(1, in_rows));
 
   // Then perform co-axial translation - this may create n=0 term
   coaxial(i, j)(beta, alpha);
@@ -209,7 +209,7 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
   rotation_coaxial_decomposition(wavenumber_, tz(i, j), alpha, beta);
 
   // Rotate back - remove n=0 term since it is zero
-  rotation(i, j).conjugate(beta.middleRows(1, out_rows), alpha.middleRows(1, out_rows));
+  rotation(i, j).adjoint(beta.middleRows(1, out_rows), alpha.middleRows(1, out_rows));
 
   // Finally, add back into output vector with normalization
   const_cast<Eigen::MatrixBase<T1> &>(out).array() -=
@@ -238,10 +238,10 @@ void FastMatrixMultiply::remove_translation_transpose(Eigen::MatrixBase<T0> cons
   // But appears when comparing to original calculation
   // We add it second since: (i) the normalization is same for the same n, (ii) it avoids a copy
   // There is no n=0 term at this juncture
-  alpha.middleRows(1, in_rows) = input.array() / normalization_.topRows(in_rows);
+  alpha.middleRows(1, in_rows) = input.array() / normalization_.topRows(in_rows).array();
 
   // Then we apply the rotation - without n=0 term
-  rotation(i, j).adjoint(alpha.middleRows(1, in_rows), beta.middleRows(1, in_rows));
+  rotation(i, j).conjugate(alpha.middleRows(1, in_rows), beta.middleRows(1, in_rows));
 
   // Then apply field-coaxial-tranlation transform thing - n=0 term may be used to create n=1 term.
   // n=0 term itself becomes zero (thereby choosing a gauge, apparently)
@@ -251,14 +251,11 @@ void FastMatrixMultiply::remove_translation_transpose(Eigen::MatrixBase<T0> cons
   coaxial(i, j).transpose(alpha, beta);
 
   // Rotate back - remove n=0 term since it is zero
-  rotation(i, j)(beta.middleRows(1, out_rows), alpha.middleRows(1, out_rows));
-
-  // Add normalization coming from ???
-  // But appears when comparing to original calculation
-  alpha.middleRows(1, out_rows).array() *= normalization_.topRows(out_rows);
+  rotation(i, j).transpose(beta.middleRows(1, out_rows), alpha.middleRows(1, out_rows));
 
   // Finally, add back into output vector
-  const_cast<Eigen::MatrixBase<T1> &>(out) -= alpha.middleRows(1, out_rows);
+  const_cast<Eigen::MatrixBase<T1> &>(out).array() -=
+      alpha.middleRows(1, out_rows).array() * normalization_.topRows(out_rows).array();
 }
 }
 
