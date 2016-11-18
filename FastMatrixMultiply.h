@@ -107,6 +107,11 @@ public:
   static Eigen::Array<t_real, Eigen::Dynamic, 2>
   compute_normalization(std::vector<Scatterer> const &scatterers);
 
+  //! Number of columns of the fast matrix
+  t_uint cols() const;
+  //! Number of columns of the fast matrix
+  t_uint rows() const;
+
 protected:
   static int const nplus = 1;
   //! The properties of the background

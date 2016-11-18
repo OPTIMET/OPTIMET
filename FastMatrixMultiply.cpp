@@ -129,13 +129,9 @@ FastMatrixMultiply::compute_normalization(std::vector<Scatterer> const &scattere
 }
 
 void FastMatrixMultiply::operator()(Vector<t_complex> const &in, Vector<t_complex> &out) const {
-  auto const in_offset =
-      global_indices_[incident_range_.second] - global_indices_[incident_range_.first];
-  auto const out_offset =
-      global_indices_[translate_range_.second] - global_indices_[translate_range_.first];
-  if(in.size() != in_offset)
+  if(in.size() != cols())
     throw std::runtime_error("Incorrect incident vector size");
-  out.resize(out_offset);
+  out.resize(rows());
   out.fill(0);
 
   // Adds identity component (left-hand-side of Eq 106 in Gumerov, Duraiswami 2007)
@@ -152,13 +148,9 @@ void FastMatrixMultiply::operator()(Vector<t_complex> const &in, Vector<t_comple
 }
 
 void FastMatrixMultiply::transpose(Vector<t_complex> const &in, Vector<t_complex> &out) const {
-  auto const out_offset =
-      global_indices_[incident_range_.second] - global_indices_[incident_range_.first];
-  auto const in_offset =
-      global_indices_[translate_range_.second] - global_indices_[translate_range_.first];
-  if(in.size() != in_offset)
+  if(in.size() != rows())
     throw std::runtime_error("Incorrect incident vector size");
-  out.resize(out_offset);
+  out.resize(cols());
   out.fill(0);
 
   // Adds right-hand-side of Eq 106 in Gumerov, Duraiswami 2007
@@ -247,19 +239,22 @@ void FastMatrixMultiply::translation_transpose(Vector<t_complex> const &input,
 }
 
 Vector<t_complex> FastMatrixMultiply::operator()(Vector<t_complex> const &in) const {
-  auto const offset =
-      global_indices_[translate_range_.second] - global_indices_[translate_range_.first];
-  Vector<t_complex> result(offset * 2);
+  Vector<t_complex> result(rows());
   operator()(in, result);
   return result;
 }
 
 Vector<t_complex> FastMatrixMultiply::transpose(Vector<t_complex> const &in) const {
-  auto const offset =
-      global_indices_[incident_range_.second] - global_indices_[incident_range_.first];
-  Vector<t_complex> result(offset * 2);
+  Vector<t_complex> result(cols());
   transpose(in, result);
   return result;
+}
+
+t_uint FastMatrixMultiply::cols() const {
+  return global_indices_[incident_range_.second] - global_indices_[incident_range_.first];
+}
+t_uint FastMatrixMultiply::rows() const {
+  return global_indices_[translate_range_.second] - global_indices_[translate_range_.first];
 }
 
 } // optimet namespace
