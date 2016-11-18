@@ -199,3 +199,75 @@ TEST_CASE("Standard vs Fast matrix multiply") {
   }
 }
 
+TEST_CASE("Ranged matrices") {
+  using namespace optimet;
+  auto const wavelength = 1490.0e-9;
+  auto const radius = 500.0e-9;
+  Eigen::Matrix<t_real, 3, 1> const direction = Vector<t_real>::Random(3).normalized();
+  ElectroMagnetic const other{9, 2.0};
+
+  std::vector<Scatterer> scatterers;
+  scatterers.emplace_back(Vector<t_real>::Zero(3), silicon, radius, nHarmonics);
+  scatterers.emplace_back(direction * 3 * radius * 1.500001, silicon, 2 * radius, nHarmonics);
+  auto const x = Eigen::Matrix<t_real, 3, 1>::Unit(0).eval();
+  scatterers.emplace_back(direction * 1.5 * radius * 1.500001 + x * radius * 8, other, 0.5 * radius,
+                          nHarmonics);
+
+  auto const omega = 2 * constant::pi / wavelength;
+  auto const wavenumber = omega / constant::c;
+  ElectroMagnetic const bground;
+
+  auto const N = nHarmonics * (nHarmonics + 2);
+  optimet::FastMatrixMultiply whole(wavenumber, scatterers);
+  optimet::FastMatrixMultiply partA(wavenumber, scatterers, {0, 1}, {0, 1});
+  optimet::FastMatrixMultiply partB(wavenumber, scatterers, {0, 1}, {1, 3});
+  optimet::FastMatrixMultiply partC(wavenumber, scatterers, {1, 3}, {0, 3});
+
+  CHECK(whole.rows() == whole.cols());
+  CHECK(whole.rows() == 2 * N * scatterers.size());
+  CHECK(partA.rows() == partA.cols());
+  CHECK(partA.rows() == 2 * N);
+  CHECK(partB.cols() == 2 * N);
+  CHECK(partB.rows() == 2 * N * 2);
+  CHECK(partC.cols() == 2 * N * 2);
+  CHECK(partC.rows() == 2 * N * 3);
+
+  SECTION("Transpose, conjugate, adjoint") {
+    for(auto const &part : {partA, partB, partC}) {
+      Matrix<t_complex> direct(part.rows(), part.cols()), transpose(part.cols(), part.rows()),
+          adjoint(part.cols(), part.rows()), conjugate(part.rows(), part.cols());
+      for(t_int i(0); i < part.cols(); ++i) {
+        direct.col(i) = part(Vector<t_complex>::Unit(part.cols(), i));
+        conjugate.col(i) = part.conjugate(Vector<t_complex>::Unit(part.cols(), i));
+      }
+      for(t_int i(0); i < part.rows(); ++i) {
+        transpose.col(i) = part.transpose(Vector<t_complex>::Unit(part.rows(), i));
+        adjoint.col(i) = part.adjoint(Vector<t_complex>::Unit(part.rows(), i));
+      }
+      CHECK(transpose.isApprox(direct.transpose()));
+      CHECK(conjugate.isApprox(direct.conjugate()));
+      CHECK(adjoint.isApprox(direct.adjoint()));
+    }
+  }
+
+  SECTION("Whole against parts") {
+    Matrix<t_complex> matrix_whole(whole.rows(), whole.cols()),
+        matrix_A(partA.rows(), partA.cols()), matrix_B(partB.rows(), partB.cols()),
+        matrix_C(partC.rows(), partC.cols());
+    for(t_uint i(0); i < whole.rows(); ++i) {
+      matrix_whole.col(i) = whole(Vector<t_complex>::Unit(whole.cols(), i));
+      if(i < matrix_A.cols())
+        matrix_A.col(i) = partA(Vector<t_complex>::Unit(partA.cols(), i));
+      if(i < matrix_B.cols())
+        matrix_B.col(i) = partB(Vector<t_complex>::Unit(partB.cols(), i));
+      if(i < matrix_C.cols())
+        matrix_C.col(i) = partC(Vector<t_complex>::Unit(partC.cols(), i));
+    }
+
+    Matrix<t_complex> reconstructed = Matrix<t_complex>::Zero(whole.rows(), whole.size());
+    reconstructed.block(0, 0, partA.rows(), partA.cols()) = matrix_A;
+    reconstructed.block(partA.rows(), 0, partB.rows(), partB.cols()) = matrix_B;
+    reconstructed.block(0, partA.cols(), partC.rows(), partC.cols()) = matrix_C;
+    CHECK(reconstructed.isApprox(matrix_whole));
+  }
+}
