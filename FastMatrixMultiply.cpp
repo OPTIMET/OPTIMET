@@ -11,6 +11,8 @@ namespace optimet {
 namespace {
 void range_sanity(t_int Nscatterers, FastMatrixMultiply::Range incident,
                   FastMatrixMultiply::Range translate) {
+  if(Nscatterers < 0)
+    throw std::out_of_range("Negative number of scatterers");
   if(incident.first < 0 or translate.first < 0)
     throw std::out_of_range("Start of range must be positive");
   if(incident.first > incident.second)
@@ -24,6 +26,8 @@ void range_sanity(t_int Nscatterers, FastMatrixMultiply::Range incident,
 }
 }
 std::vector<t_uint> FastMatrixMultiply::compute_indices(std::vector<Scatterer> const &scatterers) {
+  if(scatterers.size() == 0)
+    return std::vector<t_uint>{0u, 0u};
   std::vector<t_uint> result{0u};
   for(auto const &scatterer : scatterers)
     result.push_back(result.back() + 2 * scatterer.nMax * (scatterer.nMax + 2));
@@ -112,6 +116,8 @@ FastMatrixMultiply::compute_mie_coefficients(ElectroMagnetic const &background, 
 
 Eigen::Array<t_real, Eigen::Dynamic, 2>
 FastMatrixMultiply::compute_normalization(std::vector<Scatterer> const &scatterers) {
+  if(scatterers.size() == 0)
+    return Eigen::Array<t_real, Eigen::Dynamic, 2>::Zero(0, 2);
   auto const cmp = [](Scatterer const &a, Scatterer const &b) { return a.nMax < b.nMax; };
   auto const nMax = std::max_element(scatterers.begin(), scatterers.end(), cmp)->nMax + nplus;
   Eigen::Array<t_real, Eigen::Dynamic, 2> result(nfunctions(nMax), 2);
@@ -132,6 +138,8 @@ void FastMatrixMultiply::operator()(Vector<t_complex> const &in, Vector<t_comple
   if(in.size() != cols())
     throw std::runtime_error("Incorrect incident vector size");
   out.resize(rows());
+  if(out.size() == 0)
+    return;
   out.fill(0);
 
   // Adds identity component (left-hand-side of Eq 106 in Gumerov, Duraiswami 2007)
@@ -152,6 +160,8 @@ void FastMatrixMultiply::transpose(Vector<t_complex> const &in, Vector<t_complex
   if(in.size() != rows())
     throw std::runtime_error("Incorrect incident vector size");
   out.resize(cols());
+  if(cols() == 0)
+    return;
   out.fill(0);
 
   // Adds right-hand-side of Eq 106 in Gumerov, Duraiswami 2007
