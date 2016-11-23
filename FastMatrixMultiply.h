@@ -17,10 +17,11 @@ namespace optimet {
 //! to a set of locations where the fields are checked. Each incident effective field is
 //! composed of coefficients for both Φ and Ψ potentials (in R basis).
 class FastMatrixMultiply {
-public:
-  //! Range of incident/scattering objects
-  typedef std::pair<t_int, t_int> Range;
+  //! \brief Type for couplings and offsets
+  //! \details `first` refers to rows (out) and `second` to columns (input)
+  typedef std::vector<std::pair<t_uint, t_uint>> Indices;
 
+public:
   //! Creates the fast matrix multiply object
   //! \param[in] em_background: Electro-magnetic properties of the background material
   //! \param[in] wavenumber: Angular wave-number of the incident plane-wave
@@ -35,41 +36,28 @@ public:
   //!     spherical basis set used to expand the field at the location of the scatterers in this
   //!     range.
   FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
-                     std::vector<Scatterer> const &scatterers, Range incident, Range translate)
+                     std::vector<Scatterer> const &scatterers, Matrix<bool> const &couplings)
       : em_background_(em_background), wavenumber_(wavenumber), scatterers_(scatterers),
-        global_indices_(compute_indices(scatterers_)), incident_range_(incident),
-        translate_range_(translate),
-        rotations_(compute_rotations(scatterers_, incident_range_, translate_range_)),
+        indices_(compute_indices(couplings)),
+        incident_offsets_(compute_offsets(scatterers, couplings.colwise().any())),
+        translate_offsets_(compute_offsets(scatterers, couplings.rowwise().any())),
+        rotations_(compute_rotations(scatterers, couplings)),
         mie_coefficients_(
-            compute_mie_coefficients(em_background, wavenumber, scatterers_, incident_range_)),
-        coaxial_translations_(compute_coaxial_translations(wavenumber_, scatterers_,
-                                                           incident_range_, translate_range_)),
+            compute_mie_coefficients(em_background, wavenumber, scatterers, couplings)),
+        coaxial_translations_(compute_coaxial_translations(wavenumber, scatterers, couplings)),
         normalization_(compute_normalization(scatterers)) {}
-  FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers, Range incident,
-                     Range translate)
-      : FastMatrixMultiply(ElectroMagnetic(), wavenumber, scatterers, incident, translate) {}
+  FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers,
+                     Matrix<bool> const &couplings)
+      : FastMatrixMultiply(ElectroMagnetic(), wavenumber, scatterers, couplings) {}
   FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
                      std::vector<Scatterer> const &scatterers)
-      : FastMatrixMultiply(em_background, wavenumber, scatterers, {0, scatterers.size()},
-                           {0, scatterers.size()}) {}
+      : FastMatrixMultiply(em_background, wavenumber, scatterers,
+                           Matrix<bool>::Ones(scatterers.size(), scatterers.size())) {}
   FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers)
       : FastMatrixMultiply(ElectroMagnetic(), wavenumber, scatterers) {}
 
-  //! Computes index of each particle i in global input vector
-  static std::vector<t_uint> compute_indices(std::vector<Scatterer> const &scatterers);
-  //! Computes rotations between relevant pairs of particles
-  static std::vector<Rotation>
-  compute_rotations(std::vector<Scatterer> const &scatterers, Range incident, Range translate);
-  //! Computes co-axial translations between relevant pairs of particles
-  static std::vector<CachedCoAxialRecurrence::Functor>
-  compute_coaxial_translations(t_complex wavenumber_, std::vector<Scatterer> const &scatterers,
-                               Range incident, Range translate);
-  //! Computes mie coefficient for each particles
-  static Vector<t_complex>
-  compute_mie_coefficients(ElectroMagnetic const &background, t_real wavenumber,
-                           std::vector<Scatterer> const &scatterers, Range incident);
   //! Total size of the problem
-  t_uint size() const { return global_indices_.back(); }
+  t_uint size() const { return rows() * cols(); }
 
   //! \brief Applies fast matrix multiplication to effective incident field
   void operator()(Vector<t_complex> const &in, Vector<t_complex> &out) const;
@@ -103,14 +91,13 @@ public:
     return transpose(in.conjugate()).conjugate();
   }
 
-  //! Normalization factors between Gumerov and Stout
-  static Eigen::Array<t_real, Eigen::Dynamic, 2>
-  compute_normalization(std::vector<Scatterer> const &scatterers);
+  //! Number of columns of the fast matrix
+  t_uint cols() const { return incident_offsets_.back(); }
+  //! Number of columns of the fast matrix
+  t_uint rows() const { return translate_offsets_.back(); }
 
-  //! Number of columns of the fast matrix
-  t_uint cols() const;
-  //! Number of columns of the fast matrix
-  t_uint rows() const;
+  //! Couplings that this object will compute
+  Indices const &couplings() const { return indices_; }
 
 protected:
   static int const nplus = 1;
@@ -120,16 +107,12 @@ protected:
   t_real wavenumber_;
   //! Scatterers for which to compute matrix product
   std::vector<Scatterer> const scatterers_;
-  //! Starting index of particle i
-  std::vector<t_uint> const global_indices_;
-  //! \brief Index of first owned sphere
-  //! \details Owned spheres are those for which this object will apply Matrix-Vector
-  //! multiplications
-  Range incident_range_;
-  //! \brief Index of first owned sphere
-  //! \details Owned spheres are those for which this object will apply Matrix-Vector
-  //! multiplications
-  Range translate_range_;
+  //! Couplings to compute in this instance
+  std::vector<std::pair<t_uint, t_uint>> const indices_;
+  //! Offsets for contiguous input vectors
+  std::vector<t_uint> const incident_offsets_;
+  //! Offsets for contiguous output vectors
+  std::vector<t_uint> const translate_offsets_;
   //! Rotations for owned objects
   std::vector<Rotation> const rotations_;
   //! Mie coefficients
@@ -139,6 +122,26 @@ protected:
   //! Normalization factors between Gumerov and Stout
   Eigen::Array<t_real, Eigen::Dynamic, 2> const normalization_;
 
+  //! Computes index of each particle i in global input vector
+  static std::vector<std::pair<t_uint, t_uint>> compute_indices(Matrix<bool> const &couplings);
+  //! Computes offsets for output and input vectors
+  static std::vector<t_uint>
+  compute_offsets(std::vector<Scatterer> const &scatterers, Vector<bool> const &couplings);
+  //! Computes rotations between relevant pairs of particles
+  static std::vector<Rotation>
+  compute_rotations(std::vector<Scatterer> const &scatterers, Matrix<bool> const &couplings);
+  //! Computes co-axial translations between relevant pairs of particles
+  static std::vector<CachedCoAxialRecurrence::Functor>
+  compute_coaxial_translations(t_complex wavenumber_, std::vector<Scatterer> const &scatterers,
+                               Matrix<bool> const &couplings);
+  //! Computes mie coefficient for each particles
+  static Vector<t_complex>
+  compute_mie_coefficients(ElectroMagnetic const &background, t_real wavenumber,
+                           std::vector<Scatterer> const &scatterers, Matrix<bool> const &couplings);
+  //! Normalization factors between Gumerov and Stout
+  static Eigen::Array<t_real, Eigen::Dynamic, 2>
+  compute_normalization(std::vector<Scatterer> const &scatterers);
+
   //! Number of basis function for given nmax
   static constexpr t_int nfunctions(t_int nmax) { return nmax * (nmax + 2); }
 
@@ -146,33 +149,38 @@ protected:
   t_int max_nmax() const;
 
   //! nMax for given incident particle
-  t_int incident_nmax(t_uint i) const { return scatterers_[incident_range_.first + i].nMax; }
+  t_int incident_nmax(Indices::size_type i) const { return scatterers_[indices_[i].second].nMax; }
   //! nMax for given translate particle
-  t_int translate_nmax(t_uint j) const { return scatterers_[translate_range_.first + j].nMax; }
+  t_int translate_nmax(Indices::size_type j) const { return scatterers_[indices_[j].first].nMax; }
+  //! Data offset of input vector for coupling i
+  t_uint incident_offset(Indices::size_type i) const {
+    return incident_offsets_[indices_[i].second];
+  }
+  //! Data offset of output vector for coupling i
+  t_uint translate_offset(Indices::size_type j) const {
+    return translate_offsets_[indices_[j].first];
+  }
 
-  //! Coaxial translation operation for particle pair (i, j)
-  CachedCoAxialRecurrence::Functor const &coaxial(t_uint i, t_uint j) const {
-    return coaxial_translations_[i * (translate_range_.second - translate_range_.first) + j];
-  }
-  //! Rotation operation for particle pair (i, j)
-  Rotation const &rotation(t_uint i, t_uint j) const {
-    return rotations_[i * (translate_range_.second - translate_range_.first) + j];
-  }
-  t_real tz(t_uint i, t_uint j) const {
-    return (scatterers_[translate_range_.first + j].vR.toEigenCartesian() -
-            scatterers_[incident_range_.first + i].vR.toEigenCartesian())
+  t_real tz(Indices::size_type i) const {
+    return (scatterers_[indices_[i].first].vR.toEigenCartesian() -
+            scatterers_[indices_[i].second].vR.toEigenCartesian())
         .stableNorm();
+  }
+
+  //! True if coupling particle with itself
+  bool is_self_interaction(Indices::size_type i) const {
+    return indices_[i].first == indices_[i].second;
   }
 
   //! Adds co-axial rotation/translation for a given particle pair
   template <class T0, class T1, class T2>
   void remove_translation(Eigen::MatrixBase<T0> const &input, Eigen::MatrixBase<T1> const &out,
-                          Eigen::MatrixBase<T2> const &work, t_uint i, t_uint j) const;
+                          Eigen::MatrixBase<T2> const &work, Indices::size_type i) const;
   //! Adds co-axial rotation/translation for a given particle pair
   template <class T0, class T1, class T2>
   void
   remove_translation_transpose(Eigen::MatrixBase<T0> const &input, Eigen::MatrixBase<T1> const &out,
-                               Eigen::MatrixBase<T2> const &work, t_uint i, t_uint j) const;
+                               Eigen::MatrixBase<T2> const &work, Indices::size_type i) const;
   //! Apply translation to each particle pair
   void translation(Vector<t_complex> const &in, Vector<t_complex> &out) const;
   //! Apply translation to each particle pair
@@ -182,8 +190,8 @@ protected:
 template <class T0, class T1, class T2>
 void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
                                             Eigen::MatrixBase<T1> const &out,
-                                            Eigen::MatrixBase<T2> const &work, t_uint i,
-                                            t_uint j) const {
+                                            Eigen::MatrixBase<T2> const &work,
+                                            Indices::size_type i) const {
   auto const in_rows = input.rows();
   auto const out_rows = out.rows();
 
@@ -203,18 +211,18 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
   // There is no n=0 term at this juncture
   alpha.middleRows(1, in_rows) = input.array() * normalization_.topRows(in_rows).array();
 
-  // Then we apply the rotation - without n=0 term
-  rotation(i, j)(alpha.middleRows(1, in_rows), beta.middleRows(1, in_rows));
+  // // Then we apply the rotation - without n=0 term
+  rotations_[i](alpha.middleRows(1, in_rows), beta.middleRows(1, in_rows));
 
   // Then perform co-axial translation - this may create n=0 term
-  coaxial(i, j)(beta, alpha);
+  coaxial_translations_[i](beta, alpha);
 
   // Then apply field-coaxial-tranlation transform thing - n=0 term may be used to create n=1 term.
   // n=0 term itself becomes zero (thereby choosing a gauge, apparently)
-  rotation_coaxial_decomposition(wavenumber_, tz(i, j), alpha, beta);
+  rotation_coaxial_decomposition(wavenumber_, tz(i), alpha, beta);
 
-  // Rotate back - remove n=0 term since it is zero
-  rotation(i, j).adjoint(beta.middleRows(1, out_rows), alpha.middleRows(1, out_rows));
+  // // Rotate back - remove n=0 term since it is zero
+  rotations_[i].adjoint(beta.middleRows(1, out_rows), alpha.middleRows(1, out_rows));
 
   // Finally, add back into output vector with normalization
   const_cast<Eigen::MatrixBase<T1> &>(out).array() -=
@@ -224,8 +232,8 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
 template <class T0, class T1, class T2>
 void FastMatrixMultiply::remove_translation_transpose(Eigen::MatrixBase<T0> const &input,
                                                       Eigen::MatrixBase<T1> const &out,
-                                                      Eigen::MatrixBase<T2> const &work, t_uint i,
-                                                      t_uint j) const {
+                                                      Eigen::MatrixBase<T2> const &work,
+                                                      t_uint i) const {
   auto const in_rows = input.rows();
   auto const out_rows = out.rows();
 
@@ -246,17 +254,17 @@ void FastMatrixMultiply::remove_translation_transpose(Eigen::MatrixBase<T0> cons
   alpha.middleRows(1, in_rows) = input.array() / normalization_.topRows(in_rows).array();
 
   // Then we apply the rotation - without n=0 term
-  rotation(i, j).conjugate(alpha.middleRows(1, in_rows), beta.middleRows(1, in_rows));
+  rotations_[i].conjugate(alpha.middleRows(1, in_rows), beta.middleRows(1, in_rows));
 
   // Then apply field-coaxial-tranlation transform thing - n=0 term may be used to create n=1 term.
   // n=0 term itself becomes zero (thereby choosing a gauge, apparently)
-  rotation_coaxial_decomposition_transpose(wavenumber_, tz(i, j), beta, alpha);
+  rotation_coaxial_decomposition_transpose(wavenumber_, tz(i), beta, alpha);
 
   // Then perform co-axial translation - this may create n=0 term
-  coaxial(i, j).transpose(alpha, beta);
+  coaxial_translations_[i].transpose(alpha, beta);
 
   // Rotate back - remove n=0 term since it is zero
-  rotation(i, j).transpose(beta.middleRows(1, out_rows), alpha.middleRows(1, out_rows));
+  rotations_[i].transpose(beta.middleRows(1, out_rows), alpha.middleRows(1, out_rows));
 
   // Finally, add back into output vector
   const_cast<Eigen::MatrixBase<T1> &>(out).array() -=

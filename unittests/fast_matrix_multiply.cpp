@@ -8,110 +8,59 @@
 #include "catch.hpp"
 #include <iostream>
 
-class FastMatrixMultiply : public optimet::FastMatrixMultiply {
-public:
-  using optimet::FastMatrixMultiply::FastMatrixMultiply;
-  const decltype(global_indices_) &indices() const { return global_indices_; }
-  const decltype(rotations_) &rotations() const { return rotations_; }
-  const decltype(mie_coefficients_) &mie_coefficients() const { return mie_coefficients_; }
-};
-
 ElectroMagnetic const silicon{13.1, 1.0};
 auto const wavenumber = 2 * optimet::constant::pi / (1200 * 1e-9);
 auto const nHarmonics = 5;
 auto const radius = 500e-9;
 
+TEST_CASE("No objects") {
+  using namespace optimet;
+  FastMatrixMultiply fmm{wavenumber, std::vector<Scatterer>()};
+  CHECK(fmm.couplings().size() == 0);
+  CHECK(fmm.rows() == fmm.cols());
+  CHECK(fmm.rows() == 0);
+  CHECK((fmm * Vector<t_complex>::Random(0)).size() == 0);
+}
+
 TEST_CASE("Single object") {
   using namespace optimet;
   std::vector<Scatterer> const scatterers{{{0, 0, 0}, silicon, radius, nHarmonics}};
 
-  ::FastMatrixMultiply fmm{wavenumber, scatterers};
+  FastMatrixMultiply fmm{wavenumber, scatterers};
+  CHECK(fmm.couplings().size() == 1);
+  CHECK(fmm.couplings().back().first == 0);
+  CHECK(fmm.couplings().back().second == 0);
+  CHECK(fmm.rows() == fmm.cols());
+  CHECK(fmm.rows() == 2 * nHarmonics * (nHarmonics + 2));
 
-  SECTION("Internal constructed object sanity") {
-    CHECK(fmm.indices().size() == 2);
-    CHECK(fmm.indices().front() == 0);
-    CHECK(fmm.indices().back() == 2 * nHarmonics * (nHarmonics + 2));
-
-    CHECK(fmm.mie_coefficients().size() == 2 * nHarmonics * (nHarmonics + 2));
-    CHECK(fmm.mie_coefficients().isApprox(
-        scatterers.front().getTLocal(wavenumber * constant::c, ElectroMagnetic())));
-
-    CHECK(fmm.rotations().size() == 1);
-  }
-
-  SECTION("Matrix is identity") {
-    Vector<t_complex> const input = Vector<t_complex>::Random(2 * nHarmonics * (nHarmonics + 2));
-    auto const result = fmm(input);
-    CHECK(result.isApprox(input));
-  }
-}
-
-TEST_CASE("Two objects") {
-  using namespace optimet;
-  auto const radius = 500e-9;
-  Eigen::Matrix<t_real, 3, 1> const direction = Vector<t_real>::Random(3).normalized();
-  std::vector<Scatterer> const scatterers{
-      {{0, 0, 0}, silicon, radius, nHarmonics},
-      {direction * 3 * radius, silicon, 2 * radius, nHarmonics + 1}};
-
-  ::FastMatrixMultiply fmm{wavenumber, scatterers};
-
-  SECTION("Internal constructed object sanity") {
-    CHECK(fmm.indices().size() == 3);
-    CHECK(fmm.indices()[0] == 0);
-    CHECK(fmm.indices()[1] == 2 * nHarmonics * (nHarmonics + 2));
-    CHECK(fmm.indices()[2] ==
-          2 * nHarmonics * (nHarmonics + 2) + 2 * (nHarmonics + 1) * (nHarmonics + 3));
-
-    CHECK(fmm.mie_coefficients().size() == fmm.indices()[2]);
-    auto const n0 = fmm.indices()[1];
-    auto const T0 = scatterers.front().getTLocal(wavenumber * constant::c, ElectroMagnetic());
-    CHECK(fmm.mie_coefficients().head(n0).isApprox(T0));
-    auto const n1 = fmm.indices()[2] - fmm.indices()[1];
-    auto const T1 = scatterers.back().getTLocal(wavenumber * constant::c, ElectroMagnetic());
-    CHECK(fmm.mie_coefficients().segment(n0, n1).isApprox(T1));
-
-    CHECK(fmm.rotations().size() == 4);
-    auto const r0 = fmm.rotations()[1].basis_rotation();
-    auto const r1 = fmm.rotations()[2].basis_rotation();
-    Eigen::Matrix<t_real, 3, 1> const x(0, 0, 1);
-    auto const theta = std::acos(-direction(2));
-    auto const phi = std::atan2(-direction(1), -direction(0));
-    CHECK(fmm.rotations()[1].theta() == Approx(std::acos(direction(2))));
-    CHECK(fmm.rotations()[2].theta() == Approx(std::acos(-direction(2))));
-    CHECK(fmm.rotations()[1].phi() == Approx(std::atan2(direction(1), direction(0))));
-    CHECK(fmm.rotations()[2].phi() == Approx(std::atan2(-direction(1), -direction(0))));
-    CHECK((r0 * x).isApprox(-(r1 * x)));
-    CHECK((r0.transpose() * direction).isApprox(x));
-    CHECK((r0 * r1.transpose() * r0 * r1.transpose()).isApprox(Matrix<t_real>::Identity(3, 3)));
-  }
+  Vector<t_complex> const input = Vector<t_complex>::Random(2 * nHarmonics * (nHarmonics + 2));
+  auto const result = fmm(input);
+  CHECK(result.isApprox(input));
 }
 
 TEST_CASE("Transparent objects") {
+  // For transparent objects, the coaxial transpose rotation mess should be zero
+  // Only the left hand side of Eq 106 in Gumerov, Duraiswami (2007) is left (e.g identity part).
   using namespace optimet;
-  CHECK(HarmonicsIterator::max_flat(nHarmonics) - 1 == nHarmonics * (nHarmonics + 2));
   Eigen::Matrix<t_real, 3, 1> const direction = Vector<t_real>::Random(3).normalized();
-  Geometry geometry;
-  geometry.pushObject({{0, 0, 0}, geometry.bground, radius, nHarmonics});
-  geometry.pushObject({direction * 3 * radius * 1.00001, geometry.bground, 2 * radius, nHarmonics});
+  ElectroMagnetic const bground;
+  std::vector<Scatterer> scatterers{
+      {direction.Zero(3), bground, radius, nHarmonics},
+      {direction * 3 * radius * 1.00001, bground, 2 * radius, nHarmonics},
+  };
 
-  auto const wavelength = 1490.0e-9;
-  Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
-  SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
-  auto excitation =
-      std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
-  excitation->populate();
-  geometry.update(excitation);
+  optimet::FastMatrixMultiply fmm(bground, wavenumber, scatterers);
+  CHECK(fmm.couplings().size() == 4);
+  CHECK(fmm.rows() == fmm.cols());
+  CHECK(fmm.rows() == scatterers.size() * 2 * nHarmonics * (nHarmonics + 2));
 
-  Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
-  optimet::FastMatrixMultiply fmm(geometry.bground, excitation->omega() / constant::c,
-                                  geometry.objects);
-
-  Vector<t_complex> const input = Vector<t_complex>::Random(solver.Q.size());
-  Vector<t_complex> const expected = solver.S * input;
+  Vector<t_complex> const input = Vector<t_complex>::Random(fmm.cols());
   auto const actual = fmm * input;
-  CHECK(expected.isApprox(actual));
-  CHECK(expected.isApprox(input));
+  CHECK(actual.size() == input.size());
+  CHECK(actual.isApprox(input));
+  CHECK(fmm.transpose(input).isApprox(input));
+  CHECK(fmm.adjoint(input).isApprox(input));
+  CHECK(fmm.conjugate(input).isApprox(input));
 }
 
 TEST_CASE("Transpose/conjugate/adjoint of the fast matrix multiply") {
@@ -176,7 +125,8 @@ TEST_CASE("Standard vs Fast matrix multiply") {
       auto const input = Vector<t_complex>::Unit(solver.Q.size(), i);
       Vector<t_complex> const expected = solver.S * input;
       Vector<t_complex> const actual = fmm * input;
-      CHECK(expected.isApprox(actual));
+      CAPTURE(actual.transpose());
+      REQUIRE(expected.isApprox(actual));
     }
   }
 
@@ -218,10 +168,15 @@ TEST_CASE("Ranged matrices") {
   ElectroMagnetic const bground;
 
   auto const N = nHarmonics * (nHarmonics + 2);
+  Matrix<t_int> splitting = -Matrix<t_int>::Ones(scatterers.size(), scatterers.size());
+  splitting(0, 0) = 1;
+  splitting.col(0).tail(scatterers.size() - 1).fill(2);
+  splitting.rightCols(scatterers.size() - 1).fill(3);
+  CHECK(not (splitting.array() == -1).any());
   optimet::FastMatrixMultiply whole(wavenumber, scatterers);
-  optimet::FastMatrixMultiply partA(wavenumber, scatterers, {0, 1}, {0, 1});
-  optimet::FastMatrixMultiply partB(wavenumber, scatterers, {0, 1}, {1, 3});
-  optimet::FastMatrixMultiply partC(wavenumber, scatterers, {1, 3}, {0, 3});
+  optimet::FastMatrixMultiply partA(wavenumber, scatterers, splitting.array() == 1);
+  optimet::FastMatrixMultiply partB(wavenumber, scatterers, splitting.array() == 2);
+  optimet::FastMatrixMultiply partC(wavenumber, scatterers, splitting.array() == 3);
 
   CHECK(whole.rows() == whole.cols());
   CHECK(whole.rows() == 2 * N * scatterers.size());
@@ -264,7 +219,7 @@ TEST_CASE("Ranged matrices") {
         matrix_C.col(i) = partC(Vector<t_complex>::Unit(partC.cols(), i));
     }
 
-    Matrix<t_complex> reconstructed = Matrix<t_complex>::Zero(whole.rows(), whole.size());
+    Matrix<t_complex> reconstructed = Matrix<t_complex>::Zero(whole.rows(), whole.cols());
     reconstructed.block(0, 0, partA.rows(), partA.cols()) = matrix_A;
     reconstructed.block(partA.rows(), 0, partB.rows(), partB.cols()) = matrix_B;
     reconstructed.block(0, partA.cols(), partC.rows(), partC.cols()) = matrix_C;
