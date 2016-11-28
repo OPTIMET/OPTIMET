@@ -46,6 +46,7 @@ if(dompi)
     set_tests_properties(${testname} PROPERTIES LABELS "catch;mpi")
   endfunction()
 
+  add_catch_test(fmm_distribution LIBRARIES optilib ${library_dependencies})
   add_catch_test(squarest LIBRARIES optilib ${library_dependencies})
   add_mpi_test(single_particle LIBRARIES optilib ${library_dependencies})
   add_mpi_test(mpi_communicator LIBRARIES optilib ${library_dependencies})
@@ -63,4 +64,5 @@ if(dompi)
     add_executable(print_belos_params print_belos_params.cpp)
     target_link_libraries(print_belos_params optilib ${library_dependencies})
   endif()
+
 endif()
