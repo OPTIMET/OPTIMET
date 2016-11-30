@@ -13,14 +13,22 @@ void Communicator::delete_comm(Communicator::Impl *const impl) {
 }
 
 Communicator::Communicator(MPI_Comm const& comm) : impl(nullptr) {
+  reset(&comm);
+}
+
+void Communicator::reset(MPI_Comm const * const comm) {
+  if(comm == nullptr) {
+    impl.reset();
+    return;
+  }
   if(not initialized())
     throw std::runtime_error("Mpi was not initialized");
 
   int size, rank;
-  MPI_Comm_size(comm, &size);
-  MPI_Comm_rank(comm, &rank);
+  MPI_Comm_size(*comm, &size);
+  MPI_Comm_rank(*comm, &rank);
 
-  Impl const data{comm, static_cast<t_uint>(size), static_cast<t_uint>(rank)};
+  Impl const data{*comm, static_cast<t_uint>(size), static_cast<t_uint>(rank)};
   impl = std::shared_ptr<Impl const>(new Impl(data), &delete_comm);
   if(impl)
     increment_ref();

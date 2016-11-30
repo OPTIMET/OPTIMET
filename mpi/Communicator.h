@@ -40,7 +40,11 @@ public:
   //! The rank of this proc
   decltype(Impl::rank) rank() const { return impl ? impl->rank : 0; }
   //! Returns the Blacs context in a way blacs undersands
-  decltype(Impl::comm) operator*() const { return impl->comm; }
+  decltype(Impl::comm) operator*() const {
+    if(not impl)
+      throw std::runtime_error("The communicator is not valid");
+    return impl->comm;
+  }
 
   //! Split current communicator
   Communicator split(t_int color) const { return split(color, rank()); }
@@ -95,6 +99,9 @@ public:
   //! Root id for this communicator
   static constexpr t_uint root_id() { return 0; }
 
+  //! True if the communicator is valid
+  bool is_valid() const { return static_cast<bool>(impl); }
+
 private:
   //! Holds data associated with the context
   std::shared_ptr<Impl const> impl;
@@ -102,12 +109,15 @@ private:
   //! Deletes an mpi communicator
   static void delete_comm(Impl *impl);
 
+protected:
   //! \brief Constructs a communicator
   //! \details Takes ownership of the communicator, unless it is MPI_COMM_WORLD.
   //! This means that once all the shared pointer to the impl are delete, the
   //! communicator will be
   //! released.
   Communicator(MPI_Comm const &comm);
+  //! Takes ownership of a communicator
+  void reset(MPI_Comm const *const comm);
 };
 
 } /* optime::mpi */
