@@ -45,6 +45,21 @@ static_assert(not std::is_same<char, std::int8_t>::value, "");
 
 //! MPI type associated with a c++ type
 template <class T> inline MPIType registered_type(T const&) { return Type<T>::value; }
+
+namespace details {
+//! Defines c++17 metafunction
+template <class...> using void_t = void;
+}
+//! True if the type is registered
+template <class T, class = details::void_t<>> class is_registered_type : public std::false_type {};
+template <class T>
+class is_registered_type<T, details::void_t<decltype(Type<T>::value)>> : public std::true_type {};
+
+static_assert(is_registered_type<int>::value, "Checking int is registered");
+static_assert(is_registered_type<std::complex<double>>::value,
+              "Checking complex double is registered");
+static_assert(not is_registered_type<std::complex<int>>::value,
+              "Checking complex int is NOT registered");
 } /* optime::mpi */
 } /* optimet */
 #endif /* ifndef OPTIMET_TYPES */
