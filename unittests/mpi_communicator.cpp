@@ -157,7 +157,7 @@ TEST_CASE("Non-blocking gather of Eigen vectors on graph") {
   auto const receive_count = graph.allgather(size(rank));
   Vector<int> input = Vector<int>::Constant(size(rank), values[rank]);
   Vector<int> result;
-  if(auto request = graph.iallgatherv(input, result, receive_count)) {
+  if(auto request = graph.iallgather(input, result, receive_count)) {
     auto const N = std::accumulate(receive_count.begin(), receive_count.end(), 0u);
     CHECK(result.size() == N);
     CHECK(static_cast<bool>(request));

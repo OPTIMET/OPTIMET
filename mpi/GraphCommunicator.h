@@ -26,20 +26,20 @@ class GraphCommunicator : public Communicator {
 public:
   //! Creates a graph communicator
   GraphCommunicator(mpi::Communicator const &comm, std::vector<std::set<t_uint>> const &graph,
-                        bool reorder = false);
+                    bool reorder = false);
   GraphCommunicator(std::vector<std::set<t_uint>> const &graph, bool reorder = false)
       : GraphCommunicator(Communicator(), graph, reorder) {}
 
   //! Number of neighbors
   t_uint neighborhood_size(int rank) const;
   t_uint neighborhood_size() const { return neighborhood_size(rank()); }
-  //! Broadcast whole input vector to neighbors
+  //! Non-blocking Gather over graph
   template <class T0, class T1>
   typename std::enable_if<is_registered_type<typename T0::Scalar>::value and
                               is_registered_type<typename T1::Scalar>::value,
                           Request>::type
-  iallgatherv(Eigen::PlainObjectBase<T0> const &input, Eigen::PlainObjectBase<T1> const &out,
-              std::vector<int> rcvcounts) const;
+  iallgather(Eigen::PlainObjectBase<T0> const &input, Eigen::PlainObjectBase<T1> const &out,
+             std::vector<int> rcvcounts) const;
 
   //! Blocking Send/Receive single scalar to neighbor
   template <class T>
@@ -73,9 +73,9 @@ template <class T0, class T1>
 typename std::enable_if<is_registered_type<typename T0::Scalar>::value and
                             is_registered_type<typename T1::Scalar>::value,
                         Request>::type
-GraphCommunicator::iallgatherv(Eigen::PlainObjectBase<T0> const &input,
-                                   Eigen::PlainObjectBase<T1> const &out,
-                                   std::vector<int> rcvcounts) const {
+GraphCommunicator::iallgather(Eigen::PlainObjectBase<T0> const &input,
+                              Eigen::PlainObjectBase<T1> const &out,
+                              std::vector<int> rcvcounts) const {
   if(not is_valid()) {
     const_cast<Eigen::PlainObjectBase<T1> &>(out).resize(0);
     return Request(nullptr);
