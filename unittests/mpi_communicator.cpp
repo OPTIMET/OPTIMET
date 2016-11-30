@@ -92,31 +92,17 @@ TEST_CASE("Gathering") {
   }
 }
 
-TEST_CASE("Non-symmetric graph communicators") {
-
+TEST_CASE("Symmetric graph communicators") {
   mpi::Communicator world;
   if(world.size() < 3)
     return;
 
-  std::vector<std::vector<int>> const sources = {{1}, {0, 2}, {0}, {}};
-  std::vector<std::vector<int>> const destinations = {{1, 2}, {0}, {1}, {}};
-  std::vector<std::vector<int>> const receive_count = {{6}, {3, 9}, {3}, {}};
+  std::vector<std::set<t_uint>> const comms =
+      mpi::GraphCommunicator::symmetrize({{1, 2}, {0, 2}, {0, 1}, {}});
 
   auto const rank = std::min<t_uint>(world.rank(), 3);
-  mpi::DistGraphCommunicator graph(world, sources[rank], destinations[rank]);
-  if(graph.rank() == 0) {
-    CHECK(std::get<0>(graph.nedges()) == 1);
-    CHECK(std::get<1>(graph.nedges()) == 2);
-    CHECK(std::get<2>(graph.nedges()) == false);
-  } else if(graph.rank() == 1) {
-    CHECK(std::get<0>(graph.nedges()) == 2);
-    CHECK(std::get<1>(graph.nedges()) == 1);
-    CHECK(std::get<2>(graph.nedges()) == false);
-  } else if(graph.rank() == 2) {
-    CHECK(std::get<0>(graph.nedges()) == 1);
-    CHECK(std::get<1>(graph.nedges()) == 1);
-    CHECK(std::get<2>(graph.nedges()) == false);
-  }
+  mpi::GraphCommunicator graph(world, comms);
+  CHECK(graph.neighborhood_size(rank) == comms[rank].size());
 }
 
 TEST_CASE("Blocking gather of scalar on graph") {
@@ -125,19 +111,33 @@ TEST_CASE("Blocking gather of scalar on graph") {
   if(world.size() < 3)
     return;
 
-  // std::vector<std::vector<int>> const sources = {{2, 1}, {0, 2}, {0}, {}};
-  // std::vector<std::vector<int>> const destinations = {{1, 2}, {0}, {0, 1}, {}};
-  std::vector<std::vector<int>> const sources = {{1, 2}, {0, 2}, {0, 1}, {}};
-  std::vector<std::vector<int>> const destinations = {{1, 2}, {0, 2}, {0, 1}, {}};
+  std::vector<std::set<t_uint>> const comms =
+      mpi::GraphCommunicator::symmetrize({{2}, {2}, {1, 0}, {}});
   std::vector<int> const values = {2, 4, 1, 3};
 
   auto const rank = std::min<t_uint>(world.rank(), 3);
-  mpi::DistGraphCommunicator graph(world, sources[rank], destinations[rank], false);
+  mpi::GraphCommunicator graph(world, comms);
   auto const actual = graph.allgather(values[rank]);
 
-  CHECK(actual.size() == sources[rank].size());
-  for(decltype(actual)::size_type i(0); i < actual.size(); ++i)
-    CHECK(actual[i] == values[sources[rank][i]]);
+  CHECK(actual.size() == comms[rank].size());
+  for(decltype(actual)::size_type i(0); i < actual.size(); ++i) {
+    auto iter = comms[rank].begin();
+    std::advance(iter, i);
+    CHECK(actual[i] == values[*iter]);
+  }
+}
+
+TEST_CASE("Additive symmetrization") {
+  std::vector<std::set<t_uint>> const expected = {{2}, {2}, {1, 0}, {}};
+  std::vector<std::set<t_uint>> const actual =
+      mpi::GraphCommunicator::symmetrize({{}, {2}, {0}, {}});
+
+  CHECK(expected.size() == actual.size());
+  for(decltype(actual)::size_type i(0); i < actual.size(); ++i) {
+    CHECK(actual[i].size() == expected[i].size());
+    for(auto const node : expected[i])
+      CHECK(actual[i].count(node) == 1);
+  }
 }
 
 TEST_CASE("Non-blocking gather of Eigen vectors on graph") {
@@ -147,12 +147,12 @@ TEST_CASE("Non-blocking gather of Eigen vectors on graph") {
     return;
 
   auto const size = [](t_int rank) { return 3 * (rank + 1); };
-  std::vector<std::vector<int>> const sources = {{1, 2}, {0, 2}, {0}, {}};
-  std::vector<std::vector<int>> const destinations = {{1, 2}, {0}, {1, 0}, {}};
+  std::vector<std::set<t_uint>> const comms =
+      mpi::GraphCommunicator::symmetrize({{2}, {2}, {1, 0}, {}});
   std::vector<int> const values = {3, 5, 1, 0};
 
   auto const rank = std::min<t_uint>(world.rank(), 3);
-  mpi::DistGraphCommunicator graph(world, sources[rank], destinations[rank], false);
+  mpi::GraphCommunicator graph(world, comms);
 
   auto const receive_count = graph.allgather(size(rank));
   Vector<int> input = Vector<int>::Constant(size(rank), values[rank]);
@@ -163,6 +163,9 @@ TEST_CASE("Non-blocking gather of Eigen vectors on graph") {
     CHECK(static_cast<bool>(request));
   }
 
-  for(t_uint i(0), j(0); i < receive_count.size(); j += receive_count[i++])
-    CHECK((result.segment(j, receive_count[i]).array() == values[sources[rank][i]]).all());
+  for(t_uint i(0), j(0); i < receive_count.size(); j += receive_count[i++]) {
+    auto iter = comms[rank].begin();
+    std::advance(iter, i);
+    CHECK((result.segment(j, receive_count[i]).array() == values[*iter]).all());
+  }
 }

@@ -8,11 +8,11 @@
 #include "mpi/Collectives.h"
 #include "mpi/Communicator.h"
 #include "mpi/RegisteredTypes.h"
+#include <iostream>
 #include <memory>
 #include <numeric>
 #include <set>
 #include <vector>
-#include <iostream>
 
 namespace optimet {
 namespace mpi {
@@ -22,17 +22,17 @@ typedef std::shared_ptr<MPI_Request const> Request;
 //! A request that calls wait when going out of scope
 Request make_wait_on_delete(MPI_Request *const request);
 
-class DistGraphCommunicator : public Communicator {
+class GraphCommunicator : public Communicator {
 public:
   //! Creates a graph communicator
-  DistGraphCommunicator(mpi::Communicator const &comm, std::vector<int> const &sources,
-                        std::vector<int> const &destinations, bool reorder = false);
-  DistGraphCommunicator(std::vector<int> const &sources, std::vector<int> const &destination,
-                        bool reorder = false)
-      : DistGraphCommunicator(Communicator(), sources, destination, reorder) {}
+  GraphCommunicator(mpi::Communicator const &comm, std::vector<std::set<t_uint>> const &graph,
+                        bool reorder = false);
+  GraphCommunicator(std::vector<std::set<t_uint>> const &graph, bool reorder = false)
+      : GraphCommunicator(Communicator(), graph, reorder) {}
 
-  //! Number of input/output edges and wether the graph is weighted
-  std::tuple<t_uint, t_uint, bool> nedges() const;
+  //! Number of neighbors
+  t_uint neighborhood_size(int rank) const;
+  t_uint neighborhood_size() const { return neighborhood_size(rank()); }
   //! Broadcast whole input vector to neighbors
   template <class T0, class T1>
   typename std::enable_if<is_registered_type<typename T0::Scalar>::value and
@@ -45,28 +45,27 @@ public:
   template <class T>
   typename std::enable_if<is_registered_type<T>::value, std::vector<T>>::type
   allgather(T const &input) const;
+
+  //! Additive symmetrization of graph
+  static std::vector<std::set<t_uint>> symmetrize(std::vector<std::set<t_uint>> const &graph);
 };
 
 // Send/Receive single scalar to neighbor
 template <class T>
 typename std::enable_if<is_registered_type<T>::value, std::vector<T>>::type
-DistGraphCommunicator::allgather(T const &input) const {
+GraphCommunicator::allgather(T const &input) const {
   if(not is_valid())
     return std::vector<T>();
 
   // number of sources
-  auto const Nsources = std::get<0>(nedges());
-  auto const Ndestinations = std::get<1>(nedges());
-  std::vector<T> result(Nsources + 1);
-  std::fill(result.begin(), result.end(), 666);
+  auto const N = neighborhood_size();
+  std::vector<T> result(N);
   auto const error = MPI_Neighbor_allgather(
-      &input, std::min<int>(Ndestinations, 1), mpi::registered_type(input), result.data(),
-      std::min<int>(Nsources, 1), mpi::registered_type(input), **this);
+      &input, std::min<int>(N, 1), mpi::registered_type(input), result.data(), std::min<int>(N, 1),
+      mpi::registered_type(input), **this);
   if(error != MPI_SUCCESS)
     throw std::runtime_error("Gathering scalar data over graph communicator failed");
 
-  auto const back = result.back();
-  result.pop_back();
   return result;
 }
 
@@ -74,7 +73,7 @@ template <class T0, class T1>
 typename std::enable_if<is_registered_type<typename T0::Scalar>::value and
                             is_registered_type<typename T1::Scalar>::value,
                         Request>::type
-DistGraphCommunicator::iallgatherv(Eigen::PlainObjectBase<T0> const &input,
+GraphCommunicator::iallgatherv(Eigen::PlainObjectBase<T0> const &input,
                                    Eigen::PlainObjectBase<T1> const &out,
                                    std::vector<int> rcvcounts) const {
   if(not is_valid()) {
@@ -92,8 +91,6 @@ DistGraphCommunicator::iallgatherv(Eigen::PlainObjectBase<T0> const &input,
   } else
     const_cast<Eigen::PlainObjectBase<T1> &>(out).resize(0);
 
-  auto const Nin = std::get<0>(nedges());
-
   std::unique_ptr<MPI_Request> request(new MPI_Request);
   typename T1::Scalar dummy(0);
   typename T1::Scalar *const out_buffer =
@@ -104,8 +101,9 @@ DistGraphCommunicator::iallgatherv(Eigen::PlainObjectBase<T0> const &input,
   typename T0::Scalar const input_dummy = 0;
   typename T0::Scalar const *const input_ptr = input.size() == 0 ? &input_dummy : input.data();
 
+  auto const N = neighborhood_size();
   auto const error = MPI_Ineighbor_allgatherv(
-      input_ptr, Nin == 0 ? 0 : input.size(), mpi::Type<typename T0::Scalar>::value, out_buffer,
+      input_ptr, N == 0 ? 0 : input.size(), mpi::Type<typename T0::Scalar>::value, out_buffer,
       rcvcount_ptr, outdisp_ptr, mpi::Type<typename T1::Scalar>::value, **this, request.get());
 
   if(error != MPI_SUCCESS)
