@@ -39,7 +39,15 @@ public:
                               is_registered_type<typename T1::Scalar>::value,
                           Request>::type
   iallgather(Eigen::PlainObjectBase<T0> const &input, Eigen::PlainObjectBase<T1> const &out,
-             std::vector<int> rcvcounts) const;
+             std::vector<int> const &rcvcounts) const;
+
+  //! Non-blocking all-to-all over graph
+  template <class T0, class T1>
+  typename std::enable_if<is_registered_type<typename T0::Scalar>::value and
+                              is_registered_type<typename T1::Scalar>::value,
+                          Request>::type
+  ialltoall(Eigen::PlainObjectBase<T0> const &input, Eigen::PlainObjectBase<T1> const &out,
+            std::vector<int> const &send_counts, std::vector<int> const &receive_counts) const;
 
   //! Blocking Send/Receive single scalar to neighbor
   template <class T>
@@ -75,19 +83,19 @@ typename std::enable_if<is_registered_type<typename T0::Scalar>::value and
                         Request>::type
 GraphCommunicator::iallgather(Eigen::PlainObjectBase<T0> const &input,
                               Eigen::PlainObjectBase<T1> const &out,
-                              std::vector<int> rcvcounts) const {
+                              std::vector<int> const &rcvcounts) const {
   if(not is_valid()) {
     const_cast<Eigen::PlainObjectBase<T1> &>(out).resize(0);
     return Request(nullptr);
   }
 
-  std::vector<int> out_disps(rcvcounts.size());
-  if(out_disps.size() != 0) {
-    out_disps[0] = 0;
+  std::vector<int> receive_disps(rcvcounts.size());
+  if(receive_disps.size() != 0) {
+    receive_disps[0] = 0;
     for(std::vector<int>::size_type i(1); i < rcvcounts.size(); ++i)
-      out_disps[i] = rcvcounts[i - 1] + out_disps[i - 1];
+      receive_disps[i] = rcvcounts[i - 1] + receive_disps[i - 1];
 
-    const_cast<Eigen::PlainObjectBase<T1> &>(out).resize(out_disps.back() + rcvcounts.back());
+    const_cast<Eigen::PlainObjectBase<T1> &>(out).resize(receive_disps.back() + rcvcounts.back());
   } else
     const_cast<Eigen::PlainObjectBase<T1> &>(out).resize(0);
 
@@ -97,7 +105,7 @@ GraphCommunicator::iallgather(Eigen::PlainObjectBase<T0> const &input,
       out.size() == 0 ? &dummy : const_cast<Eigen::PlainObjectBase<T1> &>(out).data();
   int const idummy(0);
   int const *const rcvcount_ptr = rcvcounts.size() == 0 ? &idummy : rcvcounts.data();
-  int const *const outdisp_ptr = rcvcounts.size() == 0 ? &idummy : out_disps.data();
+  int const *const outdisp_ptr = rcvcounts.size() == 0 ? &idummy : receive_disps.data();
   typename T0::Scalar const input_dummy = 0;
   typename T0::Scalar const *const input_ptr = input.size() == 0 ? &input_dummy : input.data();
 
@@ -108,6 +116,64 @@ GraphCommunicator::iallgather(Eigen::PlainObjectBase<T0> const &input,
 
   if(error != MPI_SUCCESS)
     throw std::runtime_error("Gathering data over graph communicator failed");
+
+  return make_wait_on_delete(request.release());
+}
+
+template <class T0, class T1>
+typename std::enable_if<is_registered_type<typename T0::Scalar>::value and
+                            is_registered_type<typename T1::Scalar>::value,
+                        Request>::type
+GraphCommunicator::ialltoall(Eigen::PlainObjectBase<T0> const &input,
+                             Eigen::PlainObjectBase<T1> const &out,
+                             std::vector<int> const &send_counts,
+                             std::vector<int> const &receive_counts) const {
+  if(not is_valid()) {
+    const_cast<Eigen::PlainObjectBase<T1> &>(out).resize(0);
+    return Request(nullptr);
+  }
+
+  std::vector<int> receive_disps(receive_counts.size());
+  if(receive_disps.size() != 0) {
+    receive_disps[0] = 0;
+    for(std::vector<int>::size_type i(1); i < receive_counts.size(); ++i)
+      receive_disps[i] = receive_counts[i - 1] + receive_disps[i - 1];
+
+    const_cast<Eigen::PlainObjectBase<T1> &>(out).resize(receive_disps.back() +
+                                                         receive_counts.back());
+  } else
+    const_cast<Eigen::PlainObjectBase<T1> &>(out).resize(0);
+
+  std::vector<int> send_disps(send_counts.size());
+  if(send_disps.size() != 0) {
+    send_disps[0] = 0;
+    for(std::vector<int>::size_type i(1); i < send_counts.size(); ++i)
+      send_disps[i] = send_counts[i - 1] + send_disps[i - 1];
+
+    if(input.size() != send_disps.back() + send_counts.back())
+      throw std::out_of_range("Input vector does not match send_counts");
+  }
+
+  std::unique_ptr<MPI_Request> request(new MPI_Request);
+  typename T1::Scalar receive_dummy(0);
+  typename T1::Scalar *const receive_buffer =
+      out.size() == 0 ? &receive_dummy : const_cast<Eigen::PlainObjectBase<T1> &>(out).data();
+  int const idummy(0);
+  int const *const receive_count_ptr = receive_counts.size() == 0 ? &idummy : receive_counts.data();
+  int const *const receive_disp_ptr = receive_counts.size() == 0 ? &idummy : receive_disps.data();
+
+  typename T0::Scalar const send_dummy = 0;
+  typename T0::Scalar const *const send_ptr = input.size() == 0 ? &send_dummy : input.data();
+  int const *const send_count_ptr = send_counts.size() == 0 ? &idummy : send_counts.data();
+  int const *const send_disp_ptr = send_counts.size() == 0 ? &idummy : send_disps.data();
+
+  auto const error = MPI_Ineighbor_alltoallv(
+      send_ptr, send_count_ptr, send_disp_ptr, mpi::registered_type(send_dummy), receive_buffer,
+      receive_count_ptr, receive_disp_ptr, mpi::registered_type(receive_dummy), **this,
+      request.get());
+
+  if(error != MPI_SUCCESS)
+    throw std::runtime_error("All-to-all data over graph communicator failed");
 
   return make_wait_on_delete(request.release());
 }
