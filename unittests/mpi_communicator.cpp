@@ -1,9 +1,9 @@
-#include <iostream>
 #include "catch.hpp"
 
 #include "Types.h"
-#include "mpi/Communicator.h"
 #include "mpi/Collectives.h"
+#include "mpi/Communicator.h"
+#include "mpi/GraphCommunicator.h"
 #include "mpi/Session.h"
 
 using namespace optimet;
@@ -90,4 +90,79 @@ TEST_CASE("Gathering") {
     for(std::size_t i(0); i < result.size(); ++i)
       CHECK(result[i] == i * 2);
   }
+}
+
+TEST_CASE("Non-symmetric graph communicators") {
+
+  mpi::Communicator world;
+  if(world.size() < 3)
+    return;
+
+  std::vector<std::vector<int>> const sources = {{1}, {0, 2}, {0}, {}};
+  std::vector<std::vector<int>> const destinations = {{1, 2}, {0}, {1}, {}};
+  std::vector<std::vector<int>> const receive_count = {{6}, {3, 9}, {3}, {}};
+
+  auto const rank = std::min<t_uint>(world.rank(), 3);
+  mpi::DistGraphCommunicator graph(world, sources[rank], destinations[rank]);
+  if(graph.rank() == 0) {
+    CHECK(std::get<0>(graph.nedges()) == 1);
+    CHECK(std::get<1>(graph.nedges()) == 2);
+    CHECK(std::get<2>(graph.nedges()) == false);
+  } else if(graph.rank() == 1) {
+    CHECK(std::get<0>(graph.nedges()) == 2);
+    CHECK(std::get<1>(graph.nedges()) == 1);
+    CHECK(std::get<2>(graph.nedges()) == false);
+  } else if(graph.rank() == 2) {
+    CHECK(std::get<0>(graph.nedges()) == 1);
+    CHECK(std::get<1>(graph.nedges()) == 1);
+    CHECK(std::get<2>(graph.nedges()) == false);
+  }
+}
+
+TEST_CASE("Blocking gather of scalar on graph") {
+
+  mpi::Communicator world;
+  if(world.size() < 3)
+    return;
+
+  // std::vector<std::vector<int>> const sources = {{2, 1}, {0, 2}, {0}, {}};
+  // std::vector<std::vector<int>> const destinations = {{1, 2}, {0}, {0, 1}, {}};
+  std::vector<std::vector<int>> const sources = {{1, 2}, {0, 2}, {0, 1}, {}};
+  std::vector<std::vector<int>> const destinations = {{1, 2}, {0, 2}, {0, 1}, {}};
+  std::vector<int> const values = {2, 4, 1, 3};
+
+  auto const rank = std::min<t_uint>(world.rank(), 3);
+  mpi::DistGraphCommunicator graph(world, sources[rank], destinations[rank], false);
+  auto const actual = graph.allgather(values[rank]);
+
+  CHECK(actual.size() == sources[rank].size());
+  for(decltype(actual)::size_type i(0); i < actual.size(); ++i)
+    CHECK(actual[i] == values[sources[rank][i]]);
+}
+
+TEST_CASE("Non-blocking gather of Eigen vectors on graph") {
+
+  mpi::Communicator world;
+  if(world.size() < 3)
+    return;
+
+  auto const size = [](t_int rank) { return 3 * (rank + 1); };
+  std::vector<std::vector<int>> const sources = {{1, 2}, {0, 2}, {0}, {}};
+  std::vector<std::vector<int>> const destinations = {{1, 2}, {0}, {1, 0}, {}};
+  std::vector<int> const values = {3, 5, 1, 0};
+
+  auto const rank = std::min<t_uint>(world.rank(), 3);
+  mpi::DistGraphCommunicator graph(world, sources[rank], destinations[rank], false);
+
+  auto const receive_count = graph.allgather(size(rank));
+  Vector<int> input = Vector<int>::Constant(size(rank), values[rank]);
+  Vector<int> result;
+  if(auto request = graph.iallgatherv(input, result, receive_count)) {
+    auto const N = std::accumulate(receive_count.begin(), receive_count.end(), 0u);
+    CHECK(result.size() == N);
+    CHECK(static_cast<bool>(request));
+  }
+
+  for(t_uint i(0), j(0); i < receive_count.size(); j += receive_count[i++])
+    CHECK((result.segment(j, receive_count[i]).array() == values[sources[rank][i]]).all());
 }
