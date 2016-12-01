@@ -37,12 +37,12 @@ Vector<t_int> vector_distribution(t_int nscatterers, t_int nprocs) {
 }
 
 template <class T>
-std::vector<std::set<t_int>>
+std::vector<std::set<t_uint>>
 graph_edges(Eigen::MatrixBase<T> const &considered, Vector<t_int> const &vecdist, bool in_to_out) {
   assert(considered.rows() == considered.cols());
   assert(considered.rows() == vecdist.size());
   auto const nprocs = vecdist.maxCoeff() + 1;
-  std::vector<std::set<t_int>> results(nprocs);
+  std::vector<std::set<t_uint>> results(nprocs);
   for(t_uint i(0); i < considered.rows(); ++i)
     for(t_uint j(0); j < considered.cols(); ++j) {
       if(vecdist(i) == vecdist(j) or considered(i, j) == false)
@@ -55,14 +55,42 @@ graph_edges(Eigen::MatrixBase<T> const &considered, Vector<t_int> const &vecdist
   return results;
 }
 
-std::vector<std::set<t_int>>
+std::vector<std::set<t_uint>>
 local_graph_edges(Matrix<bool> const &locals, Vector<t_int> const &vecdist) {
   return graph_edges(locals, vecdist, true);
 }
 //! Figures out graph connectivity for given distribution
-std::vector<std::set<t_int>>
+std::vector<std::set<t_uint>>
 non_local_graph_edges(Matrix<bool> const &nonlocals, Vector<t_int> const &vecdist) {
   return graph_edges(nonlocals, vecdist, false);
+}
+
+std::vector<int> neighborhood_input_counts(Matrix<bool> const &nonlocals,
+                                           Vector<t_int> const &vector_distribution,
+                                           std::vector<Scatterer> const &scatterers, t_uint rank) {
+  // graph should be symmetric
+  assert(nonlocals == nonlocals.transpose());
+  std::map<int, int> counts;
+  for(Matrix<bool>::Index i(0); i < nonlocals.cols(); ++i) {
+    auto const other_proc = vector_distribution[i];
+    if(other_proc == rank)
+      continue;
+    bool found = false;
+    for(Matrix<bool>::Index j(0); j < nonlocals.rows(); ++j)
+      if(vector_distribution[j] == rank and nonlocals(i, j) == true) {
+        found = true;
+        break;
+      }
+    if(found) {
+      if(counts.find(other_proc) == counts.end())
+        counts[other_proc] = 0;
+      counts[other_proc] += 2 * scatterers[i].nMax * (scatterers[i].nMax + 2);
+    }
+  }
+  std::vector<int> result;
+  std::transform(counts.begin(), counts.end(), std::back_inserter(result),
+                 [](std::map<int, int>::const_reference a) { return a.second; });
+  return result;
 }
 }
 

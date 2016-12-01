@@ -25,11 +25,16 @@ inline Matrix<t_int> matrix_distribution(t_int nscatterers, t_int nprocs) {
 }
 
 //! Figures out graph connectivity for given distribution
-std::vector<std::set<t_int>>
+std::vector<std::set<t_uint>>
 local_graph_edges(Matrix<bool> const &locals, Vector<t_int> const &vector_distribution);
 //! Figures out graph connectivity for given distribution
-std::vector<std::set<t_int>>
+std::vector<std::set<t_uint>>
 non_local_graph_edges(Matrix<bool> const &nonlocals, Vector<t_int> const &vector_distribution);
+
+//! Amount of input data to receive from neighboring processes
+std::vector<int> neighborhood_input_counts(Matrix<bool> const &nonlocals,
+                                           Vector<t_int> const &vector_distribution,
+                                           std::vector<Scatterer> const &scatterers, t_uint rank);
 }
 
 class FastMatrixMultiply {
