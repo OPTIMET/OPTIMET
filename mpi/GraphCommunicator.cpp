@@ -21,6 +21,7 @@ GraphCommunicator::GraphCommunicator(Communicator const &comm,
   if(*std::max_element(edges.begin(), edges.end()) >= comm.size())
     throw std::out_of_range("Edge index in graph communicator is larger than parent comm size");
 
+  degrees.resize(comm.size(), degrees.back());
   MPI_Comm result;
   auto const error =
       MPI_Graph_create(*comm, degrees.size(), degrees.data(), edges.data(), reorder, &result);
