@@ -37,9 +37,47 @@ std::vector<int> neighborhood_input_counts(Matrix<bool> const &nonlocals,
                                            std::vector<Scatterer> const &scatterers, t_uint rank);
 }
 
+//! \brief MPI version of the Fast-Matrix-Multiply
+//! \details This operation distributes a Matrix-vector multiplication. The only data of import
+//! outside this operation are the input/output vectors. The matrix/operation can be distributed as
+//! we best see fit.
+//!
+//! The vectors are distributed across procs homogeneously: each proc owns all the coefficients
+//! associated with a set of particles, contiguous in the array of input particles.
+//!
+//! To overlap calculations and communications, we perform several steps:
+//!
+//! 1. distribute to the processes that require it the input coefficients owned by this process.
+//! 2. compute parts of the vector-matrix calculation that require only knowledge of the owned
+//! coefficients. The output of this calculation affects the coefficients owned by other procs.
+//! 3. distribute the computations from the previous step to the relevant procs
+//! 4. receive the input data from step 1
+//! 5. perform parts of the matrix-vector multiplication using the data received in 4 that affects
+//! output coefficients owned by this process
+//! 6. receive data from 3.
+//! 7. performs a reductions over data received in 6 and computed in 5
+//!
+//! The crux is to separate those calculations that require data from other processes but outputs
+//! only this to process, from calculations requiring only data from this process but outputs to any
+//! process. There diagonal part of the matrix-vector multiplication can be computed eitehr at step
+//! 2 or 5.
 class FastMatrixMultiply {
 
 public:
+  //! Creates an MPI fast-matrix-multiply
+  //! \param[in] em_background: Electromagnetic properties of the background medium
+  //! \param[in] wavenumber: of the impinging wave
+  //! \param[in] scatterers: array of scatterers
+  //! \param[in] local_nonlocal: Each element refers to the coupling of a pair of particles. Those
+  //!                            elements that are true will be computed in step 2 of the algorithm,
+  //!                            and those that are false in step 5. This process will compute only
+  //!                            the relevant elements that are along it's own columns (for step 2)
+  //!                            and rows (for step 5).
+  //! \param[in] vector_distribution: defines the rank of that own each element in the input
+  //!                                 vector. It should define *contiguous* ranges.
+  //! \param[in] comm: Communicator from which to create the graph communicators for the two
+  //!                  communication steps. This communicator should hold all and only those
+  //!                  processes involved in the matrix-vector multiplication.
   FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
                      std::vector<Scatterer> const &scatterers, Matrix<bool> const local_nonlocal,
                      Vector<t_int> const vector_distribution,
