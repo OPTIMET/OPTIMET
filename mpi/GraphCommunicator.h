@@ -33,6 +33,10 @@ public:
   //! Number of neighbors
   t_uint neighborhood_size(int rank) const;
   t_uint neighborhood_size() const { return neighborhood_size(rank()); }
+
+  //! Rank of neighbors
+  std::vector<t_uint> neighborhood(int rank) const;
+  std::vector<t_uint> neighborhood() const { return neighborhood(rank()); }
   //! Non-blocking Gather over graph
   template <class T0, class T1>
   typename std::enable_if<is_registered_type<typename T0::Scalar>::value and

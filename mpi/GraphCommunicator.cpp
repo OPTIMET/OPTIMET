@@ -40,6 +40,18 @@ t_uint GraphCommunicator::neighborhood_size(int rank) const {
   return static_cast<t_uint>(result);
 }
 
+std::vector<t_uint> GraphCommunicator::neighborhood(int rank) const {
+  if(not is_valid())
+    return std::vector<t_uint>();
+
+  int const N = neighborhood_size(rank);
+  std::vector<int> result(N);
+  auto const error = MPI_Graph_neighbors(**this, rank, N, result.data());
+  if(error != MPI_SUCCESS)
+    throw std::runtime_error("Could not retrieve the number of input edges");
+  return std::vector<t_uint>(result.begin(), result.end());
+}
+
 namespace {
 void wait_on_delete(MPI_Request *request) {
   if(request == nullptr)

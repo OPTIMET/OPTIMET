@@ -103,10 +103,17 @@ TEST_CASE("Symmetric graph communicators") {
   auto const rank = std::min<t_uint>(world.rank(), 3);
   mpi::GraphCommunicator graph(world, comms);
   CHECK(graph.neighborhood_size(rank) == comms[rank].size());
+  for(decltype(comms)::size_type i(0); i < comms.size(); ++i) {
+    REQUIRE(graph.neighborhood(i).size() == comms[i].size());
+    for(decltype(comms)::value_type::size_type j(0); j < comms[i].size(); ++j) {
+      auto iter = comms[i].begin();
+      std::advance(iter, j);
+      CHECK(graph.neighborhood(i)[j] == *iter);
+    }
+  }
 }
 
 TEST_CASE("Blocking gather of scalar on graph") {
-
   mpi::Communicator world;
   if(world.size() < 3)
     return;
