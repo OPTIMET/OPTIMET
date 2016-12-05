@@ -54,7 +54,7 @@ std::vector<t_uint> GraphCommunicator::neighborhood(int rank) const {
 }
 
 namespace {
-void wait_on_delete(MPI_Request *request) {
+void wait_on_delete(MPI_Request * request) {
   if(request == nullptr)
     return;
 
@@ -64,8 +64,8 @@ void wait_on_delete(MPI_Request *request) {
     throw std::runtime_error("Got an error when waiting for request to complete");
 }
 }
-Request make_wait_on_delete(MPI_Request *const request) {
-  return Request(request, &wait_on_delete);
+Request mpi_request_wait_on_delete(MPI_Request * const request) {
+  return Request(request, wait_on_delete);
 }
 
 std::vector<std::set<t_uint>>

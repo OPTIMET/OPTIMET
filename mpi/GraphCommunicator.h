@@ -18,9 +18,9 @@ namespace optimet {
 namespace mpi {
 
 //! Type of a request
-typedef std::shared_ptr<MPI_Request const> Request;
+typedef std::unique_ptr<MPI_Request, void(*)(MPI_Request* const)> Request;
 //! A request that calls wait when going out of scope
-Request make_wait_on_delete(MPI_Request *const request);
+Request mpi_request_wait_on_delete(MPI_Request *const request);
 
 class GraphCommunicator : public Communicator {
 public:
@@ -90,7 +90,7 @@ GraphCommunicator::iallgather(Eigen::PlainObjectBase<T0> const &input,
                               std::vector<int> const &rcvcounts) const {
   if(not is_valid()) {
     const_cast<Eigen::PlainObjectBase<T1> &>(out).resize(0);
-    return Request(nullptr);
+    return mpi_request_wait_on_delete(nullptr);
   }
 
   std::vector<int> receive_disps(rcvcounts.size());
@@ -121,7 +121,7 @@ GraphCommunicator::iallgather(Eigen::PlainObjectBase<T0> const &input,
   if(error != MPI_SUCCESS)
     throw std::runtime_error("Gathering data over graph communicator failed");
 
-  return make_wait_on_delete(request.release());
+  return mpi_request_wait_on_delete(request.release());
 }
 
 template <class T0, class T1>
@@ -134,7 +134,7 @@ GraphCommunicator::ialltoall(Eigen::PlainObjectBase<T0> const &input,
                              std::vector<int> const &receive_counts) const {
   if(not is_valid()) {
     const_cast<Eigen::PlainObjectBase<T1> &>(out).resize(0);
-    return Request(nullptr);
+    return mpi_request_wait_on_delete(nullptr);
   }
 
   std::vector<int> receive_disps(receive_counts.size());
@@ -179,7 +179,7 @@ GraphCommunicator::ialltoall(Eigen::PlainObjectBase<T0> const &input,
   if(error != MPI_SUCCESS)
     throw std::runtime_error("All-to-all data over graph communicator failed");
 
-  return make_wait_on_delete(request.release());
+  return mpi_request_wait_on_delete(request.release());
 }
 }
 }
