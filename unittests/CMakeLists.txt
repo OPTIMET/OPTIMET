@@ -48,6 +48,7 @@ if(dompi)
 
   add_catch_test(fmm_distribution LIBRARIES optilib ${library_dependencies})
   add_catch_test(squarest LIBRARIES optilib ${library_dependencies})
+  add_mpi_test(parallel_fmm LIBRARIES optilib ${library_dependencies})
   add_mpi_test(single_particle LIBRARIES optilib ${library_dependencies})
   add_mpi_test(mpi_communicator LIBRARIES optilib ${library_dependencies})
   add_mpi_test(scalapack_context LIBRARIES optilib ${library_dependencies})

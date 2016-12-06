@@ -173,14 +173,12 @@ TEST_CASE("Input neighbor count") {
   SECTION("Particular peculiarities") {
     Matrix<bool> non_locals = Matrix<bool>::Zero(nscatt, nscatt);
     non_locals.col(3).fill(true);
-    non_locals.row(3).fill(true);
     auto counts = mpi::details::neighborhood_input_counts(non_locals, vecdist, scatterers, 0);
 
     REQUIRE(counts.size() == 1);
     CHECK(counts[0] == nfunctions(3));
 
     non_locals.col(5).fill(true);
-    non_locals.row(5).fill(true);
     counts = mpi::details::neighborhood_input_counts(non_locals, vecdist, scatterers, 0);
     REQUIRE(counts.size() == 2);
     CHECK(counts[0] == nfunctions(3));

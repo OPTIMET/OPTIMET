@@ -68,8 +68,6 @@ non_local_graph_edges(Matrix<bool> const &nonlocals, Vector<t_int> const &vecdis
 std::vector<int> neighborhood_input_counts(Matrix<bool> const &nonlocals,
                                            Vector<t_int> const &vector_distribution,
                                            std::vector<Scatterer> const &scatterers, t_uint rank) {
-  // graph should be symmetric
-  assert(nonlocals == nonlocals.transpose());
   std::map<int, int> counts;
   for(Matrix<bool>::Index i(0); i < nonlocals.cols(); ++i) {
     auto const other_proc = vector_distribution[i];
@@ -94,39 +92,96 @@ std::vector<int> neighborhood_input_counts(Matrix<bool> const &nonlocals,
 }
 }
 
-// optimet::FastMatrixMultiply
-// FastMatrixMultiply::create_column(ElectroMagnetic const &em_background, t_real wavenumber,
-//                                   std::vector<Scatterer> const &scatterers, t_uint nprocs,
-//                                   t_uint rank) {
-//   auto const range = details::column_range(scatterers.size(), nprocs, rank);
-//   auto const n = range.second - range.first;
-//   if(n == 0)
-//     return optimet::FastMatrixMultiply(em_background, wavenumber, std::vector<Scatterer>());
-//   std::vector<Scatterer> objects;
-//   objects.reserve(n);
-//   std::copy(scatterers.begin() + range.first, scatterers.begin() + range.second,
-//             std::back_inserter(objects));
-//   auto const out = rank - range.first;
-//   return optimet::FastMatrixMultiply(em_background, wavenumber, objects, {out, out + 1},
-//                                      {0, objects.size()});
-// }
-//
-// optimet::FastMatrixMultiply FastMatrixMultiply::create_row(ElectroMagnetic const &em_background,
-//                                                            t_real wavenumber,
-//                                                            std::vector<Scatterer> const
-//                                                            &scatterers,
-//                                                            t_uint nprocs, t_uint rank) {
-//   auto const range = details::column_range(scatterers.size(), nprocs, rank);
-//   auto const n = range.second - range.first;
-//   if(n == 0 or n == scatterers.size())
-//     return optimet::FastMatrixMultiply(em_background, wavenumber, std::vector<Scatterer>());
-//   std::vector<Scatterer> objects;
-//   objects.reserve(objects.size() - n + 1);
-//   objects.push_back(scatterers[rank]);
-//   std::copy(scatterers.begin(), scatterers.begin() + range.first, std::back_inserter(objects));
-//   std::copy(scatterers.begin() + range.second, scatterers.end(), std::back_inserter(objects));
-//   return optimet::FastMatrixMultiply(em_background, wavenumber, objects, {1, objects.size()},
-//                                      {0, 1});
-// }
+Vector<t_complex> FastMatrixMultiply::operator()(Vector<t_complex> const &in) const {
+  Vector<t_complex> result(rows());
+  operator()(in, result);
+  return result;
+}
+
+void FastMatrixMultiply::operator()(Vector<t_complex> const &input, Vector<t_complex> &out) const {
+  // first communicate input data to other processes
+  Vector<t_complex> nl_input;
+  // auto distribute_request = distribute_comm_.iallgather(input, nl_input, input_counts_);
+}
+
+FastMatrixMultiply::FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
+                                       std::vector<Scatterer> const &scatterers,
+                                       Matrix<bool> const &lnl, Matrix<bool> const &local_dist,
+                                       Matrix<bool> const &nonlocal_dist,
+                                       Vector<t_int> const &vector_distribution,
+                                       mpi::Communicator const &comm)
+    : local_fmm_(em_background, wavenumber, scatterers, local_dist),
+      nonlocal_fmm_(em_background, wavenumber, scatterers, nonlocal_dist),
+      distribute_comm_(comm, GraphCommunicator::symmetrize(
+                                 details::local_graph_edges(local_dist, vector_distribution))),
+      reduce_comm_(comm, GraphCommunicator::symmetrize(
+                             details::non_local_graph_edges(nonlocal_dist, vector_distribution))) {
+}
+
+namespace {
+Vector<int> compute_sizes(std::vector<Scatterer> const &scatterers) {
+  Vector<int> result(scatterers.size());
+  for(Vector<int>::Index i(0); i < result.size(); ++i)
+    result(i) = 2 * scatterers[i].nMax * (scatterers[i].nMax + 2);
+  return result;
+}
+}
+
+FastMatrixMultiply::ReduceComputation::ReduceComputation(GraphCommunicator const &comm,
+                                                         Matrix<bool> const &allowed,
+                                                         Vector<int> const &distribution,
+                                                         Vector<int> const &sizes)
+    : comm(comm) {
+  auto const neighborhood = comm.neighborhood();
+  auto const comps = [&distribution, &allowed](t_uint rank) {
+    return (allowed.array() &&
+            (distribution.transpose().array() == rank).replicate(distribution.size(), 1))
+        .rowwise()
+        .any();
+  };
+  auto const local_comps = comps(comm.rank());
+
+  auto const owned = (distribution.array() == comm.rank()).eval();
+  for(decltype(neighborhood)::size_type i(0), rloc(0), sloc(0); i < neighborhood.size(); ++i) {
+    auto const nl_comps = comps(neighborhood[i]);
+    // Helps reconstruct data received from other procs
+    for(t_uint j(0), iloc(0); j < nl_comps.size(); ++j) {
+      if(not owned(j))
+        continue;
+      if(nl_comps(j) == true) {
+        relocate_receive.emplace_back(sizes[j], rloc, iloc);
+        rloc += sizes[j];
+      }
+      iloc += sizes[j];
+    }
+
+    // Helps construct data send to other procs
+    auto const nl_owned = (distribution.array() == neighborhood[i]).eval();
+    for(t_uint j(0), iloc(0); j < local_comps.size(); ++j) {
+      if(not local_comps(j))
+        continue;
+      if(nl_owned(j) == true) {
+        relocate_send.emplace_back(sizes[j], sloc, iloc);
+        sloc += sizes[j];
+      }
+      iloc += sizes[j];
+    }
+
+    // Amount of data to send to each proc
+    send_counts.push_back((local_comps.array() && (distribution.array() == neighborhood[i]))
+                              .select(sizes, Vector<int>::Zero(sizes.size()))
+                              .sum());
+    // Amount of data to receive from each proc
+    receive_counts.push_back(
+        (nl_comps.array() && owned).select(sizes, Vector<int>::Zero(sizes.size())).sum());
+  }
+  message.reset(new Vector<int>(std::accumulate(send_counts.begin(), send_counts.end(), 0)));
+}
+
+FastMatrixMultiply::ReduceComputation::ReduceComputation(GraphCommunicator const &comm,
+                                                         Matrix<bool> const &allowed,
+                                                         Vector<int> const &distribution,
+                                                         std::vector<Scatterer> const &scatterers)
+    : ReduceComputation(comm, allowed, distribution, compute_sizes(scatterers)){};
 }
 } // optimet namespace
