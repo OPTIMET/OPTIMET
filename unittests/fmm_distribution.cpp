@@ -2,7 +2,7 @@
 #include "mpi/FastMatrixMultiply.h"
 #include <iostream>
 
-TEST_CASE("Check distributions") {
+TEST_CASE("Column and row distributions") {
   using namespace optimet;
   SECTION("Column distributions") {
     using optimet::mpi::details::vector_distribution;
@@ -80,41 +80,41 @@ TEST_CASE("Graph communicators creation") {
     auto const locals = local_graph_edges(Matrix<bool>::Ones(nscatt, nscatt), vecdist);
     CHECK(locals.size() == nprocs);
     for(t_int i(0); i < locals.size(); ++i) {
-      CHECK(locals[i].size() == nprocs - 1);
+      CHECK(locals[i].size() == nprocs);
       for(t_uint n(0); n < nprocs; ++n)
-        CHECK((locals[i].count(n) == 1) == (n != i));
+        CHECK((locals[i].count(n) == 1));
     }
 
     auto const nonlocals = non_local_graph_edges(Matrix<bool>::Ones(nscatt, nscatt), vecdist);
     CHECK(nonlocals.size() == nprocs);
     for(t_int i(0); i < locals.size(); ++i) {
-      CHECK(nonlocals[i].size() == nprocs - 1);
+      CHECK(nonlocals[i].size() == nprocs);
       for(t_uint n(0); n < nprocs; ++n)
-        CHECK((nonlocals[i].count(n) == 1) == (n != i));
+        CHECK((nonlocals[i].count(n) == 1));
     }
   }
 
-  SECTION("Half-half") {
+  SECTION("Quarter") {
     Matrix<bool> allowed = Matrix<bool>::Zero(nscatt, nscatt);
-    allowed.rightCols(nscatt / 2).fill(true);
+    allowed.topLeftCorner(nscatt / 2, nscatt / 2).fill(true);
     auto const locals = local_graph_edges(allowed, vecdist);
     CHECK(locals.size() == nprocs);
-    CHECK(locals[0].size() == 0);
+    CHECK(locals[0].size() == 2);
+    CHECK(locals[0].count(0) == 1);
+    CHECK(locals[0].count(1) == 1);
     CHECK(locals[1].size() == 2);
     CHECK(locals[1].count(0) == 1);
-    CHECK(locals[1].count(2) == 1);
-    CHECK(locals[2].size() == 2);
-    CHECK(locals[2].count(0) == 1);
-    CHECK(locals[2].count(1) == 1);
+    CHECK(locals[1].count(1) == 1);
+    CHECK(locals[2].size() == 0);
 
     auto const nonlocals = non_local_graph_edges(allowed, vecdist);
     CHECK(nonlocals.size() == nprocs);
     CHECK(nonlocals[0].size() == 2);
+    CHECK(nonlocals[0].count(0) == 1);
     CHECK(nonlocals[0].count(1) == 1);
-    CHECK(nonlocals[0].count(2) == 1);
-    CHECK(nonlocals[1].size() == 1);
-    CHECK(nonlocals[1].count(1) == 0);
-    CHECK(nonlocals[2].size() == 1);
-    CHECK(nonlocals[2].count(0) == 0);
+    CHECK(nonlocals[1].size() == 2);
+    CHECK(nonlocals[1].count(0) == 1);
+    CHECK(nonlocals[1].count(1) == 1);
+    CHECK(nonlocals[2].size() == 0);
   }
 }

@@ -40,7 +40,7 @@ TEST_CASE("ReduceComputation") {
   mpi::FastMatrixMultiply::ReduceComputation reduction(graph_comm, locals.array() == false,
                                                        distribution, scatterers);
   std::vector<int> const buffer_sizes{2 * (nfunctions(0) + nfunctions(1)),
-                                      nfunctions(2) + nfunctions(3),
+                                      2 * (nfunctions(2) + nfunctions(3)),
                                       2 * (nfunctions(4) + nfunctions(5)), 0};
   SECTION("Send message") {
     Vector<int> buffer;
@@ -58,8 +58,10 @@ TEST_CASE("ReduceComputation") {
             messages[2].head(nfunctions(0) + nfunctions(1)));
       break;
     case 1:
-      REQUIRE(buffer.size() == nfunctions(2) + nfunctions(3));
+      REQUIRE(buffer.size() == 2 * (nfunctions(2) + nfunctions(3)));
       CHECK(buffer.head(nfunctions(3)) == messages[0].head(nfunctions(3)));
+      CHECK(buffer.segment(nfunctions(3), nfunctions(2) + nfunctions(3)) ==
+            messages[1].segment(nfunctions(0) + nfunctions(1), nfunctions(2) + nfunctions(3)));
       CHECK(buffer.tail(nfunctions(2)) == messages[2].tail(nfunctions(2)));
       break;
     case 2:
@@ -95,9 +97,12 @@ TEST_CASE("ReduceComputation") {
       break;
     case 1:
       CHECK(result.head(nfunctions(2)) ==
-            result.Constant(nfunctions(2), world.rank() + 1) + buffer.tail(nfunctions(2)));
+            result.Constant(nfunctions(2), world.rank() + 1) +
+                buffer.segment(nfunctions(3), nfunctions(2)) + buffer.tail(nfunctions(2)));
       CHECK(result.tail(nfunctions(3)) ==
-            result.Constant(nfunctions(3), world.rank() + 1) + buffer.head(nfunctions(3)));
+            result.Constant(nfunctions(3), world.rank() + 1) +
+                buffer.segment(nfunctions(3) + nfunctions(2), nfunctions(3)) +
+                buffer.head(nfunctions(3)));
       break;
     case 2:
       CHECK(result ==
@@ -148,8 +153,8 @@ TEST_CASE("DistributeInput") {
 
   mpi::FastMatrixMultiply::DistributeInput distribution(graph_comm, locals.array() == false,
                                                         vector_distribution, scatterers);
-  std::vector<int> const buffer_sizes{sizes[1] + sizes[2], sizes[0] + sizes[2], sizes[0] + sizes[1],
-                                      0};
+  std::vector<int> const buffer_sizes{sizes[1] + sizes[2], sizes[0] + sizes[1] + sizes[2],
+                                      sizes[0] + sizes[1], 0};
   auto const rank = std::min<int>(world.rank(), nprocs);
   SECTION("Send message") {
     Vector<int> buffer;
@@ -191,9 +196,7 @@ TEST_CASE("DistributeInput") {
       REQUIRE(result.size() ==
               nfunctions(0) + nfunctions(1) + nfunctions(2) + nfunctions(3) + nfunctions(4) +
                   nfunctions(5));
-      CHECK(result.head(sizes[0]) == buffer.head(sizes[0]));
-      CHECK(result.segment(sizes[0], sizes[1]) == Vector<int>::Zero(sizes[1]));
-      CHECK(result.tail(sizes[2]) == buffer.tail(sizes[2]));
+      CHECK(result == buffer);
       break;
     case 2:
       REQUIRE(result.size() == nfunctions(0) + nfunctions(1) + nfunctions(2));

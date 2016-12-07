@@ -151,6 +151,7 @@ public:
     return comm.iallgather(input, receiving, receive_counts);
   }
 
+  //! Creates an input vector for the matrix-multiplication terms from un-owned input
   template <class T0, class T1>
   void synthesize(Eigen::MatrixBase<T0> const &received,
                   Eigen::PlainObjectBase<T1> const &synthesis) const;
@@ -173,7 +174,10 @@ public:
   template <class T0, class T1>
   Request
   send(Eigen::MatrixBase<T0> const &input, Eigen::PlainObjectBase<T1> const &receiving) const;
-  //! Performs reduction over received data
+  //! \brief Performs reduction over received data
+  //! \details The operation is equivalent to reconstructing the output vectors such and doing a
+  //! reduction. In practice, this operation performs the sum over the different
+  //! matrix-multiplication terms computed by the different processes.
   template <class T0, class T1>
   void reduce(Eigen::MatrixBase<T0> const &inout, Eigen::MatrixBase<T1> const &received) const;
 

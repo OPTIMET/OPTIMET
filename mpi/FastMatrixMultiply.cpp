@@ -45,7 +45,7 @@ graph_edges(Eigen::MatrixBase<T> const &considered, Vector<t_int> const &vecdist
   std::vector<std::set<t_uint>> results(nprocs);
   for(t_uint i(0); i < considered.rows(); ++i)
     for(t_uint j(0); j < considered.cols(); ++j) {
-      if(vecdist(i) == vecdist(j) or considered(i, j) == false)
+      if(considered(i, j) == false)
         continue;
       if(in_to_out)
         results[vecdist(j)].insert(vecdist(i));
