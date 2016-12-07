@@ -195,14 +195,15 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
   auto const in_rows = input.rows();
   auto const out_rows = out.rows();
 
-  assert(work.rows() <=
-         nfunctions(std::lround(std::sqrt(std::max(in_rows, out_rows) + 1)) - 1 + nplus) + 1);
+  auto const max_rows =
+      nfunctions(std::lround(std::sqrt(std::max(in_rows, out_rows) + 1)) - 1 + nplus) + 1;
+  assert(work.rows() >= max_rows);
   assert(work.cols() == 4);
   const_cast<Eigen::MatrixBase<T2> &>(work).fill(0);
 
   // work matrices: we will alternatively use one then the other for input and output
-  auto alpha = const_cast<Eigen::MatrixBase<T2> &>(work).leftCols(2);
-  auto beta = const_cast<Eigen::MatrixBase<T2> &>(work).rightCols(2);
+  auto alpha = const_cast<Eigen::MatrixBase<T2> &>(work).leftCols(2).topRows(max_rows);
+  auto beta = const_cast<Eigen::MatrixBase<T2> &>(work).rightCols(2).topRows(max_rows);
 
   // First, we take into account Gumerov's very special normalization and notations
   // It adds +/-1 factors, as well as normalization constants
@@ -211,7 +212,7 @@ void FastMatrixMultiply::remove_translation(Eigen::MatrixBase<T0> const &input,
   // There is no n=0 term at this juncture
   alpha.middleRows(1, in_rows) = input.array() * normalization_.topRows(in_rows).array();
 
-  // // Then we apply the rotation - without n=0 term
+  // Then we apply the rotation - without n=0 term
   rotations_[i](alpha.middleRows(1, in_rows), beta.middleRows(1, in_rows));
 
   // Then perform co-axial translation - this may create n=0 term
