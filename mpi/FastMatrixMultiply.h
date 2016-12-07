@@ -2,7 +2,7 @@
 
 #include "../FastMatrixMultiply.h"
 #include "mpi/GraphCommunicator.h"
-#include <tuple>
+#include <array>
 #include <utility>
 #include <vector>
 
@@ -109,6 +109,69 @@ public:
   //! Local cols
   t_uint cols() const { return local_fmm_.cols(); }
 
+  //! Reconstructs output according to argument indices
+  template <class T0, class T1>
+  static void reconstruct(std::vector<std::array<t_uint, 3>> const &indices,
+                          Eigen::MatrixBase<T0> const &input,
+                          Eigen::PlainObjectBase<T1> const &output, bool sum = false);
+
+  class DistributeInput {
+  public:
+    DistributeInput(GraphCommunicator const &comm, Matrix<bool> const &allowed,
+                    Vector<int> const &distribution, std::vector<Scatterer> const &scatterers);
+    DistributeInput(GraphCommunicator const &comm, Matrix<bool> const &allowed,
+                    Vector<int> const &distribution, Vector<int> const &sizes);
+
+    //! Performs input distribution request
+    template <class T0, class T1>
+    Request send(Eigen::PlainObjectBase<T0> const &input,
+                 Eigen::PlainObjectBase<T1> const &receiving) const {
+      return comm.iallgather(input, receiving, receive_counts);
+    }
+
+    //! Creates an input vector for the matrix-multiplication terms from un-owned input
+    template <class T0, class T1>
+    void synthesize(Eigen::MatrixBase<T0> const &received,
+                    Eigen::PlainObjectBase<T1> const &synthesis) const {
+      FastMatrixMultiply::reconstruct(relocate_receive, received, synthesis);
+    }
+
+  protected:
+    GraphCommunicator comm;
+    std::vector<std::array<t_uint, 3>> relocate_receive;
+    std::vector<int> receive_counts;
+    t_uint synthesis_size;
+  };
+
+  class ReduceComputation {
+  public:
+    ReduceComputation(GraphCommunicator const &comm, Matrix<bool> const &allowed,
+                      Vector<int> const &distribution, std::vector<Scatterer> const &scatterers);
+    ReduceComputation(GraphCommunicator const &comm, Matrix<bool> const &allowed,
+                      Vector<int> const &distribution, Vector<int> const &sizes);
+
+    //! Performs reduction request over computed data
+    template <class T0, class T1, class T2>
+    Request send(Eigen::MatrixBase<T0> const &input, Eigen::PlainObjectBase<T1> const &send_buffer,
+                 Eigen::PlainObjectBase<T2> const &receiving) const;
+    //! \brief Performs reduction over received data
+    //! \details The operation is equivalent to reconstructing the output vectors such and doing a
+    //! reduction. In practice, this operation performs the sum over the different
+    //! matrix-multiplication terms computed by the different processes.
+    template <class T0, class T1>
+    void
+    reduce(Eigen::PlainObjectBase<T0> const &inout, Eigen::MatrixBase<T1> const &received) const {
+      FastMatrixMultiply::reconstruct(relocate_receive, received, inout, true);
+    }
+
+  protected:
+    GraphCommunicator comm;
+    std::vector<std::array<t_uint, 3>> relocate_receive;
+    std::vector<std::array<t_uint, 3>> relocate_send;
+    std::vector<int> receive_counts, send_counts;
+    t_uint message_size;
+  };
+
 private:
   //! Computed with local input vector
   optimet::FastMatrixMultiply local_fmm_;
@@ -137,116 +200,38 @@ private:
                      mpi::Communicator const &comm = mpi::Communicator());
 };
 
-class FastMatrixMultiply::DistributeInput {
-public:
-  DistributeInput(GraphCommunicator const &comm, Matrix<bool> const &allowed,
-                  Vector<int> const &distribution, std::vector<Scatterer> const &scatterers);
-  DistributeInput(GraphCommunicator const &comm, Matrix<bool> const &allowed,
-                  Vector<int> const &distribution, Vector<int> const &sizes);
-
-  //! Performs input distribution request
-  template <class T0, class T1>
-  Request
-  send(Eigen::PlainObjectBase<T0> const &input, Eigen::PlainObjectBase<T1> const &receiving) const {
-    return comm.iallgather(input, receiving, receive_counts);
-  }
-
-  //! Creates an input vector for the matrix-multiplication terms from un-owned input
-  template <class T0, class T1>
-  void synthesize(Eigen::MatrixBase<T0> const &received,
-                  Eigen::PlainObjectBase<T1> const &synthesis) const;
-
-protected:
-  GraphCommunicator comm;
-  std::vector<std::tuple<t_uint, t_uint, t_uint>> relocate_receive;
-  std::vector<int> receive_counts;
-  t_uint synthesis_size;
-};
-
-class FastMatrixMultiply::ReduceComputation {
-public:
-  ReduceComputation(GraphCommunicator const &comm, Matrix<bool> const &allowed,
-                    Vector<int> const &distribution, std::vector<Scatterer> const &scatterers);
-  ReduceComputation(GraphCommunicator const &comm, Matrix<bool> const &allowed,
-                    Vector<int> const &distribution, Vector<int> const &sizes);
-
-  //! Performs reduction request over computed data
-  template <class T0, class T1>
-  Request
-  send(Eigen::MatrixBase<T0> const &input, Eigen::PlainObjectBase<T1> const &receiving) const;
-  //! \brief Performs reduction over received data
-  //! \details The operation is equivalent to reconstructing the output vectors such and doing a
-  //! reduction. In practice, this operation performs the sum over the different
-  //! matrix-multiplication terms computed by the different processes.
-  template <class T0, class T1>
-  void reduce(Eigen::MatrixBase<T0> const &inout, Eigen::MatrixBase<T1> const &received) const;
-
-  template <class T0, class T1>
-  void reduce(Request &&request, Eigen::MatrixBase<T0> const &inout,
-              Eigen::MatrixBase<T1> const &received) const;
-
-protected:
-  GraphCommunicator comm;
-  std::vector<std::tuple<t_uint, t_uint, t_uint>> relocate_receive;
-  std::vector<std::tuple<t_uint, t_uint, t_uint>> relocate_send;
-  std::vector<int> receive_counts, send_counts;
-  std::unique_ptr<Vector<int>> message;
-};
-
 template <class T0, class T1>
-void FastMatrixMultiply::DistributeInput::synthesize(
-    Eigen::MatrixBase<T0> const &received, Eigen::PlainObjectBase<T1> const &synthesis) const {
-  const_cast<Eigen::PlainObjectBase<T1> &>(synthesis).resize(synthesis_size, 1);
-  const_cast<Eigen::PlainObjectBase<T1> &>(synthesis).fill(0);
-  for(auto const &location : relocate_receive) {
-    auto const &size = std::get<0>(location);
-    auto const &rcv_index = std::get<1>(location);
-    auto const &in_index = std::get<2>(location);
-    assert(in_index + size <= synthesis.size());
-    assert(rcv_index + size <= received.size());
-    const_cast<Eigen::PlainObjectBase<T1> &>(synthesis).segment(in_index, size) =
-        received.segment(rcv_index, size);
-  }
+void FastMatrixMultiply::reconstruct(std::vector<std::array<t_uint, 3>> const &indices,
+                                     Eigen::MatrixBase<T0> const &input,
+                                     Eigen::PlainObjectBase<T1> const &output, bool sum) {
+  auto const out_size = [](t_uint prior, std::array<t_uint, 3> const &item) {
+    return std::max<t_uint>(prior, item[0] + item[2]);
+  };
+  auto const N = std::accumulate(indices.begin(), indices.end(), t_uint(0), out_size);
+#ifndef NDEBUG
+  auto const in_size = [](t_uint prior, std::array<t_uint, 3> const &item) {
+    return std::max<t_uint>(prior, item[0] + item[1]);
+  };
+  assert(std::accumulate(indices.begin(), indices.end(), t_uint(0), in_size) <= input.size());
+#endif
+  const_cast<Eigen::PlainObjectBase<T1> &>(output).resize(N);
+  if(sum)
+    for(auto const &location : indices)
+      const_cast<Eigen::PlainObjectBase<T1> &>(output).segment(location[2], location[0]) +=
+          input.segment(location[1], location[0]).template cast<typename T1::Scalar>();
+  else
+    for(auto const &location : indices)
+      const_cast<Eigen::PlainObjectBase<T1> &>(output).segment(location[2], location[0]) =
+          input.segment(location[1], location[0]).template cast<typename T1::Scalar>();
 }
 
-template <class T0, class T1>
+template <class T0, class T1, class T2>
 Request
 FastMatrixMultiply::ReduceComputation::send(Eigen::MatrixBase<T0> const &input,
-                                            Eigen::PlainObjectBase<T1> const &receiving) const {
-  for(auto const &location : relocate_send) {
-    auto const &size = std::get<0>(location);
-    auto const &message_index = std::get<1>(location);
-    auto const &send_index = std::get<2>(location);
-    assert(send_index + size <= input.size());
-    assert(message_index + size <= message->size());
-    message->segment(message_index, size) = input.segment(send_index, size);
-  }
-
-  return comm.ialltoall(*message, receiving, send_counts, receive_counts);
-}
-
-template <class T0, class T1>
-void FastMatrixMultiply::ReduceComputation::reduce(Eigen::MatrixBase<T0> const &inout,
-                                                   Eigen::MatrixBase<T1> const &received) const {
-  for(auto const &location : relocate_receive) {
-    auto const &size = std::get<0>(location);
-    auto const &rcv_index = std::get<1>(location);
-    auto const &in_index = std::get<2>(location);
-    assert(in_index + size <= inout.size());
-    assert(rcv_index + size <= received.size());
-    const_cast<Eigen::MatrixBase<T0> &>(inout).segment(in_index, size) +=
-        received.segment(rcv_index, size);
-  }
-}
-
-template <class T0, class T1>
-void FastMatrixMultiply::ReduceComputation::reduce(Request &&request,
-                                                   Eigen::MatrixBase<T0> const &inout,
-                                                   Eigen::MatrixBase<T1> const &received) const {
-  assert(request);
-  auto const deleter = request.get_deleter();
-  deleter(request.release());
-  return reduce(inout, received);
+                                            Eigen::PlainObjectBase<T1> const &send_buffer,
+                                            Eigen::PlainObjectBase<T2> const &receiving) const {
+  FastMatrixMultiply::reconstruct(relocate_send, input, send_buffer);
+  return comm.ialltoall(send_buffer, receiving, send_counts, receive_counts);
 }
 }
 }

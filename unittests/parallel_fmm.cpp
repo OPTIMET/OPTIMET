@@ -43,37 +43,38 @@ TEST_CASE("ReduceComputation") {
                                       2 * (nfunctions(2) + nfunctions(3)),
                                       2 * (nfunctions(4) + nfunctions(5)), 0};
   SECTION("Send message") {
-    Vector<int> buffer;
-    if(auto const request = reduction.send(messages[std::min<int>(world.rank(), nprocs)], buffer))
+    Vector<int> in_buffer, out_buffer;
+    if(auto const request =
+           reduction.send(messages[std::min<int>(world.rank(), nprocs)], in_buffer, out_buffer))
       REQUIRE(request);
     else
       REQUIRE(false);
 
     switch(world.rank()) {
     case 0:
-      REQUIRE(buffer.size() == 2 * (nfunctions(0) + nfunctions(1)));
-      CHECK(buffer.head(nfunctions(0) + nfunctions(1)) ==
+      REQUIRE(out_buffer.size() == 2 * (nfunctions(0) + nfunctions(1)));
+      CHECK(out_buffer.head(nfunctions(0) + nfunctions(1)) ==
             messages[1].head(nfunctions(0) + nfunctions(1)));
-      CHECK(buffer.tail(nfunctions(0) + nfunctions(1)) ==
+      CHECK(out_buffer.tail(nfunctions(0) + nfunctions(1)) ==
             messages[2].head(nfunctions(0) + nfunctions(1)));
       break;
     case 1:
-      REQUIRE(buffer.size() == 2 * (nfunctions(2) + nfunctions(3)));
-      CHECK(buffer.head(nfunctions(3)) == messages[0].head(nfunctions(3)));
-      CHECK(buffer.segment(nfunctions(3), nfunctions(2) + nfunctions(3)) ==
+      REQUIRE(out_buffer.size() == 2 * (nfunctions(2) + nfunctions(3)));
+      CHECK(out_buffer.head(nfunctions(3)) == messages[0].head(nfunctions(3)));
+      CHECK(out_buffer.segment(nfunctions(3), nfunctions(2) + nfunctions(3)) ==
             messages[1].segment(nfunctions(0) + nfunctions(1), nfunctions(2) + nfunctions(3)));
-      CHECK(buffer.tail(nfunctions(2)) == messages[2].tail(nfunctions(2)));
+      CHECK(out_buffer.tail(nfunctions(2)) == messages[2].tail(nfunctions(2)));
       break;
     case 2:
-      REQUIRE(buffer.size() == 2 * (nfunctions(4) + nfunctions(5)));
-      CHECK(buffer.head(nfunctions(4) + nfunctions(5)) ==
+      REQUIRE(out_buffer.size() == 2 * (nfunctions(4) + nfunctions(5)));
+      CHECK(out_buffer.head(nfunctions(4) + nfunctions(5)) ==
             messages[0].tail(nfunctions(4) + nfunctions(5)));
-      CHECK(buffer.tail(nfunctions(4) + nfunctions(5)) ==
+      CHECK(out_buffer.tail(nfunctions(4) + nfunctions(5)) ==
             messages[1].tail(nfunctions(4) + nfunctions(5)));
       break;
 
     default:
-      REQUIRE(buffer.size() == 0);
+      REQUIRE(out_buffer.size() == 0);
     }
   }
 

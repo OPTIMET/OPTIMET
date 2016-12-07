@@ -121,7 +121,8 @@ FastMatrixMultiply::DistributeInput::DistributeInput(GraphCommunicator const &co
     auto const nl_owned = (distribution.array() == neighborhood[i]).eval();
     for(t_uint j(0), iloc(0); j < local_inputs.size(); ++j) {
       if(nl_owned(j) == true and local_inputs(j) == true)
-        relocate_receive.emplace_back(sizes[j], sloc, iloc);
+        relocate_receive.push_back(
+            std::array<t_uint, 3>{{static_cast<t_uint>(sizes[j]), sloc, iloc}});
       if(nl_owned(j) == true)
         sloc += sizes[j];
       if(local_inputs(j) == true)
@@ -162,7 +163,8 @@ FastMatrixMultiply::ReduceComputation::ReduceComputation(GraphCommunicator const
       if(not owned(j))
         continue;
       if(nl_comps(j) == true) {
-        relocate_receive.emplace_back(sizes[j], rloc, iloc);
+        relocate_receive.push_back(
+            std::array<t_uint, 3>{{static_cast<t_uint>(sizes[j]), rloc, iloc}});
         rloc += sizes[j];
       }
       iloc += sizes[j];
@@ -174,7 +176,7 @@ FastMatrixMultiply::ReduceComputation::ReduceComputation(GraphCommunicator const
       if(not local_comps(j))
         continue;
       if(nl_owned(j) == true) {
-        relocate_send.emplace_back(sizes[j], sloc, iloc);
+        relocate_send.push_back(std::array<t_uint, 3>{{static_cast<t_uint>(sizes[j]), iloc, sloc}});
         sloc += sizes[j];
       }
       iloc += sizes[j];
@@ -188,7 +190,7 @@ FastMatrixMultiply::ReduceComputation::ReduceComputation(GraphCommunicator const
     receive_counts.push_back(
         (nl_comps.array() && owned).select(sizes, Vector<int>::Zero(sizes.size())).sum());
   }
-  message.reset(new Vector<int>(std::accumulate(send_counts.begin(), send_counts.end(), 0)));
+  message_size = std::accumulate(send_counts.begin(), send_counts.end(), 0);
 }
 
 FastMatrixMultiply::ReduceComputation::ReduceComputation(GraphCommunicator const &comm,
