@@ -27,8 +27,6 @@ TEST_CASE("ReduceComputation") {
                  mpi::details::non_local_graph_edges(locals.array() == false, distribution)),
       false);
 
-  auto const xall = Vector<int>::LinSpaced(distribution.size(), 0, distribution.size());
-
   auto const nfunctions = [&scatterers](t_int i) {
     return 2 * scatterers[i].nMax * (scatterers[i].nMax + 2);
   };
@@ -109,6 +107,101 @@ TEST_CASE("ReduceComputation") {
       break;
     default:
       REQUIRE(result.size() == 0);
+    }
+  }
+}
+
+TEST_CASE("DistributeInput") {
+  using namespace optimet;
+  mpi::Communicator const world;
+  if(world.size() < 3)
+    return;
+
+  ElectroMagnetic const silicon{13.1, 1.0};
+  auto const nprocs = 3;
+  auto const nHarmonics = 5;
+  auto const radius = 500e-9;
+  std::vector<Scatterer> const scatterers = {
+      {{0, 0, 0}, silicon, radius, nHarmonics},     {{0, 0, 0}, silicon, radius, nHarmonics + 1},
+      {{0, 0, 0}, silicon, radius, nHarmonics + 2}, {{0, 0, 0}, silicon, radius, nHarmonics + 3},
+      {{0, 0, 0}, silicon, radius, nHarmonics + 4}, {{0, 0, 0}, silicon, radius, nHarmonics + 5},
+  };
+
+  auto const vector_distribution = mpi::details::vector_distribution(scatterers.size(), nprocs);
+  Matrix<bool> locals = Matrix<bool>::Zero(scatterers.size(), scatterers.size());
+  locals.topLeftCorner(3, 3).fill(true);
+  locals.bottomRightCorner(3, 3).fill(true);
+  mpi::GraphCommunicator const graph_comm(
+      world, mpi::GraphCommunicator::symmetrize(
+                 mpi::details::non_local_graph_edges(locals.array() == false, vector_distribution)),
+      false);
+
+  auto const nfunctions = [&scatterers](t_int i) {
+    return 2 * scatterers[i].nMax * (scatterers[i].nMax + 2);
+  };
+  int const sizes[] = {nfunctions(0) + nfunctions(1), nfunctions(2) + nfunctions(3),
+                       nfunctions(4) + nfunctions(5), 0};
+  Vector<int> const messages[] = {Vector<int>::LinSpaced(sizes[0], 0, sizes[0]).eval(),
+                                  10 * Vector<int>::LinSpaced(sizes[1], 0, sizes[1]).eval(),
+                                  100 * Vector<int>::LinSpaced(sizes[2], 0, sizes[2]).eval(),
+                                  Vector<int>::Zero(0).eval()};
+
+  mpi::FastMatrixMultiply::DistributeInput distribution(graph_comm, locals.array() == false,
+                                                        vector_distribution, scatterers);
+  std::vector<int> const buffer_sizes{sizes[1] + sizes[2], sizes[0] + sizes[2], sizes[0] + sizes[1],
+                                      0};
+  auto const rank = std::min<int>(world.rank(), nprocs);
+  SECTION("Send message") {
+    Vector<int> buffer;
+    if(auto const request = distribution.send(messages[rank], buffer))
+      REQUIRE(request);
+    else
+      REQUIRE(false);
+
+    REQUIRE(buffer.size() == buffer_sizes[rank]);
+    switch(world.rank()) {
+    case 0:
+      CHECK(buffer.head(sizes[1]) == messages[1]);
+      CHECK(buffer.tail(sizes[2]) == messages[2]);
+      break;
+    case 1:
+      CHECK(buffer.head(sizes[0]) == messages[0]);
+      CHECK(buffer.tail(sizes[2]) == messages[2]);
+      break;
+    case 2:
+      CHECK(buffer.head(sizes[0]) == messages[0]);
+      CHECK(buffer.tail(sizes[1]) == messages[1]);
+      break;
+    default:
+      break;
+    }
+  }
+
+  SECTION("Synthesize output") {
+    Vector<int> const buffer =
+        Vector<int>::LinSpaced(buffer_sizes[rank], 1, buffer_sizes[rank] + 1);
+    Vector<int> const result;
+    distribution.synthesize(buffer, result);
+    switch(world.rank()) {
+    case 0:
+      REQUIRE(result.size() == nfunctions(3) + nfunctions(4) + nfunctions(5));
+      CHECK(result == buffer.tail(result.size()));
+      break;
+    case 1:
+      REQUIRE(result.size() ==
+              nfunctions(0) + nfunctions(1) + nfunctions(2) + nfunctions(3) + nfunctions(4) +
+                  nfunctions(5));
+      CHECK(result.head(sizes[0]) == buffer.head(sizes[0]));
+      CHECK(result.segment(sizes[0], sizes[1]) == Vector<int>::Zero(sizes[1]));
+      CHECK(result.tail(sizes[2]) == buffer.tail(sizes[2]));
+      break;
+    case 2:
+      REQUIRE(result.size() == nfunctions(0) + nfunctions(1) + nfunctions(2));
+      CHECK(result == buffer.head(nfunctions(0) + nfunctions(1) + nfunctions(2)));
+      break;
+    default:
+      REQUIRE(result.size() == 0);
+      break;
     }
   }
 }

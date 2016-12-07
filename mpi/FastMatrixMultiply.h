@@ -65,6 +65,8 @@ std::vector<int> neighborhood_input_counts(Matrix<bool> const &nonlocals,
 class FastMatrixMultiply {
 
 public:
+  //! Helper class to perform steps 1 and 4
+  class DistributeInput;
   //! Helper class to perform steps 3, 6, and 7
   class ReduceComputation;
 
@@ -140,6 +142,31 @@ private:
                      mpi::Communicator const &comm = mpi::Communicator());
 };
 
+class FastMatrixMultiply::DistributeInput {
+public:
+  DistributeInput(GraphCommunicator const &comm, Matrix<bool> const &allowed,
+                  Vector<int> const &distribution, std::vector<Scatterer> const &scatterers);
+  DistributeInput(GraphCommunicator const &comm, Matrix<bool> const &allowed,
+                  Vector<int> const &distribution, Vector<int> const &sizes);
+
+  //! Performs input distribution request
+  template <class T0, class T1>
+  Request
+  send(Eigen::PlainObjectBase<T0> const &input, Eigen::PlainObjectBase<T1> const &receiving) const {
+    return comm.iallgather(input, receiving, receive_counts);
+  }
+
+  template <class T0, class T1>
+  void synthesize(Eigen::MatrixBase<T0> const &received,
+                  Eigen::PlainObjectBase<T1> const &synthesis) const;
+
+protected:
+  GraphCommunicator comm;
+  std::vector<std::tuple<t_uint, t_uint, t_uint>> relocate_receive;
+  std::vector<int> receive_counts;
+  t_uint synthesis_size;
+};
+
 class FastMatrixMultiply::ReduceComputation {
 public:
   ReduceComputation(GraphCommunicator const &comm, Matrix<bool> const &allowed,
@@ -153,11 +180,11 @@ public:
   send(Eigen::MatrixBase<T0> const &input, Eigen::PlainObjectBase<T1> const &receiving) const;
   //! Performs reduction over received data
   template <class T0, class T1>
-  void reduce(Eigen::MatrixBase<T0> const &inout, Eigen::MatrixBase<T1> const &receiving) const;
+  void reduce(Eigen::MatrixBase<T0> const &inout, Eigen::MatrixBase<T1> const &received) const;
 
   template <class T0, class T1>
   void reduce(Request &&request, Eigen::MatrixBase<T0> const &inout,
-              Eigen::MatrixBase<T1> const &receiving) const;
+              Eigen::MatrixBase<T1> const &received) const;
 
 protected:
   GraphCommunicator comm;
@@ -168,13 +195,19 @@ protected:
 };
 
 template <class T0, class T1>
-void FastMatrixMultiply::ReduceComputation::reduce(Request &&request,
-                                                   Eigen::MatrixBase<T0> const &inout,
-                                                   Eigen::MatrixBase<T1> const &receiving) const {
-  assert(request);
-  auto const deleter = request.get_deleter();
-  deleter(request.release());
-  return reduce(inout, receiving);
+void FastMatrixMultiply::DistributeInput::synthesize(
+    Eigen::MatrixBase<T0> const &received, Eigen::PlainObjectBase<T1> const &synthesis) const {
+  const_cast<Eigen::PlainObjectBase<T1> &>(synthesis).resize(synthesis_size, 1);
+  const_cast<Eigen::PlainObjectBase<T1> &>(synthesis).fill(0);
+  for(auto const &location : relocate_receive) {
+    auto const &size = std::get<0>(location);
+    auto const &rcv_index = std::get<1>(location);
+    auto const &in_index = std::get<2>(location);
+    assert(in_index + size <= synthesis.size());
+    assert(rcv_index + size <= received.size());
+    const_cast<Eigen::PlainObjectBase<T1> &>(synthesis).segment(in_index, size) =
+        received.segment(rcv_index, size);
+  }
 }
 
 template <class T0, class T1>
@@ -195,16 +228,26 @@ FastMatrixMultiply::ReduceComputation::send(Eigen::MatrixBase<T0> const &input,
 
 template <class T0, class T1>
 void FastMatrixMultiply::ReduceComputation::reduce(Eigen::MatrixBase<T0> const &inout,
-                                                   Eigen::MatrixBase<T1> const &receiving) const {
+                                                   Eigen::MatrixBase<T1> const &received) const {
   for(auto const &location : relocate_receive) {
     auto const &size = std::get<0>(location);
     auto const &rcv_index = std::get<1>(location);
     auto const &in_index = std::get<2>(location);
     assert(in_index + size <= inout.size());
-    assert(rcv_index + size <= receiving.size());
+    assert(rcv_index + size <= received.size());
     const_cast<Eigen::MatrixBase<T0> &>(inout).segment(in_index, size) +=
-        receiving.segment(rcv_index, size);
+        received.segment(rcv_index, size);
   }
+}
+
+template <class T0, class T1>
+void FastMatrixMultiply::ReduceComputation::reduce(Request &&request,
+                                                   Eigen::MatrixBase<T0> const &inout,
+                                                   Eigen::MatrixBase<T1> const &received) const {
+  assert(request);
+  auto const deleter = request.get_deleter();
+  deleter(request.release());
+  return reduce(inout, received);
 }
 }
 }

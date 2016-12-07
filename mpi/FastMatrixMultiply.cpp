@@ -115,8 +115,7 @@ FastMatrixMultiply::FastMatrixMultiply(ElectroMagnetic const &em_background, t_r
       distribute_comm_(comm, GraphCommunicator::symmetrize(
                                  details::local_graph_edges(local_dist, vector_distribution))),
       reduce_comm_(comm, GraphCommunicator::symmetrize(
-                             details::non_local_graph_edges(nonlocal_dist, vector_distribution))) {
-}
+                             details::non_local_graph_edges(nonlocal_dist, vector_distribution))) {}
 
 namespace {
 Vector<int> compute_sizes(std::vector<Scatterer> const &scatterers) {
@@ -126,6 +125,46 @@ Vector<int> compute_sizes(std::vector<Scatterer> const &scatterers) {
   return result;
 }
 }
+
+FastMatrixMultiply::DistributeInput::DistributeInput(GraphCommunicator const &comm,
+                                                     Matrix<bool> const &allowed,
+                                                     Vector<int> const &distribution,
+                                                     Vector<int> const &sizes)
+    : comm(comm) {
+  auto const neighborhood = comm.neighborhood();
+  // inputs required for local computations
+  auto const inputs = [&distribution, &allowed](t_uint rank) {
+    return (allowed.array() && (distribution.array() == rank).replicate(1, distribution.size()))
+        .colwise()
+        .any();
+  };
+  // inputs required by this process
+  auto const local_inputs = inputs(comm.rank());
+
+  auto const owned = (distribution.array() == comm.rank()).eval();
+  for(decltype(neighborhood)::size_type i(0), sloc(0); i < neighborhood.size(); ++i) {
+    // Helps reconstruct data sent from other procs
+    auto const nl_owned = (distribution.array() == neighborhood[i]).eval();
+    for(t_uint j(0), iloc(0); j < local_inputs.size(); ++j) {
+      if(nl_owned(j) == true and local_inputs(j) == true)
+        relocate_receive.emplace_back(sizes[j], sloc, iloc);
+      if(nl_owned(j) == true)
+        sloc += sizes[j];
+      if(local_inputs(j) == true)
+        iloc += sizes[j];
+    }
+
+    // Amount of data to receive from each proc
+    receive_counts.push_back(nl_owned.select(sizes, Vector<int>::Zero(sizes.size())).sum());
+  }
+  synthesis_size = local_inputs.transpose().select(sizes, Vector<int>::Zero(sizes.size())).sum();
+}
+
+FastMatrixMultiply::DistributeInput::DistributeInput(GraphCommunicator const &comm,
+                                                     Matrix<bool> const &allowed,
+                                                     Vector<int> const &distribution,
+                                                     std::vector<Scatterer> const &scatterers)
+    : DistributeInput(comm, allowed, distribution, compute_sizes(scatterers)){};
 
 FastMatrixMultiply::ReduceComputation::ReduceComputation(GraphCommunicator const &comm,
                                                          Matrix<bool> const &allowed,
