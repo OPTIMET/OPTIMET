@@ -64,32 +64,6 @@ std::vector<std::set<t_uint>>
 non_local_graph_edges(Matrix<bool> const &nonlocals, Vector<t_int> const &vecdist) {
   return graph_edges(nonlocals, vecdist, false);
 }
-
-std::vector<int> neighborhood_input_counts(Matrix<bool> const &nonlocals,
-                                           Vector<t_int> const &vector_distribution,
-                                           std::vector<Scatterer> const &scatterers, t_uint rank) {
-  std::map<int, int> counts;
-  for(Matrix<bool>::Index i(0); i < nonlocals.cols(); ++i) {
-    auto const other_proc = vector_distribution[i];
-    if(other_proc == rank)
-      continue;
-    bool found = false;
-    for(Matrix<bool>::Index j(0); j < nonlocals.rows(); ++j)
-      if(vector_distribution[j] == rank and nonlocals(i, j) == true) {
-        found = true;
-        break;
-      }
-    if(found) {
-      if(counts.find(other_proc) == counts.end())
-        counts[other_proc] = 0;
-      counts[other_proc] += 2 * scatterers[i].nMax * (scatterers[i].nMax + 2);
-    }
-  }
-  std::vector<int> result;
-  std::transform(counts.begin(), counts.end(), std::back_inserter(result),
-                 [](std::map<int, int>::const_reference a) { return a.second; });
-  return result;
-}
 }
 
 Vector<t_complex> FastMatrixMultiply::operator()(Vector<t_complex> const &in) const {
