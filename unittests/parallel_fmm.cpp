@@ -23,9 +23,7 @@ TEST_CASE("ReduceComputation") {
   locals.topLeftCorner(3, 3).fill(true);
   locals.bottomRightCorner(3, 3).fill(true);
   mpi::GraphCommunicator const graph_comm(
-      world, mpi::GraphCommunicator::symmetrize(
-                 mpi::details::non_local_graph_edges(locals.array() == false, distribution)),
-      false);
+      world, mpi::details::graph_edges(locals.array() == false, distribution), false);
 
   auto const nfunctions = [&scatterers](t_int i) {
     return 2 * scatterers[i].nMax * (scatterers[i].nMax + 2);
@@ -138,9 +136,7 @@ TEST_CASE("DistributeInput") {
   locals.topLeftCorner(3, 3).fill(true);
   locals.bottomRightCorner(3, 3).fill(true);
   mpi::GraphCommunicator const graph_comm(
-      world, mpi::GraphCommunicator::symmetrize(
-                 mpi::details::non_local_graph_edges(locals.array() == false, vector_distribution)),
-      false);
+      world, mpi::details::graph_edges(locals.array() == false, vector_distribution), false);
 
   auto const nfunctions = [&scatterers](t_int i) {
     return 2 * scatterers[i].nMax * (scatterers[i].nMax + 2);

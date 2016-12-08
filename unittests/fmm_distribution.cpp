@@ -60,44 +60,31 @@ TEST_CASE("Column and row distributions") {
 TEST_CASE("Graph communicators creation") {
   using namespace optimet;
   using mpi::details::vector_distribution;
-  using mpi::details::local_graph_edges;
-  using mpi::details::non_local_graph_edges;
+  using mpi::details::graph_edges;
 
   auto const nprocs = 3;
   auto const nscatt = 6;
   auto const vecdist = vector_distribution(nscatt, nprocs);
   SECTION("Nothing allowed") {
-    CHECK(local_graph_edges(Matrix<bool>::Zero(nscatt, nscatt), vecdist).size() == nprocs);
-    for(auto const &connections : local_graph_edges(Matrix<bool>::Zero(nscatt, nscatt), vecdist))
-      CHECK(connections.size() == 0);
-    CHECK(non_local_graph_edges(Matrix<bool>::Zero(nscatt, nscatt), vecdist).size() == nprocs);
-    for(auto const &connections :
-        non_local_graph_edges(Matrix<bool>::Zero(nscatt, nscatt), vecdist))
+    CHECK(graph_edges(Matrix<bool>::Zero(nscatt, nscatt), vecdist).size() == nprocs);
+    for(auto const &connections : graph_edges(Matrix<bool>::Zero(nscatt, nscatt), vecdist))
       CHECK(connections.size() == 0);
   }
 
   SECTION("All allowed") {
-    auto const locals = local_graph_edges(Matrix<bool>::Ones(nscatt, nscatt), vecdist);
+    auto const locals = graph_edges(Matrix<bool>::Ones(nscatt, nscatt), vecdist);
     CHECK(locals.size() == nprocs);
     for(t_int i(0); i < locals.size(); ++i) {
       CHECK(locals[i].size() == nprocs);
       for(t_uint n(0); n < nprocs; ++n)
         CHECK((locals[i].count(n) == 1));
     }
-
-    auto const nonlocals = non_local_graph_edges(Matrix<bool>::Ones(nscatt, nscatt), vecdist);
-    CHECK(nonlocals.size() == nprocs);
-    for(t_int i(0); i < locals.size(); ++i) {
-      CHECK(nonlocals[i].size() == nprocs);
-      for(t_uint n(0); n < nprocs; ++n)
-        CHECK((nonlocals[i].count(n) == 1));
-    }
   }
 
   SECTION("Quarter") {
     Matrix<bool> allowed = Matrix<bool>::Zero(nscatt, nscatt);
     allowed.topLeftCorner(nscatt / 2, nscatt / 2).fill(true);
-    auto const locals = local_graph_edges(allowed, vecdist);
+    auto const locals = graph_edges(allowed, vecdist);
     CHECK(locals.size() == nprocs);
     CHECK(locals[0].size() == 2);
     CHECK(locals[0].count(0) == 1);
@@ -106,15 +93,5 @@ TEST_CASE("Graph communicators creation") {
     CHECK(locals[1].count(0) == 1);
     CHECK(locals[1].count(1) == 1);
     CHECK(locals[2].size() == 0);
-
-    auto const nonlocals = non_local_graph_edges(allowed, vecdist);
-    CHECK(nonlocals.size() == nprocs);
-    CHECK(nonlocals[0].size() == 2);
-    CHECK(nonlocals[0].count(0) == 1);
-    CHECK(nonlocals[0].count(1) == 1);
-    CHECK(nonlocals[1].size() == 2);
-    CHECK(nonlocals[1].count(0) == 1);
-    CHECK(nonlocals[1].count(1) == 1);
-    CHECK(nonlocals[2].size() == 0);
   }
 }

@@ -27,14 +27,7 @@ inline Matrix<t_int> matrix_distribution(t_int nscatterers, t_int nprocs) {
 
 //! Figures out graph connectivity for given distribution
 std::vector<std::set<t_uint>> graph_edges(Matrix<bool> const &locals,
-                                          Vector<t_int> const &vector_distribution,
-                                          bool direct = true);
-//! Figures out graph connectivity for given distribution
-std::vector<std::set<t_uint>>
-local_graph_edges(Matrix<bool> const &locals, Vector<t_int> const &vector_distribution);
-//! Figures out graph connectivity for given distribution
-std::vector<std::set<t_uint>>
-non_local_graph_edges(Matrix<bool> const &nonlocals, Vector<t_int> const &vector_distribution);
+                                          Vector<t_int> const &vector_distribution);
 }
 
 //! \brief MPI version of the Fast-Matrix-Multiply
@@ -90,13 +83,10 @@ public:
       : FastMatrixMultiply(
             em_background, wavenumber, scatterers, locals,
             // reordering in graph communicators would require re-mapping vector_distribution
-            GraphCommunicator(comm, GraphCommunicator::symmetrize(details::graph_edges(
-                                        locals.array() == false, vector_distribution)),
-                              false),
+            GraphCommunicator(
+                comm, details::graph_edges(locals.array() == false, vector_distribution), false),
             // reordering in graph communicators would require re-mapping vector_distribution
-            GraphCommunicator(comm, GraphCommunicator::symmetrize(
-                                        details::graph_edges(locals, vector_distribution)),
-                              false),
+            GraphCommunicator(comm, details::graph_edges(locals, vector_distribution), false),
             vector_distribution, comm) {
     assert(locals == locals.transpose());
   }

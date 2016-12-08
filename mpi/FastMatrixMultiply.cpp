@@ -37,7 +37,7 @@ Vector<t_int> vector_distribution(t_int nscatterers, t_int nprocs) {
 }
 
 std::vector<std::set<t_uint>>
-graph_edges(Matrix<bool> const &considered, Vector<t_int> const &vecdist, bool in_to_out) {
+graph_edges(Matrix<bool> const &considered, Vector<t_int> const &vecdist) {
   assert(considered.rows() == considered.cols());
   assert(considered.rows() == vecdist.size());
   auto const nprocs = vecdist.maxCoeff() + 1;
@@ -46,22 +46,10 @@ graph_edges(Matrix<bool> const &considered, Vector<t_int> const &vecdist, bool i
     for(t_uint j(0); j < considered.cols(); ++j) {
       if(considered(i, j) == false)
         continue;
-      if(in_to_out)
-        results[vecdist(j)].insert(vecdist(i));
-      else
-        results[vecdist(i)].insert(vecdist(j));
+      results[vecdist(j)].insert(vecdist(i));
+      results[vecdist(i)].insert(vecdist(j));
     }
   return results;
-}
-
-std::vector<std::set<t_uint>>
-local_graph_edges(Matrix<bool> const &locals, Vector<t_int> const &vecdist) {
-  return graph_edges(locals, vecdist, true);
-}
-//! Figures out graph connectivity for given distribution
-std::vector<std::set<t_uint>>
-non_local_graph_edges(Matrix<bool> const &nonlocals, Vector<t_int> const &vecdist) {
-  return graph_edges(nonlocals, vecdist, false);
 }
 }
 
