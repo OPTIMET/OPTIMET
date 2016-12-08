@@ -26,6 +26,10 @@ inline Matrix<t_int> matrix_distribution(t_int nscatterers, t_int nprocs) {
 }
 
 //! Figures out graph connectivity for given distribution
+std::vector<std::set<t_uint>> graph_edges(Matrix<bool> const &locals,
+                                          Vector<t_int> const &vector_distribution,
+                                          bool direct = true);
+//! Figures out graph connectivity for given distribution
 std::vector<std::set<t_uint>>
 local_graph_edges(Matrix<bool> const &locals, Vector<t_int> const &vector_distribution);
 //! Figures out graph connectivity for given distribution
@@ -80,13 +84,22 @@ public:
   //!                  communication steps. This communicator should hold all and only those
   //!                  processes involved in the matrix-vector multiplication.
   FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
-                     std::vector<Scatterer> const &scatterers, Matrix<bool> const &local_nonlocal,
+                     std::vector<Scatterer> const &scatterers, Matrix<bool> const &locals,
                      Vector<t_int> const &vector_distribution,
                      mpi::Communicator const &comm = mpi::Communicator())
-      : FastMatrixMultiply(em_background, wavenumber, scatterers, local_nonlocal,
-                           local_dist(local_nonlocal, vector_distribution, comm.rank()),
-                           nonlocal_dist(local_nonlocal, vector_distribution, comm.rank()),
-                           vector_distribution, comm) {}
+      : FastMatrixMultiply(
+            em_background, wavenumber, scatterers, locals,
+            // reordering in graph communicators would require re-mapping vector_distribution
+            GraphCommunicator(comm, GraphCommunicator::symmetrize(details::graph_edges(
+                                        locals.array() == false, vector_distribution)),
+                              false),
+            // reordering in graph communicators would require re-mapping vector_distribution
+            GraphCommunicator(comm, GraphCommunicator::symmetrize(
+                                        details::graph_edges(locals, vector_distribution)),
+                              false),
+            vector_distribution, comm) {
+    assert(locals == locals.transpose());
+  }
   FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
                      std::vector<Scatterer> const &scatterers,
                      mpi::Communicator const &comm = mpi::Communicator())
@@ -96,6 +109,16 @@ public:
   FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers,
                      mpi::Communicator const &comm = mpi::Communicator())
       : FastMatrixMultiply(ElectroMagnetic(), wavenumber, scatterers, comm) {}
+  FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers,
+                     Matrix<bool> const &local_nonlocal, Vector<t_int> const &vector_distribution,
+                     mpi::Communicator const &comm = mpi::Communicator())
+      : FastMatrixMultiply(ElectroMagnetic(), wavenumber, scatterers, local_nonlocal,
+                           vector_distribution, comm) {}
+  FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers,
+                     Matrix<bool> const &local_nonlocal,
+                     mpi::Communicator const &comm = mpi::Communicator())
+      : FastMatrixMultiply(wavenumber, scatterers, local_nonlocal,
+                           details::vector_distribution(scatterers.size(), comm.size()), comm) {}
 
   //! \brief Applies fast matrix multiplication to effective incident field
   void operator()(Vector<t_complex> const &in, Vector<t_complex> &out) const;
@@ -114,6 +137,17 @@ public:
   static void reconstruct(std::vector<std::array<t_uint, 3>> const &indices,
                           Eigen::MatrixBase<T0> const &input,
                           Eigen::PlainObjectBase<T1> const &output, bool sum = false);
+  //! Reconstructs output according to argument indices
+  template <class T0>
+  static Vector<typename T0::Scalar>
+      reconstruct(std::vector<std::array<t_uint, 3>> const &indices,
+                  Eigen::MatrixBase<T0> const &input, bool sum = false);
+
+  //! Creates indices needed to reconstruct ouputs
+  template <class T0, class T1, class FUNCTOR>
+  static std::vector<std::array<t_uint, 3>>
+  reconstruct(std::vector<t_uint> const &neighborhood, Eigen::DenseBase<T0> const &allowed,
+              Eigen::DenseBase<T1> const &sizes, FUNCTOR const &func);
 
   class DistributeInput {
   public:
@@ -134,6 +168,12 @@ public:
     void synthesize(Eigen::MatrixBase<T0> const &received,
                     Eigen::PlainObjectBase<T1> const &synthesis) const {
       FastMatrixMultiply::reconstruct(relocate_receive, received, synthesis);
+    }
+    template <class T0>
+    Vector<typename T0::Scalar> synthesize(Eigen::MatrixBase<T0> const &received) const {
+      Vector<typename T0::Scalar> result;
+      synthesize(received, result);
+      return result;
     }
 
   protected:
@@ -177,25 +217,18 @@ private:
   optimet::FastMatrixMultiply local_fmm_;
   //! Computed with non-local input vector
   optimet::FastMatrixMultiply nonlocal_fmm_;
-  //! MPI communicator over which to distribute input data
-  mpi::GraphCommunicator distribute_comm_;
-  //! MPI communicator over which to reduce output data
-  mpi::GraphCommunicator reduce_comm_;
-
-  template <class T0, class T1>
-  Matrix<bool> local_dist(Eigen::MatrixBase<T0> const &locals, Eigen::MatrixBase<T1> const &vecdist,
-                          t_uint rank) {
-    return locals.array() && (vecdist.transpose().array() == rank).replicate(vecdist.size(), 1);
-  }
-  template <class T0, class T1>
-  Matrix<bool> nonlocal_dist(Eigen::MatrixBase<T0> const &locals,
-                             Eigen::MatrixBase<T1> const &vecdist, t_uint rank) {
-    return (locals.array() == false) && (vecdist.array() == rank).replicate(1, vecdist.size());
-  }
+  //! Distribute input for nonlocal_fmm_
+  DistributeInput distribute_input_;
+  //! Communicate results from local_fmm_ and reduce all results
+  ReduceComputation reduce_computation_;
+  //! Reconstruction indices for output of nonlocal_fmm_
+  std::vector<std::array<t_uint, 3>> nl_indices_;
+  //! Reconstruction indices for input to local_fmm_
+  std::vector<std::array<t_uint, 3>> local_indices_;
 
   FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
-                     std::vector<Scatterer> const &scatterers, Matrix<bool> const &lnl,
-                     Matrix<bool> const &local_dist, Matrix<bool> const &nonlocal_dist,
+                     std::vector<Scatterer> const &scatterers, Matrix<bool> const &locals,
+                     GraphCommunicator const &distribute_comm, GraphCommunicator const &reduce_comm,
                      Vector<t_int> const &vector_distribution,
                      mpi::Communicator const &comm = mpi::Communicator());
 };
@@ -214,7 +247,12 @@ void FastMatrixMultiply::reconstruct(std::vector<std::array<t_uint, 3>> const &i
   };
   assert(std::accumulate(indices.begin(), indices.end(), t_uint(0), in_size) <= input.size());
 #endif
-  const_cast<Eigen::PlainObjectBase<T1> &>(output).resize(N);
+  if(output.size() < N) {
+    auto const original = output.derived();
+    const_cast<Eigen::PlainObjectBase<T1> &>(output).resize(N);
+    const_cast<Eigen::PlainObjectBase<T1> &>(output).head(original.size()) = original;
+    const_cast<Eigen::PlainObjectBase<T1> &>(output).tail(output.size() - original.size()).fill(0);
+  }
   if(sum)
     for(auto const &location : indices)
       const_cast<Eigen::PlainObjectBase<T1> &>(output).segment(location[2], location[0]) +=
@@ -223,6 +261,37 @@ void FastMatrixMultiply::reconstruct(std::vector<std::array<t_uint, 3>> const &i
     for(auto const &location : indices)
       const_cast<Eigen::PlainObjectBase<T1> &>(output).segment(location[2], location[0]) =
           input.segment(location[1], location[0]).template cast<typename T1::Scalar>();
+}
+
+template <class T0>
+Vector<typename T0::Scalar>
+    FastMatrixMultiply::reconstruct(std::vector<std::array<t_uint, 3>> const &indices,
+                                    Eigen::MatrixBase<T0> const &input, bool sum) {
+  Vector<typename T0::Scalar> result;
+  reconstruct(indices, input, result, sum);
+  return result;
+}
+
+template <class T0, class T1, class FUNCTOR>
+std::vector<std::array<t_uint, 3>>
+FastMatrixMultiply::reconstruct(std::vector<t_uint> const &neighborhood,
+                                Eigen::DenseBase<T0> const &in_allowed,
+                                Eigen::DenseBase<T1> const &sizes, FUNCTOR const &func) {
+  std::vector<std::array<t_uint, 3>> result;
+  for(std::vector<t_uint>::size_type i(0), rloc(0); i < neighborhood.size(); ++i) {
+    auto const out_allowed = func(neighborhood[i]);
+    assert(out_allowed.size() == in_allowed.size());
+    for(t_uint j(0), iloc(0); j < out_allowed.size(); ++j) {
+      if(not in_allowed(j))
+        continue;
+      if(out_allowed(j) == true) {
+        result.push_back(std::array<t_uint, 3>{{static_cast<t_uint>(sizes[j]), rloc, iloc}});
+        rloc += sizes[j];
+      }
+      iloc += sizes[j];
+    }
+  }
+  return result;
 }
 
 template <class T0, class T1, class T2>

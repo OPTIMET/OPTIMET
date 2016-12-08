@@ -36,9 +36,8 @@ Vector<t_int> vector_distribution(t_int nscatterers, t_int nprocs) {
   return result;
 }
 
-template <class T>
 std::vector<std::set<t_uint>>
-graph_edges(Eigen::MatrixBase<T> const &considered, Vector<t_int> const &vecdist, bool in_to_out) {
+graph_edges(Matrix<bool> const &considered, Vector<t_int> const &vecdist, bool in_to_out) {
   assert(considered.rows() == considered.cols());
   assert(considered.rows() == vecdist.size());
   auto const nprocs = vecdist.maxCoeff() + 1;
@@ -73,23 +72,39 @@ Vector<t_complex> FastMatrixMultiply::operator()(Vector<t_complex> const &in) co
 }
 
 void FastMatrixMultiply::operator()(Vector<t_complex> const &input, Vector<t_complex> &out) const {
+  out.fill(0);
+  /************* START FIRST COMMUNICATION **********/
   // first communicate input data to other processes
-  Vector<t_complex> nl_input;
-  // auto distribute_request = distribute_comm_.iallgather(input, nl_input, input_counts_);
-}
+  Vector<t_complex> distribute_buffer;
+  auto distribute_request = distribute_input_.send(input, distribute_buffer);
+  // while data is being sent, we compute stuff with local input...
+  auto const local_input = reconstruct(local_indices_, input);
+  auto const nl_computations = local_fmm_(local_input);
 
-FastMatrixMultiply::FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
-                                       std::vector<Scatterer> const &scatterers,
-                                       Matrix<bool> const &lnl, Matrix<bool> const &local_dist,
-                                       Matrix<bool> const &nonlocal_dist,
-                                       Vector<t_int> const &vector_distribution,
-                                       mpi::Communicator const &comm)
-    : local_fmm_(em_background, wavenumber, scatterers, local_dist),
-      nonlocal_fmm_(em_background, wavenumber, scatterers, nonlocal_dist),
-      distribute_comm_(comm, GraphCommunicator::symmetrize(
-                                 details::local_graph_edges(local_dist, vector_distribution))),
-      reduce_comm_(comm, GraphCommunicator::symmetrize(
-                             details::non_local_graph_edges(nonlocal_dist, vector_distribution))) {}
+  /************* START SECOND COMMUNICATION **********/
+  // and send the result of the local computations
+  Vector<t_complex> send_buffer, computation_buffer;
+  auto reduction_request =
+      reduce_computation_.send(nl_computations, send_buffer, computation_buffer);
+  // now we get the inputs from other processes
+  mpi::wait(std::move(distribute_request));
+  /************* FINISHED FIRST COMMUNICATION **********/
+
+  // And synthesize the input for non-local fmm
+  auto const nl_input = distribute_input_.synthesize(distribute_buffer);
+  // we can now compute stuff involving non-local information
+  auto const nl_out = nonlocal_fmm_(nl_input);
+  // Non-local output may be missing some bits
+  // So we need to reconstruct it
+  reconstruct(nl_indices_, nl_out, out);
+
+  // we receive the stuff computed elsewhere
+  mpi::wait(std::move(reduction_request));
+  /************* FINISHED SECOND COMMUNICATION **********/
+
+  // and reduce over all results
+  reduce_computation_.reduce(out, computation_buffer);
+}
 
 namespace {
 Vector<int> compute_sizes(std::vector<Scatterer> const &scatterers) {
@@ -98,6 +113,48 @@ Vector<int> compute_sizes(std::vector<Scatterer> const &scatterers) {
     result(i) = 2 * scatterers[i].nMax * (scatterers[i].nMax + 2);
   return result;
 }
+}
+
+FastMatrixMultiply::FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
+                                       std::vector<Scatterer> const &scatterers,
+                                       Matrix<bool> const &locals,
+                                       GraphCommunicator const &distribute_comm,
+                                       GraphCommunicator const &reduce_comm,
+                                       Vector<t_int> const &vector_distribution,
+                                       mpi::Communicator const &comm)
+    : local_fmm_(em_background, wavenumber, scatterers,
+                 locals.array() &&
+                     (vector_distribution.transpose().array() == comm.rank())
+                         .replicate(vector_distribution.size(), 1)),
+      nonlocal_fmm_(em_background, wavenumber, scatterers,
+                    (locals.array() == false) &&
+                        (vector_distribution.array() == comm.rank())
+                            .replicate(1, vector_distribution.size())),
+      distribute_input_(distribute_comm, locals.array() == false, vector_distribution, scatterers),
+      reduce_computation_(reduce_comm, locals.array(), vector_distribution, scatterers) {
+
+  auto const owned = vector_distribution.array() == comm.rank();
+  auto const sizes = compute_sizes(scatterers);
+  std::vector<t_uint> const self = {comm.rank()};
+
+  auto const band =
+      (vector_distribution.array() == comm.rank()).replicate(1, vector_distribution.size());
+  auto const nl_out = ((locals.array() == false) && band).rowwise().any();
+  auto const local_in = (locals.array() && band.transpose()).colwise().any();
+  for(t_uint j(0), iloc(0), nl_loc(0), local_loc(0); j < nl_out.size(); ++j) {
+    if(not owned(j))
+      continue;
+    if(nl_out(j) == true) {
+      nl_indices_.push_back(std::array<t_uint, 3>{{static_cast<t_uint>(sizes[j]), nl_loc, iloc}});
+      nl_loc += sizes[j];
+    }
+    if(local_in(j) == true) {
+      local_indices_.push_back(
+          std::array<t_uint, 3>{{static_cast<t_uint>(sizes[j]), iloc, local_loc}});
+      local_loc += sizes[j];
+    }
+    iloc += sizes[j];
+  }
 }
 
 FastMatrixMultiply::DistributeInput::DistributeInput(GraphCommunicator const &comm,
@@ -153,42 +210,19 @@ FastMatrixMultiply::ReduceComputation::ReduceComputation(GraphCommunicator const
         .rowwise()
         .any();
   };
-  auto const local_comps = comps(comm.rank());
-
-  auto const owned = (distribution.array() == comm.rank()).eval();
-  for(decltype(neighborhood)::size_type i(0), rloc(0), sloc(0); i < neighborhood.size(); ++i) {
-    auto const nl_comps = comps(neighborhood[i]);
-    // Helps reconstruct data received from other procs
-    for(t_uint j(0), iloc(0); j < nl_comps.size(); ++j) {
-      if(not owned(j))
-        continue;
-      if(nl_comps(j) == true) {
-        relocate_receive.push_back(
-            std::array<t_uint, 3>{{static_cast<t_uint>(sizes[j]), rloc, iloc}});
-        rloc += sizes[j];
-      }
-      iloc += sizes[j];
-    }
-
-    // Helps construct data send to other procs
-    auto const nl_owned = (distribution.array() == neighborhood[i]).eval();
-    for(t_uint j(0), iloc(0); j < local_comps.size(); ++j) {
-      if(not local_comps(j))
-        continue;
-      if(nl_owned(j) == true) {
-        relocate_send.push_back(std::array<t_uint, 3>{{static_cast<t_uint>(sizes[j]), iloc, sloc}});
-        sloc += sizes[j];
-      }
-      iloc += sizes[j];
-    }
-
+  auto const owned = [&distribution](t_uint rank) { return distribution.array() == rank; };
+  relocate_receive =
+      FastMatrixMultiply::reconstruct(neighborhood, owned(comm.rank()), sizes, comps);
+  relocate_send = FastMatrixMultiply::reconstruct(neighborhood, comps(comm.rank()), sizes, owned);
+  for(decltype(neighborhood)::size_type i(0); i < neighborhood.size(); ++i) {
     // Amount of data to send to each proc
-    send_counts.push_back((local_comps.array() && (distribution.array() == neighborhood[i]))
+    send_counts.push_back((comps(comm.rank()) && owned(neighborhood[i]))
                               .select(sizes, Vector<int>::Zero(sizes.size()))
                               .sum());
     // Amount of data to receive from each proc
-    receive_counts.push_back(
-        (nl_comps.array() && owned).select(sizes, Vector<int>::Zero(sizes.size())).sum());
+    receive_counts.push_back((comps(neighborhood[i]) && owned(comm.rank()))
+                                 .select(sizes, Vector<int>::Zero(sizes.size()))
+                                 .sum());
   }
   message_size = std::accumulate(send_counts.begin(), send_counts.end(), 0);
 }

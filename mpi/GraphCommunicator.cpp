@@ -10,6 +10,7 @@ namespace mpi {
 GraphCommunicator::GraphCommunicator(Communicator const &comm,
                                      std::vector<std::set<t_uint>> const &graph, bool reorder) {
 
+  Communicator::reset(nullptr);
   std::vector<int> degrees;
   std::vector<int> edges;
   for(t_uint i(0); i < std::min<t_uint>(comm.size(), graph.size()); ++i) {
@@ -21,6 +22,8 @@ GraphCommunicator::GraphCommunicator(Communicator const &comm,
   if(*std::max_element(edges.begin(), edges.end()) >= comm.size())
     throw std::out_of_range("Edge index in graph communicator is larger than parent comm size");
 
+  if(degrees.back() == 0)
+    return;
   degrees.resize(comm.size(), degrees.back());
   MPI_Comm result;
   auto const error =
@@ -54,7 +57,7 @@ std::vector<t_uint> GraphCommunicator::neighborhood(int rank) const {
 }
 
 namespace {
-void wait_on_delete(MPI_Request * request) {
+void wait_on_delete(MPI_Request *request) {
   if(request == nullptr)
     return;
 
@@ -64,7 +67,7 @@ void wait_on_delete(MPI_Request * request) {
     throw std::runtime_error("Got an error when waiting for request to complete");
 }
 }
-Request mpi_request_wait_on_delete(MPI_Request * const request) {
+Request mpi_request_wait_on_delete(MPI_Request *const request) {
   return Request(request, wait_on_delete);
 }
 

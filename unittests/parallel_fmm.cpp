@@ -209,3 +209,99 @@ TEST_CASE("DistributeInput") {
     }
   }
 }
+
+template <class T0, class T1>
+optimet::Vector<typename T1::Scalar>
+split(std::vector<Scatterer> const &scatterers, Eigen::DenseBase<T0> const &distribution,
+      Eigen::DenseBase<T1> const &input) {
+  assert(distribution.size() == scatterers.size());
+  int N(0);
+  for(int i(0); i < distribution.size(); ++i)
+    if(distribution(i))
+      N += 2 * scatterers[i].nMax * (scatterers[i].nMax + 2);
+
+  optimet::Vector<typename T1::Scalar> result(N);
+  for(int i(0), j(0), k(0); i < distribution.size(); ++i) {
+    auto const size = 2 * scatterers[i].nMax * (scatterers[i].nMax + 2);
+    if(distribution(i)) {
+      assert(input.size() >= k + size);
+      assert(result.size() >= j + size);
+      result.segment(j, size) = input.segment(k, size);
+      j += size;
+    }
+    k += size;
+  }
+  return result;
+}
+
+TEST_CASE("MPI vs serial FMM") {
+  using namespace optimet;
+  mpi::Communicator const world;
+  // spherical coords, ε, μ, radius, nmax
+  int const nHarmonics = 3;
+  std::vector<Scatterer> scatterers;
+  for(int i(0); i < 10; ++i)
+    scatterers.push_back({{t_real(i) * 1.5 * 2e-6, 0, 0},
+                          {0.45e0 + 0.1 * t_real(i), 1.1e0},
+                          (0.5 + 0.01 * t_real(i)) * 2e-6,
+                          std::min(10, nHarmonics + i)});
+  auto const nscatt = scatterers.size();
+
+  // Create excitation
+  auto const wavelength = 14960e-9;
+  auto const wavenumber = (2 * constant::pi / wavelength) / constant::c;
+  auto const distribution = mpi::details::vector_distribution(nscatt, world.size());
+  FastMatrixMultiply serial(wavenumber, scatterers);
+  auto const serial_input =
+      world.broadcast<Vector<t_complex>>(Vector<t_complex>::Random(serial.cols()));
+  CHECK(serial_input.size() == serial.cols());
+  auto const serial_output =
+      split(scatterers, distribution.array() == world.rank(), serial(serial_input));
+
+  if(world.size() < 2)
+    return;
+
+  auto const parallel_input = split(scatterers, distribution.array() == world.rank(), serial_input);
+  SECTION("Only reduction -- all computation use local data") {
+    mpi::FastMatrixMultiply parallel(wavenumber, scatterers, Matrix<bool>::Ones(nscatt, nscatt),
+                                     distribution, world);
+    auto const parallel_out = parallel(parallel_input);
+    REQUIRE(parallel_out.size() == serial_output.size());
+    CHECK(parallel_out.isApprox(serial_output));
+  }
+
+  SECTION("Only distribution -- all computation use non-local (and local) data") {
+    mpi::FastMatrixMultiply parallel(wavenumber, scatterers, Matrix<bool>::Zero(nscatt, nscatt),
+                                     distribution, world);
+    auto const parallel_out = parallel(parallel_input);
+    REQUIRE(parallel_out.size() == serial_output.size());
+    CHECK(parallel_out.isApprox(serial_output));
+  }
+
+  for(int diag(1); diag < nscatt - 1; ++diag) {
+    SECTION("Overlay communication and data with diag = " + std::to_string(diag)) {
+      Matrix<bool> locals = Matrix<bool>::Zero(nscatt, nscatt);
+      for(t_int d(0); d < nscatt; ++d) {
+        auto const start = std::max(0, d - diag);
+        auto const end = std::min<t_int>(nscatt, d + diag + 1);
+        locals.row(d).segment(start, end - start).fill(true);
+      }
+
+      mpi::FastMatrixMultiply parallel(wavenumber, scatterers, locals, distribution, world);
+      auto const parallel_out = parallel(parallel_input);
+      REQUIRE(parallel_out.size() == serial_output.size());
+      CHECK(parallel_out.isApprox(serial_output));
+    }
+  }
+
+  SECTION("Randomly patterned communications") {
+    Matrix<bool> locals = Matrix<bool>::Random(nscatt, nscatt);
+    for(t_int d(0); d < nscatt; ++d)
+      locals.row(d).tail(nscatt - d) = locals.col(d).tail(nscatt - d).eval();
+
+    mpi::FastMatrixMultiply parallel(wavenumber, scatterers, locals, distribution, world);
+    auto const parallel_out = parallel(parallel_input);
+    REQUIRE(parallel_out.size() == serial_output.size());
+    CHECK(parallel_out.isApprox(serial_output));
+  }
+}

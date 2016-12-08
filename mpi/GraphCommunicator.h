@@ -18,9 +18,11 @@ namespace optimet {
 namespace mpi {
 
 //! Type of a request
-typedef std::unique_ptr<MPI_Request, void(*)(MPI_Request* const)> Request;
+typedef std::unique_ptr<MPI_Request, void (*)(MPI_Request *const)> Request;
 //! A request that calls wait when going out of scope
 Request mpi_request_wait_on_delete(MPI_Request *const request);
+//! Wait for request to complete
+inline void wait(Request &&request) { Request const locally_scoped(std::move(request)); }
 
 class GraphCommunicator : public Communicator {
 public:

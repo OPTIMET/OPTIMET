@@ -1,4 +1,5 @@
 #define CATCH_CONFIG_RUNNER
+#define CATCH_CONFIG_CONSOLE_WIDTH 100
 
 #include "Types.h"
 #include "mpi/Session.h"
