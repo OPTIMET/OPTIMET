@@ -5,19 +5,16 @@
 namespace optimet {
 namespace mpi {
 namespace details {
-Matrix<bool> local_interactions(t_int nscatterers) {
+Matrix<bool> local_interactions(t_int nscatterers, t_int diagonal) {
   assert(nscatterers >= 0);
-  // banded is true where local computations will happen
-  Eigen::Array<bool, Eigen::Dynamic, Eigen::Dynamic> band =
-      Matrix<bool>::Zero(nscatterers, nscatterers);
-  auto const half = std::min((nscatterers + 1) / 2, nscatterers - 1);
-  for(t_int i(0); i <= half; ++i) {
-    t_int const n = std::max((2 * nscatterers + 1) / 4, 2);
-    auto const start = std::min(std::max(nscatterers - n, 0), std::max(i - n / 2, 0));
-    auto const size = std::min(start + n, nscatterers) - start;
-    band.row(i).segment(start, size).fill(true);
+  assert(diagonal >= 0);
+  Matrix<bool> result = Matrix<bool>::Zero(nscatterers, nscatterers);
+  for(t_int d(0); d < nscatterers; ++d) {
+    auto const start = std::max(0, d - diagonal);
+    auto const end = std::min(nscatterers, d + diagonal + 1);
+    result.row(d).segment(start, end - start).fill(true);
   }
-  return (band || band.transpose() || band.reverse() || band.reverse().transpose()).matrix();
+  return result;
 }
 
 Vector<t_int> vector_distribution(t_int nscatterers, t_int nprocs) {

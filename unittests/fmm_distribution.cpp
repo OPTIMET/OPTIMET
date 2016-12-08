@@ -37,23 +37,16 @@ TEST_CASE("Column and row distributions") {
     CHECK(local_interactions(0).cols() == 0);
 
     CHECK(local_interactions(1).all());
-
     CHECK(local_interactions(2).all());
 
-    CHECK(local_interactions(3).block(0, 0, 2, 2).all());
-    CHECK(local_interactions(3).block(1, 1, 2, 2).all());
-    CHECK(not local_interactions(3)(2, 0));
-    CHECK(local_interactions(3) == local_interactions(3).transpose());
-    CHECK(local_interactions(3) == local_interactions(3).reverse());
-    CHECK(local_interactions(3) == local_interactions(3).reverse().transpose());
+    CHECK(local_interactions(3).cast<int>().sum() == 7);
+    CHECK(local_interactions(3)(2, 0) == false);
+    CHECK(local_interactions(3)(0, 2) == false);
 
-    CHECK(local_interactions(4) == local_interactions(4).transpose());
-    CHECK(local_interactions(4) == local_interactions(4).reverse());
-    CHECK(local_interactions(4) == local_interactions(4).reverse().transpose());
-    CHECK(local_interactions(4).block(0, 0, 2, 2).all());
-    CHECK(local_interactions(4).block(1, 1, 2, 2).all());
-    CHECK(not local_interactions(4).row(0).tail(2).any());
-    CHECK(not local_interactions(4).col(3).head(2).any());
+    CHECK(local_interactions(3, 0).cast<int>().sum() == 3);
+    CHECK(local_interactions(3, 0).diagonal().cast<int>().sum() == 3);
+
+    CHECK(local_interactions(13, 2) == local_interactions(13, 2).transpose());
   }
 }
 

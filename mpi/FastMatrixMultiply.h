@@ -10,8 +10,15 @@ namespace optimet {
 namespace mpi {
 namespace details {
 //! \brief Splits interactions into local and non-local processes
-//! \details If true, then that element will be computed locally.
-Matrix<bool> local_interactions(t_int nscatterers);
+//! \details True elements are computed using local input data. This function creates a banded
+//! matrix, with a given number of diagonal and subdiagonal set to true. The return is a symmetric
+//! matrix.
+Matrix<bool> local_interactions(t_int nscatterers, t_int diagonal);
+//! \brief Splits interactions into local and non-local processes
+//! \details Creates a banded matrix with roughly as many local as non-local interactions.
+inline Matrix<bool> local_interactions(t_int nscatterers) {
+  return local_interactions(nscatterers, std::max<t_int>(1, (nscatterers - 1) / 2));
+};
 //! \brief Distribution of input/output vector
 Vector<t_int> vector_distribution(t_int nscatterers, t_int nprocs);
 //! \brief Splits interactions into local and non-local processes
