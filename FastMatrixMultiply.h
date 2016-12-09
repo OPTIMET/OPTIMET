@@ -5,7 +5,6 @@
 #include "RotationCoaxialDecomposition.h"
 #include "RotationCoefficients.h"
 #include "Scatterer.h"
-#include "Solver.h"
 #include "Types.h"
 #include <utility>
 #include <vector>
