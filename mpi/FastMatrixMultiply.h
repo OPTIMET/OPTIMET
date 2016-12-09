@@ -94,9 +94,7 @@ public:
                 comm, details::graph_edges(locals.array() == false, vector_distribution), false),
             // reordering in graph communicators would require re-mapping vector_distribution
             GraphCommunicator(comm, details::graph_edges(locals, vector_distribution), false),
-            vector_distribution, comm) {
-    assert(locals == locals.transpose());
-  }
+            vector_distribution, comm) {}
   FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
                      std::vector<Scatterer> const &scatterers, t_int diagonal,
                      Vector<t_int> const &vector_distribution,

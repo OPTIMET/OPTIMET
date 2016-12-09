@@ -277,8 +277,6 @@ TEST_CASE("MPI vs serial FMM") {
 
   SECTION("Randomly patterned communications") {
     Matrix<bool> locals = Matrix<bool>::Random(nscatt, nscatt);
-    for(t_int d(0); d < nscatt; ++d)
-      locals.row(d).tail(nscatt - d) = locals.col(d).tail(nscatt - d).eval();
 
     mpi::FastMatrixMultiply parallel(wavenumber, scatterers, locals, distribution, world);
     auto const parallel_out = parallel(parallel_input);
