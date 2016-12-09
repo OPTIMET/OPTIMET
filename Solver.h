@@ -27,20 +27,21 @@ Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered, t_real con
 //! Computes coeffs internal to spheres
 Vector<t_complex> convertInternal(Vector<t_complex> const &scattered, t_real const &omega,
                                   ElectroMagnetic const &bground, std::vector<Scatterer> const &);
-class SolverBase {
+namespace solver {
+
+//! Abstract base class for all solvers
+class AbstractSolver {
 public:
   /**
    * Initialization constructor for the Solver class.
    * @param geometry_ the geometry of the simulation.
    * @param incWave_ the incoming wave excitation.
    * @param method_ the solver method to be used.
-   * @param nMax_ the maximum value for the n iterator.
    */
-  SolverBase(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave,
-             long nMax)
-      : geometry(geometry), incWave(incWave), nMax(nMax) {}
+  AbstractSolver(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave)
+      : geometry(geometry), incWave(incWave) {}
 
-  ~SolverBase(){};
+  ~AbstractSolver(){};
 
   /**
    * Solve the scattered and internal coefficients using the method specified by
@@ -61,14 +62,13 @@ public:
    * @param incWave_ the incoming wave excitation.
    * @param nMax_ the maximum value for the n iterator.
    */
-  virtual void update(std::shared_ptr<Geometry> geometry_,
-                      std::shared_ptr<Excitation const> incWave_, long nMax_) {
+  virtual void
+  update(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation const> incWave_) {
     geometry = geometry_;
     incWave = incWave_;
-    nMax = nMax_;
     update();
   }
-  void update(Run const &run) { return update(run.geometry, run.excitation, run.nMax); }
+  void update(Run const &run) { return update(run.geometry, run.excitation); }
   //! \brief Update after internal parameters changed externally
   //! \details Because that's how the original implementation rocked.
   virtual void update() = 0;
@@ -88,15 +88,15 @@ public:
 protected:
   std::shared_ptr<Geometry> geometry;        /**< Pointer to the geometry. */
   std::shared_ptr<Excitation const> incWave; /**< Pointer to the incoming excitation. */
-  long nMax;                                 /**< The maximum n order. */
+  t_uint nMax;
 };
 
 /**
  * The Solver class builds and solves the scattering matrix equation.
  */
-class Solver : public SolverBase {
+class Solver : public AbstractSolver {
 public:
-  using SolverBase::update;
+  using AbstractSolver::update;
 #if defined(OPTIMET_BELOS)
   /**
    * Initialization constructor for the Solver class.
@@ -109,7 +109,7 @@ public:
    */
   Solver(
       std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation const> incWave_, int method_,
-      long nMax_, scalapack::Context const &context = scalapack::Context::Squarest(),
+      scalapack::Context const &context = scalapack::Context::Squarest(),
       Teuchos::RCP<Teuchos::ParameterList> belos_params = Teuchos::rcp(new Teuchos::ParameterList));
 #else
   /**
@@ -122,8 +122,7 @@ public:
    * without MPI.
    */
   Solver(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation const> incWave_,
-         int method_, long nMax_,
-         scalapack::Context const &context = scalapack::Context::Squarest());
+         int method_, scalapack::Context const &context = scalapack::Context::Squarest());
 #endif
 
   /**
@@ -158,8 +157,8 @@ public:
   //! \brief Update after internal parameters changed externally
   //! \details Because that's how the original implementation rocked.
   void update() override { populate(); }
-  void update(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation const> incWave_,
-              long nMax_) override;
+  void
+  update(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation const> incWave_) override;
 
   scalapack::Context context() const { return context_; }
   scalapack::Sizes const &block_size() const { return block_size_; }
@@ -221,37 +220,8 @@ private:
 
   Matrix<t_complex> S; /**< The scattering matrix S = I - T*AB. */
   Vector<t_complex> Q; /**< The local field matrix Q = T*AB*a. */
+  long nMax;           /**< The maximum n order. */
 };
-
-//! \brief Computes source vector
-Vector<t_complex>
-source_vector(Geometry const &geometry, std::shared_ptr<Excitation const> incWave);
-//! \brief Computes source vector from fundamental frequency
-Vector<t_complex> local_source_vector(Geometry const &geometry,
-                                      std::shared_ptr<Excitation const> incWave,
-                                      Vector<t_complex> const &input_coeffs);
-
-//! Computes preconditioned scattering matrix
-Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
-                                                   std::shared_ptr<Excitation const> incWave);
-
-//! Computes preconditioned scattering matrix in paralllel
-Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
-                                                   std::shared_ptr<Excitation const> incWave,
-                                                   scalapack::Context const &context,
-                                                   scalapack::Sizes const &blocks);
-//! Distributes the source vectors
-Vector<t_complex> distributed_source_vector(Vector<t_complex> const &input,
-                                            scalapack::Context const &context,
-                                            scalapack::Sizes const &blocks);
-#ifdef OPTIMET_MPI
-//! Gather the distributed vector into a single vector
-Vector<t_complex> gather_all_source_vector(t_uint n, Vector<t_complex> const &input,
-                                           scalapack::Context const &context,
-                                           scalapack::Sizes const &blocks);
-//! Gather the distributed vector into a single vector
-Vector<t_complex> gather_all_source_vector(scalapack::Matrix<t_complex> const &matrix);
-
-#endif
+}
 } // namespace optimet
 #endif /* SOLVER_H_ */

@@ -16,20 +16,21 @@
 #include <iostream>
 
 namespace optimet {
+namespace solver {
 #if defined(OPTIMET_BELOS)
 Solver::Solver(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave,
-               int method, long nMax, scalapack::Context const &context,
+               int method, scalapack::Context const &context,
                Teuchos::RCP<Teuchos::ParameterList> belos_params)
-    : SolverBase(geometry, incWave, nMax), result_FF(nullptr), solverMethod(method),
-      belos_params_(belos_params), context_(context), block_size_{64, 64}
+    : AbstractSolver(geometry, incWave), result_FF(nullptr), solverMethod(method),
+      belos_params_(belos_params), context_(context), block_size_{64, 64}, nMax(0)
 
 {
   populate();
 }
 #else
 Solver::Solver(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave,
-               int method, long nMax, scalapack::Context const &context)
-    : SolverBase(geometry, incWave, nMax), result_FF(nullptr), solverMethod(method),
+               int method, scalapack::Context const &context)
+    : AbstractSolver(geometry, incWave), result_FF(nullptr), solverMethod(method),
       context_(context), block_size_{64, 64}
 
 {
@@ -38,6 +39,9 @@ Solver::Solver(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation co
 #endif
 
 void Solver::populate() {
+  nMax = std::accumulate(
+      geometry->objects.begin(), geometry->objects.end(), 0u,
+      [](t_uint prior, Scatterer const &current) { return std::max<t_uint>(prior, current.nMax); });
   assert(solverMethod == O3DSolverIndirect);
   populateIndirect();
 }
@@ -131,10 +135,10 @@ void Solver::populateIndirect() {
   S = preconditioned_scattering_matrix(*geometry, incWave, context(), block_size());
 }
 
-void Solver::update(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation const> incWave_,
-                    long nMax_) {
+void Solver::update(std::shared_ptr<Geometry> geometry_,
+                    std::shared_ptr<Excitation const> incWave_) {
   result_FF = nullptr;
-  SolverBase::update(geometry_, incWave_, nMax_);
+  AbstractSolver::update(geometry_, incWave_);
 }
 
 void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b,
@@ -180,7 +184,7 @@ void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_com
     bparallel.local() = b;
 
   // Now the actual work
-  auto Xparallel = optimet::solveLinearSystem(*this, Aparallel, bparallel, comm);
+  auto Xparallel = optimet::solver::solveLinearSystem(*this, Aparallel, bparallel, comm);
   // Transfer back to root
   x = gather_all_source_vector(Xparallel);
 }
@@ -189,6 +193,7 @@ void Solver::solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_com
 t_uint Solver::scattering_size() const {
   return 2 * (HarmonicsIterator::max_flat(nMax) - 1) * geometry->objects.size();
 }
+} // namespace solver
 
 Vector<t_complex> convertInternal(Vector<t_complex> const &scattered, t_real const &omega,
                                   ElectroMagnetic const &bground,

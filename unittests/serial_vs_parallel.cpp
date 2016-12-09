@@ -42,7 +42,7 @@ TEST_CASE("N spheres") {
 
   optimet::mpi::Communicator world;
   optimet::Result parallel(geometry, excitation, nHarmonics);
-  Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics);
+  optimet::solver::Solver solver(geometry, excitation, O3DSolverIndirect);
 #ifdef OPTIMET_BELOS
   solver.belos_parameters()->set("Solver", OPTIMET_SOLVER);
   solver.belos_parameters()->set<int>("Num Blocks", 500);
@@ -55,8 +55,8 @@ TEST_CASE("N spheres") {
   auto const serial_context = solver.context().serial();
   auto const comm = world.split(serial_context.is_valid());
   if(serial_context.is_valid()) {
-    auto const serial_solver =
-        Solver(geometry, excitation, O3DSolverIndirect, nHarmonics, serial_context);
+    optimet::solver::Solver const serial_solver(geometry, excitation, O3DSolverIndirect,
+                                                serial_context);
 #ifdef OPTIMET_BELOS
     serial_solver.belos_parameters()->set("Solver", "eigen");
 #endif
@@ -117,7 +117,7 @@ TEST_CASE("Simultaneous") {
   auto const parallel_comm = mpi::Communicator().split(parallel_context.is_valid());
 
   if(parallel_context.is_valid()) {
-    Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics, parallel_context);
+    optimet::solver::Solver solver(geometry, excitation, O3DSolverIndirect, parallel_context);
 #ifdef OPTIMET_BELOS
     solver.belos_parameters()->set("Solver", OPTIMET_SOLVER);
     solver.belos_parameters()->set<int>("Num Blocks", 500);
@@ -126,7 +126,7 @@ TEST_CASE("Simultaneous") {
 #endif
     solver.solve(parallel.scatter_coef, parallel.internal_coef, parallel_comm);
   } else if(serial_context.is_valid()) {
-    Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics, serial_context);
+    optimet::solver::Solver solver(geometry, excitation, O3DSolverIndirect, serial_context);
 #ifdef OPTIMET_BELOS
     solver.belos_parameters()->set("Solver", "eigen");
 #endif

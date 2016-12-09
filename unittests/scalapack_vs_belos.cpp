@@ -34,7 +34,7 @@ TEST_CASE("Scalapack vs Belos") {
   excitation->populate();
   geometry->update(excitation);
 
-  Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics);
+  optimet::solver::Solver solver(geometry, excitation, O3DSolverIndirect);
 
   optimet::Result scalapack(geometry, excitation, nHarmonics);
   solver.belos_parameters()->set("Solver", "scalapack");

@@ -1,12 +1,14 @@
 #ifndef SIMULATION_H_
 #define SIMULATION_H_
 
-#include <string>
 #include "mpi/Communicator.h"
+#include <memory>
+#include <string>
 
 class Run;
 namespace optimet {
-class Solver;
+namespace solver {
+class AbstractSolver;
 }
 /**
  * The Simulation class implements a full simulation.
@@ -19,8 +21,8 @@ public:
    * Initialization constructor for the Simulation class.
    * @param caseFile the name of the case file (NO extension).
    */
-  Simulation(std::string const &filename) : Simulation(filename, optimet::mpi::Communicator()) {}
-  Simulation(std::string const &filename, optimet::mpi::Communicator const &comm)
+  Simulation(std::string const &filename) : Simulation(filename, mpi::Communicator()) {}
+  Simulation(std::string const &filename, mpi::Communicator const &comm)
       : caseFile(filename), communicator_(comm) {}
 
   /**
@@ -41,23 +43,23 @@ public:
    */
   int done();
 
-  optimet::mpi::Communicator const &communicator() const { return communicator_; }
-  Simulation &communicator(optimet::mpi::Communicator const &c) {
+  mpi::Communicator const &communicator() const { return communicator_; }
+  Simulation &communicator(mpi::Communicator const &c) {
     communicator_ = c;
     return *this;
   }
 
 protected:
-  void scan_wavelengths(Run &run, optimet::Solver &solver);
-  void field_simulation(Run &run, optimet::Solver &solver);
-  void radius_scan(Run &run, optimet::Solver &solver);
-  void radius_and_wavelength_scan(Run &run, optimet::Solver &solver);
-  void coefficients(Run &run, optimet::Solver &solver);
+  void scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolver> solver);
+  void field_simulation(Run &run, std::shared_ptr<solver::AbstractSolver> solver);
+  void radius_scan(Run &run, std::shared_ptr<solver::AbstractSolver> solver);
+  void radius_and_wavelength_scan(Run &run, std::shared_ptr<solver::AbstractSolver> solver);
+  void coefficients(Run &run, std::shared_ptr<solver::AbstractSolver> solver);
 
 private:
   std::string caseFile; /**< Name of the case without extensions. */
   //! \details Fake if not compiled with MPI
-  optimet::mpi::Communicator communicator_;
+  mpi::Communicator communicator_;
 };
-
+}
 #endif /* SIMULATION_H_ */

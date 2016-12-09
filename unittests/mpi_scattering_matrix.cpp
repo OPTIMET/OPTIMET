@@ -2,7 +2,8 @@
 #include <iostream>
 
 #include "HarmonicsIterator.h"
-#include "Solver.h"
+#include "PreconditionnedMatrix.h"
+#include "Tools.h"
 #include "Types.h"
 #include "constants.h"
 #include "mpi/Communicator.h"

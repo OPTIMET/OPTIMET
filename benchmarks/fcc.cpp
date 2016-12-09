@@ -82,16 +82,16 @@ void problem_setup(benchmark::State &state) {
   auto input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
 
   while(state.KeepRunning())
-    Solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics);
+    optimet::solver::Solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect);
   state.SetItemsProcessed(int64_t(state.iterations()) *
                           int64_t(std::get<0>(input).scatterer_size()));
 }
 
-void solver(benchmark::State &state) {
+void benchmark_solver(benchmark::State &state) {
   auto const nHarmonics = state.range_y();
   auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
   auto input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
-  Solver solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics);
+  optimet::solver::Solver solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect);
   Result result(std::get<0>(input), std::get<1>(input), nHarmonics);
 
   while(state.KeepRunning()) {
@@ -104,17 +104,18 @@ void solver(benchmark::State &state) {
 #endif
 
 #ifdef OPTIMET_MPI
-void solver(benchmark::State &state) {
+void benchmark_solver(benchmark::State &state) {
   mpi::Communicator world;
   auto const nHarmonics = state.range_y();
   auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
   auto input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
   auto const context = optimet::scalapack::Context::Squarest();
 #ifdef OPTIMET_BELOS
-  Solver solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics, context,
-                parameters);
+  optimet::solver::Solver solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect, context,
+                                 parameters);
 #else
-  Solver solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics, context);
+  optimet::solver::Solver solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect,
+                                 context);
 #endif
   Result result(std::get<0>(input), std::get<1>(input), nHarmonics);
   while(state.KeepRunning()) {
@@ -142,9 +143,9 @@ extern std::string FLAG_benchmark_format;
 
 #ifndef OPTIMET_MPI
 BENCHMARK(problem_setup)->Apply(CustomArguments)->Unit(benchmark::kMicrosecond);
-BENCHMARK(solver)->Apply(CustomArguments)->Unit(benchmark::kMicrosecond);
+BENCHMARK(benchmark_solver)->Apply(CustomArguments)->Unit(benchmark::kMicrosecond);
 #else
-BENCHMARK(solver)->Apply(CustomArguments)->Unit(benchmark::kMicrosecond)->UseManualTime();
+BENCHMARK(benchmark_solver)->Apply(CustomArguments)->Unit(benchmark::kMicrosecond)->UseManualTime();
 #endif
 
 namespace benchmark {

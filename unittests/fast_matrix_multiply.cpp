@@ -3,7 +3,7 @@
 #include "Geometry.h"
 #include "HarmonicsIterator.h"
 #include "Result.h"
-#include "Solver.h"
+#include "PreconditionnedMatrix.h"
 #include "Tools.h"
 #include "catch.hpp"
 #include <iostream>
@@ -79,7 +79,6 @@ TEST_CASE("Transpose/conjugate/adjoint of the fast matrix multiply") {
   excitation->populate();
   geometry->update(excitation);
 
-  Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics);
   optimet::FastMatrixMultiply fmm(geometry->bground, excitation->omega() / constant::c,
                                   geometry->objects);
 
