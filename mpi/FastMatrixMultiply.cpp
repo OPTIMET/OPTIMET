@@ -7,7 +7,11 @@ namespace mpi {
 namespace details {
 Matrix<bool> local_interactions(t_int nscatterers, t_int diagonal) {
   assert(nscatterers >= 0);
-  assert(diagonal >= 0);
+  if(diagonal < 0)
+    return Matrix<bool>::Zero(nscatterers, nscatterers);
+  if(diagonal >= nscatterers)
+    return Matrix<bool>::Ones(nscatterers, nscatterers);
+
   Matrix<bool> result = Matrix<bool>::Zero(nscatterers, nscatterers);
   for(t_int d(0); d < nscatterers; ++d) {
     auto const start = std::max(0, d - diagonal);
@@ -51,8 +55,14 @@ graph_edges(Matrix<bool> const &considered, Vector<t_int> const &vecdist) {
 }
 
 Vector<t_complex> FastMatrixMultiply::operator()(Vector<t_complex> const &in) const {
-  Vector<t_complex> result(rows());
+  Vector<t_complex> result(cols());
   operator()(in, result);
+  return result;
+}
+
+Vector<t_complex> FastMatrixMultiply::transpose(Vector<t_complex> const &in) const {
+  Vector<t_complex> result(rows());
+  transpose(in, result);
   return result;
 }
 
@@ -76,12 +86,47 @@ void FastMatrixMultiply::operator()(Vector<t_complex> const &input, Vector<t_com
   /************* FINISHED FIRST COMMUNICATION **********/
 
   // And synthesize the input for non-local fmm
-  auto const nl_input = distribute_input_.synthesize(distribute_buffer);
+  auto const nonlocal_input = distribute_input_.synthesize(distribute_buffer);
   // we can now compute stuff involving non-local information
-  auto const nl_out = nonlocal_fmm_(nl_input);
+  auto const nl_out = nonlocal_fmm_(nonlocal_input);
   // Non-local output may be missing some bits
   // So we need to reconstruct it
-  reconstruct(nl_indices_, nl_out, out);
+  reconstruct(nonlocal_indices_, nl_out, out);
+
+  // we receive the stuff computed elsewhere
+  mpi::wait(std::move(reduction_request));
+  /************* FINISHED SECOND COMMUNICATION **********/
+
+  // and reduce over all results
+  reduce_computation_.reduce(out, computation_buffer);
+}
+
+void FastMatrixMultiply::transpose(Vector<t_complex> const &input, Vector<t_complex> &out) const {
+  out.fill(0);
+  /************* START FIRST COMMUNICATION **********/
+  // first communicate input data to other processes
+  Vector<t_complex> distribute_buffer;
+  auto distribute_request = distribute_input_.send(input, distribute_buffer);
+  // while data is being sent, we compute stuff with local input...
+  auto const local_input = reconstruct(local_indices_, input);
+  auto const nl_computations = transpose_local_fmm_.transpose(local_input);
+
+  /************* START SECOND COMMUNICATION **********/
+  // and send the result of the local computations
+  Vector<t_complex> send_buffer, computation_buffer;
+  auto reduction_request =
+      reduce_computation_.send(nl_computations, send_buffer, computation_buffer);
+  // now we get the inputs from other processes
+  mpi::wait(std::move(distribute_request));
+  /************* FINISHED FIRST COMMUNICATION **********/
+
+  // And synthesize the input for non-local fmm
+  auto const nonlocal_input = distribute_input_.synthesize(distribute_buffer);
+  // we can now compute stuff involving non-local information
+  auto const nl_out = transpose_nonlocal_fmm_.transpose(nonlocal_input);
+  // Non-local output may be missing some bits
+  // So we need to reconstruct it
+  reconstruct(nonlocal_indices_, nl_out, out);
 
   // we receive the stuff computed elsewhere
   mpi::wait(std::move(reduction_request));
@@ -106,7 +151,7 @@ FastMatrixMultiply::FastMatrixMultiply(ElectroMagnetic const &em_background, t_r
                                        GraphCommunicator const &distribute_comm,
                                        GraphCommunicator const &reduce_comm,
                                        Vector<t_int> const &vector_distribution,
-                                       mpi::Communicator const &comm)
+                                       Communicator const &comm)
     : local_fmm_(em_background, wavenumber, scatterers,
                  locals.array() &&
                      (vector_distribution.transpose().array() == comm.rank())
@@ -115,6 +160,14 @@ FastMatrixMultiply::FastMatrixMultiply(ElectroMagnetic const &em_background, t_r
                     (locals.array() == false) &&
                         (vector_distribution.array() == comm.rank())
                             .replicate(1, vector_distribution.size())),
+      transpose_local_fmm_(em_background, wavenumber, scatterers,
+                           locals.transpose().array() &&
+                               (vector_distribution.array() == comm.rank())
+                                   .replicate(1, vector_distribution.size())),
+      transpose_nonlocal_fmm_(em_background, wavenumber, scatterers,
+                              (locals.transpose().array() == false) &&
+                                  (vector_distribution.transpose().array() == comm.rank())
+                                      .replicate(vector_distribution.size(), 1)),
       distribute_input_(distribute_comm, locals.array() == false, vector_distribution, scatterers),
       reduce_computation_(reduce_comm, locals.array(), vector_distribution, scatterers) {
 
@@ -130,7 +183,8 @@ FastMatrixMultiply::FastMatrixMultiply(ElectroMagnetic const &em_background, t_r
     if(not owned(j))
       continue;
     if(nl_out(j) == true) {
-      nl_indices_.push_back(std::array<t_uint, 3>{{static_cast<t_uint>(sizes[j]), nl_loc, iloc}});
+      nonlocal_indices_.push_back(
+          std::array<t_uint, 3>{{static_cast<t_uint>(sizes[j]), nl_loc, iloc}});
       nl_loc += sizes[j];
     }
     if(local_in(j) == true) {

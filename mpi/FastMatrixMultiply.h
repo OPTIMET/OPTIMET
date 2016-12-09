@@ -33,8 +33,8 @@ inline Matrix<t_int> matrix_distribution(t_int nscatterers, t_int nprocs) {
 }
 
 //! Figures out graph connectivity for given distribution
-std::vector<std::set<t_uint>> graph_edges(Matrix<bool> const &locals,
-                                          Vector<t_int> const &vector_distribution);
+std::vector<std::set<t_uint>>
+graph_edges(Matrix<bool> const &locals, Vector<t_int> const &vector_distribution);
 }
 
 //! \brief MPI version of the Fast-Matrix-Multiply
@@ -86,7 +86,7 @@ public:
   FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
                      std::vector<Scatterer> const &scatterers, Matrix<bool> const &locals,
                      Vector<t_int> const &vector_distribution,
-                     mpi::Communicator const &comm = mpi::Communicator())
+                     Communicator const &comm = Communicator())
       : FastMatrixMultiply(
             em_background, wavenumber, scatterers, locals,
             // reordering in graph communicators would require re-mapping vector_distribution
@@ -98,22 +98,37 @@ public:
     assert(locals == locals.transpose());
   }
   FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
+                     std::vector<Scatterer> const &scatterers, t_int diagonal,
+                     Vector<t_int> const &vector_distribution,
+                     Communicator const &comm = Communicator())
+      : FastMatrixMultiply(em_background, wavenumber, scatterers,
+                           details::local_interactions(scatterers.size(), diagonal),
+                           vector_distribution, comm) {}
+  FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers, t_int diagonal,
+                     Vector<t_int> const &vector_distribution,
+                     Communicator const &comm = Communicator())
+      : FastMatrixMultiply(ElectroMagnetic(), wavenumber, scatterers, diagonal, vector_distribution,
+                           comm) {}
+  FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
                      std::vector<Scatterer> const &scatterers,
-                     mpi::Communicator const &comm = mpi::Communicator())
+                     Communicator const &comm = Communicator())
       : FastMatrixMultiply(em_background, wavenumber, scatterers,
                            details::local_interactions(scatterers.size()),
                            details::vector_distribution(scatterers.size(), comm.size()), comm) {}
   FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers,
-                     mpi::Communicator const &comm = mpi::Communicator())
+                     Communicator const &comm = Communicator())
       : FastMatrixMultiply(ElectroMagnetic(), wavenumber, scatterers, comm) {}
+  FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers, t_int diagonal,
+                     Communicator const &comm = Communicator())
+      : FastMatrixMultiply(wavenumber, scatterers, diagonal,
+                           details::vector_distribution(scatterers.size(), comm.size()), comm) {}
   FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers,
                      Matrix<bool> const &local_nonlocal, Vector<t_int> const &vector_distribution,
-                     mpi::Communicator const &comm = mpi::Communicator())
+                     Communicator const &comm = Communicator())
       : FastMatrixMultiply(ElectroMagnetic(), wavenumber, scatterers, local_nonlocal,
                            vector_distribution, comm) {}
   FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers,
-                     Matrix<bool> const &local_nonlocal,
-                     mpi::Communicator const &comm = mpi::Communicator())
+                     Matrix<bool> const &local_nonlocal, Communicator const &comm = Communicator())
       : FastMatrixMultiply(wavenumber, scatterers, local_nonlocal,
                            details::vector_distribution(scatterers.size(), comm.size()), comm) {}
 
@@ -123,6 +138,28 @@ public:
   Vector<t_complex> operator()(Vector<t_complex> const &in) const;
   //! \brief Applies fast matrix multiplication to effective incident field
   Vector<t_complex> operator*(Vector<t_complex> const &in) const { return operator()(in); }
+  //! \brief Applies transpose fast matrix multiplication to effective incident field
+  void transpose(Vector<t_complex> const &in, Vector<t_complex> &out) const;
+  //! \brief Applies transpose fast matrix multiplication to effective incident field
+  Vector<t_complex> transpose(Vector<t_complex> const &in) const;
+  //! \brief Applies conjugate fast matrix multiplication to effective incident field
+  void conjugate(Vector<t_complex> const &in, Vector<t_complex> &out) const {
+    operator()(in.conjugate(), out);
+    out = out.conjugate();
+  }
+  //! \brief Applies conjugate fast matrix multiplication to effective incident field
+  Vector<t_complex> conjugate(Vector<t_complex> const &in) const {
+    return operator()(in.conjugate()).conjugate();
+  }
+  //! \brief Applies adjoint fast matrix multiplication to effective incident field
+  void adjoint(Vector<t_complex> const &in, Vector<t_complex> &out) const {
+    transpose(in.conjugate(), out);
+    out = out.conjugate();
+  }
+  //! \brief Applies conjugate fast matrix multiplication to effective incident field
+  Vector<t_complex> adjoint(Vector<t_complex> const &in) const {
+    return transpose(in.conjugate()).conjugate();
+  }
 
   //! Local rows
   t_uint rows() const { return nonlocal_fmm_.rows(); }
@@ -214,12 +251,16 @@ private:
   optimet::FastMatrixMultiply local_fmm_;
   //! Computed with non-local input vector
   optimet::FastMatrixMultiply nonlocal_fmm_;
+  //! Computed with local input vector
+  optimet::FastMatrixMultiply transpose_local_fmm_;
+  //! Computed with non-local input vector
+  optimet::FastMatrixMultiply transpose_nonlocal_fmm_;
   //! Distribute input for nonlocal_fmm_
   DistributeInput distribute_input_;
   //! Communicate results from local_fmm_ and reduce all results
   ReduceComputation reduce_computation_;
   //! Reconstruction indices for output of nonlocal_fmm_
-  std::vector<std::array<t_uint, 3>> nl_indices_;
+  std::vector<std::array<t_uint, 3>> nonlocal_indices_;
   //! Reconstruction indices for input to local_fmm_
   std::vector<std::array<t_uint, 3>> local_indices_;
 
@@ -227,7 +268,7 @@ private:
                      std::vector<Scatterer> const &scatterers, Matrix<bool> const &locals,
                      GraphCommunicator const &distribute_comm, GraphCommunicator const &reduce_comm,
                      Vector<t_int> const &vector_distribution,
-                     mpi::Communicator const &comm = mpi::Communicator());
+                     Communicator const &comm = Communicator());
 };
 
 template <class T0, class T1>

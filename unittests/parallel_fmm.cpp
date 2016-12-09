@@ -253,40 +253,25 @@ TEST_CASE("MPI vs serial FMM") {
   CHECK(serial_input.size() == serial.cols());
   auto const serial_output =
       split(scatterers, distribution.array() == world.rank(), serial(serial_input));
+  auto const transpose_serial_output =
+      split(scatterers, distribution.array() == world.rank(), serial.transpose(serial_input));
 
   if(world.size() < 2)
     return;
 
   auto const parallel_input = split(scatterers, distribution.array() == world.rank(), serial_input);
-  SECTION("Only reduction -- all computation use local data") {
-    mpi::FastMatrixMultiply parallel(wavenumber, scatterers, Matrix<bool>::Ones(nscatt, nscatt),
-                                     distribution, world);
-    auto const parallel_out = parallel(parallel_input);
-    REQUIRE(parallel_out.size() == serial_output.size());
-    CHECK(parallel_out.isApprox(serial_output));
-  }
-
-  SECTION("Only distribution -- all computation use non-local (and local) data") {
-    mpi::FastMatrixMultiply parallel(wavenumber, scatterers, Matrix<bool>::Zero(nscatt, nscatt),
-                                     distribution, world);
-    auto const parallel_out = parallel(parallel_input);
-    REQUIRE(parallel_out.size() == serial_output.size());
-    CHECK(parallel_out.isApprox(serial_output));
-  }
-
-  for(int diag(1); diag < nscatt - 1; ++diag) {
+  // -1 corresponds to computations using only local data
+  // nscatt - 1 corresponds to computations using all data gathered from all procs
+  for(int diag(-1); diag < static_cast<int>(nscatt); ++diag) {
     SECTION("Overlay communication and data with diag = " + std::to_string(diag)) {
-      Matrix<bool> locals = Matrix<bool>::Zero(nscatt, nscatt);
-      for(t_int d(0); d < nscatt; ++d) {
-        auto const start = std::max(0, d - diag);
-        auto const end = std::min<t_int>(nscatt, d + diag + 1);
-        locals.row(d).segment(start, end - start).fill(true);
-      }
-
-      mpi::FastMatrixMultiply parallel(wavenumber, scatterers, locals, distribution, world);
+      mpi::FastMatrixMultiply parallel(wavenumber, scatterers, diag, distribution, world);
       auto const parallel_out = parallel(parallel_input);
       REQUIRE(parallel_out.size() == serial_output.size());
       CHECK(parallel_out.isApprox(serial_output));
+
+      auto const transpose_parallel_out = parallel.transpose(parallel_input);
+      REQUIRE(transpose_parallel_out.size() == transpose_serial_output.size());
+      CHECK(transpose_parallel_out.isApprox(transpose_serial_output));
     }
   }
 
@@ -299,5 +284,27 @@ TEST_CASE("MPI vs serial FMM") {
     auto const parallel_out = parallel(parallel_input);
     REQUIRE(parallel_out.size() == serial_output.size());
     CHECK(parallel_out.isApprox(serial_output));
+
+    auto const transpose_parallel_out = parallel.transpose(parallel_input);
+    REQUIRE(transpose_parallel_out.size() == transpose_serial_output.size());
+    CHECK(transpose_parallel_out.isApprox(transpose_serial_output));
+  }
+
+  SECTION("Conjugate operation") {
+    mpi::FastMatrixMultiply parallel(wavenumber, scatterers, world);
+
+    auto const expected =
+        split(scatterers, distribution.array() == world.rank(), serial.conjugate(serial_input));
+    auto const actual = parallel.conjugate(parallel_input);
+    CHECK(actual.isApprox(expected));
+  }
+
+  SECTION("Adjoint operation") {
+    mpi::FastMatrixMultiply parallel(wavenumber, scatterers, world);
+
+    auto const expected =
+        split(scatterers, distribution.array() == world.rank(), serial.adjoint(serial_input));
+    auto const actual = parallel.adjoint(parallel_input);
+    CHECK(actual.isApprox(expected));
   }
 }
