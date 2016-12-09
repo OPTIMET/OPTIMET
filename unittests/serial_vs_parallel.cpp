@@ -8,6 +8,7 @@
 #include "Tools.h"
 #include "Types.h"
 #include "constants.h"
+#include "scalapack/BroadcastToOutOfContext.h"
 #include <BelosTypes.hpp>
 
 #ifndef OPTIMET_SOLVER

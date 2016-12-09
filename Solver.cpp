@@ -9,6 +9,7 @@
 #include "mpi/Communicator.h"
 #include "scalapack/LinearSystemSolver.h"
 #include "scalapack/Matrix.h"
+#include "scalapack/BroadcastToOutOfContext.h"
 #include <Eigen/Dense>
 #include <cstdlib>
 #include <iostream>
