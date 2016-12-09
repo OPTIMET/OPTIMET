@@ -83,6 +83,9 @@ public:
   //! \param[in] comm: Communicator from which to create the graph communicators for the two
   //!                  communication steps. This communicator should hold all and only those
   //!                  processes involved in the matrix-vector multiplication.
+  //! \param[in] diagonal: In some constructors, the `locals` matrix is constructed as a diagonal
+  //!                      banded matrix with this number of subdiagonals set to local (computations
+  //!                      from locally available input data).
   FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
                      std::vector<Scatterer> const &scatterers, Matrix<bool> const &locals,
                      Vector<t_int> const &vector_distribution,
@@ -262,6 +265,7 @@ private:
   //! Reconstruction indices for input to local_fmm_
   std::vector<std::array<t_uint, 3>> local_indices_;
 
+  //! End-point of the constructor chain
   FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
                      std::vector<Scatterer> const &scatterers, Matrix<bool> const &locals,
                      GraphCommunicator const &distribute_comm, GraphCommunicator const &reduce_comm,
