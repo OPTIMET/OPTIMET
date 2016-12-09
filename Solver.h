@@ -45,8 +45,8 @@ public:
    * @param context Scalapack context associated with this solver instance
    */
   Solver(
-      Geometry *geometry_, std::shared_ptr<Excitation const> incWave_, int method_, long nMax_,
-      scalapack::Context const &context = scalapack::Context::Squarest(),
+      std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation const> incWave_, int method_,
+      long nMax_, scalapack::Context const &context = scalapack::Context::Squarest(),
       Teuchos::RCP<Teuchos::ParameterList> belos_params = Teuchos::rcp(new Teuchos::ParameterList));
 #else
   /**
@@ -58,7 +58,8 @@ public:
    * @param context Scalapack context associated with this solver instance. Unused if compiled
    * without MPI.
    */
-  Solver(Geometry *geometry_, std::shared_ptr<Excitation const> incWave_, int method_, long nMax_,
+  Solver(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation const> incWave_,
+         int method_, long nMax_,
          scalapack::Context const &context = scalapack::Context::Squarest());
 #endif
 
@@ -97,7 +98,8 @@ public:
    * @param incWave_ the incoming wave excitation.
    * @param nMax_ the maximum value for the n iterator.
    */
-  void update(Geometry *geometry_, std::shared_ptr<Excitation const> incWave_, long nMax_);
+  void update(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation const> incWave_,
+              long nMax_);
   //! \brief Update after internal parameters changed externally
   //! \details Because that's how the original implementation rocked.
   void update() { populate(); }
@@ -159,13 +161,18 @@ private:
   void solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_complex> const &b,
                                   Vector<t_complex> &x, mpi::Communicator const &comm) const;
 #endif
-  Geometry *geometry;                        /**< Pointer to the geometry. */
-  std::shared_ptr<Excitation const> incWave; /**< Pointer to the incoming excitation. */
-  long nMax;                                 /**< The maximum n order. */
-  Result *result_FF;                         /**< The fundamental frequency results. */
-  int solverMethod;                          /**< Solver method: Direct = Mischenko1996, Indirect =
-                                                Stout2002 */
+  //! System of nano-particles
+  std::shared_ptr<Geometry> geometry;
+  //! Incoming excitation
+  std::shared_ptr<Excitation const> incWave;
+  //! Maximum number of harmonics
+  long nMax;
+  //! Results for the fundamental frequency
+  Result *result_FF;
+  //! Solver method
+  int solverMethod;
 #ifdef OPTIMET_BELOS
+  //! Parameter list of the belos solvers
   Teuchos::RCP<Teuchos::ParameterList> belos_params_;
 #endif
   //! \brief MPI commnunicator

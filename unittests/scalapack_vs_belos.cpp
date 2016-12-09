@@ -13,13 +13,13 @@
 using namespace optimet;
 
 TEST_CASE("Scalapack vs Belos") {
-  Geometry geometry;
+  auto geometry = std::make_shared<Geometry>();
   // spherical coords, ε, μ, radius, nmax
   auto const nSpheres = 10;
   auto const nHarmonics = 10;
   for(t_uint i(0); i < 10; ++i) {
     t_real const ii(i);
-    geometry.pushObject({{ii * 1.5 * 2e-6, 0, 0},
+    geometry->pushObject({{ii * 1.5 * 2e-6, 0, 0},
                          {0.45e0 + 0.1 * ii, 1.1e0},
                          (0.5 + 0.01 * ii) * 2e-6,
                          nHarmonics});
@@ -32,11 +32,11 @@ TEST_CASE("Scalapack vs Belos") {
   auto excitation =
       std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
   excitation->populate();
-  geometry.update(excitation);
+  geometry->update(excitation);
 
-  Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
+  Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics);
 
-  optimet::Result scalapack(&geometry, excitation, nHarmonics);
+  optimet::Result scalapack(geometry, excitation, nHarmonics);
   solver.belos_parameters()->set("Solver", "scalapack");
   solver.solve(scalapack.scatter_coef, scalapack.internal_coef);
 
@@ -68,7 +68,7 @@ TEST_CASE("Scalapack vs Belos") {
   for(auto const name : names) {
     SECTION(name) {
       solver.belos_parameters()->set("Solver", name);
-      optimet::Result belos(&geometry, excitation, nHarmonics);
+      optimet::Result belos(geometry, excitation, nHarmonics);
       solver.solve(belos.scatter_coef, belos.internal_coef);
 
       auto const scatter_tol = 1e-6 * std::max(1., scalapack.scatter_coef.array().abs().maxCoeff());

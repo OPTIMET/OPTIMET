@@ -24,10 +24,10 @@ auto const nSpheres = 10;
 #endif
 
 TEST_CASE("N spheres") {
-  Geometry geometry;
+  auto geometry = std::make_shared<Geometry>();
   // spherical coords, ε, μ, radius, nmax
   for(t_uint i(0); i < nSpheres; ++i)
-    geometry.pushObject(
+    geometry->pushObject(
         {{static_cast<t_real>(i) * 1.5 * 2e-6, 0, 0}, {0.45e0, 1.1e0}, 0.5 * 2e-6, nHarmonics});
 
   // Create excitation
@@ -37,11 +37,11 @@ TEST_CASE("N spheres") {
   auto const excitation =
       std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
   excitation->populate();
-  geometry.update(excitation);
+  geometry->update(excitation);
 
   optimet::mpi::Communicator world;
-  optimet::Result parallel(&geometry, excitation, nHarmonics);
-  Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
+  optimet::Result parallel(geometry, excitation, nHarmonics);
+  Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics);
 #ifdef OPTIMET_BELOS
   solver.belos_parameters()->set("Solver", OPTIMET_SOLVER);
   solver.belos_parameters()->set<int>("Num Blocks", 500);
@@ -50,12 +50,12 @@ TEST_CASE("N spheres") {
 #endif
   solver.solve(parallel.scatter_coef, parallel.internal_coef, world);
 
-  optimet::Result serial(&geometry, excitation, nHarmonics);
+  optimet::Result serial(geometry, excitation, nHarmonics);
   auto const serial_context = solver.context().serial();
   auto const comm = world.split(serial_context.is_valid());
   if(serial_context.is_valid()) {
     auto const serial_solver =
-        Solver(&geometry, excitation, O3DSolverIndirect, nHarmonics, serial_context);
+        Solver(geometry, excitation, O3DSolverIndirect, nHarmonics, serial_context);
 #ifdef OPTIMET_BELOS
     serial_solver.belos_parameters()->set("Solver", "eigen");
 #endif
@@ -81,10 +81,10 @@ TEST_CASE("Simultaneous") {
     return;
   }
 
-  Geometry geometry;
+  auto geometry = std::make_shared<Geometry>();
   // spherical coords, ε, μ, radius, nmax
   for(t_uint i(0); i < nSpheres; ++i)
-    geometry.pushObject({{static_cast<t_real>(i) * 1.5, 0, 0}, {0.45e0, 1.1e0}, 0.5, nHarmonics});
+    geometry->pushObject({{static_cast<t_real>(i) * 1.5, 0, 0}, {0.45e0, 1.1e0}, 0.5, nHarmonics});
 
   // Create excitation
   auto const wavelength = 14960e-9;
@@ -93,7 +93,7 @@ TEST_CASE("Simultaneous") {
   auto const excitation =
       std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
   excitation->populate();
-  geometry.update(excitation);
+  geometry->update(excitation);
 
   auto const gridsize = scalapack::squarest_largest_grid(scalapack::global_size() - 1);
   Matrix<t_uint> grid_map(gridsize.rows, gridsize.cols);
@@ -110,13 +110,13 @@ TEST_CASE("Simultaneous") {
   REQUIRE(((serial_context.is_valid() xor parallel_context.is_valid()) or
            (not(parallel_context.is_valid() and serial_context.is_valid()))));
 
-  optimet::Result serial(&geometry, excitation, nHarmonics);
-  optimet::Result parallel(&geometry, excitation, nHarmonics);
+  optimet::Result serial(geometry, excitation, nHarmonics);
+  optimet::Result parallel(geometry, excitation, nHarmonics);
   auto const serial_comm = mpi::Communicator().split(serial_context.is_valid());
   auto const parallel_comm = mpi::Communicator().split(parallel_context.is_valid());
 
   if(parallel_context.is_valid()) {
-    Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics, parallel_context);
+    Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics, parallel_context);
 #ifdef OPTIMET_BELOS
     solver.belos_parameters()->set("Solver", OPTIMET_SOLVER);
     solver.belos_parameters()->set<int>("Num Blocks", 500);
@@ -125,7 +125,7 @@ TEST_CASE("Simultaneous") {
 #endif
     solver.solve(parallel.scatter_coef, parallel.internal_coef, parallel_comm);
   } else if(serial_context.is_valid()) {
-    Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics, serial_context);
+    Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics, serial_context);
 #ifdef OPTIMET_BELOS
     solver.belos_parameters()->set("Solver", "eigen");
 #endif

@@ -49,11 +49,11 @@ int Reader::readGeometry() {
     return readStructure(geo_node);
   }
 
-  run->geometry.structureType = 0;
+  run->geometry->structureType = 0;
 
   // Find all scattering objects
   for(xml_node node = geo_node.child("object"); node; node = node.next_sibling("object"))
-    run->geometry.pushObject(readSphericalScatterer(node));
+    run->geometry->pushObject(readSphericalScatterer(node));
 
   // Add the background properties
   if(geo_node.child("background")) {
@@ -66,12 +66,12 @@ int Reader::readGeometry() {
           geo_node.child("background").child("epsilon").attribute("value.imag").as_double());
       aux_mu.real(geo_node.child("background").child("mu").attribute("value.real").as_double());
       aux_mu.imag(geo_node.child("background").child("mu").attribute("value.imag").as_double());
-      run->geometry.bground.init_r(aux_epsilon, aux_mu);
+      run->geometry->bground.init_r(aux_epsilon, aux_mu);
     }
   }
 
   // Validate the geometry in the return
-  if(run->geometry.objects.size() == 0)
+  if(run->geometry->objects.size() == 0)
     throw std::runtime_error("No scatterers defined in input");
   return 1;
 }
@@ -125,7 +125,7 @@ int Reader::readExcitation() {
   run->excitation->populate();
 
   // Update the geometry in case we had dynamic models
-  run->geometry.update(run->excitation);
+  run->geometry->update(run->excitation);
 
   return 0;
 }
@@ -133,7 +133,7 @@ int Reader::readExcitation() {
 int Reader::readStructure(xml_node geo_node_) {
   xml_node struct_node = geo_node_.child("structure");
 
-  run->geometry.structureType = 1; // set the spiral structure flag
+  run->geometry->structureType = 1; // set the spiral structure flag
 
   if(!std::strcmp(struct_node.attribute("type").value(), "spiral")) {
     // Build a spiral
@@ -163,7 +163,7 @@ int Reader::readStructure(xml_node geo_node_) {
     if(struct_node.child("object").child("properties").attribute("radius")) {
       auto const radius =
           struct_node.child("object").child("properties").attribute("radius").as_double();
-      run->geometry.spiralSeparation = (d / 2) - 2 * radius * consFrnmTom;
+      run->geometry->spiralSeparation = (d / 2) - 2 * radius * consFrnmTom;
     }
 
     // Create vectors for r, theta, x and y, X and Y
@@ -202,26 +202,26 @@ int Reader::readStructure(xml_node geo_node_) {
 
     auto const scatterer = readSphericalScatterer(struct_node.child("object"));
     for(int i = 0; i < No - 1; i++) {
-      run->geometry.pushObject(scatterer);
+      run->geometry->pushObject(scatterer);
       std::string const normal = struct_node.child("properties").attribute("normal").value();
       if(normal == "x") {
         // x is normal (conversion is x(pol) -> y; y(pol) -> z
-        run->geometry.normalToSpiral = 0;
-        run->geometry.objects.back().vR = Tools::toSpherical({0.0, X[i], Y[i]});
+        run->geometry->normalToSpiral = 0;
+        run->geometry->objects.back().vR = Tools::toSpherical({0.0, X[i], Y[i]});
       } else if(normal == "y") {
         // y is normal (conversion is x(pol) -> z; y(pol) -> x
-        run->geometry.normalToSpiral = 1;
-        run->geometry.objects.back().vR = Tools::toSpherical({Y[i], 0, X[i]});
+        run->geometry->normalToSpiral = 1;
+        run->geometry->objects.back().vR = Tools::toSpherical({Y[i], 0, X[i]});
       } else if(normal == "z") {
         // z is normal (conversion is x(pol) -> x; y(pol) -> x
-        run->geometry.normalToSpiral = 2;
-        run->geometry.objects.back().vR = Tools::toSpherical({X[i], Y[i], 0});
+        run->geometry->normalToSpiral = 2;
+        run->geometry->objects.back().vR = Tools::toSpherical({X[i], Y[i], 0});
       } else
         throw std::runtime_error("Unknown normal " + normal);
     }
   }
 
-  if(run->geometry.objects.size() == 0)
+  if(run->geometry->objects.size() == 0)
     throw std::runtime_error("No scatterers defined in input");
   return 1;
 }

@@ -55,8 +55,9 @@ Vector<t_complex> gather_all_source_vector(scalapack::Matrix<t_complex> const &m
 #endif
 
 #if defined(OPTIMET_BELOS)
-Solver::Solver(Geometry *geometry, std::shared_ptr<Excitation const> incWave, int method, long nMax,
-               scalapack::Context const &context, Teuchos::RCP<Teuchos::ParameterList> belos_params)
+Solver::Solver(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave,
+               int method, long nMax, scalapack::Context const &context,
+               Teuchos::RCP<Teuchos::ParameterList> belos_params)
     : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
       belos_params_(belos_params), context_(context), block_size_{64, 64}
 
@@ -64,8 +65,8 @@ Solver::Solver(Geometry *geometry, std::shared_ptr<Excitation const> incWave, in
   populate();
 }
 #else
-Solver::Solver(Geometry *geometry, std::shared_ptr<Excitation const> incWave, int method, long nMax,
-               scalapack::Context const &context)
+Solver::Solver(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave,
+               int method, long nMax, scalapack::Context const &context)
     : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
       context_(context), block_size_{64, 64}
 
@@ -168,7 +169,8 @@ void Solver::populateIndirect() {
   S = preconditioned_scattering_matrix(*geometry, incWave, context(), block_size());
 }
 
-void Solver::update(Geometry *geometry_, std::shared_ptr<Excitation const> incWave_, long nMax_) {
+void Solver::update(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation const> incWave_,
+                    long nMax_) {
   geometry = geometry_;
   incWave = incWave_;
   nMax = nMax_;
@@ -401,28 +403,28 @@ t_uint Solver::scattering_size() const {
 }
 
 Vector<t_complex> convertInternal(Vector<t_complex> const &scattered, t_real const &omega,
-    ElectroMagnetic const &bground,
-    std::vector<Scatterer> const &objects) {
+                                  ElectroMagnetic const &bground,
+                                  std::vector<Scatterer> const &objects) {
   Vector<t_complex> result(scattered.size());
   size_t i = 0;
   for(auto const &object : objects) {
     auto const N = 2 * object.nMax * (object.nMax + 2);
     result.segment(i, N).array() =
-      scattered.segment(i, N).array() * object.getIaux(omega, bground).array();
+        scattered.segment(i, N).array() * object.getIaux(omega, bground).array();
     i += N;
   }
   return result;
 }
 
 Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered, t_real const &omega,
-    ElectroMagnetic const &bground,
-    std::vector<Scatterer> const &objects) {
+                                  ElectroMagnetic const &bground,
+                                  std::vector<Scatterer> const &objects) {
   Vector<t_complex> result(scattered.size());
   size_t i(0);
   for(auto const &object : objects) {
     auto const N = 2 * object.nMax * (object.nMax + 2);
     result.segment(i, N) =
-      object.getTLocal(omega, bground).array() * scattered.segment(i, N).array();
+        object.getTLocal(omega, bground).array() * scattered.segment(i, N).array();
     i += N;
   }
   return result;

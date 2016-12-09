@@ -11,17 +11,19 @@
 #include <iostream>
 
 namespace optimet {
-Result::Result(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, int nMax_)
+Result::Result(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_,
+               int nMax_)
     : flagSH(false), result_FF(nullptr) {
   init(geometry_, excitation_, nMax_);
 }
 
-Result::Result(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, Result *result_FF_,
-               int nMax_) {
+Result::Result(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_,
+               Result *result_FF_, int nMax_) {
   init(geometry_, excitation_, result_FF_, nMax_);
 }
 
-void Result::init(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, int nMax_) {
+void Result::init(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_,
+                  int nMax_) {
   geometry = geometry_;
   nMax = nMax_;
   excitation = excitation_;
@@ -34,15 +36,16 @@ void Result::init(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, 
   c_scatter_coef.resize(2 * Tools::iteratorMax(nMax));
 }
 
-void Result::update(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, int nMax_) {
+void Result::update(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_,
+                    int nMax_) {
   geometry = geometry_;
   nMax = nMax_;
   excitation = excitation_;
   waveK = excitation->waveK;
 }
 
-void Result::init(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, Result *result_FF_,
-                  int nMax_) {
+void Result::init(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_,
+                  Result *result_FF_, int nMax_) {
   geometry = geometry_;
   nMax = nMax_;
   excitation = excitation_;
@@ -731,9 +734,9 @@ void Result::writeContinuityCheck(int objectIndex_) {
   SphericalP<std::complex<double>> AnHField_in, AnHField_out;
   Spherical<double> APoint(0.0, 0.0, 0.0);
   auto const projection = true; // Spherical projection - True - projection is internally
-                      // set to be evaluated w.r.t. object[0]
-  int outside = -1;   // Forces result to be outside an object
-  int inside = 0;     // Forces result to be inside an object
+                                // set to be evaluated w.r.t. object[0]
+  int outside = -1;             // Forces result to be outside an object
+  int inside = 0;               // Forces result to be inside an object
   double radius = geometry->objects[objectIndex_].radius;
   ;
   std::complex<double> eps_r = geometry->objects[objectIndex_].elmag.epsilon_r;

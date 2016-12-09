@@ -22,7 +22,7 @@
  */
 class Run {
 public:
-  Geometry geometry;     /**< The Geometry of the case. */
+  std::shared_ptr<Geometry> geometry;     /**< The Geometry of the case. */
   std::shared_ptr<optimet::Excitation> excitation; /**< The Excitation of the case. */
   //! Parameters needed to setup parallel computations
   optimet::scalapack::Parameters parallel_params;
@@ -55,12 +55,12 @@ public:
    * Default constructor for the Case class.
    * Does NOT initialize the instance.
    */
-  Run();
+  Run() : geometry(new Geometry) {};
 
   /**
    * Default destructor for the Case class.
    */
-  virtual ~Run();
+  virtual ~Run() {};
 };
 
 #endif /* RUN_H_ */

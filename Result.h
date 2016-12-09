@@ -21,7 +21,7 @@ namespace optimet {
 class Result {
 private:
   int nMax;                               /**< Maximum number of harmonics. */
-  Geometry *geometry;                     /**< Pointer to the Geometry. */
+  std::shared_ptr<Geometry> geometry;     /**< Pointer to the Geometry. */
   std::shared_ptr<Excitation> excitation; /**< Pointer to the Excitation. */
   std::complex<double> waveK;             /**< The std::complex wave number. */
   bool flagSH;                            /**< Specifies if handling Second Harmonic results. */
@@ -38,7 +38,7 @@ public:
    * @param excitation_ the pointer to the excitation.
    * @param nMax_ the maximum number of harmonics.
    */
-  Result(Geometry *geometry_, std::shared_ptr<Excitation> xcitation_, int nMax_);
+  Result(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> xcitation_, int nMax_);
 
   /**
    * Initialization constructor for the Result class.
@@ -48,8 +48,8 @@ public:
    * @param result_FF_ the pointer to the Fundamental Frequency results.
    * @param nMax_ the maximum number of harmonics.
    */
-  Result(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, Result *result_FF_,
-         int nMax_);
+  Result(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_,
+         Result *result_FF_, int nMax_);
 
   /**
    * Default destructor for the Result class.
@@ -63,7 +63,8 @@ public:
    * @param excitation_ the pointer to the excitation.
    * @param nMax_ the maximum number of harmonics.
    */
-  void init(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, int nMax_);
+  void
+  init(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_, int nMax_);
 
   /**
    * Update method for the Result class.
@@ -71,7 +72,8 @@ public:
    * @param excitation_ the pointer to the excitation.
    * @param nMax_ the maximum number of harmonics.
    */
-  void update(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, int nMax_);
+  void
+  update(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_, int nMax_);
 
   /**
    * Initialization constructor for the Result class.
@@ -81,8 +83,8 @@ public:
    * @param result_FF_ the pointer to the Fundamental Frequency results.
    * @param nMax_ the maximum number of harmonics.
    */
-  void
-  init(Geometry *geometry_, std::shared_ptr<Excitation> excitation_, Result *result_FF_, int nMax_);
+  void init(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_,
+            Result *result_FF_, int nMax_);
 
   /**
    * Returns the E field at a given point using the cluster centered

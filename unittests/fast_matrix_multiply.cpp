@@ -67,9 +67,9 @@ TEST_CASE("Transpose/conjugate/adjoint of the fast matrix multiply") {
   using namespace optimet;
   auto const radius = 500.0e-9;
   Eigen::Matrix<t_real, 3, 1> const direction(2, 1, 1); // = Vector<t_real>::Random(3).normalized();
-  Geometry geometry;
-  geometry.pushObject({{0, 0, 0}, silicon, radius, nHarmonics});
-  geometry.pushObject({direction * 3 * radius * 1.500001, silicon, 2 * radius, nHarmonics});
+  auto geometry = std::make_shared<Geometry>();
+  geometry->pushObject({{0, 0, 0}, silicon, radius, nHarmonics});
+  geometry->pushObject({direction * 3 * radius * 1.500001, silicon, 2 * radius, nHarmonics});
 
   auto const wavelength = 1490.0e-9;
   Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
@@ -77,13 +77,13 @@ TEST_CASE("Transpose/conjugate/adjoint of the fast matrix multiply") {
   auto excitation =
       std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
   excitation->populate();
-  geometry.update(excitation);
+  geometry->update(excitation);
 
-  Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
-  optimet::FastMatrixMultiply fmm(geometry.bground, excitation->omega() / constant::c,
-                                  geometry.objects);
+  Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics);
+  optimet::FastMatrixMultiply fmm(geometry->bground, excitation->omega() / constant::c,
+                                  geometry->objects);
 
-  auto const size = geometry.objects.size() * nHarmonics * (nHarmonics + 2) * 2;
+  auto const size = geometry->objects.size() * nHarmonics * (nHarmonics + 2) * 2;
   Matrix<t_complex> expected(size, size), transpose(size, size), conjugate(size, size),
       adjoint(size, size);
   for(t_int i(0); i < size; ++i) {
@@ -103,9 +103,9 @@ TEST_CASE("Standard vs Fast matrix multiply") {
   using namespace optimet;
   auto const radius = 500.0e-9;
   Eigen::Matrix<t_real, 3, 1> const direction = Vector<t_real>::Random(3).normalized();
-  Geometry geometry;
-  geometry.pushObject({{0, 0, 0}, silicon, radius, nHarmonics});
-  geometry.pushObject({direction * 3 * radius * 1.500001, silicon, 2 * radius, nHarmonics});
+  auto geometry = std::make_shared<Geometry>();
+  geometry->pushObject({{0, 0, 0}, silicon, radius, nHarmonics});
+  geometry->pushObject({direction * 3 * radius * 1.500001, silicon, 2 * radius, nHarmonics});
 
   auto const wavelength = 1490.0e-9;
   Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
@@ -113,12 +113,12 @@ TEST_CASE("Standard vs Fast matrix multiply") {
   auto excitation =
       std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
   excitation->populate();
-  geometry.update(excitation);
+  geometry->update(excitation);
 
   SECTION("Two particles") {
-    Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
-    optimet::FastMatrixMultiply fmm(geometry.bground, excitation->omega() / constant::c,
-                                    geometry.objects);
+    Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics);
+    optimet::FastMatrixMultiply fmm(geometry->bground, excitation->omega() / constant::c,
+                                    geometry->objects);
 
     auto const N = nHarmonics * (nHarmonics + 2);
     for(t_int i(0); i < solver.Q.size(); ++i) {
@@ -133,11 +133,11 @@ TEST_CASE("Standard vs Fast matrix multiply") {
   SECTION("Three particles") {
     ElectroMagnetic const other{9, 2.0};
     auto const x = Eigen::Matrix<t_real, 3, 1>::Unit(0).eval();
-    geometry.pushObject(
+    geometry->pushObject(
         {direction * 1.5 * radius * 1.500001 + x * radius * 8, other, 0.5 * radius, nHarmonics});
-    Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
-    optimet::FastMatrixMultiply fmm(geometry.bground, excitation->omega() / constant::c,
-                                    geometry.objects);
+    Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics);
+    optimet::FastMatrixMultiply fmm(geometry->bground, excitation->omega() / constant::c,
+                                    geometry->objects);
 
     auto const N = nHarmonics * (nHarmonics + 2);
     for(t_int i(0); i < solver.Q.size(); ++i) {
@@ -172,7 +172,7 @@ TEST_CASE("Ranged matrices") {
   splitting(0, 0) = 1;
   splitting.col(0).tail(scatterers.size() - 1).fill(2);
   splitting.rightCols(scatterers.size() - 1).fill(3);
-  CHECK(not (splitting.array() == -1).any());
+  CHECK(not(splitting.array() == -1).any());
   optimet::FastMatrixMultiply whole(wavenumber, scatterers);
   optimet::FastMatrixMultiply partA(wavenumber, scatterers, splitting.array() == 1);
   optimet::FastMatrixMultiply partB(wavenumber, scatterers, splitting.array() == 2);

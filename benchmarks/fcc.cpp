@@ -34,7 +34,7 @@ Matrix<t_real> fcc_cell() {
 
 t_real default_wavelength() { return 750e-9; }
 
-std::tuple<Geometry, std::shared_ptr<Excitation>>
+std::tuple<std::shared_ptr<Geometry>, std::shared_ptr<Excitation>>
 fcc_system(t_int const &N, t_real length, Scatterer const &scatterer) {
   // setup geometry
   auto const cell = fcc_cell();
@@ -44,7 +44,7 @@ fcc_system(t_int const &N, t_real length, Scatterer const &scatterer) {
     ++std::get<0>(range);
   if((n + 1) * n * n < N)
     ++std::get<1>(range);
-  Geometry geometry;
+  auto geometry = std::make_shared<Geometry>();
   n = 0;
   for(int i(0); i < std::get<0>(range); ++i)
     for(int j(0); j < std::get<1>(range); ++j)
@@ -52,8 +52,8 @@ fcc_system(t_int const &N, t_real length, Scatterer const &scatterer) {
         if(n == N)
           break;
         Eigen::Matrix<t_real, 3, 1> pos = cell * Eigen::Matrix<t_real, 3, 1>(i, j, k) * length;
-        geometry.pushObject({Tools::toSpherical({pos(0), pos(1), pos(2)}), scatterer.elmag,
-                             scatterer.radius, scatterer.nMax});
+        geometry->pushObject({Tools::toSpherical({pos(0), pos(1), pos(2)}), scatterer.elmag,
+                              scatterer.radius, scatterer.nMax});
       }
 
   // Create excitation
@@ -63,8 +63,8 @@ fcc_system(t_int const &N, t_real length, Scatterer const &scatterer) {
   auto const excitation =
       std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, scatterer.nMax);
   excitation->populate();
-  geometry.update(excitation);
-  return std::tuple<Geometry, std::shared_ptr<Excitation>>{geometry, excitation};
+  geometry->update(excitation);
+  return std::tuple<std::shared_ptr<Geometry>, std::shared_ptr<Excitation>>{geometry, excitation};
 }
 
 Scatterer default_scatterer(t_int nHarmonics) {
@@ -82,7 +82,7 @@ void problem_setup(benchmark::State &state) {
   auto input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
 
   while(state.KeepRunning())
-    Solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics);
+    Solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics);
   state.SetItemsProcessed(int64_t(state.iterations()) *
                           int64_t(std::get<0>(input).scatterer_size()));
 }
@@ -91,8 +91,8 @@ void solver(benchmark::State &state) {
   auto const nHarmonics = state.range_y();
   auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
   auto input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
-  Solver solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics);
-  Result result(&std::get<0>(input), std::get<1>(input), nHarmonics);
+  Solver solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics);
+  Result result(std::get<0>(input), std::get<1>(input), nHarmonics);
 
   while(state.KeepRunning()) {
     result.internal_coef.fill(0);
@@ -111,12 +111,12 @@ void solver(benchmark::State &state) {
   auto input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
   auto const context = optimet::scalapack::Context::Squarest();
 #ifdef OPTIMET_BELOS
-  Solver solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics, context,
+  Solver solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics, context,
                 parameters);
 #else
-  Solver solver(&std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics, context);
+  Solver solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect, nHarmonics, context);
 #endif
-  Result result(&std::get<0>(input), std::get<1>(input), nHarmonics);
+  Result result(std::get<0>(input), std::get<1>(input), nHarmonics);
   while(state.KeepRunning()) {
     result.internal_coef.fill(0);
     auto start = std::chrono::high_resolution_clock::now();
@@ -127,7 +127,7 @@ void solver(benchmark::State &state) {
     state.SetIterationTime(proc_max);
   }
   state.SetItemsProcessed(int64_t(state.iterations()) *
-                          int64_t(std::get<0>(input).scatterer_size()));
+                          int64_t(std::get<0>(input)->scatterer_size()));
 }
 #endif
 }
