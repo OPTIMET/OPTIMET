@@ -5,6 +5,7 @@
 #include "Excitation.h"
 #include "Geometry.h"
 #include "Result.h"
+#include "Run.h"
 #include "Types.h"
 #include "mpi/Collectives.h"
 #include "mpi/Communicator.h"
@@ -26,14 +27,76 @@ Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered, t_real con
 //! Computes coeffs internal to spheres
 Vector<t_complex> convertInternal(Vector<t_complex> const &scattered, t_real const &omega,
                                   ElectroMagnetic const &bground, std::vector<Scatterer> const &);
+class SolverBase {
+public:
+  /**
+   * Initialization constructor for the Solver class.
+   * @param geometry_ the geometry of the simulation.
+   * @param incWave_ the incoming wave excitation.
+   * @param method_ the solver method to be used.
+   * @param nMax_ the maximum value for the n iterator.
+   */
+  SolverBase(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave,
+             long nMax)
+      : geometry(geometry), incWave(incWave), nMax(nMax) {}
+
+  ~SolverBase(){};
+
+  /**
+   * Solve the scattered and internal coefficients using the method specified by
+   * solverMethod.
+   * @param X_sca_ the return vector for the scattered coefficients.
+   * @param X_int_ the return vector for the internal coefficients.
+   * @return 0 if successful, 1 otherwise.
+   */
+  virtual void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const = 0;
+  //! \brief Solves linear system of equations
+  //! \details Makes sure all procs in comm have access to result.
+  //! The communicator should contain all the procs in the scalapack context of the solver.
+  virtual void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
+                     mpi::Communicator const &comm) const = 0;
+  /**
+   * Update method for the Solver class.
+   * @param geometry_ the geometry of the simulation.
+   * @param incWave_ the incoming wave excitation.
+   * @param nMax_ the maximum value for the n iterator.
+   */
+  virtual void update(std::shared_ptr<Geometry> geometry_,
+                      std::shared_ptr<Excitation const> incWave_, long nMax_) {
+    geometry = geometry_;
+    incWave = incWave_;
+    nMax = nMax_;
+    update();
+  }
+  void update(Run const &run) { return update(run.geometry, run.excitation, run.nMax); }
+  //! \brief Update after internal parameters changed externally
+  //! \details Because that's how the original implementation rocked.
+  virtual void update() = 0;
+
+  //! Converts back to the scattered result from the indirect calculation
+  Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered) const {
+    return optimet::convertIndirect(scattered, incWave->omega(), geometry->bground,
+                                    geometry->objects);
+  }
+
+  //! Solves for the internal coefficients.
+  Vector<t_complex> solveInternal(Vector<t_complex> const &scattered) const {
+    return optimet::convertInternal(scattered, incWave->omega(), geometry->bground,
+                                    geometry->objects);
+  }
+
+protected:
+  std::shared_ptr<Geometry> geometry;        /**< Pointer to the geometry. */
+  std::shared_ptr<Excitation const> incWave; /**< Pointer to the incoming excitation. */
+  long nMax;                                 /**< The maximum n order. */
+};
+
 /**
  * The Solver class builds and solves the scattering matrix equation.
  */
-class Solver {
+class Solver : public SolverBase {
 public:
-  Matrix<t_complex> S; /**< The scattering matrix S = I - T*AB. */
-  Vector<t_complex> Q; /**< The local field matrix Q = T*AB*a. */
-
+  using SolverBase::update;
 #if defined(OPTIMET_BELOS)
   /**
    * Initialization constructor for the Solver class.
@@ -86,35 +149,17 @@ public:
    * @param X_int_ the return vector for the internal coefficients.
    * @return 0 if successful, 1 otherwise.
    */
-  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const;
+  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const override;
   //! \brief Solves linear system of equations
   //! \details Makes sure all procs in comm have access to result.
   //! The communicator should contain all the procs in the scalapack context of the solver.
-  void
-  solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_, mpi::Communicator const &comm) const;
-  /**
-   * Update method for the Solver class.
-   * @param geometry_ the geometry of the simulation.
-   * @param incWave_ the incoming wave excitation.
-   * @param nMax_ the maximum value for the n iterator.
-   */
-  void update(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation const> incWave_,
-              long nMax_);
+  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
+             mpi::Communicator const &comm) const override;
   //! \brief Update after internal parameters changed externally
   //! \details Because that's how the original implementation rocked.
-  void update() { populate(); }
-
-  //! Converts back to the scattered result from the indirect calculation
-  Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered) const {
-    return optimet::convertIndirect(scattered, incWave->omega(), geometry->bground,
-                                    geometry->objects);
-  }
-
-  //! Solves for the internal coefficients.
-  Vector<t_complex> solveInternal(Vector<t_complex> const &scattered) const {
-    return optimet::convertInternal(scattered, incWave->omega(), geometry->bground,
-                                    geometry->objects);
-  }
+  void update() override { populate(); }
+  void update(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation const> incWave_,
+              long nMax_) override;
 
   scalapack::Context context() const { return context_; }
   scalapack::Sizes const &block_size() const { return block_size_; }
@@ -161,12 +206,6 @@ private:
   void solveLinearSystemScalapack(Matrix<t_complex> const &A, Vector<t_complex> const &b,
                                   Vector<t_complex> &x, mpi::Communicator const &comm) const;
 #endif
-  //! System of nano-particles
-  std::shared_ptr<Geometry> geometry;
-  //! Incoming excitation
-  std::shared_ptr<Excitation const> incWave;
-  //! Maximum number of harmonics
-  long nMax;
   //! Results for the fundamental frequency
   Result *result_FF;
   //! Solver method
@@ -179,6 +218,9 @@ private:
   //! \details Fake if not compiled with MPI
   scalapack::Context context_;
   scalapack::Sizes block_size_;
+
+  Matrix<t_complex> S; /**< The scattering matrix S = I - T*AB. */
+  Vector<t_complex> Q; /**< The local field matrix Q = T*AB*a. */
 };
 
 //! \brief Computes source vector

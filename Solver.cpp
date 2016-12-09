@@ -58,7 +58,7 @@ Vector<t_complex> gather_all_source_vector(scalapack::Matrix<t_complex> const &m
 Solver::Solver(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave,
                int method, long nMax, scalapack::Context const &context,
                Teuchos::RCP<Teuchos::ParameterList> belos_params)
-    : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
+    : SolverBase(geometry, incWave, nMax), result_FF(nullptr), solverMethod(method),
       belos_params_(belos_params), context_(context), block_size_{64, 64}
 
 {
@@ -67,7 +67,7 @@ Solver::Solver(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation co
 #else
 Solver::Solver(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave,
                int method, long nMax, scalapack::Context const &context)
-    : geometry(geometry), incWave(incWave), nMax(nMax), result_FF(nullptr), solverMethod(method),
+    : SolverBase(geometry, incWave, nMax), result_FF(nullptr), solverMethod(method),
       context_(context), block_size_{64, 64}
 
 {
@@ -171,13 +171,8 @@ void Solver::populateIndirect() {
 
 void Solver::update(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation const> incWave_,
                     long nMax_) {
-  geometry = geometry_;
-  incWave = incWave_;
-  nMax = nMax_;
-
   result_FF = nullptr;
-
-  populate();
+  SolverBase::update(geometry_, incWave_, nMax_);
 }
 
 void Solver::solveLinearSystem(Matrix<t_complex> const &A, Vector<t_complex> const &b,

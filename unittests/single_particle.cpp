@@ -69,34 +69,35 @@ TEST_CASE("Two spheres") {
 #else
   scalapack::Context const context;
 #endif
-  Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics, context);
+  auto const S = preconditioned_scattering_matrix(*geometry, excitation);
+  auto const Q = source_vector(*geometry, excitation);
 
   auto const nb = 2 * nHarmonics * (nHarmonics + 2);
-  CHECK(solver.S.rows() == solver.S.cols());
-  CHECK(solver.S.rows() == nb * geometry->objects.size());
-  CHECK(solver.Q.size() == solver.S.cols());
+  CHECK(S.rows() == S.cols());
+  CHECK(S.rows() == nb * geometry->objects.size());
+  CHECK(Q.size() == S.cols());
 
   SECTION("Check transparent <==> identity") {
-    CHECK(solver.S.isApprox(Matrix<>::Identity(solver.S.rows(), solver.S.cols())));
+    CHECK(S.isApprox(Matrix<>::Identity(S.rows(), S.cols())));
   }
   SECTION("Check structure for only one transparent sphere") {
     geometry->objects.front() = {{0, 0, 0}, {10.0e0, 1.0e0}, 0.5, nHarmonics};
     geometry->update(excitation);
-    solver.update();
-    CHECK(solver.S.topLeftCorner(nb, nb).isIdentity());
-    CHECK(solver.S.bottomRightCorner(nb, nb).isIdentity());
-    CHECK(solver.S.topRightCorner(nb, nb).isZero());
-    CHECK(not solver.S.bottomLeftCorner(nb, nb).isZero());
+    auto const S = preconditioned_scattering_matrix(*geometry, excitation);
+    CHECK(S.topLeftCorner(nb, nb).isIdentity());
+    CHECK(S.bottomRightCorner(nb, nb).isIdentity());
+    CHECK(S.topRightCorner(nb, nb).isZero());
+    CHECK(not S.bottomLeftCorner(nb, nb).isZero());
   }
   SECTION("Check structure for two identical spheres") {
     geometry->objects.front() = {{-1, 0, 0}, {10.0e0, 1.0e0}, 0.5, nHarmonics};
     geometry->objects.back() = {{1, 0, 0}, {10.0e0, 1.0e0}, 0.5, nHarmonics};
     geometry->update(excitation);
-    solver.update();
-    CHECK(solver.S.topLeftCorner(nb, nb).isIdentity());
-    CHECK(solver.S.bottomRightCorner(nb, nb).isIdentity());
-    auto const AB = solver.S.topRightCorner(nb, nb);
-    auto const BA = solver.S.bottomLeftCorner(nb, nb);
+    auto const S = preconditioned_scattering_matrix(*geometry, excitation);
+    CHECK(S.topLeftCorner(nb, nb).isIdentity());
+    CHECK(S.bottomRightCorner(nb, nb).isIdentity());
+    auto const AB = S.topRightCorner(nb, nb);
+    auto const BA = S.bottomLeftCorner(nb, nb);
     CHECK(AB.diagonal().isApprox(BA.diagonal()));
   }
 }

@@ -116,14 +116,14 @@ TEST_CASE("Standard vs Fast matrix multiply") {
   geometry->update(excitation);
 
   SECTION("Two particles") {
-    Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics);
     optimet::FastMatrixMultiply fmm(geometry->bground, excitation->omega() / constant::c,
                                     geometry->objects);
 
-    auto const N = nHarmonics * (nHarmonics + 2);
-    for(t_int i(0); i < solver.Q.size(); ++i) {
-      auto const input = Vector<t_complex>::Unit(solver.Q.size(), i);
-      Vector<t_complex> const expected = solver.S * input;
+    auto const S = preconditioned_scattering_matrix(*geometry, excitation);
+    auto const size = S.cols();
+    for(t_int i(0); i < size; ++i) {
+      auto const input = Vector<t_complex>::Unit(size, i);
+      Vector<t_complex> const expected = S * input;
       Vector<t_complex> const actual = fmm * input;
       CAPTURE(actual.transpose());
       REQUIRE(expected.isApprox(actual));
@@ -135,14 +135,14 @@ TEST_CASE("Standard vs Fast matrix multiply") {
     auto const x = Eigen::Matrix<t_real, 3, 1>::Unit(0).eval();
     geometry->pushObject(
         {direction * 1.5 * radius * 1.500001 + x * radius * 8, other, 0.5 * radius, nHarmonics});
-    Solver solver(geometry, excitation, O3DSolverIndirect, nHarmonics);
     optimet::FastMatrixMultiply fmm(geometry->bground, excitation->omega() / constant::c,
                                     geometry->objects);
+    auto const S = preconditioned_scattering_matrix(*geometry, excitation);
+    auto const size = S.cols();
 
-    auto const N = nHarmonics * (nHarmonics + 2);
-    for(t_int i(0); i < solver.Q.size(); ++i) {
-      auto const input = Vector<t_complex>::Unit(solver.Q.size(), i);
-      Vector<t_complex> const expected = solver.S * input;
+    for(t_int i(0); i < size; ++i) {
+      auto const input = Vector<t_complex>::Unit(size, i);
+      Vector<t_complex> const expected = S * input;
       Vector<t_complex> const actual = fmm * input;
       CHECK(expected.isApprox(actual));
     }
