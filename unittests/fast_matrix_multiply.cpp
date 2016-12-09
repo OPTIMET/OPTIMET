@@ -3,7 +3,7 @@
 #include "Geometry.h"
 #include "HarmonicsIterator.h"
 #include "Result.h"
-#include "PreconditionnedMatrix.h"
+#include "PreconditionedMatrix.h"
 #include "Tools.h"
 #include "catch.hpp"
 #include <iostream>

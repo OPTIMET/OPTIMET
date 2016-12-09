@@ -4,7 +4,7 @@
 #include "Aliases.h"
 #include "Geometry.h"
 #include "Scatterer.h"
-#include "PreconditionnedMatrix.h"
+#include "PreconditionedMatrix.h"
 #include "Tools.h"
 #include "Types.h"
 #include "constants.h"

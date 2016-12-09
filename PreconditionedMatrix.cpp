@@ -1,5 +1,5 @@
 #include "Coupling.h"
-#include "PreconditionnedMatrix.h"
+#include "PreconditionedMatrix.h"
 #include "Types.h"
 #include "scalapack/BroadcastToOutOfContext.h"
 

@@ -4,7 +4,7 @@
 #include "Aliases.h"
 #include "CompoundIterator.h"
 #include "HarmonicsIterator.h"
-#include "PreconditionnedMatrix.h"
+#include "PreconditionedMatrix.h"
 #include "Tools.h"
 #include "constants.h"
 #include "mpi/Communicator.h"

@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include "HarmonicsIterator.h"
-#include "PreconditionnedMatrix.h"
+#include "PreconditionedMatrix.h"
 #include "Tools.h"
 #include "Types.h"
 #include "constants.h"
