@@ -39,9 +39,7 @@ Solver::Solver(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation co
 #endif
 
 void Solver::populate() {
-  nMax = std::accumulate(
-      geometry->objects.begin(), geometry->objects.end(), 0u,
-      [](t_uint prior, Scatterer const &current) { return std::max<t_uint>(prior, current.nMax); });
+  nMax = geometry->nMax();
   assert(solverMethod == O3DSolverIndirect);
   populateIndirect();
 }

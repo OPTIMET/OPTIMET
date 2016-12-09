@@ -11,51 +11,40 @@
 #include <iostream>
 
 namespace optimet {
-Result::Result(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_,
-               int nMax_)
+Result::Result(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_)
     : flagSH(false), result_FF(nullptr) {
-  init(geometry_, excitation_, nMax_);
+  init(geometry_, excitation_);
 }
 
 Result::Result(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_,
-               Result *result_FF_, int nMax_) {
-  init(geometry_, excitation_, result_FF_, nMax_);
+               Result *result_FF_) {
+  init(geometry_, excitation_, result_FF_);
 }
 
-void Result::init(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_,
-                  int nMax_) {
+void Result::init(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_) {
   geometry = geometry_;
-  nMax = nMax_;
   excitation = excitation_;
   waveK = excitation->waveK;
   flagSH = false;
   result_FF = NULL;
+  nMax = geometry_->nMax();
 
   scatter_coef.resize(2 * Tools::iteratorMax(nMax) * geometry->objects.size());
   internal_coef.resize(2 * Tools::iteratorMax(nMax) * geometry->objects.size());
   c_scatter_coef.resize(2 * Tools::iteratorMax(nMax));
 }
 
-void Result::update(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_,
-                    int nMax_) {
+void Result::update(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_) {
   geometry = geometry_;
-  nMax = nMax_;
   excitation = excitation_;
   waveK = excitation->waveK;
 }
 
 void Result::init(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_,
-                  Result *result_FF_, int nMax_) {
-  geometry = geometry_;
-  nMax = nMax_;
-  excitation = excitation_;
-  waveK = excitation->waveK;
+                  Result *result_FF_) {
+  init(geometry_, excitation_);
   flagSH = true;
   result_FF = result_FF_;
-
-  scatter_coef.resize(2 * Tools::iteratorMax(nMax) * geometry->objects.size());
-  internal_coef.resize(2 * Tools::iteratorMax(nMax) * geometry->objects.size());
-  c_scatter_coef.resize(2 * Tools::iteratorMax(nMax));
 }
 
 void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,

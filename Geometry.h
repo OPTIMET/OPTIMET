@@ -4,8 +4,9 @@
 #include "Excitation.h"
 #include "Scatterer.h"
 #include "Types.h"
-#include <vector>
 #include <memory>
+#include <numeric>
+#include <vector>
 
 /**
  * The Geometry class implements a list of objects and properties of the medium.
@@ -136,6 +137,21 @@ public:
 
   //! Size of the scattering vector
   optimet::t_uint scatterer_size() const;
+
+  //! Maximum nMax across objects
+  optimet::t_uint nMax() const {
+    return std::accumulate(objects.begin(), objects.end(), optimet::t_uint(0u),
+                           [](optimet::t_uint prior, Scatterer const &current) {
+                             return std::max<optimet::t_uint>(prior, current.nMax);
+                           });
+  }
+  //! Minimum nMax across objects
+  optimet::t_uint nMin() const {
+    return std::accumulate(objects.begin(), objects.end(), nMax(),
+                           [](optimet::t_uint prior, Scatterer const &current) {
+                             return std::min<optimet::t_uint>(prior, current.nMax);
+                           });
+  }
 
 protected:
   //! Validate last added sphere

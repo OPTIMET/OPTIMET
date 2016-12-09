@@ -36,7 +36,7 @@ TEST_CASE("Scalapack vs Belos") {
 
   optimet::solver::Solver solver(geometry, excitation, O3DSolverIndirect);
 
-  optimet::Result scalapack(geometry, excitation, nHarmonics);
+  optimet::Result scalapack(geometry, excitation);
   solver.belos_parameters()->set("Solver", "scalapack");
   solver.solve(scalapack.scatter_coef, scalapack.internal_coef);
 
@@ -68,7 +68,7 @@ TEST_CASE("Scalapack vs Belos") {
   for(auto const name : names) {
     SECTION(name) {
       solver.belos_parameters()->set("Solver", name);
-      optimet::Result belos(geometry, excitation, nHarmonics);
+      optimet::Result belos(geometry, excitation);
       solver.solve(belos.scatter_coef, belos.internal_coef);
 
       auto const scatter_tol = 1e-6 * std::max(1., scalapack.scatter_coef.array().abs().maxCoeff());

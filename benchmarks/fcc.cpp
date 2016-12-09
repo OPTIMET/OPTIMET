@@ -92,7 +92,7 @@ void benchmark_solver(benchmark::State &state) {
   auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
   auto input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
   optimet::solver::Solver solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect);
-  Result result(std::get<0>(input), std::get<1>(input), nHarmonics);
+  Result result(std::get<0>(input), std::get<1>(input));
 
   while(state.KeepRunning()) {
     result.internal_coef.fill(0);
@@ -117,7 +117,7 @@ void benchmark_solver(benchmark::State &state) {
   optimet::solver::Solver solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect,
                                  context);
 #endif
-  Result result(std::get<0>(input), std::get<1>(input), nHarmonics);
+  Result result(std::get<0>(input), std::get<1>(input));
   while(state.KeepRunning()) {
     result.internal_coef.fill(0);
     auto start = std::chrono::high_resolution_clock::now();

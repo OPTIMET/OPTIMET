@@ -66,7 +66,7 @@ int Simulation::run() {
 void Simulation::field_simulation(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
   // Determine the simulation type and proceed accordingly
 
-  Result result(run.geometry, run.excitation, run.nMax);
+  Result result(run.geometry, run.excitation);
   solver->solve(result.scatter_coef, result.internal_coef, communicator());
 
   if(communicator().rank() == communicator().root_id()) {
@@ -122,7 +122,7 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
     run.geometry->update(run.excitation);
     solver->update(run);
 
-    Result result(run.geometry, run.excitation, run.nMax);
+    Result result(run.geometry, run.excitation);
     solver->solve(result.scatter_coef, result.internal_coef, communicator());
 
     if(communicator().rank() == communicator().root_id()) {
@@ -175,7 +175,7 @@ void Simulation::radius_scan(Run &run, std::shared_ptr<solver::AbstractSolver> s
 
     solver->update(run);
 
-    Result result(run.geometry, run.excitation, run.nMax);
+    Result result(run.geometry, run.excitation);
     solver->solve(result.scatter_coef, result.internal_coef, communicator());
 
     if(communicator().rank() == communicator().root_id()) {
@@ -239,7 +239,7 @@ void Simulation::radius_and_wavelength_scan(Run &run,
 
       solver->update(run);
 
-      Result result(run.geometry, run.excitation, run.nMax);
+      Result result(run.geometry, run.excitation);
       solver->solve(result.scatter_coef, result.internal_coef, communicator());
 
       if(communicator().rank() == communicator().root_id()) {
@@ -267,7 +267,7 @@ void Simulation::radius_and_wavelength_scan(Run &run,
 void Simulation::coefficients(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
   // Scattering coefficients requests
 
-  Result result(run.geometry, run.excitation, run.nMax);
+  Result result(run.geometry, run.excitation);
   solver->solve(result.scatter_coef, result.internal_coef, communicator());
 
   if(communicator().rank() == communicator().root_id()) {
