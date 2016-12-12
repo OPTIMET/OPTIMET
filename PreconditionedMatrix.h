@@ -30,7 +30,7 @@ Vector<t_complex> distributed_source_vector(Vector<t_complex> const &input,
                                             scalapack::Context const &context,
                                             scalapack::Sizes const &blocks);
 
-#ifdef OPTIMET_MPI
+#ifdef OPTIMET_SCALAPACK
 //! Gather the distributed vector into a single vector
 Vector<t_complex> gather_all_source_vector(t_uint n, Vector<t_complex> const &input,
                                            scalapack::Context const &context,

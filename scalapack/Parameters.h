@@ -23,7 +23,7 @@ struct Parameters {
       : block_size(block_size), grid(grid) {}
 };
 
-#ifdef OPTIMET_MPI
+#ifdef OPTIMET_SCALAPACK
 //! \brief tries and determines the squarest and largest grid size for a given number of procs
 //! \param[in] nprocs: number of procs to parcel out into a grid
 //! \parma[out] skew: determines how much to prefer square (skew large) to rectangular (skew small)

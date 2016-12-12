@@ -1,7 +1,7 @@
 #ifndef OPTIMET_SCALAPACK_COLLECTIVES_H
 #define OPTIMET_SCALAPACK_COLLECTIVES_H
 #include "Types.h"
-#ifdef OPTIMET_MPI
+#ifdef OPTIMET_SCALAPACK
 
 #include <mpi.h>
 #include <type_traits>
@@ -34,4 +34,4 @@ OPTIMET_MACRO(std::complex<float>);
 } /* optime::mpi */
 } /* optimet */
 #endif
-#endif /* ifndef OPTIMET_MPI_COMMUNICATOR */
+#endif

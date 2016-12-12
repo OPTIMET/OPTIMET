@@ -10,7 +10,7 @@
 namespace optimet {
 namespace scalapack {
 
-#ifdef OPTIMET_MPI
+#ifdef OPTIMET_SCALAPACK
 //! A context for a distributed array
 class Context {
   //! Holds actual data associated with the context

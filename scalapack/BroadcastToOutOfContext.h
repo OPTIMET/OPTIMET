@@ -8,7 +8,7 @@
 
 namespace optimet {
 namespace mpi {
-#ifdef OPTIMET_MPI
+#ifdef OPTIMET_SCALAPACK
 //! \brief Broadcast data from a proc in the context to procs outside the context
 //! \details Usefull if some procs are not part of the context but still require the data.
 template <class T>

@@ -13,12 +13,16 @@ namespace solver {
 std::shared_ptr<AbstractSolver> factory(Run const &run) {
 #ifndef OPTIMET_MPI
   return std::make_shared<PreconditionedMatrix>(run);
-#elif !defined(OPTIMET_BELOS)
+#elif defined(OPTIMET_SCALAPACK) && !defined(OPTIMET_BELOS)
   return std::make_shared<Scalapack>(run);
-#else
+#elif defined(OPTIMET_BELOS) && defined(OPTIMET_SCALAPACK)
   if(run.belos_params()->template get<std::string>("Solver") == "scalapack")
     return std::make_shared<Scalapack>(run);
   return std::make_shared<MatrixBelos>(run);
+#elif defined(OPTIMET_BELOS)
+#error FMM will go here
+#else
+#error Need at least Belos to run MPI solvers
 #endif
 }
 } // namespace solver

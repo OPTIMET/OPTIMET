@@ -4,7 +4,7 @@
 #include "scalapack/BroadcastToOutOfContext.h"
 
 namespace optimet {
-#ifdef OPTIMET_MPI
+#ifdef OPTIMET_SCALAPACK
 Vector<t_complex> distributed_source_vector(Vector<t_complex> const &input,
                                             scalapack::Context const &context,
                                             scalapack::Sizes const &blocks) {
@@ -96,7 +96,7 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
   return preconditioned_scattering_matrix(geometry.objects, geometry.bground, incWave);
 }
 
-#ifdef OPTIMET_MPI
+#ifdef OPTIMET_SCALAPACK
 Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
                                                    std::shared_ptr<Excitation const> incWave,
                                                    scalapack::Context const &context,

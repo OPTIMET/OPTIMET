@@ -3,7 +3,7 @@
 
 #include "Types.h"
 
-#ifdef OPTIMET_MPI
+#ifdef OPTIMET_SCALAPACK
 #include "PreconditionedMatrix.h"
 #include "PreconditionedMatrixSolver.h"
 #include "Solver.h"

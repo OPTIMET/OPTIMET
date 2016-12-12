@@ -2,7 +2,7 @@
 #define OPTIMET_SCALAPACK_LINEAR_SYSTEM_SOLVER_H_
 
 #include "Types.h"
-#ifdef OPTIMET_MPI
+#ifdef OPTIMET_SCALAPACK
 
 #include "mpi/Communicator.h"
 #include "scalapack/Belos.h"

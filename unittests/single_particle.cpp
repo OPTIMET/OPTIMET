@@ -64,7 +64,7 @@ TEST_CASE("Two spheres") {
   excitation->populate();
   geometry->update(excitation);
 
-#ifdef OPTIMET_MPI
+#ifdef OPTIMET_SCALAPACK
   auto const context = scalapack::Context().split(1, scalapack::global_size());
 #else
   scalapack::Context const context;
