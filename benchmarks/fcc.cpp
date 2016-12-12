@@ -34,8 +34,7 @@ Matrix<t_real> fcc_cell() {
 
 t_real default_wavelength() { return 750e-9; }
 
-std::tuple<std::shared_ptr<Geometry>, std::shared_ptr<Excitation>>
-fcc_system(t_int const &N, t_real length, Scatterer const &scatterer) {
+Run fcc_system(t_int const &N, t_real length, Scatterer const &scatterer) {
   // setup geometry
   auto const cell = fcc_cell();
   t_int n = std::pow(N, 1e0 / 3e0);
@@ -64,7 +63,13 @@ fcc_system(t_int const &N, t_real length, Scatterer const &scatterer) {
       std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, scatterer.nMax);
   excitation->populate();
   geometry->update(excitation);
-  return std::tuple<std::shared_ptr<Geometry>, std::shared_ptr<Excitation>>{geometry, excitation};
+  Run result;
+  result.geometry = geometry;
+  result.excitation = excitation;
+#ifdef OPTIMET_BELOS
+  result.belos_params = parameters;
+#endif
+  return result;
 }
 
 Scatterer default_scatterer(t_int nHarmonics) {
@@ -79,10 +84,10 @@ constexpr t_real default_length() { return 2000e-9; }
 void problem_setup(benchmark::State &state) {
   auto const nHarmonics = state.range_y();
   auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
-  auto input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
+  auto const input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
 
   while(state.KeepRunning())
-    optimet::solver::Solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect);
+    optimet::solver::factory(input);
   state.SetItemsProcessed(int64_t(state.iterations()) *
                           int64_t(std::get<0>(input).scatterer_size()));
 }
@@ -90,8 +95,8 @@ void problem_setup(benchmark::State &state) {
 void benchmark_solver(benchmark::State &state) {
   auto const nHarmonics = state.range_y();
   auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
-  auto input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
-  optimet::solver::Solver solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect);
+  auto const input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
+  auto const solver(input);
   Result result(std::get<0>(input), std::get<1>(input));
 
   while(state.KeepRunning()) {
@@ -108,27 +113,20 @@ void benchmark_solver(benchmark::State &state) {
   mpi::Communicator world;
   auto const nHarmonics = state.range_y();
   auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
-  auto input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
-  auto const context = optimet::scalapack::Context::Squarest();
-#ifdef OPTIMET_BELOS
-  optimet::solver::Solver solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect, context,
-                                 parameters);
-#else
-  optimet::solver::Solver solver(std::get<0>(input), std::get<1>(input), O3DSolverIndirect,
-                                 context);
-#endif
-  Result result(std::get<0>(input), std::get<1>(input));
+  auto const input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
+  auto const solver = optimet::solver::factory(input);
+
+  Result result(input.geometry, input.excitation);
   while(state.KeepRunning()) {
     result.internal_coef.fill(0);
     auto start = std::chrono::high_resolution_clock::now();
-    solver.solve(result.scatter_coef, result.internal_coef, world);
+    solver->solve(result.scatter_coef, result.internal_coef, world);
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     auto proc_max = world.all_reduce(elapsed_seconds.count(), MPI_MAX);
     state.SetIterationTime(proc_max);
   }
-  state.SetItemsProcessed(int64_t(state.iterations()) *
-                          int64_t(std::get<0>(input)->scatterer_size()));
+  state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(solver->scattering_size()));
 }
 #endif
 }

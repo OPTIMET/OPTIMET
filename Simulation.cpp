@@ -19,22 +19,11 @@ int Simulation::run() {
   auto run = simulation_input(caseFile + ".xml");
 #ifdef OPTIMET_MPI
   run.parallel_params.grid = scalapack::squarest_largest_grid(communicator().size());
+  run.communicator = communicator();
 #endif
 
-// Initialize the solver
-#if defined(OPTIMET_BELOS)
-  run.context = scalapack::Context(run.parallel_params.grid);
-  auto solver = std::make_shared<solver::Solver>(run.geometry, run.excitation, O3DSolverIndirect,
-                                                 run.context, run.belos_params);
-  solver->block_size({run.parallel_params.block_size, run.parallel_params.block_size});
-#elif defined(OPTIMET_MPI)
-  run.context = scalapack::Context(run.parallel_params.grid);
-  auto solver = std::make_shared<solver::Solver>(run.geometry, run.excitation, O3DSolverIndirect,
-                                                 run.context);
-  solver->block_size({run.parallel_params.block_size, run.parallel_params.block_size});
-#else
-  auto solver = std::make_shared<solver::Solver>(run.geometry, run.excitation, O3DSolverIndirect);
-#endif
+  // Initialize the solver
+  auto const solver = optimet::solver::factory(run);
 
   switch(run.outputType) {
   case 0:
