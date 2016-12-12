@@ -4,7 +4,8 @@
 #include "Aliases.h"
 #include "Geometry.h"
 #include "Scatterer.h"
-#include "Solver.h"
+#include "ScalapackSolver.h"
+#include "MatrixBelosSolver.h"
 #include "Tools.h"
 #include "Types.h"
 #include "constants.h"
@@ -34,12 +35,11 @@ TEST_CASE("Scalapack vs Belos") {
   excitation->populate();
   geometry->update(excitation);
 
-  optimet::solver::Solver solver(geometry, excitation, O3DSolverIndirect);
-
+  optimet::solver::Scalapack const scalapack_solver(geometry, excitation);
   optimet::Result scalapack(geometry, excitation);
-  solver.belos_parameters()->set("Solver", "scalapack");
-  solver.solve(scalapack.scatter_coef, scalapack.internal_coef);
+  scalapack_solver.solve(scalapack.scatter_coef, scalapack.internal_coef);
 
+  optimet::solver::MatrixBelos solver(geometry, excitation);
   solver.belos_parameters()->set<int>("Num Blocks", solver.scattering_size());
   solver.belos_parameters()->set("Maximum Iterations", 4000);
   solver.belos_parameters()->set("Convergence Tolerance", 1.0e-14);

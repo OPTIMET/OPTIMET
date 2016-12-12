@@ -4,7 +4,8 @@
 #include "Aliases.h"
 #include "Geometry.h"
 #include "Scatterer.h"
-#include "Solver.h"
+#include "MatrixBelosSolver.h"
+#include "ScalapackSolver.h"
 #include "Tools.h"
 #include "Types.h"
 #include "constants.h"
@@ -42,12 +43,14 @@ TEST_CASE("N spheres") {
 
   optimet::mpi::Communicator world;
   optimet::Result parallel(geometry, excitation);
-  optimet::solver::Solver solver(geometry, excitation, O3DSolverIndirect);
 #ifdef OPTIMET_BELOS
+  optimet::solver::MatrixBelos solver(geometry, excitation);
   solver.belos_parameters()->set("Solver", OPTIMET_SOLVER);
   solver.belos_parameters()->set<int>("Num Blocks", 500);
   solver.belos_parameters()->set("Maximum Iterations", 4000);
   solver.belos_parameters()->set("Convergence Tolerance", 1.0e-10);
+#else
+  optimet::solver::Scalapack const solver(geometry, excitation);
 #endif
   solver.solve(parallel.scatter_coef, parallel.internal_coef, world);
 
@@ -55,11 +58,7 @@ TEST_CASE("N spheres") {
   auto const serial_context = solver.context().serial();
   auto const comm = world.split(serial_context.is_valid());
   if(serial_context.is_valid()) {
-    optimet::solver::Solver const serial_solver(geometry, excitation, O3DSolverIndirect,
-                                                serial_context);
-#ifdef OPTIMET_BELOS
-    serial_solver.belos_parameters()->set("Solver", "eigen");
-#endif
+    optimet::solver::PreconditionedMatrix const serial_solver(geometry, excitation);
     serial_solver.solve(serial.scatter_coef, serial.internal_coef, comm);
   }
   // sending serial solution to rest of the world
@@ -117,19 +116,18 @@ TEST_CASE("Simultaneous") {
   auto const parallel_comm = mpi::Communicator().split(parallel_context.is_valid());
 
   if(parallel_context.is_valid()) {
-    optimet::solver::Solver solver(geometry, excitation, O3DSolverIndirect, parallel_context);
 #ifdef OPTIMET_BELOS
+    optimet::solver::MatrixBelos solver(geometry, excitation, parallel_context);
     solver.belos_parameters()->set("Solver", OPTIMET_SOLVER);
     solver.belos_parameters()->set<int>("Num Blocks", 500);
     solver.belos_parameters()->set("Maximum Iterations", 4000);
     solver.belos_parameters()->set("Convergence Tolerance", 1.0e-10);
+#else
+    optimet::solver::Scalapack const solver(geometry, excitation, parallel_context);
 #endif
     solver.solve(parallel.scatter_coef, parallel.internal_coef, parallel_comm);
   } else if(serial_context.is_valid()) {
-    optimet::solver::Solver solver(geometry, excitation, O3DSolverIndirect, serial_context);
-#ifdef OPTIMET_BELOS
-    solver.belos_parameters()->set("Solver", "eigen");
-#endif
+    optimet::solver::PreconditionedMatrix const solver(geometry, excitation);
     solver.solve(serial.scatter_coef, serial.internal_coef, serial_comm);
   }
 

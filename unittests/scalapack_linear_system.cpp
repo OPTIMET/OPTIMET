@@ -2,7 +2,6 @@
 #include <iostream>
 #include <numeric>
 
-#include "Solver.h"
 #include "Types.h"
 #include "mpi/Collectives.h"
 #include "mpi/Communicator.h"

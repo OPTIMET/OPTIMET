@@ -85,6 +85,9 @@ public:
                                     geometry->objects);
   }
 
+  //! Number of spherical harmonics in expansion
+  t_uint scattering_size() const { return 2 * nMax * (nMax + 2) * geometry->objects.size(); }
+
 protected:
   std::shared_ptr<Geometry> geometry;        /**< Pointer to the geometry. */
   std::shared_ptr<Excitation const> incWave; /**< Pointer to the incoming excitation. */
