@@ -11,6 +11,7 @@
 #include "scalapack/InitExit.h"
 #include "scalapack/LinearSystemSolver.h"
 #include "unittests/TmpFile.h"
+#include <string>
 
 using namespace optimet;
 
@@ -203,9 +204,7 @@ TEST_CASE("Read XML") {
              "  <Parameter name=\"Output Frequency\" type=\"int\" value=\"20\"/>\n"
              "</ParameterList>\n");
 
-  Run run;
-  Reader reader(&run);
-  CHECK(reader.readSimulation(file.filename()) == 0);
+  auto const run = optimet::simulation_input(file.filename());
   CHECK(run.belos_params->get<std::string>("Solver") == "GMRES");
   CHECK(run.belos_params->get<int>("Maximum Iterations") == 4000);
   CHECK(run.belos_params->get<int>("Output Frequency") == 20);

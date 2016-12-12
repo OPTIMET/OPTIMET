@@ -16,14 +16,10 @@ namespace optimet {
 int Simulation::run() {
 
   // Read the case file
-  Run run;
+  auto run = simulation_input(caseFile + ".xml");
 #ifdef OPTIMET_MPI
   run.parallel_params.grid = scalapack::squarest_largest_grid(communicator().size());
 #endif
-
-  Reader reader(&run);
-  if(reader.readSimulation(caseFile + ".xml"))
-    return 1;
 
 // Initialize the solver
 #if defined(OPTIMET_BELOS)
