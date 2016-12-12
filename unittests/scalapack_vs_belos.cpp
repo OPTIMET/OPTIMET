@@ -65,7 +65,7 @@ TEST_CASE("Scalapack vs Belos") {
       "BLOCK GMRES",
       "FIXED POINT",
   };
-  for(auto const name : names) {
+  for(auto const name : {"GMRES", "CG"}) {
     SECTION(name) {
       solver.belos_parameters()->set("Solver", name);
       optimet::Result belos(geometry, excitation);
