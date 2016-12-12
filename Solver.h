@@ -91,6 +91,9 @@ protected:
   t_uint nMax;
 };
 
+// //! A factory function for solvers
+// std::shared_ptr<AbstractSolver> factory(Run const &run);
+
 /**
  * The Solver class builds and solves the scattering matrix equation.
  */

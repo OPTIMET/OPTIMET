@@ -21,6 +21,9 @@ public:
       : PreconditionedMatrix(geometry, incWave), context_(context), block_size_(block_size) {
     update();
   }
+  Scalapack(Run const &run)
+      : Scalapack(run.geometry, run.excitation, run.context,
+                  {run.parallel_params.block_size, run.parallel_params.block_size}) {}
 
   void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
              mpi::Communicator const &comm) const override;

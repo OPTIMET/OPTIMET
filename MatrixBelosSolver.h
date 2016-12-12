@@ -24,6 +24,10 @@ public:
       scalapack::Sizes const &block_size = scalapack::Sizes{64, 64},
       Teuchos::RCP<Teuchos::ParameterList> belos_params = Teuchos::rcp(new Teuchos::ParameterList))
       : Scalapack(geometry, incWave, context, block_size), belos_params_(belos_params) {}
+  MatrixBelos(Run const &run)
+      : MatrixBelos(run.geometry, run.excitation, run.context,
+                    {run.parallel_params.block_size, run.parallel_params.block_size},
+                    run.belos_params) {}
 
   void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
              mpi::Communicator const &comm) const override;

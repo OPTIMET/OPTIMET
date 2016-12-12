@@ -1,12 +1,14 @@
 #ifndef OUTPUT_GRID_H_
 #define OUTPUT_GRID_H_
 
-#include "Types.h"
 #include "Spherical.h"
 #include "SphericalP.h"
+#include "Types.h"
+#include <array>
 #include <complex>
 #include <hdf5.h>
 
+namespace optimet {
 /**
  * The OutputGrid class implements the field output grid and processes the HDF5
  * datasets.
@@ -31,23 +33,24 @@
  */
 class OutputGrid {
 private:
-  hid_t vecGroupId[3]; /**< The Group IDs for each of the three subgroups.
-                          Internal. */
-  hid_t
-      vecDataId[6]; /**< The Data IDs for each of the six datasets. Internal. */
+  hid_t vecGroupId[3];  /**< The Group IDs for each of the three subgroups.
+                           Internal. */
+  hid_t vecDataId[6];   /**< The Data IDs for each of the six datasets. Internal. */
   hid_t vecDSpaceId[6]; /**< The Data IDs for each of the six dataspaces.
                            Internal. */
-  double *aux;          /**< Auxiliary data used internally. */
-  int *cursor;   /**< Cursor in the current grid mapped to the HDF5 dataset. */
-  bool initDone; /**< Specifies the initialization state of the object. */
+  //! Auxiliary data used internally
+  std::array<t_real, 3> aux;
+  //! Cursor in the current grid mapped to the HDF5 dataset
+  std::array<t_int, 3> cursor;
+  bool initDone;        /**< Specifies the initialization state of the object. */
 public:
   bool gridDone;  /**< Specifies if the grid has been fully parsed. */
   int iterator;   /**< The current position of the iterator in the grid. */
   int type;       /**< The grid type. */
   int gridPoints; /**< The number of grid points. */
   hid_t groupID;  /**< ID of the HDF5 group. */
-  double *gridParameters; /**< The gridParameters (size and values depend on
-                             grid type. */
+  //! The gridParameters (size and values depend on grid type
+  std::array<t_real, 9> gridParameters;
 
   /**
    * Default constructor for the OutputGrid class.
@@ -67,7 +70,7 @@ public:
    * docs.
    * @param groupID_ the HDF5 data space.
    */
-  OutputGrid(int type_, double *parameters_, hid_t groupID_);
+  OutputGrid(int type_, std::array<t_real, 9> const & parameters_, hid_t groupID_);
 
   /**
    * Initialization method for the OutputGrid class.
@@ -76,7 +79,7 @@ public:
    * docs.
    * @param groupID_ the HDF5 data space.
    */
-  void init(int type_, double *parameters_, hid_t groupID_);
+  void init(int type_, std::array<t_real, 9> const & parameters_, hid_t groupID_);
 
   /**
    * Sets the iterator to the first point.
@@ -113,5 +116,6 @@ public:
    */
   void close();
 };
+}
 
 #endif /* OUTPUT_GRID_H_ */

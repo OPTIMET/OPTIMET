@@ -5,8 +5,8 @@
 #include <memory>
 #include <string>
 
-class Run;
 namespace optimet {
+class Run;
 namespace solver {
 class AbstractSolver;
 }

@@ -9,6 +9,7 @@
 #include <Teuchos_ParameterList.hpp>
 #endif
 
+namespace optimet {
 /**
  * The Reader class is used to read a simulation case file.
  * Provides an interface for reading a Run object.
@@ -77,5 +78,6 @@ protected:
   Scatterer readSphericalScatterer(pugi::xml_node const &node);
   void readParallel(const pugi::xml_node &, optimet::scalapack::Parameters &);
 };
+}
 
 #endif /* READER_H_ */

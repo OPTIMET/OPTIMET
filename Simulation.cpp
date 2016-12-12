@@ -27,14 +27,14 @@ int Simulation::run() {
 
 // Initialize the solver
 #if defined(OPTIMET_BELOS)
-  scalapack::Context context(run.parallel_params.grid);
+  run.context = scalapack::Context(run.parallel_params.grid);
   auto solver = std::make_shared<solver::Solver>(run.geometry, run.excitation, O3DSolverIndirect,
-                                                 context, run.belos_params);
+                                                 run.context, run.belos_params);
   solver->block_size({run.parallel_params.block_size, run.parallel_params.block_size});
 #elif defined(OPTIMET_MPI)
-  scalapack::Context context(run.parallel_params.grid);
-  auto solver =
-      std::make_shared<solver::Solver>(run.geometry, run.excitation, O3DSolverIndirect, context);
+  run.context = scalapack::Context(run.parallel_params.grid);
+  auto solver = std::make_shared<solver::Solver>(run.geometry, run.excitation, O3DSolverIndirect,
+                                                 run.context);
   solver->block_size({run.parallel_params.block_size, run.parallel_params.block_size});
 #else
   auto solver = std::make_shared<solver::Solver>(run.geometry, run.excitation, O3DSolverIndirect);

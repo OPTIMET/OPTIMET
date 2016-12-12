@@ -19,6 +19,7 @@
 
 using namespace pugi;
 
+namespace optimet {
 Reader::Reader() { initDone = false; }
 
 Reader::~Reader() {
@@ -447,3 +448,4 @@ void Reader::readParameterList(pugi::xml_document const &root_node) {
 #else
 void Reader::readParameterList(pugi::xml_document const &) {}
 #endif
+}

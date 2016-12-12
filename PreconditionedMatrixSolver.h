@@ -17,6 +17,7 @@ public:
       : AbstractSolver(geometry, incWave) {
     update();
   }
+  PreconditionedMatrix(Run const &run) : PreconditionedMatrix(run.geometry, run.excitation) {}
 
   //! Ignores communicator and solves serially
   void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
