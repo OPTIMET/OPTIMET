@@ -39,7 +39,7 @@ public:
    * @param method_ the solver method to be used.
    */
   AbstractSolver(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave)
-      : geometry(geometry), incWave(incWave) {}
+      : geometry(geometry), incWave(incWave), nMax(0) {}
 
   ~AbstractSolver(){};
 
@@ -86,7 +86,10 @@ public:
   }
 
   //! Number of spherical harmonics in expansion
-  t_uint scattering_size() const { return 2 * nMax * (nMax + 2) * geometry->objects.size(); }
+  t_uint scattering_size() const {
+    auto const n = nMax == 0 ? geometry->nMax() : nMax;
+    return 2 * n * (n + 2) * geometry->objects.size();
+  }
 
 protected:
   std::shared_ptr<Geometry> geometry;        /**< Pointer to the geometry. */
