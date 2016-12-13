@@ -87,7 +87,7 @@ public:
   }
   //! Helper function for gathering
   template <class T>
-  typename std::enable_if<std::is_fundamental<T>::value, T>::type
+  typename std::enable_if<is_registered_type<T>::value, T>::type
   all_reduce(T const &value, MPI_Op operation) const {
     T result;
     MPI_Allreduce(&value, &result, 1, registered_type(value), operation, **this);

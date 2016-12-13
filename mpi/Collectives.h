@@ -18,7 +18,7 @@ inline void barrier(Communicator const &comm) {
 }
 
 template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, T>::type
+typename std::enable_if<is_registered_type<T>::value, T>::type
 broadcast(T const &value, Communicator const &comm, t_uint root) {
   assert(root < comm.size());
   T result = value;
@@ -26,7 +26,7 @@ broadcast(T const &value, Communicator const &comm, t_uint root) {
   return result;
 }
 template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, T>::type
+typename std::enable_if<is_registered_type<T>::value, T>::type
 broadcast(Communicator const &comm, t_uint root) {
   assert(root < comm.size());
   assert(root != comm.rank());
@@ -88,7 +88,7 @@ broadcast(Communicator const &comm, t_uint root) {
 }
 
 template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, std::vector<T>>::type
+typename std::enable_if<is_registered_type<T>::value, std::vector<T>>::type
 gather(T const &value, Communicator const &comm, t_uint root) {
   assert(root < comm.size());
   std::vector<T> result(root == comm.rank() ? comm.size() : 1);
@@ -100,7 +100,7 @@ gather(T const &value, Communicator const &comm, t_uint root) {
 }
 
 template <class T>
-typename std::enable_if<std::is_fundamental<T>::value, std::vector<T>>::type
+typename std::enable_if<is_registered_type<T>::value, std::vector<T>>::type
 all_gather(T const &value, Communicator const &comm) {
   std::vector<T> result(comm.size());
   MPI_Allgather(&value, 1, registered_type(value), result.data(), 1, registered_type(value), *comm);
