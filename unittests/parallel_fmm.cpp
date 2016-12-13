@@ -1,5 +1,9 @@
 #include "catch.hpp"
 #include "mpi/FastMatrixMultiply.h"
+#include "FMMBelosSolver.h"
+#include "PreconditionedMatrixSolver.h"
+#include "Geometry.h"
+#include "Excitation.h"
 #include <iostream>
 
 TEST_CASE("ReduceComputation") {
@@ -305,4 +309,53 @@ TEST_CASE("MPI vs serial FMM") {
     auto const actual = parallel.adjoint(parallel_input);
     CHECK(actual.isApprox(expected));
   }
+}
+
+TEST_CASE("FMM vs serial") {
+  using namespace optimet;
+#ifndef NDEBUG
+  auto const nHarmonics = 5;
+  auto const nSpheres = 5;
+#else
+  auto const nHarmonics = 10;
+  auto const nSpheres = 10;
+#endif
+  auto geometry = std::make_shared<Geometry>();
+  // spherical coords, ε, μ, radius, nmax
+  for(t_uint i(0); i < nSpheres; ++i)
+    geometry->pushObject(
+        {{static_cast<t_real>(i) * 1.5 * 2e-6, 0, 0}, {0.45e0, 1.1e0}, 0.5 * 2e-6, nHarmonics});
+
+  // Create excitation
+  auto const wavelength = 14960e-9;
+  Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
+  SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
+  auto const excitation =
+      std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
+  excitation->populate();
+  geometry->update(excitation);
+
+  optimet::mpi::Communicator world;
+  optimet::Result parallel(geometry, excitation);
+  optimet::solver::FMMBelos solver(geometry, excitation, world);
+  solver.belos_parameters()->set("Solver", "GMRES");
+  solver.belos_parameters()->set<int>("Num Blocks", 500);
+  solver.belos_parameters()->set("Maximum Iterations", 4000);
+  solver.belos_parameters()->set("Convergence Tolerance", 1.0e-10);
+  solver.solve(parallel.scatter_coef, parallel.internal_coef, world);
+
+  optimet::Result serial(geometry, excitation);
+  optimet::solver::PreconditionedMatrix const serial_solver(geometry, excitation);
+  serial_solver.solve(serial.scatter_coef, serial.internal_coef, world);
+  // sending serial solution to rest of the world
+  auto const distribution = mpi::details::vector_distribution(geometry->objects.size(), world.size());
+
+  REQUIRE(parallel.scatter_coef.rows() == serial.scatter_coef.rows());
+  REQUIRE(parallel.scatter_coef.cols() == serial.scatter_coef.cols());
+  auto const scatter_tol = 1e-6 * std::max(1., serial.scatter_coef.array().abs().maxCoeff());
+  CHECK(parallel.scatter_coef.isApprox(serial.scatter_coef, scatter_tol));
+  REQUIRE(parallel.internal_coef.rows() == serial.internal_coef.rows());
+  REQUIRE(parallel.internal_coef.cols() == serial.internal_coef.cols());
+  auto const internal_tol = 1e-6 * std::max(1., serial.internal_coef.array().abs().maxCoeff());
+  CHECK(parallel.internal_coef.isApprox(serial.internal_coef, internal_tol));
 }
