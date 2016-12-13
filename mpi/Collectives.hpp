@@ -30,6 +30,10 @@ gather(T const &, Communicator const &, t_uint root);
 template <class T>
 typename std::enable_if<is_registered_type<T>::value, std::vector<T>>::type
 all_gather(T const &, Communicator const &);
+template <class T>
+typename std::enable_if<is_registered_type<typename T::Scalar>::value,
+                        Vector<typename T::Scalar>>::type
+all_gather(Eigen::PlainObjectBase<T> const &input, Communicator const &comm);
 
 //! Broadcasts an eigen matrix
 template <class T> Matrix<T> broadcast(Matrix<T> const &, Communicator const &, t_uint);
