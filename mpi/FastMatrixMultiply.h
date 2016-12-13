@@ -106,6 +106,11 @@ public:
       : FastMatrixMultiply(em_background, wavenumber, scatterers,
                            details::local_interactions(scatterers.size(), diagonal),
                            vector_distribution, comm) {}
+  FastMatrixMultiply(ElectroMagnetic const &em_background, t_real wavenumber,
+                     std::vector<Scatterer> const &scatterers, t_int diagonal,
+                     Communicator const &comm = Communicator())
+      : FastMatrixMultiply(em_background, wavenumber, scatterers, diagonal,
+                           details::vector_distribution(scatterers.size(), comm.size()), comm) {}
   FastMatrixMultiply(t_real wavenumber, std::vector<Scatterer> const &scatterers, t_int diagonal,
                      Vector<t_int> const &vector_distribution,
                      Communicator const &comm = Communicator())
