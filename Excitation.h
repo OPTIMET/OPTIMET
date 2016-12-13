@@ -82,8 +82,10 @@ public:
 
   //! The incoming wave wavelength
   t_real lambda() const { return 2 * constant::pi / std::real(vKInc.rrr); }
+  //! The incoming wave frequency number (calculated)
+  optimet::t_real wavenumber() const { return std::real(vKInc.rrr); }
   //! The incoming wave frequency (calculated)
-  optimet::t_real omega() const { return constant::c * std::real(vKInc.rrr); }
+  optimet::t_real omega() const { return constant::c * wavenumber(); }
 
 };
 }
