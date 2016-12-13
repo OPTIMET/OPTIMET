@@ -56,6 +56,11 @@ public:
   scalapack::Context context;
   mpi::Communicator communicator;
 
+  //! Wether to run with FMM or concrete matrix
+  bool do_fmm;
+  //! Number of subdiagonals when setting up fmm local vs non-local mpi distribution
+  t_int fmm_subdiagonals;
+
   /**
    * Params:
    *    -> for Field see OutputGrid

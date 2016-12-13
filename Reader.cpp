@@ -9,7 +9,9 @@
 #include "mpi/Communicator.h"
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
+#include <tuple>
 #include <vector>
 
 #ifdef OPTIMET_BELOS
@@ -28,6 +30,7 @@ std::shared_ptr<Excitation> read_excitation(pugi::xml_document const &inputFile,
 scalapack::Parameters read_parallel(const pugi::xml_node &node);
 #ifdef OPTIMET_BELOS
 Teuchos::RCP<Teuchos::ParameterList> read_parameter_list(pugi::xml_document const &root_node);
+std::tuple<bool, t_int> read_fmm_input(pugi::xml_node const &node);
 #endif
 Run simulation_input(pugi::xml_document const &inputFile);
 
@@ -377,9 +380,15 @@ Teuchos::RCP<Teuchos::ParameterList> read_parameter_list(pugi::xml_document cons
     result->set("Solver", "scalapack");
   return result;
 }
-#endif
-}
 
+std::tuple<bool, t_int> read_fmm_input(pugi::xml_node const &node) {
+  if(not node)
+    return std::make_tuple(false, 1);
+  if(not node.attribute("subdiagonals"))
+    return std::make_tuple(true, std::numeric_limits<t_int>::max());
+  return std::make_tuple(true, node.attribute("subdiagonals").as_int());
+}
+#endif
 
 Run simulation_input(pugi::xml_document const &inputFile) {
   Run result;
@@ -397,6 +406,7 @@ Run simulation_input(pugi::xml_document const &inputFile) {
   result.parallel_params = read_parallel(inputFile.child("parallel"));
 #ifdef OPTIMET_BELOS
   result.belos_params = read_parameter_list(inputFile);
+  std::tie(result.do_fmm, result.fmm_subdiagonals) = read_fmm_input(inputFile.child("FMM"));
 #endif
 
   return result;

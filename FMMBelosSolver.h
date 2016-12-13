@@ -3,7 +3,9 @@
 
 #include "Solver.h"
 #include "Types.h"
+#include "Run.h"
 #include "mpi/FastMatrixMultiply.h"
+#include <limits>
 
 namespace optimet {
 namespace solver {
@@ -15,11 +17,16 @@ public:
   FMMBelos(
       std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave,
       mpi::Communicator const &comm = mpi::Communicator(),
-      Teuchos::RCP<Teuchos::ParameterList> belos_params = Teuchos::rcp(new Teuchos::ParameterList))
+      Teuchos::RCP<Teuchos::ParameterList> belos_params = Teuchos::rcp(new Teuchos::ParameterList),
+      t_int subdiagonals = std::numeric_limits<t_int>::max())
       : AbstractSolver(geometry, incWave), fmm_(nullptr), belos_params_(belos_params),
-        communicator_(comm) {
+        communicator_(comm), subdiagonals(subdiagonals) {
     update();
   }
+
+  FMMBelos(Run const &run)
+      : FMMBelos(run.geometry, run.excitation, run.communicator, run.belos_params,
+                 run.fmm_subdiagonals) {}
 
   ~FMMBelos(){};
 
@@ -54,6 +61,8 @@ protected:
   mpi::Communicator const &communicator_;
   //! The local field matrix Q = T*AB*a
   Vector<t_complex> Q;
+  //! The number of subdiagonals when distributing calculations
+  t_int subdiagonals;
 };
 #endif
 }

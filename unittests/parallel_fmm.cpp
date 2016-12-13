@@ -4,6 +4,7 @@
 #include "PreconditionedMatrixSolver.h"
 #include "Geometry.h"
 #include "Excitation.h"
+#include "Reader.h"
 #include <iostream>
 
 TEST_CASE("ReduceComputation") {
@@ -358,4 +359,44 @@ TEST_CASE("FMM vs serial") {
   REQUIRE(parallel.internal_coef.cols() == serial.internal_coef.cols());
   auto const internal_tol = 1e-6 * std::max(1., serial.internal_coef.array().abs().maxCoeff());
   CHECK(parallel.internal_coef.isApprox(serial.internal_coef, internal_tol));
+}
+
+TEST_CASE("Read XML") {
+  std::istringstream buffer(
+      "<simulation>\n"
+      "  <harmonics nmax=\"6\" />\n"
+      "</simulation>\n"
+      "<source type=\"planewave\">\n"
+      "  <wavelength value=\"1460\" />\n"
+      "  <propagation theta=\"90\" phi=\"90\" />\n"
+      "  <polarization Etheta.real=\"1.0\" Etheta.imag=\"0.0\" Ephi.real=\"0.0\" "
+      "Ephi.imag=\"0.0\" />\n"
+      "</source>\n"
+      "<geometry>\n"
+      "  <object type=\"sphere\">\n"
+      "    <cartesian x=\"0.0\" y=\"0.0\" z=\"0.0\" />\n"
+      "    <properties radius=\"500.0\" />\n"
+      "    <epsilon type=\"relative\" value.real=\"13.0\" value.imag=\"0.0\" />\n"
+      "    <mu type=\"relative\" value.real=\"1.0\" value.imag=\"0.0\" />\n"
+      "  </object>\n"
+      "</geometry>\n"
+      "<output type=\"field\">\n"
+      "  <grid type=\"cartesian\">\n"
+      "    <x min=\"-1000\" max=\"1000\" steps=\"21\" />\n"
+      "    <y min=\"-0.1\" max=\"0.1\" steps=\"2\" />\n"
+      "    <z min=\"-1000\" max=\"1000\" steps=\"21\" />\n"
+      "  </grid>\n"
+      "</output>\n"
+      "<FMM subdiagonals=\"2\"/>\n"
+      "<ParameterList name=\"Belos\">\n"
+      "  <Parameter name=\"Solver\" type=\"string\" value=\"GMRES\"/>\n"
+      "  <Parameter name=\"Maximum Iterations\" type=\"int\" value=\"4000\"/>\n"
+      "  <Parameter name=\"Output Frequency\" type=\"int\" value=\"20\"/>\n"
+      "</ParameterList>\n");
+
+  auto const run = optimet::simulation_input(buffer);
+  CHECK(run.do_fmm);
+  CHECK(run.fmm_subdiagonals == 2);
+  auto const solver = optimet::solver::factory(run);
+  CHECK_NOTHROW(std::dynamic_pointer_cast<optimet::solver::FMMBelos>(solver));
 }

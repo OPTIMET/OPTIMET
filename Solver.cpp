@@ -1,6 +1,7 @@
 #include "Solver.h"
 
 #include "ElectroMagnetic.h"
+#include "FMMBelosSolver.h"
 #include "MatrixBelosSolver.h"
 #include "PreconditionedMatrixSolver.h"
 #include "ScalapackSolver.h"
@@ -14,13 +15,24 @@ std::shared_ptr<AbstractSolver> factory(Run const &run) {
 #ifndef OPTIMET_MPI
   return std::make_shared<PreconditionedMatrix>(run);
 #elif defined(OPTIMET_SCALAPACK) && !defined(OPTIMET_BELOS)
+  if(run.do_fmm)
+    throw std::runtime_error("Cannot run FMM with scalapack solver");
   return std::make_shared<Scalapack>(run);
 #elif defined(OPTIMET_BELOS) && defined(OPTIMET_SCALAPACK)
-  if(run.belos_params()->template get<std::string>("Solver") == "scalapack")
+  if(run.belos_params()->template get<std::string>("Solver") == "scalapack") {
+    if(run.do_fmm)
+      throw std::runtime_error("Cannot run FMM with scalapack solver");
     return std::make_shared<Scalapack>(run);
+  }
+  if(run.do_fmm)
+    return std::make_shared<FMMBelos>(run);
   return std::make_shared<MatrixBelos>(run);
 #elif defined(OPTIMET_BELOS)
-#error FMM will go here
+  if(run.belos_params()->template get<std::string>("Solver") == "scalapack")
+    throw std::runtime_error("Optimet was not compiled with scalapack");
+  if(not run.do_fmm)
+    throw std::runtime_error("Optimet was not compiled with scalapack, please choose FMM matrix");
+  return std::make_shared<FMMBelos>(run);
 #else
 #error Need at least Belos to run MPI solvers
 #endif

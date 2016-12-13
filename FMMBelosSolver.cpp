@@ -57,10 +57,11 @@ tpetra_vector(t_uint nglobals, Vector<t_complex> const &x,
 
 void FMMBelos::update() {
   if(geometry and incWave and communicator_.is_valid()) {
-    fmm_ = std::make_shared<mpi::FastMatrixMultiply>(
-        geometry->bground, incWave->wavenumber(), geometry->objects,
-        belos_params_->get<int>("Distribution", std::max<int>(1, geometry->objects.size() / 2 - 2)),
-        communicator_);
+    auto const diags = subdiagonals == std::numeric_limits<t_int>::max() ?
+                           std::max<int>(1, geometry->objects.size() / 2 - 2) :
+                           subdiagonals;
+    fmm_ = std::make_shared<mpi::FastMatrixMultiply>(geometry->bground, incWave->wavenumber(),
+                                                     geometry->objects, diags, communicator_);
     auto const distribution =
         mpi::details::vector_distribution(geometry->objects.size(), communicator_.size());
     auto const first = std::find(distribution.data(), distribution.data() + distribution.size(),
