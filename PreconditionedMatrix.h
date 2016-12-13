@@ -11,6 +11,10 @@ namespace optimet {
 //! \brief Computes source vector
 Vector<t_complex>
 source_vector(Geometry const &geometry, std::shared_ptr<Excitation const> incWave);
+//! \brief Computes source vector from a range of scatterers
+Vector<t_complex> source_vector(std::vector<Scatterer>::const_iterator first,
+                                std::vector<Scatterer>::const_iterator const &last,
+                                std::shared_ptr<Excitation const> incWave);
 //! \brief Computes source vector from fundamental frequency
 Vector<t_complex> local_source_vector(Geometry const &geometry,
                                       std::shared_ptr<Excitation const> incWave,
