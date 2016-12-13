@@ -1,4 +1,5 @@
 #ifndef OPTIMET_MPI_FAST_MATRIX_MULTIPLY_H
+#define OPTIMET_MPI_FAST_MATRIX_MULTIPLY_H
 
 #include "../FastMatrixMultiply.h"
 #include "mpi/GraphCommunicator.h"

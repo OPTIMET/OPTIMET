@@ -1,4 +1,5 @@
 #ifndef COAXIAL_TRANSLATION_COEFFICIENTS_H
+#define COAXIAL_TRANSLATION_COEFFICIENTS_H
 #include "Types.h"
 #include <array>
 #include <map>

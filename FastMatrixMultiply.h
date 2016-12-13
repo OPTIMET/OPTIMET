@@ -1,4 +1,5 @@
 #ifndef FAST_MATRIX_MULTIPLY_H
+#define FAST_MATRIX_MULTIPLY_H
 
 #include "Bessel.h"
 #include "CoAxialTranslationCoefficients.h"
