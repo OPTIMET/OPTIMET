@@ -29,6 +29,7 @@ scalapack::Parameters read_parallel(const pugi::xml_node &node);
 #ifdef OPTIMET_BELOS
 Teuchos::RCP<Teuchos::ParameterList> read_parameter_list(pugi::xml_document const &root_node);
 #endif
+Run simulation_input(pugi::xml_document const &inputFile);
 
 std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &inputFile) {
   // Find the simulation node
@@ -379,15 +380,8 @@ Teuchos::RCP<Teuchos::ParameterList> read_parameter_list(pugi::xml_document cons
 #endif
 }
 
-Run simulation_input(std::string const &fileName_) {
-  pugi::xml_document inputFile;
-  auto const fileResult = inputFile.load_file(fileName_.c_str());
-  if(!fileResult) {
-    std::ostringstream msg;
-    msg << "Error reading or parsing input file " << fileName_ << "!";
-    throw std::runtime_error(msg.str());
-  }
 
+Run simulation_input(pugi::xml_document const &inputFile) {
   Run result;
   result.geometry = read_geometry(inputFile);
   result.nMax = result.geometry->nMax();
@@ -401,8 +395,30 @@ Run simulation_input(std::string const &fileName_) {
   read_output(inputFile, result);
 
   result.parallel_params = read_parallel(inputFile.child("parallel"));
+#ifdef OPTIMET_BELOS
   result.belos_params = read_parameter_list(inputFile);
+#endif
 
   return result;
+}
+}
+
+Run simulation_input(std::string const &fileName_) {
+  pugi::xml_document inputFile;
+  auto const fileResult = inputFile.load_file(fileName_.c_str());
+  if(!fileResult) {
+    std::ostringstream msg;
+    msg << "Error reading or parsing input file " << fileName_ << "!";
+    throw std::runtime_error(msg.str());
+  }
+  return simulation_input(inputFile);
+}
+
+Run simulation_input(std::istream &buffer) {
+  pugi::xml_document inputFile;
+  auto const fileResult = inputFile.load(buffer);
+  if(!fileResult)
+    throw std::runtime_error("Error reading or parsing istream input");
+  return simulation_input(inputFile);
 }
 }

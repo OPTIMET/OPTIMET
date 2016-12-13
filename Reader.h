@@ -12,6 +12,8 @@
 namespace optimet {
 //! Reads simulation configuration from input
 Run simulation_input(std::string const &filename);
+//! Reads simulation configuration from string buffer
+Run simulation_input(std::istream &buffer);
 }
 
 #endif /* READER_H_ */
