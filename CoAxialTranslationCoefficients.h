@@ -137,7 +137,8 @@ operator()(Eigen::MatrixBase<T0> const &input, Eigen::MatrixBase<T1> const &out)
   auto const with_n0 = std::abs(std::sqrt(nr) - std::lround(std::sqrt(nr))) <
                        std::abs(std::sqrt(nr + 1) - std::lround(std::sqrt(nr + 1)));
   t_int const N = std::lround(std::sqrt(with_n0 ? nr : nr + 1)) - 1;
-  assert(N <= this->N);
+  if(N > this->N)
+    throw std::out_of_range("Input matrix too large");
   assert((with_n0 and (N + 1) * (N + 1) == input.rows()) or N * (N + 2) == input.rows());
   int const min_n = with_n0 ? 0 : 1;
   auto const index = with_n0 ? [](t_int n, t_int m) { return n * (n + 1) + m; } :
@@ -166,7 +167,8 @@ CachedCoAxialRecurrence::Functor::transpose(Eigen::MatrixBase<T0> const &input,
   auto const with_n0 = std::abs(std::sqrt(nr) - std::lround(std::sqrt(nr))) <
                        std::abs(std::sqrt(nr + 1) - std::lround(std::sqrt(nr + 1)));
   t_int const N = std::lround(std::sqrt(with_n0 ? nr : nr + 1)) - 1;
-  assert(N <= this->N);
+  if(N > this->N)
+    throw std::out_of_range("Input matrix too large");
   assert((with_n0 and (N + 1) * (N + 1) == input.rows()) or N * (N + 2) == input.rows());
   int const min_n = with_n0 ? 0 : 1;
   auto const index = with_n0 ? [](t_int n, t_int m) { return n * (n + 1) + m; } :

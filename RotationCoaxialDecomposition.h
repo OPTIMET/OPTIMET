@@ -79,10 +79,9 @@ void rotation_coaxial_decomposition_transpose(t_real wavenumber, t_real tz,
                        std::abs(std::sqrt(nr + 1) - std::lround(std::sqrt(nr + 1)));
   t_int const N = std::lround(std::sqrt(with_n0 ? nr : nr + 1)) - 1;
   assert((with_n0 and (N + 1) * (N + 1) == input.rows()) or N * (N + 2) == input.rows());
-  int const min_n = with_n0 ? 0 : 1;
   auto const index = with_n0 ? [](t_int n, t_int m) { return n * (n + 1) + m; } :
                                [](t_int n, t_int m) { return n * (n + 1) + m - 1; };
-  assert(index(min_n, -min_n) == 0);
+  assert(index(with_n0 ? 0: 1, -with_n0 ? 0: 1) == 0);
   assert(index(N, N) + 1 == input.rows());
   const_cast<Eigen::MatrixBase<T1> &>(out).resize(input.rows(), input.cols());
   auto const in_phi = [&input, N, index](t_int n, t_int m) -> t_complex {
