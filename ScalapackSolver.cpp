@@ -39,7 +39,7 @@ void Scalapack::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
 }
 
 void Scalapack::update() {
-  Q = distributed_source_vector(Q, context(), block_size());
+  Q = distributed_source_vector(source_vector(*geometry, incWave), context(), block_size());
   S = preconditioned_scattering_matrix(*geometry, incWave, context(), block_size());
 }
 }
