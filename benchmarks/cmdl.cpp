@@ -19,6 +19,10 @@ struct Cmdl {
   t_real radius = 1e-8;
   t_real epsilon_r = 13.1;
   t_real epsilon_i = 0;
+  bool fmm = 0;
+  t_int subdiagonals = std::numeric_limits<t_int>::max();
+  std::string nparticles = "1 4 8 12 16 20";
+  std::string nharmonics = "4 8 12 16 20";
 };
 }
 Teuchos::RCP<Teuchos::ParameterList> parse_cmdl(int argc, char *argv[]) {
@@ -39,6 +43,11 @@ Teuchos::RCP<Teuchos::ParameterList> parse_cmdl(int argc, char *argv[]) {
   clp.setOption("radius", &cmdl.radius, "of the particles");
   clp.setOption("epsilon_r", &cmdl.epsilon_r, "Real part of the relative dielectric constant");
   clp.setOption("epsilon_i", &cmdl.epsilon_i, "Imaginary part of the relative dielectric constant");
+  clp.setOption("epsilon_i", &cmdl.epsilon_i, "Imaginary part of the relative dielectric constant");
+  clp.setOption("fmm", "nofmm", &cmdl.fmm, "Whether to use the FMM");
+  clp.setOption("subdiagonals", &cmdl.subdiagonals, "Number of subdiagonals involved in local mpi");
+  clp.setOption("nparticles", &cmdl.nparticles, "Space separated number of particles to trial");
+  clp.setOption("nharmonics", &cmdl.nharmonics, "Space separated number of harmonics to trial");
 
   auto result = Teuchos::rcp(new Teuchos::ParameterList);
   if(clp.parse(argc, argv) != Teuchos::CommandLineProcessor::PARSE_SUCCESSFUL)
@@ -55,6 +64,10 @@ Teuchos::RCP<Teuchos::ParameterList> parse_cmdl(int argc, char *argv[]) {
   result->set("Verbosity", cmdl.verbosity);
   result->set("radius", cmdl.radius);
   result->set("epsilon_r", t_complex(cmdl.epsilon_r, cmdl.epsilon_i));
+  result->set("do_fmm", cmdl.fmm);
+  result->set("fmm_subdiagonals", cmdl.subdiagonals);
+  result->set("nparticles", cmdl.nparticles);
+  result->set("nharmonics", cmdl.nharmonics);
   return result;
 }
 }

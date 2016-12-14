@@ -1,5 +1,6 @@
 #include "Aliases.h"
 #include "Geometry.h"
+#include "PreconditionedMatrix.h"
 #include "Scatterer.h"
 #include "Solver.h"
 #include "Tools.h"
@@ -8,6 +9,7 @@
 #include "constants.h"
 #include "mpi/Collectives.hpp"
 #include "mpi/Communicator.h"
+#include "mpi/FastMatrixMultiply.h"
 #include "mpi/Session.h"
 #include <benchmark/benchmark.h>
 #include <chrono>
@@ -68,6 +70,8 @@ Run fcc_system(t_int const &N, t_real length, Scatterer const &scatterer) {
   result.excitation = excitation;
 #ifdef OPTIMET_BELOS
   result.belos_params = parameters;
+  result.do_fmm = parameters->get<bool>("do_fmm");
+  result.fmm_subdiagonals = parameters->get<t_int>("fmm_subdiagonals");
 #endif
   return result;
 }
@@ -85,36 +89,53 @@ void problem_setup(benchmark::State &state) {
   auto const nHarmonics = state.range_y();
   auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
   auto const input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
+  int64_t const size = input.geometry->scatterer_size();
 
   while(state.KeepRunning())
-    optimet::solver::factory(input);
-  state.SetItemsProcessed(int64_t(state.iterations()) *
-                          int64_t(std::get<0>(input).scatterer_size()));
+    solver::factory(input);
+  state.SetItemsProcessed(int64_t(state.iterations()) * size);
 }
 
 void benchmark_solver(benchmark::State &state) {
   auto const nHarmonics = state.range_y();
   auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
   auto const input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
-  auto const solver(input);
+  int64_t const size = input.geometry->scatterer_size();
+  auto const solver = solver::factory(input);
   Result result(std::get<0>(input), std::get<1>(input));
 
   while(state.KeepRunning()) {
     result.internal_coef.fill(0);
     solver.solve(result.scatter_coef, result.internal_coef);
   }
-  state.SetItemsProcessed(int64_t(state.iterations()) *
-                          int64_t(std::get<0>(input).scatterer_size()));
+  state.SetItemsProcessed(int64_t(state.iterations()) * size);
 }
-#endif
+#else
+void problem_setup(benchmark::State &state) {
+  mpi::Communicator world;
+  auto const nHarmonics = state.range_y();
+  auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
+  auto const input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
+  int64_t const size = input.geometry->scatterer_size();
 
-#ifdef OPTIMET_MPI
+  while(state.KeepRunning()) {
+    auto start = std::chrono::high_resolution_clock::now();
+    solver::factory(input);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    auto proc_max = world.all_reduce(elapsed_seconds.count(), MPI_MAX);
+    state.SetIterationTime(proc_max);
+  }
+  state.SetItemsProcessed(int64_t(state.iterations()) * size);
+}
+
 void benchmark_solver(benchmark::State &state) {
   mpi::Communicator world;
   auto const nHarmonics = state.range_y();
   auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
   auto const input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
-  auto const solver = optimet::solver::factory(input);
+  int64_t const size = input.geometry->scatterer_size();
+  auto const solver = solver::factory(input);
 
   Result result(input.geometry, input.excitation);
   while(state.KeepRunning()) {
@@ -126,25 +147,134 @@ void benchmark_solver(benchmark::State &state) {
     auto proc_max = world.all_reduce(elapsed_seconds.count(), MPI_MAX);
     state.SetIterationTime(proc_max);
   }
-  state.SetItemsProcessed(int64_t(state.iterations()) * int64_t(solver->scattering_size()));
+  state.SetItemsProcessed(int64_t(state.iterations()) * size);
+}
+
+void serial_matrix_multiplication(benchmark::State &state) {
+  mpi::Communicator world;
+  auto const nHarmonics = state.range_y();
+  auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
+  auto const input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
+  int64_t const size = input.geometry->scatterer_size();
+  auto const Q = source_vector(*input.geometry, input.excitation);
+  auto const S = preconditioned_scattering_matrix(*input.geometry, input.excitation);
+  Vector<t_complex> result(Q.size());
+
+  while(state.KeepRunning()) {
+    auto start = std::chrono::high_resolution_clock::now();
+    result = Q * S;
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    auto proc_max = world.all_reduce(elapsed_seconds.count(), MPI_MAX);
+    state.SetIterationTime(proc_max);
+  }
+  state.SetItemsProcessed(int64_t(state.iterations()) * size);
+}
+
+#ifdef OPTIMET_SCALAPACK
+void scalapack_matrix_multiplication(benchmark::State &state) {
+  mpi::Communicator world;
+  scalapack::Context context = scalapack::Context::Squarest();
+  auto const nHarmonics = state.range_y();
+  auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
+  auto const input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
+  int64_t const size = input.geometry->scatterer_size();
+  scalapack::Sizes const block_size = {64, 64};
+  auto const Q = distributed_source_vector(source_vector(*input.geometry, input.excitation),
+                                           context, block_size);
+  auto const S = preconditioned_scattering_matrix(*input.geometry, input.excitation);
+  auto const N = input.geometry->scatterer_size();
+  scalapack::Matrix<t_complex> Aparallel(context, {N, N}, block_size);
+  if(Aparallel.size() > 0)
+    Aparallel.local() = S;
+  scalapack::Matrix<t_complex> bparallel(context, {N, 1}, block_size);
+  if(bparallel.local().size() > 0)
+    bparallel.local() = Q;
+  scalapack::Matrix<t_complex> result(context, {N, 1}, block_size);
+  if(result.local().size() > 0)
+    result.local() = Q;
+
+  while(state.KeepRunning()) {
+    auto start = std::chrono::high_resolution_clock::now();
+    pdgemm(1.5e0, Aparallel, bparallel, 0.0, result);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    auto proc_max = world.all_reduce(elapsed_seconds.count(), MPI_MAX);
+    state.SetIterationTime(proc_max);
+  }
+  state.SetItemsProcessed(int64_t(state.iterations()) * size);
+}
+#else
+void scalapack_matrix_multiplication(benchmark::State &state) {
+  throw std::runtime_error("Optimet not compiled with scalapack");
+}
+#endif
+
+void fmm_multiplication(benchmark::State &state) {
+  mpi::Communicator world;
+  auto const nHarmonics = state.range_y();
+  auto const length = (get_param<t_real>("radius", 0.5) + 0.5) * default_length();
+  auto const input = fcc_system(state.range_x(), length, default_scatterer(nHarmonics));
+  int64_t const size = input.geometry->scatterer_size();
+  mpi::FastMatrixMultiply const fmm(input.geometry->bground, input.excitation->wavenumber(),
+                                    input.geometry->objects, input.fmm_subdiagonals, world);
+  auto const distribution =
+      mpi::details::vector_distribution(input.geometry->objects.size(), world.size());
+  auto const first =
+      std::find(distribution.data(), distribution.data() + distribution.size(), world.rank()) -
+      distribution.data();
+  auto const last =
+      std::find_if(distribution.data() + first, distribution.data() + distribution.size(),
+                   [&world](t_int value) { return value != world.rank(); }) -
+      distribution.data();
+  auto const Q = source_vector(input.geometry->objects.begin() + first,
+                               input.geometry->objects.begin() + last, input.excitation);
+  Vector<t_complex> result(Q.size());
+
+  while(state.KeepRunning()) {
+    auto start = std::chrono::high_resolution_clock::now();
+    fmm(Q, result);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    auto proc_max = world.all_reduce(elapsed_seconds.count(), MPI_MAX);
+    state.SetIterationTime(proc_max);
+  }
+  state.SetItemsProcessed(int64_t(state.iterations()) * size);
+}
+
+void matrix_multiplication(benchmark::State &state) {
+  if(parameters->get<std::string>("Solver") == "eigen")
+    return serial_matrix_multiplication(state);
+  if(parameters->get<std::string>("Solver") != "eigen" and not parameters->get<bool>("do_fmm"))
+    return scalapack_matrix_multiplication(state);
+  if(parameters->get<std::string>("Solver") != "eigen" and
+     parameters->get<std::string>("Solver") != "scalapack" and parameters->get<bool>("do_fmm"))
+    return fmm_multiplication(state);
+  throw std::runtime_error("Invalid benchmark request");
 }
 #endif
 }
 
+template <class T> std::vector<T> convert_string(std::string const &input) {
+  std::istringstream sstr(input);
+  std::vector<T> result;
+  T value;
+  while(sstr.good()) {
+    sstr >> value;
+    result.push_back(value);
+  }
+  return result;
+}
+
 static void CustomArguments(benchmark::internal::Benchmark *b) {
-  for(auto const i : {1, 2, 3, 4, 5, 10, 20, 30, 40, 50})
-    for(auto const j : {1, 2, 3, 4, 6, 8, 10})
+  auto const harmonics = convert_string<t_uint>(parameters->get<std::string>("nharmonics"));
+  auto const nparticles = convert_string<t_uint>(parameters->get<std::string>("nparticles"));
+  for(auto const i : nparticles)
+    for(auto const j : harmonics)
       b->ArgPair(i, j);
 }
 
 extern std::string FLAG_benchmark_format;
-
-#ifndef OPTIMET_MPI
-BENCHMARK(problem_setup)->Apply(CustomArguments)->Unit(benchmark::kMicrosecond);
-BENCHMARK(benchmark_solver)->Apply(CustomArguments)->Unit(benchmark::kMicrosecond);
-#else
-BENCHMARK(benchmark_solver)->Apply(CustomArguments)->Unit(benchmark::kMicrosecond)->UseManualTime();
-#endif
 
 namespace benchmark {
 class MPIReporter : public BenchmarkReporter {
@@ -152,7 +282,7 @@ public:
   MPIReporter(std::unique_ptr<BenchmarkReporter> reporter, bool doreport)
       : reporter(std::move(reporter)), doreport(doreport) {}
   MPIReporter(std::unique_ptr<BenchmarkReporter> reporter)
-      : MPIReporter(std::move(reporter), optimet::mpi::Communicator().rank() == 0) {}
+      : MPIReporter(std::move(reporter), mpi::Communicator().rank() == 0) {}
   virtual bool ReportContext(const Context &context) {
     if(doreport)
       return reporter->ReportContext(context);
@@ -186,7 +316,7 @@ std::unique_ptr<BenchmarkReporter> parse_cmdl(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-  optimet::mpi::init(argc, const_cast<const char **>(argv));
+  mpi::init(argc, const_cast<const char **>(argv));
 
   ::benchmark::MPIReporter reporter(::benchmark::parse_cmdl(argc, argv));
   ::benchmark::Initialize(&argc, argv);
@@ -195,7 +325,22 @@ int main(int argc, char **argv) {
   parameters = parse_cmdl(argc, argv);
 #endif
 
+#ifndef OPTIMET_MPI
+  BENCHMARK(problem_setup)->Apply(CustomArguments)->Unit(benchmark::kMicrosecond);
+  BENCHMARK(benchmark_solver)->Apply(CustomArguments)->Unit(benchmark::kMicrosecond);
+#else
+  BENCHMARK(matrix_multiplication)
+      ->Apply(CustomArguments)
+      ->Unit(benchmark::kMillisecond)
+      ->UseManualTime();
+  BENCHMARK(problem_setup)->Apply(CustomArguments)->Unit(benchmark::kMillisecond)->UseManualTime();
+  BENCHMARK(benchmark_solver)
+      ->Apply(CustomArguments)
+      ->Unit(benchmark::kMillisecond)
+      ->UseManualTime();
+#endif
+
   ::benchmark::RunSpecifiedBenchmarks(&reporter);
-  optimet::mpi::finalize();
+  mpi::finalize();
   return 0;
 }
