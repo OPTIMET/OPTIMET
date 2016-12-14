@@ -1,1 +1,1 @@
-add_benchmark(fcc cmdl.cpp LIBRARIES optilib ${library_dependencies})
+add_benchmark(benchmark benchmarks.cpp fcc.cpp cmdl.cpp LIBRARIES optilib ${library_dependencies})
