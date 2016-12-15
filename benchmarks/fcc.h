@@ -37,8 +37,7 @@
     auto const size = input.geometry->scatterer_size();
 #define OPTIMET_BENCHMARK_TIME_START                                                               \
   while(state.KeepRunning()) {                                                                     \
-    auto start = std::chrono::high_resolution_clock::now();                                        \
-    solver::factory(input);
+    auto start = std::chrono::high_resolution_clock::now();
 #define OPTIMET_BENCHMARK_TIME_END                                                                 \
   auto end = std::chrono::high_resolution_clock::now();                                            \
   auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);   \
