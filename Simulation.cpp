@@ -52,7 +52,7 @@ void Simulation::field_simulation(Run &run, std::shared_ptr<solver::AbstractSolv
   // Determine the simulation type and proceed accordingly
 
   Result result(run.geometry, run.excitation);
-  solver->solve(result.scatter_coef, result.internal_coef, communicator());
+  solver->solve(result.scatter_coef, result.internal_coef);
 
   if(communicator().rank() == communicator().root_id()) {
     Output oFile(caseFile + ".h5");
@@ -108,7 +108,7 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
     solver->update(run);
 
     Result result(run.geometry, run.excitation);
-    solver->solve(result.scatter_coef, result.internal_coef, communicator());
+    solver->solve(result.scatter_coef, result.internal_coef);
 
     if(communicator().rank() == communicator().root_id()) {
       outASec << lam << "\t" << result.getAbsorptionCrossSection() << std::endl;
@@ -161,7 +161,7 @@ void Simulation::radius_scan(Run &run, std::shared_ptr<solver::AbstractSolver> s
     solver->update(run);
 
     Result result(run.geometry, run.excitation);
-    solver->solve(result.scatter_coef, result.internal_coef, communicator());
+    solver->solve(result.scatter_coef, result.internal_coef);
 
     if(communicator().rank() == communicator().root_id()) {
       outASec << rad << "\t" << result.getAbsorptionCrossSection() << std::endl;
@@ -225,7 +225,7 @@ void Simulation::radius_and_wavelength_scan(Run &run,
       solver->update(run);
 
       Result result(run.geometry, run.excitation);
-      solver->solve(result.scatter_coef, result.internal_coef, communicator());
+      solver->solve(result.scatter_coef, result.internal_coef);
 
       if(communicator().rank() == communicator().root_id()) {
         outASec << result.getAbsorptionCrossSection() << "\t";
@@ -253,7 +253,7 @@ void Simulation::coefficients(Run &run, std::shared_ptr<solver::AbstractSolver> 
   // Scattering coefficients requests
 
   Result result(run.geometry, run.excitation);
-  solver->solve(result.scatter_coef, result.internal_coef, communicator());
+  solver->solve(result.scatter_coef, result.internal_coef);
 
   if(communicator().rank() == communicator().root_id()) {
     std::ofstream outPCoef(caseFile + "_pCoefficients.dat");

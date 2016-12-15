@@ -5,6 +5,7 @@
 #include "Geometry.h"
 #include "Excitation.h"
 #include "Reader.h"
+#include <BelosTypes.hpp>
 #include <iostream>
 
 TEST_CASE("ReduceComputation") {
@@ -338,11 +339,11 @@ TEST_CASE("FMM vs serial") {
   solver.belos_parameters()->set<int>("Num Blocks", 500);
   solver.belos_parameters()->set("Maximum Iterations", 4000);
   solver.belos_parameters()->set("Convergence Tolerance", 1.0e-10);
-  solver.solve(parallel.scatter_coef, parallel.internal_coef, world);
+  solver.solve(parallel.scatter_coef, parallel.internal_coef);
 
   optimet::Result serial(geometry, excitation);
-  optimet::solver::PreconditionedMatrix const serial_solver(geometry, excitation);
-  serial_solver.solve(serial.scatter_coef, serial.internal_coef, world);
+  optimet::solver::PreconditionedMatrix const serial_solver(geometry, excitation, world);
+  serial_solver.solve(serial.scatter_coef, serial.internal_coef);
 
   REQUIRE(parallel.scatter_coef.rows() == serial.scatter_coef.rows());
   REQUIRE(parallel.scatter_coef.cols() == serial.scatter_coef.cols());

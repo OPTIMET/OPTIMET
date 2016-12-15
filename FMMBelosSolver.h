@@ -1,9 +1,9 @@
 #ifndef OPTIMET_FMM_BELOS_SOLVER_H
 #define OPTIMET_FMM_BELOS_SOLVER_H
 
+#include "Run.h"
 #include "Solver.h"
 #include "Types.h"
-#include "Run.h"
 #include "mpi/FastMatrixMultiply.h"
 #include <limits>
 
@@ -19,8 +19,8 @@ public:
       mpi::Communicator const &comm = mpi::Communicator(),
       Teuchos::RCP<Teuchos::ParameterList> belos_params = Teuchos::rcp(new Teuchos::ParameterList),
       t_int subdiagonals = std::numeric_limits<t_int>::max())
-      : AbstractSolver(geometry, incWave), fmm_(nullptr), belos_params_(belos_params),
-        communicator_(comm), subdiagonals(subdiagonals) {
+      : AbstractSolver(geometry, incWave, comm), fmm_(nullptr), belos_params_(belos_params),
+        subdiagonals(subdiagonals) {
     update();
   }
 
@@ -38,11 +38,6 @@ public:
    * @return 0 if successful, 1 otherwise.
    */
   void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const override;
-  //! \brief Solves linear system of equations
-  //! \details Makes sure all procs in comm have access to result.
-  //! The communicator should contain all the procs in the scalapack context of the solver.
-  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
-             mpi::Communicator const &comm) const override;
   //! \brief Update after internal parameters changed externally
   //! \details Because that's how the original implementation rocked.
   virtual void update() override;
@@ -57,8 +52,6 @@ protected:
   std::shared_ptr<mpi::FastMatrixMultiply> fmm_;
   //! Parameter list of the belos solvers
   Teuchos::RCP<Teuchos::ParameterList> belos_params_;
-  //! MPI communicator to use during computations
-  mpi::Communicator const &communicator_;
   //! The local field matrix Q = T*AB*a
   Vector<t_complex> Q;
   //! The number of subdiagonals when distributing calculations

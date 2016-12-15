@@ -19,23 +19,21 @@ Scalapack::parallel_input() const {
 }
 
 void Scalapack::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const {
-  if(not context().is_valid())
-    return;
-  auto input = parallel_input();
-  // Now the actual work
-  auto const gls_result = scalapack::general_linear_system(std::get<0>(input), std::get<1>(input));
-  if(std::get<1>(gls_result) != 0)
-    throw std::runtime_error("Error encountered while solving the linear system");
-  // Transfer back to root
-  X_sca_ = gather_all_source_vector(std::get<0>(gls_result));
-  PreconditionedMatrix::unprecondition(X_sca_, X_int_);
-}
-
-void Scalapack::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
-                      mpi::Communicator const &comm) const {
-  solve(X_sca_, X_int_);
-  broadcast_to_out_of_context(X_sca_, context(), comm);
-  broadcast_to_out_of_context(X_int_, context(), comm);
+  if(context().is_valid()) {
+    auto input = parallel_input();
+    // Now the actual work
+    auto const gls_result =
+        scalapack::general_linear_system(std::get<0>(input), std::get<1>(input));
+    if(std::get<1>(gls_result) != 0)
+      throw std::runtime_error("Error encountered while solving the linear system");
+    // Transfer back to root
+    X_sca_ = gather_all_source_vector(std::get<0>(gls_result));
+    PreconditionedMatrix::unprecondition(X_sca_, X_int_);
+  }
+  if(context().size() != communicator().size()) {
+    broadcast_to_out_of_context(X_sca_, context(), communicator());
+    broadcast_to_out_of_context(X_int_, context(), communicator());
+  }
 }
 
 void Scalapack::update() {

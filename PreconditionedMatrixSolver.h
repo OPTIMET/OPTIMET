@@ -13,17 +13,13 @@ namespace solver {
 class PreconditionedMatrix : public AbstractSolver {
 public:
   PreconditionedMatrix(std::shared_ptr<Geometry> geometry,
-                       std::shared_ptr<Excitation const> incWave)
-      : AbstractSolver(geometry, incWave) {
+                       std::shared_ptr<Excitation const> incWave,
+                       mpi::Communicator const &communicator = mpi::Communicator())
+      : AbstractSolver(geometry, incWave, communicator) {
     update();
   }
-  PreconditionedMatrix(Run const &run) : PreconditionedMatrix(run.geometry, run.excitation) {}
-
-  //! Ignores communicator and solves serially
-  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
-             mpi::Communicator const &) const override {
-    return solve(X_sca_, X_int_);
-  }
+  PreconditionedMatrix(Run const &run)
+      : PreconditionedMatrix(run.geometry, run.excitation, run.communicator) {}
 
   void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const override {
     X_sca_ = S.colPivHouseholderQr().solve(Q);

@@ -3,6 +3,7 @@
 #include "scalapack/LinearSystemSolver.h"
 #include <Kokkos_View.hpp>
 #include <Teuchos_RCP.hpp>
+#include <BelosTypes.hpp>
 
 namespace optimet {
 namespace solver {
@@ -56,20 +57,20 @@ tpetra_vector(t_uint nglobals, Vector<t_complex> const &x,
 }
 
 void FMMBelos::update() {
-  if(geometry and incWave and communicator_.is_valid()) {
+  if(geometry and incWave and communicator().is_valid()) {
     auto const diags = subdiagonals == std::numeric_limits<t_int>::max() ?
                            std::max<int>(1, geometry->objects.size() / 2 - 2) :
                            subdiagonals;
     fmm_ = std::make_shared<mpi::FastMatrixMultiply>(geometry->bground, incWave->wavenumber(),
-                                                     geometry->objects, diags, communicator_);
+                                                     geometry->objects, diags, communicator());
     auto const distribution =
-        mpi::details::vector_distribution(geometry->objects.size(), communicator_.size());
+        mpi::details::vector_distribution(geometry->objects.size(), communicator().size());
     auto const first = std::find(distribution.data(), distribution.data() + distribution.size(),
-                                 communicator_.rank()) -
+                                 communicator().rank()) -
                        distribution.data();
     auto const last =
         std::find_if(distribution.data() + first, distribution.data() + distribution.size(),
-                     [this](t_int value) { return value != communicator_.rank(); }) -
+                     [this](t_int value) { return value != communicator().rank(); }) -
         distribution.data();
     Q = source_vector(geometry->objects.begin() + first, geometry->objects.begin() + last, incWave);
   } else {
@@ -78,17 +79,9 @@ void FMMBelos::update() {
   }
 }
 
-void FMMBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
-                     mpi::Communicator const &comm) const {
-  if(*comm != *communicator_)
-    throw std::runtime_error(
-        "Solver must be used with the same communicator it is constructed with");
-  return solve(X_sca_, X_int_);
-}
-
 void FMMBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const {
   auto const distribution =
-      mpi::details::vector_distribution(geometry->objects.size(), communicator_.size());
+      mpi::details::vector_distribution(geometry->objects.size(), communicator().size());
 
   // used to create vector
   auto const nglobals = geometry->scatterer_size();
@@ -96,7 +89,7 @@ void FMMBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const
   X_sca_.resize(nlocals);
   X_sca_.fill(0);
 
-  auto const tcom = teuchos_communicator(communicator_);
+  auto const tcom = teuchos_communicator(communicator());
   auto const x = tpetra_vector(nglobals, X_sca_, tcom);
   auto const b = tpetra_vector(nglobals, Q, tcom);
   auto Aptr = Teuchos::rcp(new FMMOperator(*fmm_));
@@ -115,7 +108,7 @@ void FMMBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const
   if(belos_params_->get<int>("Verbosity", 0) & Belos::MsgType::FinalSummary) {
     auto const out = belos_params_->get<Teuchos::RCP<std::ostream>>(
         "Output Stream", Teuchos::rcp(&std::cout, false));
-    if(communicator_.rank() == 0)
+    if(communicator().rank() == 0)
       solver->getCurrentParameters()->print(*out);
   }
 
@@ -123,7 +116,7 @@ void FMMBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const
     throw std::runtime_error("Belos optimizer did not converge");
 
   X_sca_ = Eigen::Map<Vector<t_complex> const>(x->getData(0).getRawPtr(), x->getLocalLength());
-  X_sca_ = communicator_.all_gather(X_sca_);
+  X_sca_ = communicator().all_gather(X_sca_);
   X_sca_ = AbstractSolver::convertIndirect(X_sca_);
   X_int_ = AbstractSolver::solveInternal(X_sca_);
 }

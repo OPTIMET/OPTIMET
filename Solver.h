@@ -38,8 +38,10 @@ public:
    * @param incWave_ the incoming wave excitation.
    * @param method_ the solver method to be used.
    */
-  AbstractSolver(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave)
-      : geometry(geometry), incWave(incWave), nMax(0) {}
+  AbstractSolver(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave,
+                 mpi::Communicator const &communicator = mpi::Communicator())
+      : geometry(geometry), incWave(incWave), communicator_(communicator), nMax(0) {}
+  AbstractSolver(Run const &run) : AbstractSolver(run.geometry, run.excitation, run.communicator) {}
 
   ~AbstractSolver(){};
 
@@ -51,11 +53,6 @@ public:
    * @return 0 if successful, 1 otherwise.
    */
   virtual void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const = 0;
-  //! \brief Solves linear system of equations
-  //! \details Makes sure all procs in comm have access to result.
-  //! The communicator should contain all the procs in the scalapack context of the solver.
-  virtual void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
-                     mpi::Communicator const &comm) const = 0;
   /**
    * Update method for the Solver class.
    * @param geometry_ the geometry of the simulation.
@@ -91,9 +88,12 @@ public:
     return 2 * n * (n + 2) * geometry->objects.size();
   }
 
+  mpi::Communicator const &communicator() const { return communicator_; }
+
 protected:
   std::shared_ptr<Geometry> geometry;        /**< Pointer to the geometry. */
   std::shared_ptr<Excitation const> incWave; /**< Pointer to the incoming excitation. */
+  mpi::Communicator communicator_;
   t_uint nMax;
 };
 

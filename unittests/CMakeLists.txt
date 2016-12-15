@@ -41,25 +41,29 @@ if(dompi)
       NAME ${testname}
       COMMAND
       ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS}
-        test_${testname} ${arguments}
-    )
+      test_${testname} ${arguments}
+      )
     set_tests_properties(${testname} PROPERTIES LABELS "catch;mpi")
   endfunction()
 
   add_catch_test(fmm_distribution LIBRARIES optilib ${library_dependencies})
   add_catch_test(squarest LIBRARIES optilib ${library_dependencies})
-  add_mpi_test(parallel_fmm LIBRARIES optilib ${library_dependencies})
-  add_mpi_test(single_particle LIBRARIES optilib ${library_dependencies})
   add_mpi_test(mpi_communicator LIBRARIES optilib ${library_dependencies})
-  add_mpi_test(scalapack_context LIBRARIES optilib ${library_dependencies})
-  add_mpi_test(scalapack_matrix LIBRARIES optilib ${library_dependencies})
-  add_mpi_test(scalapack_linear_system LIBRARIES optilib ${library_dependencies})
-  add_mpi_test(scalapack_collectives LIBRARIES optilib ${library_dependencies})
-  add_mpi_test(serial_vs_parallel LIBRARIES optilib ${library_dependencies})
-  add_mpi_test(mpi_scattering_matrix LIBRARIES optilib ${library_dependencies})
+  if(OPTIMET_SCALAPACK)
+    add_mpi_test(single_particle LIBRARIES optilib ${library_dependencies})
+    add_mpi_test(scalapack_context LIBRARIES optilib ${library_dependencies})
+    add_mpi_test(scalapack_matrix LIBRARIES optilib ${library_dependencies})
+    add_mpi_test(scalapack_linear_system LIBRARIES optilib ${library_dependencies})
+    add_mpi_test(scalapack_collectives LIBRARIES optilib ${library_dependencies})
+    add_mpi_test(serial_vs_parallel LIBRARIES optilib ${library_dependencies})
+    add_mpi_test(mpi_scattering_matrix LIBRARIES optilib ${library_dependencies})
+  endif()
   if(OPTIMET_BELOS)
     add_mpi_test(belos LIBRARIES optilib ${library_dependencies})
-    add_mpi_test(scalapack_vs_belos LIBRARIES optilib ${library_dependencies})
+    if(OPTIMET_SCALAPACK)
+      add_mpi_test(scalapack_vs_belos LIBRARIES optilib ${library_dependencies})
+    endif()
+    add_mpi_test(parallel_fmm LIBRARIES optilib ${library_dependencies})
 
     # Prints all available solvers and their parameters
     add_executable(print_belos_params print_belos_params.cpp)

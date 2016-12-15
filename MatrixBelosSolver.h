@@ -20,17 +20,17 @@ class MatrixBelos : public Scalapack {
 public:
   MatrixBelos(
       std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave,
+      mpi::Communicator const &communicator = mpi::Communicator(),
       scalapack::Context const &context = scalapack::Context::Squarest(),
       scalapack::Sizes const &block_size = scalapack::Sizes{64, 64},
       Teuchos::RCP<Teuchos::ParameterList> belos_params = Teuchos::rcp(new Teuchos::ParameterList))
-      : Scalapack(geometry, incWave, context, block_size), belos_params_(belos_params) {}
+      : Scalapack(geometry, incWave, communicator, context, block_size),
+        belos_params_(belos_params) {}
   MatrixBelos(Run const &run)
-      : MatrixBelos(run.geometry, run.excitation, run.context,
+      : MatrixBelos(run.geometry, run.excitation, run.communicator, run.context,
                     {run.parallel_params.block_size, run.parallel_params.block_size},
                     run.belos_params) {}
 
-  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,
-             mpi::Communicator const &comm) const override;
   void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const override;
 
   //! \brief Parameters for Belos/Trilinos solvers

@@ -16,11 +16,11 @@ std::shared_ptr<AbstractSolver> factory(Run const &run) {
   return std::make_shared<PreconditionedMatrix>(run);
 #elif defined(OPTIMET_SCALAPACK) && !defined(OPTIMET_BELOS)
   if(run.do_fmm)
-    throw std::runtime_error("Cannot run FMM with scalapack solver");
+    throw std::runtime_error("Scalapack and Fast Matrix Multiplication are not compatible");
   return std::make_shared<Scalapack>(run);
 #elif defined(OPTIMET_BELOS) && defined(OPTIMET_SCALAPACK)
-  if((run.belos_params()->template get<std::string>("Solver") != "scalapack" or
-      run.belos_params()->template get<std::string>("Solver") != "eigen") and
+  if((run.belos_params()->template get<std::string>("Solver") == "scalapack" or
+      run.belos_params()->template get<std::string>("Solver") == "eigen") and
      run.do_fmm)
     throw std::runtime_error("Cannot run FMM with scalapack solver");
   if(run.belos_params()->template get<std::string>("Solver") == "eigen")
