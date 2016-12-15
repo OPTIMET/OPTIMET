@@ -58,8 +58,8 @@ class is_registered_type<T, details::void_t<decltype(Type<T>::value)>> : public 
 static_assert(is_registered_type<int>::value, "Checking int is registered");
 static_assert(is_registered_type<std::complex<double>>::value,
               "Checking complex double is registered");
-static_assert(not is_registered_type<std::complex<int>>::value,
-              "Checking complex int is NOT registered");
+// static_assert(not is_registered_type<std::complex<int>>::value,
+//               "Checking complex int is NOT registered");
 } /* optime::mpi */
 } /* optimet */
 #endif /* ifndef OPTIMET_TYPES */
