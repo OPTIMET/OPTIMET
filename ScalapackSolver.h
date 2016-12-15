@@ -7,7 +7,7 @@
 #include "PreconditionedMatrix.h"
 #include "PreconditionedMatrixSolver.h"
 #include "Solver.h"
-#include "scalapack/context.h"
+#include "scalapack/Context.h"
 
 namespace optimet {
 namespace solver {
