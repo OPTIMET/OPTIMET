@@ -81,7 +81,9 @@ OPTIMET_BENCHMARK(scalapack_solver) {
   solver->solve(result.scatter_coef, result.internal_coef);
   OPTIMET_BENCHMARK_TIME_END;
 }
+#endif
 
+#ifdef OPTIMET_SCALAPACK
 OPTIMET_BENCHMARK(gmres_solver) {
   input.belos_params->set("Solver", "GMRES");
   input.belos_params->set("fmm", false);
@@ -93,9 +95,7 @@ OPTIMET_BENCHMARK(gmres_solver) {
   solver->solve(result.scatter_coef, result.internal_coef);
   OPTIMET_BENCHMARK_TIME_END;
 }
-#endif
 
-#ifdef OPTIMET_MPI
 OPTIMET_BENCHMARK(fmm_solver) {
   input.belos_params->set("Solver", "GMRES");
   input.belos_params->set("fmm", true);
@@ -162,8 +162,8 @@ OPTIMET_BENCHMARK(fmm_multiplication) {
                                input.geometry->objects.begin() + last, input.excitation);
 #else
   optimet::FastMatrixMultiply const fmm(input.geometry->bground, input.excitation->wavenumber(),
-                                        input.geometry.objects);
-  auto const Q = source_vector(input.geometry->objects, input.excitation);
+                                        input.geometry->objects);
+  auto const Q = source_vector(*input.geometry, input.excitation);
 #endif
   Vector<t_complex> result(Q.size());
 
@@ -188,11 +188,9 @@ int main(int argc, char **argv) {
 
   OPTIMET_REGISTER_BENCHMARK(serial_problem_setup)->Unit(benchmark::kMicrosecond);
 #ifdef OPTIMET_SCALAPACK
-  OPTIMET_REGISTER_BENCHMARK(fmm_problem_setup)->Unit(benchmark::kMicrosecond);
-#endif
-#ifdef OPTIMET_MPI
   OPTIMET_REGISTER_BENCHMARK(scalapack_problem_setup)->Unit(benchmark::kMicrosecond);
 #endif
+  OPTIMET_REGISTER_BENCHMARK(fmm_problem_setup)->Unit(benchmark::kMicrosecond);
 
   OPTIMET_REGISTER_BENCHMARK(serial_solver)->Unit(benchmark::kMicrosecond);
 #ifdef OPTIMET_SCALAPACK
@@ -207,9 +205,7 @@ int main(int argc, char **argv) {
 #ifdef OPTIMET_SCALAPACK
   OPTIMET_REGISTER_BENCHMARK(scalapack_multiplication)->Unit(benchmark::kMicrosecond);
 #endif
-#ifdef OPTIMET_MPI
   OPTIMET_REGISTER_BENCHMARK(fmm_multiplication)->Unit(benchmark::kMicrosecond);
-#endif
 
   ::benchmark::Initialize(&argc, argv);
   ::benchmark::RunSpecifiedBenchmarks(&reporter);

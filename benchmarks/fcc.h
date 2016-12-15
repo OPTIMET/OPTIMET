@@ -13,6 +13,8 @@
 
 #define OPTIMET_BENCHMARK(NAME)                                                                    \
   void NAME(benchmark::State &state, Teuchos::RCP<Teuchos::ParameterList> const &parameters) {     \
+    parameters->set("nObjects", state.range(0));                                                   \
+    parameters->set("nMax", state.range(1));                                                       \
     auto input = optimet::fcc_input(parameters);                                                   \
     auto const size = input.geometry->scatterer_size();
 #define OPTIMET_BENCHMARK_TIME_START while(state.KeepRunning()) {

@@ -5,9 +5,9 @@
 #include <functional>
 #include <Eigen/Core>
 
+#cmakedefine OPTIMET_BELOS
 #cmakedefine OPTIMET_MPI
 #ifdef OPTIMET_MPI
-#cmakedefine OPTIMET_BELOS
 #cmakedefine OPTIMET_SCALAPACK
 #endif
 #cmakedefine OPTIMET_CHAR_ARCH

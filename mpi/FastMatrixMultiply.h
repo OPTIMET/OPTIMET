@@ -2,6 +2,8 @@
 #define OPTIMET_MPI_FAST_MATRIX_MULTIPLY_H
 
 #include "../FastMatrixMultiply.h"
+#include "Types.h"
+#ifdef OPTIMET_MPI
 #include "mpi/GraphCommunicator.h"
 #include <array>
 #include <utility>
@@ -351,4 +353,5 @@ FastMatrixMultiply::ReduceComputation::send(Eigen::MatrixBase<T0> const &input,
 }
 }
 
+#endif
 #endif
