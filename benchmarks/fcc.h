@@ -29,7 +29,6 @@
 
 #define OPTIMET_BENCHMARK(NAME)                                                                    \
   void NAME(benchmark::State &state, Teuchos::RCP<Teuchos::ParameterList> const &parameters) {     \
-    mpi::Communicator world;                                                                       \
     parameters->set("nObjects", state.range(0));                                                   \
     parameters->set("nMax", state.range(1));                                                       \
     auto input = optimet::fcc_input(parameters);                                                   \
@@ -41,7 +40,7 @@
 #define OPTIMET_BENCHMARK_TIME_END                                                                 \
   auto end = std::chrono::high_resolution_clock::now();                                            \
   auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);   \
-  auto proc_max = world.all_reduce(elapsed_seconds.count(), MPI_MAX);                              \
+  auto proc_max = input.communicator.all_reduce(elapsed_seconds.count(), MPI_MAX);                 \
   state.SetIterationTime(proc_max);                                                                \
   }                                                                                                \
   state.SetItemsProcessed(int64_t(state.iterations()) * size);                                     \
