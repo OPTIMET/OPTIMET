@@ -10,7 +10,9 @@
 #include "Types.h"
 #include "constants.h"
 #include "scalapack/BroadcastToOutOfContext.h"
+#ifdef OPTIMET_BELOS
 #include <BelosTypes.hpp>
+#endif
 
 #ifndef OPTIMET_SOLVER
 #define OPTIMET_SOLVER "scalapack"
