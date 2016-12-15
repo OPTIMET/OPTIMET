@@ -49,6 +49,11 @@ else()
   list(REMOVE_ITEM SRC ${EXCLUDE})
 endif()
 
+if(NOT OPTIMET_BELOS)
+  file(GLOB EXCLUDE MatrixBelosSolver.cpp FMMBelosSolver.cpp)
+  list(REMOVE_ITEM SRC ${EXCLUDE})
+endif()
+
 # configure a file with some build defaults
 include_directories("${PROJECT_BINARY_DIR}/include/optimet")
 configure_file(Types.in.h "${PROJECT_BINARY_DIR}/include/optimet/Types.h")
