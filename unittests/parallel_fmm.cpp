@@ -314,13 +314,8 @@ TEST_CASE("MPI vs serial FMM") {
 
 TEST_CASE("FMM vs serial") {
   using namespace optimet;
-#ifndef NDEBUG
   auto const nHarmonics = 5;
   auto const nSpheres = 5;
-#else
-  auto const nHarmonics = 10;
-  auto const nSpheres = 10;
-#endif
   auto geometry = std::make_shared<Geometry>();
   // spherical coords, ε, μ, radius, nmax
   for(t_uint i(0); i < nSpheres; ++i)
@@ -348,8 +343,6 @@ TEST_CASE("FMM vs serial") {
   optimet::Result serial(geometry, excitation);
   optimet::solver::PreconditionedMatrix const serial_solver(geometry, excitation);
   serial_solver.solve(serial.scatter_coef, serial.internal_coef, world);
-  // sending serial solution to rest of the world
-  auto const distribution = mpi::details::vector_distribution(geometry->objects.size(), world.size());
 
   REQUIRE(parallel.scatter_coef.rows() == serial.scatter_coef.rows());
   REQUIRE(parallel.scatter_coef.cols() == serial.scatter_coef.cols());
