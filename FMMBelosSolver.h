@@ -11,6 +11,7 @@ namespace optimet {
 namespace solver {
 
 #ifdef OPTIMET_MPI
+#ifdef OPTIMET_BELOS
 //! Belos optimizer using the Fast Matrix Multiply
 class FMMBelos : public AbstractSolver {
 public:
@@ -57,6 +58,7 @@ protected:
   //! The number of subdiagonals when distributing calculations
   t_int subdiagonals;
 };
+#endif
 #endif
 }
 }
