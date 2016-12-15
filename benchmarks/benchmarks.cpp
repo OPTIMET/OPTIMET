@@ -25,6 +25,7 @@ void NeedExtraDataArgument(benchmark::internal::Benchmark *b) {
   return CustomArguments(*nharmonics, *nparticles, b);
 }
 
+#ifndef OPTIMET_MPI
 OPTIMET_BENCHMARK(serial_problem_setup) {
 
   OPTIMET_BENCHMARK_TIME_START;
@@ -32,6 +33,7 @@ OPTIMET_BENCHMARK(serial_problem_setup) {
   preconditioned_scattering_matrix(*input.geometry, input.excitation);
   OPTIMET_BENCHMARK_TIME_END;
 }
+#endif
 
 #ifdef OPTIMET_SCALAPACK
 OPTIMET_BENCHMARK(scalapack_problem_setup) {
@@ -58,6 +60,7 @@ OPTIMET_BENCHMARK(fmm_problem_setup) {
   OPTIMET_BENCHMARK_TIME_END;
 }
 
+#ifndef OPTIMET_MPI
 OPTIMET_BENCHMARK(serial_solver) {
   input.belos_params->set("Solver", "eigen");
   Result result(input.geometry, input.excitation);
@@ -68,6 +71,7 @@ OPTIMET_BENCHMARK(serial_solver) {
   solver->solve(result.scatter_coef, result.internal_coef);
   OPTIMET_BENCHMARK_TIME_END;
 }
+#endif
 
 #ifdef OPTIMET_SCALAPACK
 OPTIMET_BENCHMARK(scalapack_solver) {
@@ -109,6 +113,7 @@ OPTIMET_BENCHMARK(fmm_solver) {
 }
 #endif
 
+#ifndef OPTIMET_MPI
 OPTIMET_BENCHMARK(eigen_multiplication) {
   auto const Q = source_vector(*input.geometry, input.excitation);
   auto const S = preconditioned_scattering_matrix(*input.geometry, input.excitation);
@@ -118,6 +123,7 @@ OPTIMET_BENCHMARK(eigen_multiplication) {
   result = Q * S;
   OPTIMET_BENCHMARK_TIME_END;
 }
+#endif
 
 #ifdef OPTIMET_SCALAPACK
 OPTIMET_BENCHMARK(scalapack_multiplication) {
@@ -186,23 +192,28 @@ int main(int argc, char **argv) {
   nparticles = std::make_shared<const std::vector<t_uint>>(
       convert_string<t_uint>(parameters->get<std::string>("nparticles")));
 
+#ifndef OPTIMET_MPI
   OPTIMET_REGISTER_BENCHMARK(serial_problem_setup)->Unit(benchmark::kMicrosecond);
-#ifdef OPTIMET_SCALAPACK
+#elif defined(OPTIMET_SCALAPACK)
   OPTIMET_REGISTER_BENCHMARK(scalapack_problem_setup)->Unit(benchmark::kMicrosecond);
 #endif
   OPTIMET_REGISTER_BENCHMARK(fmm_problem_setup)->Unit(benchmark::kMicrosecond);
 
-  OPTIMET_REGISTER_BENCHMARK(serial_solver)->Unit(benchmark::kMicrosecond);
+  if(parameters->get("Solver", "nope") != "avoid") {
+#ifndef OPTIMET_MPI
+    OPTIMET_REGISTER_BENCHMARK(serial_solver)->Unit(benchmark::kMicrosecond);
+#else
 #ifdef OPTIMET_SCALAPACK
-  OPTIMET_REGISTER_BENCHMARK(scalapack_solver)->Unit(benchmark::kMicrosecond);
-  OPTIMET_REGISTER_BENCHMARK(gmres_solver)->Unit(benchmark::kMicrosecond);
+    OPTIMET_REGISTER_BENCHMARK(scalapack_solver)->Unit(benchmark::kMicrosecond);
+    OPTIMET_REGISTER_BENCHMARK(gmres_solver)->Unit(benchmark::kMicrosecond);
 #endif
-#ifdef OPTIMET_MPI
-  OPTIMET_REGISTER_BENCHMARK(fmm_solver)->Unit(benchmark::kMicrosecond);
+    OPTIMET_REGISTER_BENCHMARK(fmm_solver)->Unit(benchmark::kMicrosecond);
 #endif
+  }
 
+#ifndef OPTIMET_MPI
   OPTIMET_REGISTER_BENCHMARK(eigen_multiplication)->Unit(benchmark::kMicrosecond);
-#ifdef OPTIMET_SCALAPACK
+#elif defined(OPTIMET_SCALAPACK)
   OPTIMET_REGISTER_BENCHMARK(scalapack_multiplication)->Unit(benchmark::kMicrosecond);
 #endif
   OPTIMET_REGISTER_BENCHMARK(fmm_multiplication)->Unit(benchmark::kMicrosecond);

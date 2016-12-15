@@ -21,6 +21,7 @@
 #define OPTIMET_BENCHMARK_TIME_END                                                                 \
   }                                                                                                \
   state.SetItemsProcessed(int64_t(state.iterations()) * size);                                     \
+  state.SetLabel("nprocs(0)");                                                                     \
   }
 #define OPTIMET_REGISTER_BENCHMARK(NAME)                                                           \
   ::benchmark::RegisterBenchmark(#NAME, NAME, parameters)                                          \
@@ -45,6 +46,7 @@
   state.SetIterationTime(proc_max);                                                                \
   }                                                                                                \
   state.SetItemsProcessed(int64_t(state.iterations()) * size);                                     \
+  state.SetLabel("nprocs(" + std::to_string(input.communicator.size()) + ")");                     \
   }
 
 #define OPTIMET_REGISTER_BENCHMARK(NAME)                                                           \

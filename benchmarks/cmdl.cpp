@@ -49,6 +49,10 @@ Teuchos::RCP<Teuchos::ParameterList> parse_cmdl(int argc, char *argv[]) {
   clp.setOption("nparticles", &cmdl.nparticles, "Space separated number of particles to trial");
   clp.setOption("nharmonics", &cmdl.nharmonics, "Space separated number of harmonics to trial");
 
+  std::string dummy;
+  clp.setOption("benchmark_filter", &dummy);
+  clp.setOption("benchmark_format", &dummy);
+
   auto result = Teuchos::rcp(new Teuchos::ParameterList);
   if(clp.parse(argc, argv) != Teuchos::CommandLineProcessor::PARSE_SUCCESSFUL)
     throw std::runtime_error("Couldn't parse command-line");
