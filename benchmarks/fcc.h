@@ -24,7 +24,10 @@
   state.SetLabel("nprocs(0)");                                                                     \
   }
 #define OPTIMET_REGISTER_BENCHMARK(NAME)                                                           \
-  ::benchmark::RegisterBenchmark(#NAME, NAME, parameters)                                          \
+  auto const NAME##_impl = [parameters](::benchmark::State &state) {                               \
+     return NAME(state, parameters);                                                               \
+  };                                                                                               \
+  ::benchmark::RegisterBenchmark(#NAME, NAME##_impl)                                               \
       ->Apply(NeedExtraDataArgument)                                                               \
       ->Unit(benchmark::kMicrosecond)
 
@@ -50,7 +53,10 @@
   }
 
 #define OPTIMET_REGISTER_BENCHMARK(NAME)                                                           \
-  ::benchmark::RegisterBenchmark(#NAME, NAME, parameters)                                          \
+  auto const NAME##_impl = [parameters](::benchmark::State &state) {                               \
+     return NAME(state, parameters);                                                               \
+  };                                                                                               \
+  ::benchmark::RegisterBenchmark(#NAME, NAME##_impl)                                               \
       ->Apply(NeedExtraDataArgument)                                                               \
       ->Unit(benchmark::kMicrosecond)                                                              \
       ->UseManualTime()
