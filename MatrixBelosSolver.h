@@ -9,7 +9,7 @@
 #include "PreconditionedMatrixSolver.h"
 #include "ScalapackSolver.h"
 #include "Solver.h"
-#include "scalapack/context.h"
+#include "scalapack/Context.h"
 #include <Teuchos_ParameterList.hpp>
 
 namespace optimet {
