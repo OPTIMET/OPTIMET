@@ -52,6 +52,7 @@ Teuchos::RCP<Teuchos::ParameterList> parse_cmdl(int argc, char *argv[]) {
   std::string dummy;
   clp.setOption("benchmark_filter", &dummy);
   clp.setOption("benchmark_format", &dummy);
+  clp.setOption("benchmark_min_time", &dummy);
 
   auto result = Teuchos::rcp(new Teuchos::ParameterList);
   if(clp.parse(argc, argv) != Teuchos::CommandLineProcessor::PARSE_SUCCESSFUL)

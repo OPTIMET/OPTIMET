@@ -39,6 +39,8 @@ OPTIMET_BENCHMARK(serial_problem_setup) {
 OPTIMET_BENCHMARK(scalapack_problem_setup) {
   scalapack::Sizes const block_size = {64, 64};
   auto const context = scalapack::Context::Squarest();
+  if(static_cast<unsigned long long>(size * size) * 16ull >= 2ull * 1024ull * 1024ull * 1024ull)
+    state.SkipWithError("Matrix too large for scalapack");
 
   OPTIMET_BENCHMARK_TIME_START;
   distributed_source_vector(source_vector(*input.geometry, input.excitation), context, block_size);
@@ -75,6 +77,11 @@ OPTIMET_BENCHMARK(serial_solver) {
 
 #ifdef OPTIMET_SCALAPACK
 OPTIMET_BENCHMARK(scalapack_solver) {
+  if(static_cast<unsigned long long>(size * size) * 16ull >= 2ull * 1024ull * 1024ull * 1024ull) {
+    state.SkipWithError("Matrix too large for scalapack");
+    return;
+  }
+
   input.belos_params->set("Solver", "scalapack");
   input.belos_params->set("fmm", false);
   Result result(input.geometry, input.excitation);
@@ -85,10 +92,13 @@ OPTIMET_BENCHMARK(scalapack_solver) {
   solver->solve(result.scatter_coef, result.internal_coef);
   OPTIMET_BENCHMARK_TIME_END;
 }
-#endif
 
-#ifdef OPTIMET_SCALAPACK
 OPTIMET_BENCHMARK(gmres_solver) {
+  if(static_cast<unsigned long long>(size * size) * 16ull >= 2ull * 1024ull * 1024ull * 1024ull) {
+    state.SkipWithError("Matrix too large for scalapack");
+    return;
+  }
+
   input.belos_params->set("Solver", "GMRES");
   input.belos_params->set("fmm", false);
   Result result(input.geometry, input.excitation);
@@ -99,6 +109,7 @@ OPTIMET_BENCHMARK(gmres_solver) {
   solver->solve(result.scatter_coef, result.internal_coef);
   OPTIMET_BENCHMARK_TIME_END;
 }
+#endif
 
 OPTIMET_BENCHMARK(fmm_solver) {
   input.belos_params->set("Solver", "GMRES");
@@ -111,7 +122,6 @@ OPTIMET_BENCHMARK(fmm_solver) {
   solver->solve(result.scatter_coef, result.internal_coef);
   OPTIMET_BENCHMARK_TIME_END;
 }
-#endif
 
 #ifndef OPTIMET_MPI
 OPTIMET_BENCHMARK(eigen_multiplication) {
@@ -127,6 +137,10 @@ OPTIMET_BENCHMARK(eigen_multiplication) {
 
 #ifdef OPTIMET_SCALAPACK
 OPTIMET_BENCHMARK(scalapack_multiplication) {
+  if(static_cast<unsigned long long>(size * size) * 16ull >= 2ull * 1024ull * 1024ull * 1024ull) {
+    state.SkipWithError("Matrix too large for scalapack");
+    return;
+  }
   auto const N = input.geometry->scatterer_size();
   auto const &context = input.context;
   scalapack::Sizes const block_size = {64, 64};
@@ -199,7 +213,6 @@ int main(int argc, char **argv) {
 #endif
   OPTIMET_REGISTER_BENCHMARK(fmm_problem_setup)->Unit(benchmark::kMicrosecond);
 
-  if(parameters->get("Solver", "nope") != "avoid") {
 #ifndef OPTIMET_MPI
     OPTIMET_REGISTER_BENCHMARK(serial_solver)->Unit(benchmark::kMicrosecond);
 #else
@@ -209,7 +222,6 @@ int main(int argc, char **argv) {
 #endif
     OPTIMET_REGISTER_BENCHMARK(fmm_solver)->Unit(benchmark::kMicrosecond);
 #endif
-  }
 
 #ifndef OPTIMET_MPI
   OPTIMET_REGISTER_BENCHMARK(eigen_multiplication)->Unit(benchmark::kMicrosecond);

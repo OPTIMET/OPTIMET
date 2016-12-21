@@ -69,7 +69,11 @@ void CustomArguments(std::vector<t_uint> const &nharmonics, std::vector<t_uint> 
 std::unique_ptr<::benchmark::BenchmarkReporter> parse_benchmark_cmdl(int argc, char **argv);
 
 template <class T> std::vector<T> convert_string(std::string const &input) {
-  std::istringstream sstr(input);
+  std::string replaced(input);
+  for(t_uint i(0); i < replaced.size(); ++i)
+    if(replaced[i] == '_')
+      replaced[i] = ' ';
+  std::istringstream sstr(replaced);
   std::vector<T> result;
   T value;
   while(sstr.good()) {
