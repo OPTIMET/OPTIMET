@@ -1,10 +1,10 @@
+#include "Excitation.h"
+#include "FMMBelosSolver.h"
+#include "Geometry.h"
+#include "PreconditionedMatrixSolver.h"
+#include "Reader.h"
 #include "catch.hpp"
 #include "mpi/FastMatrixMultiply.h"
-#include "FMMBelosSolver.h"
-#include "PreconditionedMatrixSolver.h"
-#include "Geometry.h"
-#include "Excitation.h"
-#include "Reader.h"
 #include <BelosTypes.hpp>
 #include <iostream>
 
@@ -313,7 +313,7 @@ TEST_CASE("MPI vs serial FMM") {
   }
 }
 
-TEST_CASE("FMM vs serial") {
+TEST_CASE("FMM solver vs serial solver") {
   using namespace optimet;
   auto const nHarmonics = 5;
   auto const nSpheres = 5;
@@ -321,7 +321,7 @@ TEST_CASE("FMM vs serial") {
   // spherical coords, ε, μ, radius, nmax
   for(t_uint i(0); i < nSpheres; ++i)
     geometry->pushObject(
-        {{static_cast<t_real>(i) * 1.5 * 2e-6, 0, 0}, {0.45e0, 1.1e0}, 0.5 * 2e-6, nHarmonics});
+        {{static_cast<t_real>(i) * 1.5 * 2e-6, 0, 0}, {5e0, 1.1e0}, 0.5 * 2e-6, nHarmonics});
 
   // Create excitation
   auto const wavelength = 14960e-9;
@@ -353,6 +353,46 @@ TEST_CASE("FMM vs serial") {
   REQUIRE(parallel.internal_coef.cols() == serial.internal_coef.cols());
   auto const internal_tol = 1e-6 * std::max(1., serial.internal_coef.array().abs().maxCoeff());
   CHECK(parallel.internal_coef.isApprox(serial.internal_coef, internal_tol));
+}
+
+TEST_CASE("Parallel matrix vs serial matrix") {
+  using namespace optimet;
+  mpi::Communicator const world;
+  auto const nHarmonics = 5;
+  auto const nSpheres = 8;
+  auto geometry = std::make_shared<Geometry>();
+  // spherical coords, ε, μ, radius, nmax
+  for(t_uint i(0); i < nSpheres; ++i)
+    geometry->pushObject(
+        {{static_cast<t_real>(i) * 1.5 * 2e-6, 0, 0}, {0.45e0, 1.1e0}, 0.5 * 2e-6, nHarmonics});
+
+  // Create excitation
+  auto const wavelength = 14960e-9;
+  Spherical<t_real> const vKinc{2 * consPi / wavelength, 90 * consPi / 180.0, 90 * consPi / 180.0};
+  SphericalP<t_complex> const Eaux{0e0, 1e0, 0e0};
+  auto const excitation =
+      std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
+  excitation->populate();
+  geometry->update(excitation);
+
+  auto const serial = preconditioned_scattering_matrix(*geometry, excitation);
+
+  auto const diags = std::max<int>(1, geometry->objects.size() / 2 - 2);
+  mpi::FastMatrixMultiply parallel(geometry->bground, excitation->wavenumber(), geometry->objects,
+                                   diags, world);
+  auto const distribution =
+      mpi::details::vector_distribution(geometry->objects.size(), world.size());
+  auto const size = serial.cols();
+
+  for(t_int i(0); i < size; ++i) {
+    Vector<t_complex> const serial_input = Vector<t_complex>::Unit(size, i);
+    Vector<t_complex> const expected = serial * serial_input;
+    Vector<t_complex> const parallel_input =
+        split(geometry->objects, distribution.array() == world.rank(), serial_input);
+    Vector<t_complex> const actual = parallel * parallel_input;
+    auto const gathered = world.all_gather(actual);
+    CHECK(expected.isApprox(gathered));
+  }
 }
 
 TEST_CASE("Read XML") {
