@@ -25,7 +25,7 @@
   }
 #define OPTIMET_REGISTER_BENCHMARK(NAME)                                                           \
   auto const NAME##_impl = [parameters](::benchmark::State &state) {                               \
-     return NAME(state, parameters);                                                               \
+    return NAME(state, parameters);                                                                \
   };                                                                                               \
   ::benchmark::RegisterBenchmark(#NAME, NAME##_impl)                                               \
       ->Apply(NeedExtraDataArgument)                                                               \
@@ -54,7 +54,7 @@
 
 #define OPTIMET_REGISTER_BENCHMARK(NAME)                                                           \
   auto const NAME##_impl = [parameters](::benchmark::State &state) {                               \
-     return NAME(state, parameters);                                                               \
+    return NAME(state, parameters);                                                                \
   };                                                                                               \
   ::benchmark::RegisterBenchmark(#NAME, NAME##_impl)                                               \
       ->Apply(NeedExtraDataArgument)                                                               \
