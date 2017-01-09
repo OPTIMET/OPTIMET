@@ -1,11 +1,13 @@
 #include "Excitation.h"
 #include "Geometry.h"
+#include "PreconditionedMatrix.h"
 #include "Tools.h"
 #include "Types.h"
-#include "mpi/FastMatrixMultiply.h"
-#if defined(OPTIMET_MPI) && !defined(OPTIMET_JUST_DO_SERIAL)
+#include "mpi/Communicator.h"
 #include "mpi/Session.h"
-#endif
+#include "scalapack/Context.h"
+#include "scalapack/InitExit.h"
+#include "scalapack/Matrix.h"
 #include <chrono>
 #include <iostream>
 #include <sstream>
@@ -34,15 +36,15 @@ T find_arg(int argc, char *const argv[], std::string const &arg, T const &defaul
 
 int main(int argc, char *const argv[]) {
   using namespace optimet;
-#if defined(OPTIMET_MPI) && !defined(OPTIMET_JUST_DO_SERIAL)
   mpi::init(argc, const_cast<const char **>(argv));
-#endif
+  mpi::Communicator const world;
 
   auto const iterations = find_arg<t_int>(argc, argv, "iterations", 50);
   auto const warmup = find_arg<t_int>(argc, argv, "warmup", 3);
   auto const nobjects = find_arg<t_int>(argc, argv, "nobjects", 100);
   auto const radius = find_arg<t_real>(argc, argv, "radius", 0.25);
   auto const nMax = find_arg<t_int>(argc, argv, "nharmonics", 10);
+  auto const size = 2 * nobjects * nMax * (nMax + 2);
   ElectroMagnetic const elmag{13.1, 1.0};
   auto const length = (radius + 0.5) * default_length();
   Scatterer const scatterer = {{0, 0, 0}, elmag, radius * default_length(), nMax};
@@ -76,70 +78,69 @@ int main(int argc, char *const argv[]) {
   excitation->populate();
   geometry->update(excitation);
 
-#if defined(OPTIMET_MPI) && !defined(OPTIMET_JUST_DO_SERIAL)
-  mpi::Communicator const world;
-  auto const subdiagonals = std::max<int>(1, geometry->objects.size() / 2 - 2);
-  mpi::FastMatrixMultiply const fmm(geometry->bground, excitation->wavenumber(), geometry->objects,
-                                    subdiagonals, world);
-#else
-  FastMatrixMultiply const fmm(geometry->bground, excitation->wavenumber(), geometry->objects);
-#endif
+  if(static_cast<unsigned long long>(size * size) * 16ull >= 2ull * 1024ull * 1024ull * 1024ull) {
+    std::cerr << "Matrix too large for scalapack\n";
+    scalapack::finalize(1);
+    mpi::finalize();
+    return 1;
+  }
+  auto const N = geometry->scatterer_size();
+  auto const context = scalapack::Context::Squarest();
+  scalapack::Sizes const block_size = {64, 64};
+  auto const Q =
+      distributed_source_vector(source_vector(*geometry, excitation), context, block_size);
+  auto const S = preconditioned_scattering_matrix(*geometry, excitation, context, block_size);
+  scalapack::Matrix<t_complex> Aparallel(context, {N, N}, block_size);
+  if(Aparallel.size() > 0)
+    Aparallel.local() = S;
+  scalapack::Matrix<t_complex> bparallel(context, {N, 1}, block_size);
+  if(bparallel.local().size() > 0)
+    bparallel.local() = Q;
+  scalapack::Matrix<t_complex> result(context, {N, 1}, block_size);
+  if(result.local().size() > 0)
+    result.local() = Q;
 
-  Vector<t_complex> const input = Vector<t_complex>::Random(fmm.cols());
+  Vector<t_complex> const input = Vector<t_complex>::Random(bparallel.local().size());
 
-  Vector<t_complex> result(fmm.cols());
   for(int i(0); i < warmup; ++i)
-    fmm(input, result);
+    pdgemm(1e0, Aparallel, bparallel, 0.0, result);
   t_real elapsed(0);
   for(int i(0); i < iterations; ++i) {
     auto start = std::chrono::high_resolution_clock::now();
-    fmm(input, result);
+    pdgemm(1e0, Aparallel, bparallel, 0.0, result);
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
 
-#if defined(OPTIMET_MPI) && !defined(OPTIMET_JUST_DO_SERIAL)
     elapsed += world.all_reduce(elapsed_seconds.count(), MPI_MAX);
-#else
-    elapsed += elapsed_seconds.count();
-#endif
   }
 
-#if defined(OPTIMET_MPI) && !defined(OPTIMET_JUST_DO_SERIAL)
   if(world.is_root()) {
-    std::cout << "---\n- fmm multiplication\n";
-#endif
+    std::cout << "---\n- scalapack multiplication\n";
 #ifdef __APPLE__
     std::cout << "    - os: Apple\n";
 #else
-  std::cout << "    - os: Unix\n";
+		std::cout << "    - os: Unix\n";
 #endif
 #ifdef __INTEL_COMPILER
     std::cout << "    - compiler: intel " << __VERSION__ << "\n";
 #elif defined(__APPLE_CC__)
-  std::cout << "    - compiler: clang " << __VERSION__ << "\n";
+		std::cout << "    - compiler: clang " << __VERSION__ << "\n";
 #elif defined(__GNUC__)
-  std::cout << "    - compiler: gnu " << __VERSION__ << "\n";
+		std::cout << "    - compiler: gnu " << __VERSION__ << "\n";
 #else
-  std::cout << "    - compiler: unknown " << __VERSION__ << "\n";
+		std::cout << "    - compiler: unknown " << __VERSION__ << "\n";
 #endif
     std::cout << "    - program: " << argv[0] << "\n";
-#if defined(OPTIMET_MPI) && !defined(OPTIMET_JUST_DO_SERIAL)
     std::cout << "    - nprocs: " << world.size() << "\n";
-#else
-  std::cout << "    - nprocs: " << 0 << "\n";
-#endif
     std::cout << "    - nharmonics: " << nMax << "\n";
     std::cout << "    - nobjects: " << nobjects << "\n";
     std::cout << "    - iterations: " << iterations << "\n";
     std::cout << "    - Total time: " << elapsed << " seconds\n";
     std::cout << "    - Timing: " << elapsed / iterations << " seconds\n";
     std::cout << "---\n";
-#if defined(OPTIMET_MPI) && !defined(OPTIMET_JUST_DO_SERIAL)
   }
-#endif
 
-#if defined(OPTIMET_MPI) && !defined(OPTIMET_JUST_DO_SERIAL)
+  scalapack::finalize(1);
   mpi::finalize();
-#endif
   return 0;
 }
