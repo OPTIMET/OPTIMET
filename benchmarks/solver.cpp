@@ -1,13 +1,15 @@
 #include "Excitation.h"
 #include "Geometry.h"
-#include "PreconditionedMatrix.h"
+#include "Result.h"
+#include "Run.h"
+#include "Solver.h"
 #include "Tools.h"
 #include "Types.h"
-#include "mpi/Communicator.h"
+#include "cmdl.h"
+#include "mpi/FastMatrixMultiply.h"
+#if defined(OPTIMET_MPI) && !defined(OPTIMET_JUST_DO_SERIAL)
 #include "mpi/Session.h"
-#include "scalapack/Context.h"
-#include "scalapack/InitExit.h"
-#include "scalapack/Matrix.h"
+#endif
 #include <chrono>
 #include <iostream>
 #include <sstream>
@@ -34,35 +36,35 @@ T find_arg(int argc, char *const argv[], std::string const &arg, T const &defaul
   return default_;
 }
 
-int main(int argc, char *const argv[]) {
+int main(int argc, char *argv[]) {
   using namespace optimet;
   mpi::init(argc, const_cast<const char **>(argv));
   mpi::Communicator const world;
 
-  auto const iterations = find_arg<t_int>(argc, argv, "iterations", 50);
-  auto const warmup = find_arg<t_int>(argc, argv, "warmup", 3);
-  auto const nobjects = find_arg<t_int>(argc, argv, "nobjects", 100);
-  auto const radius = find_arg<t_real>(argc, argv, "radius", 0.25);
-  auto const nMax = find_arg<t_int>(argc, argv, "nharmonics", 10);
-  auto const size = 2 * nobjects * nMax * (nMax + 2);
+  auto const parameters = parse_cmdl(argc, argv);
+  auto const iterations = parameters->get<t_int>("iterations", 10);
+  auto const warmup = parameters->get<t_int>("warmup", 2);
+  auto const nparticles = std::stoi(parameters->get("nparticles", "100"));
+  auto const radius = parameters->get<t_real>("radius", 0.25);
+  auto const nMax = std::stoi(parameters->get("nharmonics", "10"));
   ElectroMagnetic const elmag{13.1, 1.0};
   auto const length = (radius + 0.5) * default_length();
   Scatterer const scatterer = {{0, 0, 0}, elmag, radius * default_length(), nMax};
 
   // setup geometry
   auto const cell = fcc_cell();
-  t_int n = std::pow(nobjects, 1e0 / 3e0);
+  t_int n = std::pow(nparticles, 1e0 / 3e0);
   auto range = std::make_tuple(n, n, n);
-  if(n * n * n < nobjects)
+  if(n * n * n < nparticles)
     ++std::get<0>(range);
-  if((n + 1) * n * n < nobjects)
+  if((n + 1) * n * n < nparticles)
     ++std::get<1>(range);
   auto geometry = std::make_shared<Geometry>();
   n = 0;
   for(int i(0); i < std::get<0>(range); ++i)
     for(int j(0); j < std::get<1>(range); ++j)
       for(int k(0); k < std::get<2>(range); ++k, ++n) {
-        if(n == nobjects)
+        if(n == nparticles)
           break;
         Eigen::Matrix<t_real, 3, 1> pos = cell * Eigen::Matrix<t_real, 3, 1>(i, j, k) * length;
         geometry->pushObject({Tools::toSpherical({pos(0), pos(1), pos(2)}), scatterer.elmag,
@@ -78,34 +80,30 @@ int main(int argc, char *const argv[]) {
   excitation->populate();
   geometry->update(excitation);
 
-  if(static_cast<unsigned long long>(size * size) * 16ull >= 2ull * 1024ull * 1024ull * 1024ull) {
-    std::cerr << "Matrix too large for scalapack\n";
-    scalapack::finalize(1);
-    mpi::finalize();
-    return 1;
-  }
-  auto const N = geometry->scatterer_size();
-  auto const context = scalapack::Context::Squarest();
-  scalapack::Sizes const block_size = {64, 64};
-  auto const Q =
-      distributed_source_vector(source_vector(*geometry, excitation), context, block_size);
-  auto const S = preconditioned_scattering_matrix(*geometry, excitation, context, block_size);
-  scalapack::Matrix<t_complex> Aparallel(context, {N, N}, block_size);
-  if(Aparallel.size() > 0)
-    Aparallel.local() = S;
-  scalapack::Matrix<t_complex> bparallel(context, {N, 1}, block_size);
-  if(bparallel.local().size() > 0)
-    bparallel.local() = Q;
-  scalapack::Matrix<t_complex> result(context, {N, 1}, block_size);
-  if(result.local().size() > 0)
-    result.local() = Q;
+  Run input;
+  input.geometry = geometry;
+  input.excitation = excitation;
+  input.fmm_subdiagonals = parameters->get<t_int>(
+      "fmm_subdiagonals", std::max<int>(1, geometry->objects.size() / 2 - 2));
+  input.belos_params = parameters;
+	input.do_fmm = input.belos_params->get<bool>("do fmm", true);
+  if(input.do_fmm and input.belos_params->get("Solver", "scalapack") == "scalapack")
+    input.belos_params->set("Solver", "GMRES");
 
-  for(int i(0); i < warmup; ++i)
-    pdgemm(1e0, Aparallel, bparallel, 0.0, result);
+  Result result(input.geometry, input.excitation);
+  auto const solver = solver::factory(input);
+
+  for(int i(0); i < warmup; ++i) {
+    result.scatter_coef.fill(0);
+    result.internal_coef.fill(0);
+    solver->solve(result.scatter_coef, result.internal_coef);
+  }
   t_real elapsed(0);
   for(int i(0); i < iterations; ++i) {
+    result.scatter_coef.fill(0);
+    result.internal_coef.fill(0);
     auto start = std::chrono::high_resolution_clock::now();
-    pdgemm(1e0, Aparallel, bparallel, 0.0, result);
+    solver->solve(result.scatter_coef, result.internal_coef);
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
 
@@ -113,26 +111,29 @@ int main(int argc, char *const argv[]) {
   }
 
   if(world.is_root()) {
-    std::cout << "---\n- scalapack multiplication\n";
+    std::cout << "---\n- " << (input.do_fmm ? "fmm": "scalapack") << " solver\n";
 #ifdef __APPLE__
     std::cout << "    - os: Apple\n";
 #else
-		std::cout << "    - os: Unix\n";
+    std::cout << "    - os: Unix\n";
 #endif
 #ifdef __INTEL_COMPILER
     std::cout << "    - compiler: intel " << __VERSION__ << "\n";
 #elif defined(__APPLE_CC__)
-		std::cout << "    - compiler: clang " << __VERSION__ << "\n";
+    std::cout << "    - compiler: clang " << __VERSION__ << "\n";
 #elif defined(__GNUC__)
-		std::cout << "    - compiler: gnu " << __VERSION__ << "\n";
+    std::cout << "    - compiler: gnu " << __VERSION__ << "\n";
 #else
-		std::cout << "    - compiler: unknown " << __VERSION__ << "\n";
+    std::cout << "    - compiler: unknown " << __VERSION__ << "\n";
 #endif
     std::cout << "    - program: " << argv[0] << "\n";
     std::cout << "    - nprocs: " << world.size() << "\n";
     std::cout << "    - nharmonics: " << nMax << "\n";
-    std::cout << "    - nobjects: " << nobjects << "\n";
+    std::cout << "    - nobjects: " << nparticles << "\n";
     std::cout << "    - iterations: " << iterations << "\n";
+    std::cout << "    - tolerance: " << input.belos_params->get<t_real>("Convergence Tolerance")
+              << "\n";
+    std::cout << "    - solver: " << input.belos_params->get<std::string>("Solver") << "\n";
     std::cout << "    - Total time: " << elapsed << " seconds\n";
     std::cout << "    - Timing: " << elapsed / iterations << " seconds\n";
     std::cout << "---\n";

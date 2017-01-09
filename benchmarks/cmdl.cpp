@@ -8,7 +8,7 @@ namespace optimet {
 namespace {
 struct Cmdl {
   std::string solver = "scalapack";
-  t_real tolerance = 1e-8;
+  t_real tolerance = 1e-6;
   t_int maximum_restarts = 20;
   t_int itermax = 1000;
   t_int block_size = 1;
@@ -23,6 +23,8 @@ struct Cmdl {
   t_int subdiagonals = std::numeric_limits<t_int>::max();
   std::string nparticles = "1 4 8 12 16 20";
   std::string nharmonics = "4 8 12 16 20";
+  t_int iterations;
+  t_int warmup;
 };
 }
 Teuchos::RCP<Teuchos::ParameterList> parse_cmdl(int argc, char *argv[]) {
@@ -48,6 +50,8 @@ Teuchos::RCP<Teuchos::ParameterList> parse_cmdl(int argc, char *argv[]) {
   clp.setOption("subdiagonals", &cmdl.subdiagonals, "Number of subdiagonals involved in local mpi");
   clp.setOption("nparticles", &cmdl.nparticles, "Space separated number of particles to trial");
   clp.setOption("nharmonics", &cmdl.nharmonics, "Space separated number of harmonics to trial");
+  clp.setOption("iterations", &cmdl.iterations);
+  clp.setOption("warmup", &cmdl.warmup);
 
   std::string dummy;
   clp.setOption("benchmark_filter", &dummy);
@@ -69,10 +73,12 @@ Teuchos::RCP<Teuchos::ParameterList> parse_cmdl(int argc, char *argv[]) {
   result->set("Verbosity", cmdl.verbosity);
   result->set("radius", cmdl.radius);
   result->set("epsilon_r", t_complex(cmdl.epsilon_r, cmdl.epsilon_i));
-  result->set("do_fmm", cmdl.fmm);
+  result->set("do fmm", cmdl.fmm);
   result->set("fmm_subdiagonals", cmdl.subdiagonals);
   result->set("nparticles", cmdl.nparticles);
   result->set("nharmonics", cmdl.nharmonics);
+  result->set("iterations", cmdl.iterations);
+  result->set("warmup", cmdl.warmup);
   return result;
 }
 }

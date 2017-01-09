@@ -8,6 +8,9 @@ if(OPTIMET_MPI)
 
 	add_executable(parallel_scalapack_multiplication scalapack_multiplication.cpp)
 	target_link_libraries(parallel_scalapack_multiplication optilib ${library_dependencies})
+
+	add_executable(parallel_solver fmm_solver.cpp cmdl.cpp)
+	target_link_libraries(parallel_solver optilib ${library_dependencies})
 endif()
 
 add_executable(serial_fmm_multiplication fmm_multiplication.cpp)
