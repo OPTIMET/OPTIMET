@@ -106,8 +106,8 @@ int main(int argc, char *const argv[]) {
 
 #if defined(OPTIMET_MPI) && !defined(OPTIMET_JUST_DO_SERIAL)
   if(world.is_root()) {
-    std::cout << "---\n- fmm multiplication\n";
 #endif
+    std::cout << "- fmm multiplication\n";
 #ifdef __APPLE__
     std::cout << "    - os: Apple\n";
 #else

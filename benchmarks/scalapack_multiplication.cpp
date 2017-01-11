@@ -115,7 +115,7 @@ int main(int argc, char *const argv[]) {
   }
 
   if(world.is_root()) {
-    std::cout << "---\n- scalapack multiplication\n";
+    std::cout << "- scalapack multiplication\n";
 #ifdef __APPLE__
     std::cout << "    - os: Apple\n";
 #else
