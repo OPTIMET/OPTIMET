@@ -49,6 +49,8 @@ std::vector<t_uint> GraphCommunicator::neighborhood(int rank) const {
     return std::vector<t_uint>();
 
   int const N = neighborhood_size(rank);
+  if(N == 0)
+    return std::vector<t_uint>();
   std::vector<int> result(N);
   auto const error = MPI_Graph_neighbors(**this, rank, N, result.data());
   if(error != MPI_SUCCESS)
