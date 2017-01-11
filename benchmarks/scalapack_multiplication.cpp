@@ -113,28 +113,28 @@ int main(int argc, char *const argv[]) {
   }
 
   if(world.is_root()) {
-    std::cout << "- scalapack multiplication\n";
+    std::cout << "scalapack multiplication:\n";
 #ifdef __APPLE__
-    std::cout << "    - os: Apple\n";
+    std::cout << "    os: Apple\n";
 #else
-		std::cout << "    - os: Unix\n";
+		std::cout << "    os: Unix\n";
 #endif
 #ifdef __INTEL_COMPILER
-    std::cout << "    - compiler: intel " << __VERSION__ << "\n";
+    std::cout << "    compiler: intel " << __VERSION__ << "\n";
 #elif defined(__APPLE_CC__)
-		std::cout << "    - compiler: clang " << __VERSION__ << "\n";
+		std::cout << "    compiler: clang " << __VERSION__ << "\n";
 #elif defined(__GNUC__)
-		std::cout << "    - compiler: gnu " << __VERSION__ << "\n";
+		std::cout << "    compiler: gnu " << __VERSION__ << "\n";
 #else
-		std::cout << "    - compiler: unknown " << __VERSION__ << "\n";
+		std::cout << "    compiler: unknown " << __VERSION__ << "\n";
 #endif
-    std::cout << "    - program: " << argv[0] << "\n";
-    std::cout << "    - nprocs: " << world.size() << "\n";
-    std::cout << "    - nharmonics: " << nMax << "\n";
-    std::cout << "    - nobjects: " << nobjects << "\n";
-    std::cout << "    - iterations: " << iterations << "\n";
-    std::cout << "    - Total time: " << elapsed << " seconds\n";
-    std::cout << "    - Timing: " << elapsed / iterations << " seconds\n";
+    std::cout << "    program: " << argv[0] << "\n";
+    std::cout << "    nprocs: " << world.size() << "\n";
+    std::cout << "    nharmonics: " << nMax << "\n";
+    std::cout << "    nobjects: " << nobjects << "\n";
+    std::cout << "    iterations: " << iterations << "\n";
+    std::cout << "    Total time: " << elapsed << " seconds\n";
+    std::cout << "    Timing: " << elapsed / iterations << " seconds\n";
     std::cout << "---\n";
   }
 
