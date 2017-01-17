@@ -3,7 +3,7 @@
 
 #include "Types.h"
 
-#ifdef OPTIMET_MPI
+#ifdef OPTIMET_SCALAPACK
 #include "scalapack/Context.h"
 #include "scalapack/InitExit.h"
 #include <array>

@@ -1,0 +1,49 @@
+#ifndef OPTIMET_SCALAPACK_SOLVER_H
+#define OPTIMET_SCALAPACK_SOLVER_H
+
+#include "Types.h"
+
+#ifdef OPTIMET_SCALAPACK
+#include "PreconditionedMatrix.h"
+#include "PreconditionedMatrixSolver.h"
+#include "Solver.h"
+#include "scalapack/Context.h"
+
+namespace optimet {
+namespace solver {
+
+//! Use an actual matrix, and Eigen's Householder QR method
+class Scalapack : public PreconditionedMatrix {
+public:
+  Scalapack(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave,
+            mpi::Communicator const &comm = mpi::Communicator(),
+            scalapack::Context const &context = scalapack::Context::Squarest(),
+            scalapack::Sizes const &block_size = scalapack::Sizes{64, 64})
+      : PreconditionedMatrix(geometry, incWave, comm), context_(context), block_size_(block_size) {
+    update();
+  }
+  Scalapack(Run const &run)
+      : Scalapack(run.geometry, run.excitation, run.communicator, run.context,
+                  {run.parallel_params.block_size, run.parallel_params.block_size}) {}
+
+  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const override;
+  void update() override;
+
+  //! Scalapack context used during computation
+  scalapack::Context context() const { return context_; }
+  //! Block size into which to separate the problem
+  scalapack::Sizes const &block_size() const { return block_size_; }
+
+protected:
+  //! Scalapack context to use during communication
+  scalapack::Context context_;
+  //! Block-sizes for scalapack
+  scalapack::Sizes block_size_;
+
+  //! Creates scalapack matrix wrappers
+  std::tuple<scalapack::Matrix<t_complex>, scalapack::Matrix<t_complex>> parallel_input() const;
+};
+}
+}
+#endif
+#endif

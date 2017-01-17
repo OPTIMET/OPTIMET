@@ -12,31 +12,18 @@
 #include <fstream>
 #include <iostream>
 
+namespace optimet {
 int Simulation::run() {
 
   // Read the case file
-  Run run;
+  auto run = simulation_input(caseFile + ".xml");
 #ifdef OPTIMET_MPI
-  run.parallel_params.grid = optimet::scalapack::squarest_largest_grid(communicator().size());
+  run.parallel_params.grid = scalapack::squarest_largest_grid(communicator().size());
+  run.communicator = communicator();
 #endif
 
-  Reader reader(&run);
-  if(reader.readSimulation(caseFile + ".xml"))
-    return 1;
-
-// Initialize the solver
-#if defined(OPTIMET_BELOS)
-  optimet::scalapack::Context context(run.parallel_params.grid);
-  optimet::Solver solver(&(run.geometry), run.excitation, O3DSolverIndirect, run.nMax,
-                         context, run.belos_params);
-  solver.block_size({run.parallel_params.block_size, run.parallel_params.block_size});
-#elif defined(OPTIMET_MPI)
-  optimet::scalapack::Context context(run.parallel_params.grid);
-  optimet::Solver solver(&(run.geometry), run.excitation, O3DSolverIndirect, run.nMax, context);
-  solver.block_size({run.parallel_params.block_size, run.parallel_params.block_size});
-#else
-  optimet::Solver solver(&(run.geometry), run.excitation, O3DSolverIndirect, run.nMax);
-#endif
+  // Initialize the solver
+  auto const solver = optimet::solver::factory(run);
 
   switch(run.outputType) {
   case 0:
@@ -61,11 +48,11 @@ int Simulation::run() {
   return 0;
 }
 
-void Simulation::field_simulation(Run &run, optimet::Solver &solver) {
+void Simulation::field_simulation(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
   // Determine the simulation type and proceed accordingly
 
-  optimet::Result result(&(run.geometry), run.excitation, run.nMax);
-  solver.solve(result.scatter_coef, result.internal_coef, communicator());
+  Result result(run.geometry, run.excitation);
+  solver->solve(result.scatter_coef, result.internal_coef);
 
   if(communicator().rank() == communicator().root_id()) {
     Output oFile(caseFile + ".h5");
@@ -93,7 +80,7 @@ void Simulation::field_simulation(Run &run, optimet::Solver &solver) {
   }
 }
 
-void Simulation::scan_wavelengths(Run &run, optimet::Solver &solver) {
+void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
   std::ofstream outASec, outESec;
 
   if(communicator().rank() == communicator().root_id()) {
@@ -117,11 +104,11 @@ void Simulation::scan_wavelengths(Run &run, optimet::Solver &solver) {
     std::cout << "Solving for Lambda = " << lam << std::endl;
 
     run.excitation->updateWavelength(lam);
-    run.geometry.update(run.excitation);
-    solver.update(&(run.geometry), run.excitation, run.nMax);
+    run.geometry->update(run.excitation);
+    solver->update(run);
 
-    optimet::Result result(&(run.geometry), run.excitation, run.nMax);
-    solver.solve(result.scatter_coef, result.internal_coef, communicator());
+    Result result(run.geometry, run.excitation);
+    solver->solve(result.scatter_coef, result.internal_coef);
 
     if(communicator().rank() == communicator().root_id()) {
       outASec << lam << "\t" << result.getAbsorptionCrossSection() << std::endl;
@@ -135,7 +122,7 @@ void Simulation::scan_wavelengths(Run &run, optimet::Solver &solver) {
   }
 }
 
-void Simulation::radius_scan(Run &run, optimet::Solver &solver) {
+void Simulation::radius_scan(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
   std::ofstream outASec, outESec;
 
   if(communicator().rank() == communicator().root_id()) {
@@ -158,23 +145,23 @@ void Simulation::radius_scan(Run &run, optimet::Solver &solver) {
 
     std::cout << "Solving for R = " << rad << std::endl;
 
-    for(size_t k = 0; k < run.geometry.objects.size(); k++) {
-      run.geometry.updateRadius(rad, k);
+    for(size_t k = 0; k < run.geometry->objects.size(); k++) {
+      run.geometry->updateRadius(rad, k);
     }
 
-    if(run.geometry.structureType == 1) {
-      run.geometry.rebuildStructure();
+    if(run.geometry->structureType == 1) {
+      run.geometry->rebuildStructure();
     }
 
-    if(!run.geometry.is_valid()) {
+    if(!run.geometry->is_valid()) {
       std::cerr << "Geometry no longer valid!";
       exit(1);
     }
 
-    solver.update(&(run.geometry), run.excitation, run.nMax);
+    solver->update(run);
 
-    optimet::Result result(&(run.geometry), run.excitation, run.nMax);
-    solver.solve(result.scatter_coef, result.internal_coef, communicator());
+    Result result(run.geometry, run.excitation);
+    solver->solve(result.scatter_coef, result.internal_coef);
 
     if(communicator().rank() == communicator().root_id()) {
       outASec << rad << "\t" << result.getAbsorptionCrossSection() << std::endl;
@@ -188,7 +175,8 @@ void Simulation::radius_scan(Run &run, optimet::Solver &solver) {
   }
 }
 
-void Simulation::radius_and_wavelength_scan(Run &run, optimet::Solver &solver) {
+void Simulation::radius_and_wavelength_scan(Run &run,
+                                            std::shared_ptr<solver::AbstractSolver> solver) {
   std::ofstream outASec, outESec, outParams;
 
   if(communicator().rank() == communicator().root_id()) {
@@ -220,24 +208,24 @@ void Simulation::radius_and_wavelength_scan(Run &run, optimet::Solver &solver) {
       std::cout << "Solving for Lambda = " << lam << " and R =" << rad << std::endl;
 
       run.excitation->updateWavelength(lam);
-      run.geometry.update(run.excitation);
-      for(size_t k = 0; k < run.geometry.objects.size(); k++) {
-        run.geometry.updateRadius(rad, k);
+      run.geometry->update(run.excitation);
+      for(size_t k = 0; k < run.geometry->objects.size(); k++) {
+        run.geometry->updateRadius(rad, k);
       }
 
-      if(run.geometry.structureType == 1) {
-        run.geometry.rebuildStructure();
+      if(run.geometry->structureType == 1) {
+        run.geometry->rebuildStructure();
       }
 
-      if(!run.geometry.is_valid()) {
+      if(!run.geometry->is_valid()) {
         std::cerr << "Geometry no longer valid!";
         exit(1);
       }
 
-      solver.update(&(run.geometry), run.excitation, run.nMax);
+      solver->update(run);
 
-      optimet::Result result(&(run.geometry), run.excitation, run.nMax);
-      solver.solve(result.scatter_coef, result.internal_coef, communicator());
+      Result result(run.geometry, run.excitation);
+      solver->solve(result.scatter_coef, result.internal_coef);
 
       if(communicator().rank() == communicator().root_id()) {
         outASec << result.getAbsorptionCrossSection() << "\t";
@@ -261,11 +249,11 @@ void Simulation::radius_and_wavelength_scan(Run &run, optimet::Solver &solver) {
   }
 }
 
-void Simulation::coefficients(Run &run, optimet::Solver &solver) {
+void Simulation::coefficients(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
   // Scattering coefficients requests
 
-  optimet::Result result(&(run.geometry), run.excitation, run.nMax);
-  solver.solve(result.scatter_coef, result.internal_coef, communicator());
+  Result result(run.geometry, run.excitation);
+  solver->solve(result.scatter_coef, result.internal_coef);
 
   if(communicator().rank() == communicator().root_id()) {
     std::ofstream outPCoef(caseFile + "_pCoefficients.dat");
@@ -287,4 +275,5 @@ void Simulation::coefficients(Run &run, optimet::Solver &solver) {
 int Simulation::done() {
   // Placeholder method. Not needed at the moment.
   return 0;
+}
 }

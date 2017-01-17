@@ -50,3 +50,35 @@ Scatterer::getTLocal(optimet::t_real omega_, ElectroMagnetic const &bground) con
 
   return result;
 }
+
+optimet::Vector<optimet::t_complex>
+Scatterer::getIaux(optimet::t_real omega_, ElectroMagnetic const &bground) const {
+  auto const k_s = omega_ * std::sqrt(elmag.epsilon * elmag.mu);
+  auto const k_b = omega_ * std::sqrt(bground.epsilon * bground.mu);
+  auto const rho = k_s / k_b;
+  auto const r_0 = k_b * radius;
+  auto const mu_j = elmag.mu;
+  auto const mu_0 = bground.mu;
+
+  auto Jdata = optimet::bessel<optimet::Bessel>(r_0, nMax);
+  auto const Jrho = optimet::bessel<optimet::Bessel>(rho * r_0, nMax);
+
+  optimet::Vector<optimet::t_complex> result(2 * nMax * (nMax + 2));
+  auto TE = result.head(nMax * (nMax + 2));
+  auto TM = result.tail(nMax * (nMax + 2));
+  for(auto n = 1, i = 0; n <= nMax; ++n) {
+    // obtain Riccati-Bessel functions
+    auto const psi = r_0 * std::get<0>(Jdata)[n];
+    auto const dpsi = r_0 * std::get<1>(Jdata)[n] + std::get<0>(Jdata)[n];
+    auto const psirho = r_0 * rho * std::get<0>(Jrho)[n];
+    auto const dpsirho = r_0 * rho * std::get<1>(Jrho)[n] + std::get<0>(Jrho)[n];
+
+    for(auto m = -n; m <= n; ++m, ++i) {
+      TE(i) = (mu_j * rho) / (mu_0 * rho * dpsirho * psi - mu_j * psirho * dpsi) *
+              std::complex<double>(0., 1.);
+      TM(i) = (mu_j * rho) / (mu_j * psi * dpsirho - mu_0 * rho * psirho * dpsi) *
+              std::complex<double>(0., 1.);
+    }
+  }
+  return result;
+}

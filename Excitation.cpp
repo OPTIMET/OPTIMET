@@ -14,8 +14,7 @@ namespace optimet {
 Excitation::Excitation(unsigned long type, SphericalP<std::complex<double>> Einc,
                        Spherical<double> waveKInc, int nMax)
     : Einc(Einc), vKInc(waveKInc), nMax(nMax), type(type), dataIncAp(Tools::iteratorMax(nMax)),
-      dataIncBp(Tools::iteratorMax(nMax)), waveK(waveKInc.rrr),
-      lambda(2 * consPi / std::real(waveKInc.rrr)), omega(consC * std::real(waveKInc.rrr)) {}
+      dataIncBp(Tools::iteratorMax(nMax)), waveK(waveKInc.rrr) {}
 
 void Excitation::update(unsigned long type_, SphericalP<std::complex<double>> Einc_,
                         Spherical<double> vKInc_, int nMax_) {
@@ -25,9 +24,6 @@ void Excitation::update(unsigned long type_, SphericalP<std::complex<double>> Ei
   nMax = nMax_;
 
   waveK = vKInc.rrr;
-  lambda = 2 * consPi / waveK.real();
-  omega = consC * waveK.real();
-
   populate();
 }
 
@@ -42,14 +38,14 @@ int Excitation::populate() {
 
     SphericalP<std::complex<double>> conjAux(std::conj(C_local.rrr), std::conj(C_local.the),
                                              std::conj(C_local.phi)); // std::complex conjugate of C
-    dataIncAp[p] = 4 * consPi * std::pow(-1.0, p.second) * std::pow(consCi, p.first) *
+    dataIncAp[p] = 4 * constant::pi * std::pow(-1.0, p.second) * std::pow(consCi, p.first) *
                    coef.dn(p.first) * (conjAux * Einc) *
                    std::exp(consCmi * (double)p.second * vKInc.phi);
 
     conjAux =
         SphericalP<std::complex<double>>(std::conj(B_local.rrr), std::conj(B_local.the),
                                          std::conj(B_local.phi)); // std::complex conjugate of B
-    dataIncBp[p] = 4 * consPi * std::pow(-1.0, p.second) * std::pow(consCi, p.first - 1) *
+    dataIncBp[p] = 4 * constant::pi * std::pow(-1.0, p.second) * std::pow(consCi, p.first - 1) *
                    coef.dn(p.first) * (conjAux * Einc) *
                    std::exp(consCmi * (double)p.second * vKInc.phi);
   }
@@ -102,7 +98,7 @@ int Excitation::getIncLocal(Spherical<double> point_, std::complex<double> *Inc_
 
 void Excitation::updateWavelength(double lambda_) {
   Spherical<double> vKInc_local = vKInc;
-  vKInc_local.rrr = 2 * consPi / lambda_;
+  vKInc_local.rrr = 2 * constant::pi / lambda_;
 
   update(type, Einc, vKInc_local, nMax);
 }

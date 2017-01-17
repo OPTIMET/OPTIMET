@@ -4,7 +4,8 @@
 #include "Aliases.h"
 #include "Geometry.h"
 #include "Scatterer.h"
-#include "Solver.h"
+#include "ScalapackSolver.h"
+#include "MatrixBelosSolver.h"
 #include "Tools.h"
 #include "Types.h"
 #include "constants.h"
@@ -13,13 +14,13 @@
 using namespace optimet;
 
 TEST_CASE("Scalapack vs Belos") {
-  Geometry geometry;
+  auto geometry = std::make_shared<Geometry>();
   // spherical coords, ε, μ, radius, nmax
   auto const nSpheres = 10;
   auto const nHarmonics = 10;
   for(t_uint i(0); i < 10; ++i) {
     t_real const ii(i);
-    geometry.pushObject({{ii * 1.5 * 2e-6, 0, 0},
+    geometry->pushObject({{ii * 1.5 * 2e-6, 0, 0},
                          {0.45e0 + 0.1 * ii, 1.1e0},
                          (0.5 + 0.01 * ii) * 2e-6,
                          nHarmonics});
@@ -32,14 +33,13 @@ TEST_CASE("Scalapack vs Belos") {
   auto excitation =
       std::make_shared<Excitation>(0, Tools::toProjection(vKinc, Eaux), vKinc, nHarmonics);
   excitation->populate();
-  geometry.update(excitation);
+  geometry->update(excitation);
 
-  Solver solver(&geometry, excitation, O3DSolverIndirect, nHarmonics);
+  optimet::solver::Scalapack const scalapack_solver(geometry, excitation);
+  optimet::Result scalapack(geometry, excitation);
+  scalapack_solver.solve(scalapack.scatter_coef, scalapack.internal_coef);
 
-  optimet::Result scalapack(&geometry, excitation, nHarmonics);
-  solver.belos_parameters()->set("Solver", "scalapack");
-  solver.solve(scalapack.scatter_coef, scalapack.internal_coef);
-
+  optimet::solver::MatrixBelos solver(geometry, excitation);
   solver.belos_parameters()->set<int>("Num Blocks", solver.scattering_size());
   solver.belos_parameters()->set("Maximum Iterations", 4000);
   solver.belos_parameters()->set("Convergence Tolerance", 1.0e-14);
@@ -65,10 +65,10 @@ TEST_CASE("Scalapack vs Belos") {
       "BLOCK GMRES",
       "FIXED POINT",
   };
-  for(auto const name : names) {
+  for(auto const name : {"GMRES", "CG"}) {
     SECTION(name) {
       solver.belos_parameters()->set("Solver", name);
-      optimet::Result belos(&geometry, excitation, nHarmonics);
+      optimet::Result belos(geometry, excitation);
       solver.solve(belos.scatter_coef, belos.internal_coef);
 
       auto const scatter_tol = 1e-6 * std::max(1., scalapack.scatter_coef.array().abs().maxCoeff());

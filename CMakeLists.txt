@@ -44,6 +44,14 @@ if(dompi)
   # We need to check integer architecture
   include(DetectIntegerArchitecture)
   DetectIntegerArchitecture(OPTIMET)
+else()
+  file(GLOB EXCLUDE ScalapackSolver.cpp MatrixBelosSolver.cpp FMMBelosSolver.cpp)
+  list(REMOVE_ITEM SRC ${EXCLUDE})
+endif()
+
+if(NOT OPTIMET_BELOS)
+  file(GLOB EXCLUDE MatrixBelosSolver.cpp FMMBelosSolver.cpp)
+  list(REMOVE_ITEM SRC ${EXCLUDE})
 endif()
 
 # configure a file with some build defaults
@@ -58,7 +66,7 @@ endif()
 set(library_dependencies
   ${GSL_LIBRARIES} ${BOOST_LIBRARIES} ${HDF5_C_LIBRARIES} ${F2C_LIBRARIES}
   ${Belos_LIBRARIES}
-)
+  )
 if(dompi)
   list(APPEND library_dependencies ${MPI_LIBRARIES} ${SCALAPACK_LIBRARIES})
 endif()

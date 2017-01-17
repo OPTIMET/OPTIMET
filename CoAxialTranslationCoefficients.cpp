@@ -83,7 +83,7 @@ CachedCoAxialRecurrence::offdiagonal_recurrence(t_int n, t_int m, t_int l) {
   // gumerov 4.80
   using coefficient::b;
   assert(m != 0 and n != 0 and m != n);
-  return (+coeff(n - 1, m - 1, l - 1) * b<Real>(l, -m) +
+  return (coeff(n - 1, m - 1, l - 1) * b<Real>(l, -m) +
           coeff(n - 2, m, l) * (b<Real>(n - 1, m - 1)) -
           coeff(n - 1, m - 1, l + 1) * b<Real>(l + 1, m - 1)) /
          b<Real>(n, -m);
@@ -93,9 +93,8 @@ CachedCoAxialRecurrence::Complex CachedCoAxialRecurrence::zonal_recurrence(t_int
   // Gumerov 4.79 i.e. m = 0
   using coefficient::a;
   assert(l > 0 and n > 0 and l >= n);
-  return (coeff(n - 1, 0, l - 1) * a<Real>(l - 1, 0) //
-          + coeff(n - 2, 0, l) * a<Real>(n - 2, 0)   //
-          - coeff(n - 1, 0, l + 1) * a<Real>(l, 0)) /
+  return (coeff(n - 1, 0, l - 1) * a<Real>(l - 1, 0) + coeff(n - 2, 0, l) * a<Real>(n - 2, 0) -
+          coeff(n - 1, 0, l + 1) * a<Real>(l, 0)) /
          a<Real>(n - 1, 0);
 }
 

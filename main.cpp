@@ -13,7 +13,7 @@ int main(int argc, const char *argv[]) {
     std::cerr << "Usage: " << argv[0] << " <path/to/xml/file/without/extension>" << std::endl;
     return 1;
   }
-  Simulation simulation(argv[1]);
+  optimet::Simulation simulation(argv[1]);
   simulation.run();
   simulation.done();
 

@@ -3,7 +3,7 @@
 
 #include "Types.h"
 
-#ifdef OPTIMET_MPI
+#ifdef OPTIMET_SCALAPACK
 namespace optimet {
 namespace scalapack {
 //! Rank of this proc

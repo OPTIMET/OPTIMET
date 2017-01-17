@@ -5,9 +5,9 @@
 #include "Types.h"
 #include "mpi/Collectives.h"
 #include "mpi/Communicator.h"
+#include "scalapack/BroadcastToOutOfContext.h"
 #include "scalapack/InitExit.h"
 #include "scalapack/LinearSystemSolver.h"
-#include "Solver.h"
 
 using namespace optimet;
 
@@ -100,12 +100,12 @@ TEST_CASE("Shuttle data to out-of-context procs") {
     SECTION(sstr.str()) {
       scalapack::Context const context(1, world.size() - i);
       auto const is_context_root = context.is_valid() and context.row() == 0 and context.col() == 0;
-      auto const root_rank = world.all_reduce(is_context_root ? world.rank(): 0, MPI_SUM);
-      CHECK(i == world.all_reduce<int>(context.is_valid() ? 0: 1, MPI_SUM));
+      auto const root_rank = world.all_reduce(is_context_root ? world.rank() : 0, MPI_SUM);
+      CHECK(i == world.all_reduce<int>(context.is_valid() ? 0 : 1, MPI_SUM));
       auto const local = Vector<t_real>::Random(input.size()).eval();
-      auto inout = world.rank() == root_rank ? input: local;
+      auto inout = world.rank() == root_rank ? input : local;
       broadcast_to_out_of_context(inout, context, world);
-      CHECK(inout.isApprox(world.rank() == root_rank or not context.is_valid() ? input: local));
+      CHECK(inout.isApprox(world.rank() == root_rank or not context.is_valid() ? input : local));
     }
   }
 }
