@@ -55,7 +55,7 @@ Installation
 ------------
 
 The build system is [CMake](https://cmake.org/). It can generate a build environment from a fair
-number of systems, from Unix makefiles to Visual Studio projects.
+number of systems, from Unix makefiles to Xcode projects.
 
 The cannonical usage is as follows:
 
@@ -77,3 +77,17 @@ installation mechanism.
 The benchmarks and unit-tests (when compiled) are in the `benchmarks` and `unittests` subdirectories
 of the build directory. They consists in a number of executables which can be invoked manually.
 Alternatively, the tests can be invoked from the build directory with `make test` or `ctest .`.
+
+Supported Platforms
+-------------------
+
+Optimet is routinely tested on:
+
+- Linux
+- MacOS
+
+It is known to compile with:
+
+- gnu-g++ > 4.8
+- clang
+- intel > 13.0
