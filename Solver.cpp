@@ -22,7 +22,7 @@ std::shared_ptr<AbstractSolver> factory(Run const &run) {
   if((run.belos_params()->get<std::string>("Solver") == "scalapack" or
       run.belos_params()->get<std::string>("Solver") == "eigen") and
      run.do_fmm)
-    throw std::runtime_error("Cannot run FMM with scalapack solver");
+    throw std::runtime_error("Cannot run FMM with scalapack or eigen solver");
   if(run.belos_params()->get<std::string>("Solver") == "eigen")
     return std::make_shared<PreconditionedMatrix>(run);
   if(run.belos_params()->get<std::string>("Solver") == "scalapack")
