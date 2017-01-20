@@ -103,7 +103,7 @@ operator()(Eigen::MatrixBase<T0> const &input, Eigen::MatrixBase<T1> const &out)
   auto const with_n0 = std::abs(std::sqrt(nr) - std::lround(std::sqrt(nr))) <
                        std::abs(std::sqrt(nr + 1) - std::lround(std::sqrt(nr + 1)));
   t_int const N = std::lround(std::sqrt(with_n0 ? nr : nr + 1)) - 1;
-  auto const min_n = with_n0 ? 0 : 1;
+  t_int const min_n = with_n0 ? 0 : 1;
   assert((with_n0 and (N + 1) * (N + 1) == input.rows()) or N * (N + 2) == input.rows());
   const_cast<Eigen::MatrixBase<T1> &>(out).resize(input.rows(), input.cols());
   const_cast<Eigen::MatrixBase<T1> &>(out).fill(0);
@@ -112,9 +112,9 @@ operator()(Eigen::MatrixBase<T0> const &input, Eigen::MatrixBase<T1> const &out)
                                [](t_int n, t_int m) { return n * (n + 1) + m - 1; };
   assert(index(min_n, -min_n) == 0);
   assert(index(N, N) + 1 == input.rows());
-  for(auto n = min_n, i = 0; n <= N; ++n)
-    for(auto m = -n; m <= n; ++m, ++i)
-      for(auto l = std::max(std::abs(m), min_n); l <= N; ++l)
+  for(t_int n = min_n, i = 0; n <= N; ++n)
+    for(t_int m = -n; m <= n; ++m, ++i)
+      for(t_int l = std::max(std::abs(m), min_n); l <= N; ++l)
         const_cast<Eigen::MatrixBase<T1> &>(out).row(index(l, m)) += operator()(n, m, l) *
                                                                      input.row(i);
 }
