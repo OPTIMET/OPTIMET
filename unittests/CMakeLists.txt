@@ -41,7 +41,7 @@ if(dompi)
       NAME ${testname}
       COMMAND
       ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS}
-      test_${testname} ${arguments}
+      $<TARGET_FILE:test_${testname}> ${arguments}
       )
     set_tests_properties(${testname} PROPERTIES LABELS "catch;mpi")
   endfunction()
