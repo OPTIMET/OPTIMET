@@ -67,6 +67,7 @@ void wait_on_delete(MPI_Request *request) {
   auto const error = MPI_Wait(request, &result);
   if(error != MPI_SUCCESS)
     throw std::runtime_error("Got an error when waiting for request to complete");
+  delete request;
 }
 }
 Request mpi_request_wait_on_delete(MPI_Request *const request) {
