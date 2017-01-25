@@ -7,6 +7,8 @@ It accepts several linear-system solvers, including a direct solver from
 [Scalapack](http://www.netlib.org/scalapack/), and the iterative solvers from
 [Belos](https://trilinos.org/packages/belos/). Optimet is a c++11 program.
 
+Optimet is distributed under the GNU Public License.
+
 Usage
 =====
 
