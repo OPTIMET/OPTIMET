@@ -1,9 +1,25 @@
+// (C) University College London 2017
+// This file is part of Optimet, licensed under the terms of the GNU Public License
+//
+// Optimet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Optimet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Optimet. If not, see <http://www.gnu.org/licenses/>.
+
 #ifndef SCATTERER_H_
 #define SCATTERER_H_
 
-#include "Types.h"
 #include "ElectroMagnetic.h"
 #include "Spherical.h"
+#include "Types.h"
 #include <vector>
 
 /**
@@ -34,6 +50,22 @@ public:
   Scatterer(Spherical<double> vR_, ElectroMagnetic elmag_, double radius_, int nMax_);
 
   /**
+   * Initialization constructor for Scatterer.
+   * Creates a sphere scatterer centered in vR with properties elmag and
+   * radius r.
+   * @param pos the position in cartesian coordinates
+   * @param elmag_ the electromagnetic properties of the scatterer.
+   * @param radius_ the radius of the virtual sphere.
+   * @param nMax_ the maximum value of the n iterator.
+   * @see init()
+   */
+  template <class T>
+  Scatterer(Eigen::MatrixBase<T> const &pos, ElectroMagnetic elmag, double radius, int nMax)
+      : Scatterer(Spherical<optimet::t_real>::toSpherical(
+                      Cartesian<optimet::t_real>(pos[0], pos[1], pos[2])),
+                  elmag, radius, nMax) {}
+
+  /**
    * Default scatterer destructor.
    */
   virtual ~Scatterer();
@@ -52,8 +84,12 @@ public:
    * @param bground background electromagnetic medium
    * @return 0 if successful, 1 otherwise.
    */
-  optimet::Matrix<optimet::t_complex>
+  optimet::Vector<optimet::t_complex>
   getTLocal(optimet::t_real omega_, ElectroMagnetic const &bground) const;
+
+  //! Coefficients for field inside a sphere
+  optimet::Vector<optimet::t_complex>
+  getIaux(optimet::t_real omega_, ElectroMagnetic const &bground) const;
 };
 
 #endif /* SCATTERER_H_ */

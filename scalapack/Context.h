@@ -1,16 +1,32 @@
+// (C) University College London 2017
+// This file is part of Optimet, licensed under the terms of the GNU Public License
+//
+// Optimet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Optimet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Optimet. If not, see <http://www.gnu.org/licenses/>.
+
 #ifndef OPTIMET_SCALAPACK_CONTEXT_H
 #define OPTIMET_SCALAPACK_CONTEXT_H
 #include "Types.h"
 
-#include <memory>
-#include "scalapack/Parameters.h"
-#include "scalapack/InitExit.h"
 #include "scalapack/Collectives.h"
+#include "scalapack/InitExit.h"
+#include "scalapack/Parameters.h"
+#include <memory>
 
 namespace optimet {
 namespace scalapack {
 
-#ifdef OPTIMET_MPI
+#ifdef OPTIMET_SCALAPACK
 //! A context for a distributed array
 class Context {
   //! Holds actual data associated with the context
@@ -80,6 +96,11 @@ public:
   }
   //! Creates a serial process for process (0, 0)
   Context serial() const { return serial(0, 0); }
+  //! Creates a serial process for process (0, 0)
+  Context serial(int pnum) const {
+    auto const coords = process_coordinates(pnum);
+    return serial(coords.row, coords.col);
+  }
   //! System process number for this context
   t_uint process_number() const { return process_number(row(), col()); }
   //! System process number for given row and colum

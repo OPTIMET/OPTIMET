@@ -1,81 +1,35 @@
+// (C) University College London 2017
+// This file is part of Optimet, licensed under the terms of the GNU Public License
+//
+// Optimet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Optimet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Optimet. If not, see <http://www.gnu.org/licenses/>.
+
 #ifndef READER_H_
 #define READER_H_
 
-#include <string>
 #include "Run.h"
 #include "pugi/pugixml.hpp"
+#include <string>
 
 #ifdef OPTIMET_BELOS
 #include <Teuchos_ParameterList.hpp>
 #endif
 
-/**
- * The Reader class is used to read a simulation case file.
- * Provides an interface for reading a Run object.
- */
-
-class Reader {
-private:
-  Run *run;                     /**< Pointer to the Run object. */
-  pugi::xml_document inputFile; /**< The input file. */
-  bool initDone;                /**< Specifies if object was initialized. */
-public:
-  /**
-   * Default constructor for the Reader class.
-   * Does NOT initialize the object.
-   */
-  Reader();
-
-  /**
-   * Initializing constructor for the Reader class.
-   * @param geometry_ the pointer to a geometry.
-   */
-  Reader(Run *run_);
-
-  /**
-   * Default destructor for the Reader class.
-   */
-  virtual ~Reader();
-
-  /**
-   * Initializes the Reader class.
-   * @param geometry_ the pointer to a geometry.
-   */
-  void init(Run *run_);
-
-  /**
-   * Read and validate a geometry into the geometry variable.
-   * @return 0 geometry was read and validate, 1 otherwise
-   */
-  int readGeometry();
-
-  /**
-   * Read an incoming excitation.
-   * @return 0 if valid, 1 otherwise.
-   */
-  int readExcitation();
-
-  /**
-   * Read a pre-defined geometric structure.
-   * @param geo_node_ the geometry node.
-   * @return number of objects pushed, 0 if failure.
-   */
-  int readStructure(pugi::xml_node geo_node_);
-
-  int readSimulation(std::string const &fileName_);
-
-  /**
-   * Read the output requests.
-   * @return 0 if valid, 1 otherwise.
-   */
-  int readOutput();
-
-  //! Reads Teuchos::ParameterList from XML
-  void readParameterList(pugi::xml_document const & root_node);
-
-protected:
-  Scatterer readSphericalScatterer(pugi::xml_node const &node);
-  void readParallel(const pugi::xml_node &, optimet::scalapack::Parameters &);
-};
+namespace optimet {
+//! Reads simulation configuration from input
+Run simulation_input(std::string const &filename);
+//! Reads simulation configuration from string buffer
+Run simulation_input(std::istream &buffer);
+}
 
 #endif /* READER_H_ */

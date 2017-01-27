@@ -1,3 +1,19 @@
+// (C) University College London 2017
+// This file is part of Optimet, licensed under the terms of the GNU Public License
+//
+// Optimet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Optimet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Optimet. If not, see <http://www.gnu.org/licenses/>.
+
 #ifndef OPTIMET_SCALAPACK_LINEAR_SYSTEM_SOLVER_HPP_
 #define OPTIMET_SCALAPACK_LINEAR_SYSTEM_SOLVER_HPP_
 
@@ -106,6 +122,14 @@ gmres_linear_system(Matrix<SCALARA> const &A, Matrix<SCALARB> const &b,
   if(not problem->setProblem())
     throw std::runtime_error("Could not setup up Belos problem");
   solver->setProblem(problem);
+
+  // Print out parameters for given verbosity
+  if(parameters->get<int>("Verbosity", 0) & Belos::MsgType::FinalSummary) {
+    auto const out = parameters->get<Teuchos::RCP<std::ostream>>("Output Stream",
+                                                                 Teuchos::rcp(&std::cout, false));
+    if(splitcomm.rank() == 0)
+      solver->getCurrentParameters()->print(*out);
+  }
   // Attempt to solve the linear system.  result == Belos::Converged
   // means that it was solved to the desired tolerance.  This call
   // overwrites X with the computed approximate solution.

@@ -1,3 +1,19 @@
+// (C) University College London 2017
+// This file is part of Optimet, licensed under the terms of the GNU Public License
+//
+// Optimet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Optimet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Optimet. If not, see <http://www.gnu.org/licenses/>.
+
 #ifndef TOOLS_H_
 #define TOOLS_H_
 
@@ -161,16 +177,6 @@ public:
   static void pushToMatrix(std::complex<double> **T_small_, long rows_,
                            long columns_, std::complex<double> **T_large_,
                            long row_index_, long column_index_);
-
-  /**
-   * Returns the value of an Associated Legendre function \f$P_n^m(x)\f$.
-   * Static member. Insures m < 0 compatibility.
-   * @param argument_ the argument x.
-   * @param orderN_ the order n.
-   * @param orderM_ the order m.
-   * @return the Associated Legendre function.
-   */
-  static double getLegendre(double argument_, int orderN_, int orderM_);
 
   /**
    * Allocate space for a 2D matrix.

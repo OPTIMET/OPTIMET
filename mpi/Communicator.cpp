@@ -1,3 +1,19 @@
+// (C) University College London 2017
+// This file is part of Optimet, licensed under the terms of the GNU Public License
+//
+// Optimet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Optimet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Optimet. If not, see <http://www.gnu.org/licenses/>.
+
 #include <exception>
 #include <mpi.h>
 #include "mpi/Communicator.h"
@@ -13,14 +29,22 @@ void Communicator::delete_comm(Communicator::Impl *const impl) {
 }
 
 Communicator::Communicator(MPI_Comm const& comm) : impl(nullptr) {
+  reset(&comm);
+}
+
+void Communicator::reset(MPI_Comm const * const comm) {
+  if(comm == nullptr) {
+    impl.reset();
+    return;
+  }
   if(not initialized())
     throw std::runtime_error("Mpi was not initialized");
 
   int size, rank;
-  MPI_Comm_size(comm, &size);
-  MPI_Comm_rank(comm, &rank);
+  MPI_Comm_size(*comm, &size);
+  MPI_Comm_rank(*comm, &rank);
 
-  Impl const data{comm, static_cast<t_uint>(size), static_cast<t_uint>(rank)};
+  Impl const data{*comm, static_cast<t_uint>(size), static_cast<t_uint>(rank)};
   impl = std::shared_ptr<Impl const>(new Impl(data), &delete_comm);
   if(impl)
     increment_ref();

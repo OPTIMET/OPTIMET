@@ -1,11 +1,27 @@
+// (C) University College London 2017
+// This file is part of Optimet, licensed under the terms of the GNU Public License
+//
+// Optimet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Optimet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Optimet. If not, see <http://www.gnu.org/licenses/>.
+
 #ifndef OPTIMET_BESSEL_H
 #define OPTIMET_BESSEL_H
 
+#include "constants.h"
 #include <complex>
+#include <iostream>
 #include <tuple>
 #include <vector>
-
-#include "constants.h"
 
 extern "C" {
 int zbesj_(const double *, const double *, const double *, const long int *, const long int *,
@@ -54,6 +70,9 @@ bessel(const std::complex<double> &z, long int max_order) {
   if(std::abs(z) <= errEpsilon) {
     for(int i = 0; i <= max_order; i++)
       data[i] = ddata[i] = std::complex<double>(0.0, 0.0);
+    if(BesselType == Bessel)
+      // The
+      data[0] = std::complex<double>(1, 0);
   } else {
     const double zr = z.real();
     const double zi = z.imag();
@@ -115,7 +134,7 @@ bessel(const std::complex<double> &z, long int max_order) {
   return std::make_tuple(data, ddata);
 }
 
-static std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
+inline std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
 bessel(const std::complex<double> &z, enum BESSEL_TYPE besselType, bool scale, long int nMax) {
   switch(besselType) {
   case Bessel:

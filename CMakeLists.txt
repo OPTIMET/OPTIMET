@@ -1,3 +1,19 @@
+# (C) University College London 2017
+# This file is part of Optimet, licensed under the terms of the GNU Public License
+#
+# Optimet is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Optimet is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Optimet. If not, see <http:#www.gnu.org/licenses/>.
+
 cmake_minimum_required(VERSION 3.0)
 
 # Location of extra cmake includes for the project
@@ -31,7 +47,8 @@ include_directories(SYSTEM
 
 # list all object files
 file(GLOB SRC *.c*  pugi/*.c*)
-list(REMOVE_ITEM SRC main.cpp)
+file(GLOB EXCLUDE .clang-format main.cpp GPL_Licence.c MainPage.c XML_Manual.c)
+list(REMOVE_ITEM SRC ${EXCLUDE})
 if(dompi)
   set(OPTIMET_MPI TRUE)
   file(GLOB parallel_files scalapack/*.cpp mpi/*.cpp)
@@ -43,6 +60,14 @@ if(dompi)
   # We need to check integer architecture
   include(DetectIntegerArchitecture)
   DetectIntegerArchitecture(OPTIMET)
+else()
+  file(GLOB EXCLUDE ScalapackSolver.cpp MatrixBelosSolver.cpp FMMBelosSolver.cpp)
+  list(REMOVE_ITEM SRC ${EXCLUDE})
+endif()
+
+if(NOT OPTIMET_BELOS)
+  file(GLOB EXCLUDE MatrixBelosSolver.cpp FMMBelosSolver.cpp)
+  list(REMOVE_ITEM SRC ${EXCLUDE})
 endif()
 
 # configure a file with some build defaults
@@ -55,9 +80,9 @@ if(TARGET Boost::boost)
   target_link_libraries(optilib Boost::boost)
 endif()
 set(library_dependencies
-  ${GSL_LIBRARIES} ${BOOST_LIBRARIES} ${HDF5_LIBRARIES} ${F2C_LIBRARIES}
+  ${GSL_LIBRARIES} ${BOOST_LIBRARIES} ${HDF5_C_LIBRARIES} ${F2C_LIBRARIES}
   ${Belos_LIBRARIES}
-)
+  )
 if(dompi)
   list(APPEND library_dependencies ${MPI_LIBRARIES} ${SCALAPACK_LIBRARIES})
 endif()

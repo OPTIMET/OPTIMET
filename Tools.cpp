@@ -1,7 +1,21 @@
+// (C) University College London 2017
+// This file is part of Optimet, licensed under the terms of the GNU Public License
+//
+// Optimet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Optimet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Optimet. If not, see <http://www.gnu.org/licenses/>.
+
 #include "Tools.h"
 
-#include "gsl/gsl_sf_legendre.h"
-#include "gsl/gsl_sf_gamma.h"
 #include <cmath>
 #include <assert.h>
 
@@ -87,17 +101,6 @@ void Tools::pushToMatrix(std::complex<double> **T_small_, long rows_,
   for (i = 0; i < rows_; i++)
     for (j = 0; j < columns_; j++)
       T_large_[i + row_index_][j + column_index_] = T_small_[i][j];
-}
-
-double Tools::getLegendre(double argument_, int orderN_, int orderM_) {
-  if (orderM_ < 0) {
-    return std::pow(-1.0, std::abs(orderM_)) *
-           (gsl_sf_fact(orderN_ - std::abs(orderM_))) /
-           (gsl_sf_fact(orderN_ + std::abs(orderM_))) *
-           gsl_sf_legendre_Plm(orderN_, std::abs(orderM_), argument_);
-  }
-
-  return gsl_sf_legendre_Plm(orderN_, orderM_, argument_);
 }
 
 std::complex<double> **Tools::Get_2D_c_double(int i_x, int i_y) {

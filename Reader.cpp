@@ -1,3 +1,19 @@
+// (C) University College London 2017
+// This file is part of Optimet, licensed under the terms of the GNU Public License
+//
+// Optimet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Optimet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Optimet. If not, see <http://www.gnu.org/licenses/>.
+
 #include "Reader.h"
 
 #include "Cartesian.h"
@@ -9,7 +25,9 @@
 #include "mpi/Communicator.h"
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
+#include <tuple>
 #include <vector>
 
 #ifdef OPTIMET_BELOS
@@ -19,41 +37,42 @@
 
 using namespace pugi;
 
-Reader::Reader() { initDone = false; }
+namespace optimet {
+namespace {
+std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &node);
+Scatterer read_spherical_scatterer(pugi::xml_node const &node, t_int nMax);
+std::shared_ptr<Geometry> read_structure(pugi::xml_node const &inputFile, t_int nMax);
+std::shared_ptr<Excitation> read_excitation(pugi::xml_document const &inputFile, t_int nMax);
+scalapack::Parameters read_parallel(const pugi::xml_node &node);
+#ifdef OPTIMET_BELOS
+Teuchos::RCP<Teuchos::ParameterList> read_parameter_list(pugi::xml_document const &root_node);
+std::tuple<bool, t_int> read_fmm_input(pugi::xml_node const &node);
+#endif
+Run simulation_input(pugi::xml_document const &inputFile);
 
-Reader::~Reader() {
-  //
-}
-
-int Reader::readGeometry() {
-  xml_node geo_node; // the main work node
-
+std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &inputFile) {
   // Find the simulation node
-  geo_node = inputFile.child("simulation");
-  if(!geo_node) {
-    std::cerr << "Simulation parameters not defined!" << std::endl;
-    return 1;
-  }
+  auto const simulation_node = inputFile.child("simulation");
+  if(!simulation_node)
+    throw std::runtime_error("Simulation parameters not defined!");
 
-  run->nMax = geo_node.child("harmonics").attribute("nmax").as_int();
+  auto const nMax = simulation_node.child("harmonics").attribute("nmax").as_int();
 
   // Find the geometry node
-  geo_node = inputFile.child("geometry");
-  if(!geo_node) {
-    std::cerr << "Geometry not defined!" << std::endl;
-    return 1;
-  }
+  auto const geo_node = inputFile.child("geometry");
+  if(!geo_node)
+    throw std::runtime_error("Geometry not defined!");
 
   // Check if a structure is defined
-  if(geo_node.child("structure")) {
-    return readStructure(geo_node);
-  }
+  if(geo_node.child("structure"))
+    return read_structure(geo_node, nMax);
 
-  run->geometry.structureType = 0;
+  auto result = std::make_shared<Geometry>();
+  result->structureType = 0;
 
   // Find all scattering objects
   for(xml_node node = geo_node.child("object"); node; node = node.next_sibling("object"))
-    run->geometry.pushObject(readSphericalScatterer(node));
+    result->pushObject(read_spherical_scatterer(node, nMax));
 
   // Add the background properties
   if(geo_node.child("background")) {
@@ -66,74 +85,21 @@ int Reader::readGeometry() {
           geo_node.child("background").child("epsilon").attribute("value.imag").as_double());
       aux_mu.real(geo_node.child("background").child("mu").attribute("value.real").as_double());
       aux_mu.imag(geo_node.child("background").child("mu").attribute("value.imag").as_double());
-      run->geometry.bground.init_r(aux_epsilon, aux_mu);
+      result->bground.init_r(aux_epsilon, aux_mu);
     }
   }
 
   // Validate the geometry in the return
-  if(run->geometry.objects.size() == 0)
+  if(result->objects.size() == 0)
     throw std::runtime_error("No scatterers defined in input");
-  return 1;
+  return result;
 }
 
-int Reader::readExcitation() {
-  xml_node ext_node; // the main work node
-
-  // Find the source node
-  ext_node = inputFile.child("source");
-  if(!ext_node) {
-    std::cerr << "Source not defined!" << std::endl;
-    return 1;
-  }
-
-  int source_type;
-  double wavelength;
-  SphericalP<std::complex<double>> Einc(std::complex<double>(0.0, 0.0),
-                                        std::complex<double>(0.0, 0.0),
-                                        std::complex<double>(0.0, 0.0));
-  Spherical<double> vKinc(0.0, 0.0, 0.0);
-
-  // Determine source type
-  if(!std::strcmp(ext_node.attribute("type").value(), "planewave"))
-    source_type = 0;
-  else // Default is always planewave
-    source_type = 0;
-
-  // Determine wavelength
-  wavelength = ext_node.child("wavelength").attribute("value").as_double();
-  wavelength *= 1e-9;
-
-  // Determine propagation values
-  vKinc = Spherical<double>(
-      2 * consPi / wavelength,
-      ext_node.child("propagation").attribute("theta").as_double() * consPi / 180.0,
-      ext_node.child("propagation").attribute("phi").as_double() * consPi / 180.0);
-
-  // Determine polarisation (initial field values)
-  SphericalP<std::complex<double>> Eaux;
-  Spherical<double> vAux = Spherical<double>(0.0, vKinc.the, vKinc.phi);
-  Eaux = SphericalP<std::complex<double>>(
-      std::complex<double>(0.0, 0.0),
-      std::complex<double>(ext_node.child("polarization").attribute("Etheta.real").as_double(),
-                           ext_node.child("polarization").attribute("Etheta.imag").as_double()),
-      std::complex<double>(ext_node.child("polarization").attribute("Ephi.real").as_double(),
-                           ext_node.child("polarization").attribute("Ephi.imag").as_double()));
-  Einc = Tools::toProjection(vAux, Eaux);
-
-  // Initialize and populate the excitation
-  run->excitation = std::make_shared<optimet::Excitation>(source_type, Einc, vKinc, run->nMax);
-  run->excitation->populate();
-
-  // Update the geometry in case we had dynamic models
-  run->geometry.update(run->excitation);
-
-  return 0;
-}
-
-int Reader::readStructure(xml_node geo_node_) {
+std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax) {
+  auto geometry = std::make_shared<Geometry>();
   xml_node struct_node = geo_node_.child("structure");
 
-  run->geometry.structureType = 1; // set the spiral structure flag
+  geometry->structureType = 1; // set the spiral structure flag
 
   if(!std::strcmp(struct_node.attribute("type").value(), "spiral")) {
     // Build a spiral
@@ -163,7 +129,7 @@ int Reader::readStructure(xml_node geo_node_) {
     if(struct_node.child("object").child("properties").attribute("radius")) {
       auto const radius =
           struct_node.child("object").child("properties").attribute("radius").as_double();
-      run->geometry.spiralSeparation = (d / 2) - 2 * radius * consFrnmTom;
+      geometry->spiralSeparation = (d / 2) - 2 * radius * consFrnmTom;
     }
 
     // Create vectors for r, theta, x and y, X and Y
@@ -200,178 +166,36 @@ int Reader::readStructure(xml_node geo_node_) {
 
     // Determine normal, convert to a spherical object and push
 
-    auto const scatterer = readSphericalScatterer(struct_node.child("object"));
+    auto const scatterer = read_spherical_scatterer(struct_node.child("object"), nMax);
     for(int i = 0; i < No - 1; i++) {
-      run->geometry.pushObject(scatterer);
+      geometry->pushObject(scatterer);
       std::string const normal = struct_node.child("properties").attribute("normal").value();
       if(normal == "x") {
         // x is normal (conversion is x(pol) -> y; y(pol) -> z
-        run->geometry.normalToSpiral = 0;
-        run->geometry.objects.back().vR = Tools::toSpherical({0.0, X[i], Y[i]});
+        geometry->normalToSpiral = 0;
+        geometry->objects.back().vR = Tools::toSpherical({0.0, X[i], Y[i]});
       } else if(normal == "y") {
         // y is normal (conversion is x(pol) -> z; y(pol) -> x
-        run->geometry.normalToSpiral = 1;
-        run->geometry.objects.back().vR = Tools::toSpherical({Y[i], 0, X[i]});
+        geometry->normalToSpiral = 1;
+        geometry->objects.back().vR = Tools::toSpherical({Y[i], 0, X[i]});
       } else if(normal == "z") {
         // z is normal (conversion is x(pol) -> x; y(pol) -> x
-        run->geometry.normalToSpiral = 2;
-        run->geometry.objects.back().vR = Tools::toSpherical({X[i], Y[i], 0});
+        geometry->normalToSpiral = 2;
+        geometry->objects.back().vR = Tools::toSpherical({X[i], Y[i], 0});
       } else
         throw std::runtime_error("Unknown normal " + normal);
     }
   }
 
-  if(run->geometry.objects.size() == 0)
+  if(geometry->objects.size() == 0)
     throw std::runtime_error("No scatterers defined in input");
-  return 1;
+  return geometry;
 }
 
-int Reader::readOutput() {
-  xml_node out_node; // the main work node
-
-  // Find the source node
-  out_node = inputFile.child("output");
-  if(!out_node) {
-    std::cerr << "Output not defined!" << std::endl;
-    return 1;
-  }
-
-  // Determine type
-  if(!std::strcmp(out_node.attribute("type").value(), "coefficients")) {
-    run->outputType = 2;
-  }
-
-  if(!std::strcmp(out_node.attribute("type").value(), "field")) {
-    run->outputType = 0;      // Field output requested
-    run->singleComponent = 0; // Set this to zero as default
-
-    run->params[0] = out_node.child("grid").child("x").attribute("min").as_double() * 1e-9;
-    run->params[1] = out_node.child("grid").child("x").attribute("max").as_double() * 1e-9;
-    run->params[2] = out_node.child("grid").child("x").attribute("steps").as_double();
-    run->params[3] = out_node.child("grid").child("y").attribute("min").as_double() * 1e-9;
-    run->params[4] = out_node.child("grid").child("y").attribute("max").as_double() * 1e-9;
-    run->params[5] = out_node.child("grid").child("y").attribute("steps").as_double();
-    run->params[6] = out_node.child("grid").child("z").attribute("min").as_double() * 1e-9;
-    run->params[7] = out_node.child("grid").child("z").attribute("max").as_double() * 1e-9;
-    run->params[8] = out_node.child("grid").child("z").attribute("steps").as_double();
-
-    if(!std::strcmp(out_node.child("projection").attribute("spherical").value(), "true")) {
-      run->projection = 1;
-    } else {
-      run->projection = 0;
-    }
-
-    if(out_node.child("singlemode")) {
-      run->singleMode = true;
-    } else {
-      run->singleMode = false;
-    }
-
-    if(!std::strcmp(out_node.child("singlemode").attribute("dominant").value(), "auto")) {
-      run->dominantAuto = true;
-    } else {
-      run->dominantAuto = false;
-      run->singleModeIndex.init(out_node.child("singlemode").attribute("n").as_int(),
-                                out_node.child("singlemode").attribute("m").as_int());
-      if(!std::strcmp(out_node.child("singlemode").attribute("component").value(), "TE")) {
-        run->singleComponent = 1;
-      }
-      if(!std::strcmp(out_node.child("singlemode").attribute("component").value(), "TM")) {
-        run->singleComponent = 2;
-      }
-    }
-  }
-
-  if(!std::strcmp(out_node.attribute("type").value(), "response")) {
-    if(out_node.child("scan").child("wavelength")) {
-      double lam_start(0.), lam_final(0.);
-      lam_start = out_node.child("scan").child("wavelength").attribute("initial").as_double();
-      lam_final = out_node.child("scan").child("wavelength").attribute("final").as_double();
-      run->params[0] =
-          out_node.child("scan").child("wavelength").attribute("initial").as_double() * 1e-9;
-      run->params[1] =
-          out_node.child("scan").child("wavelength").attribute("final").as_double() * 1e-9;
-
-      int stepsize(0), steps(0);
-      stepsize = out_node.child("scan").child("wavelength").attribute("stepsize").as_double();
-
-      // claculate no of steps
-      steps = int(lam_final - lam_start) / stepsize;
-      run->params[2] = steps + 1;
-      //      run->params[2] =
-      //      out_node.child("scan").child("wavelength").attribute("steps").as_double();
-      run->outputType = 11;
-    }
-
-    if(out_node.child("scan").child("radius")) {
-      run->params[3] =
-          out_node.child("scan").child("radius").attribute("initial").as_double() * 1e-9;
-      run->params[4] = out_node.child("scan").child("radius").attribute("final").as_double() * 1e-9;
-      run->params[5] = out_node.child("scan").child("radius").attribute("steps").as_double();
-      run->outputType = 12;
-    }
-
-    if(out_node.child("scan").child("wavelength") && out_node.child("scan").child("radius"))
-      run->outputType = 112;
-  }
-
-  return 0;
-}
-
-Reader::Reader(Run *run_) { init(run_); }
-
-void Reader::init(Run *run_) {
-  run = run_;
-  initDone = true;
-}
-
-int Reader::readSimulation(std::string const &fileName_) {
-  xml_parse_result fileResult;
-
-  fileResult = inputFile.load_file(fileName_.c_str());
-
-  if(!fileResult) {
-    std::cerr << "Error reading or parsing input file " << fileName_ << "!" << std::endl;
-    return 1;
-  }
-
-  // Read the Geometry
-  if(!readGeometry()) {
-    std::cerr << "Geometry not valid!";
-    return 1;
-  }
-
-  // Read Excitation
-  if(readExcitation()) {
-    std::cerr << "Source not valid!";
-    return 1;
-  }
-
-  // Read Excitation
-  if(readOutput()) {
-    std::cerr << "Output not valid!";
-    return 1;
-  }
-
-  readParallel(inputFile.child("parallel"), run->parallel_params);
-  readParameterList(inputFile);
-
-  return 0;
-}
-
-void Reader::readParallel(const pugi::xml_node &node,
-                          optimet::scalapack::Parameters &parallel_params) {
-  parallel_params.block_size = node.attribute("block_size").as_uint(parallel_params.block_size);
-  parallel_params.grid.rows =
-      node.child("grid").attribute("rows").as_uint(parallel_params.grid.rows);
-  parallel_params.grid.cols =
-      node.child("grid").attribute("cols").as_uint(parallel_params.grid.cols);
-}
-
-Scatterer Reader::readSphericalScatterer(pugi::xml_node const &node) {
+Scatterer read_spherical_scatterer(pugi::xml_node const &node, t_int nMax) {
   if(node.attribute("type").value() != std::string("sphere"))
     std::runtime_error("Expecting a spherical scatterer");
-  Scatterer result(run->nMax);
+  Scatterer result(nMax);
   // Assign coordinates to the Scatterer work_object
   if(node.child("cartesian")) // Cartesian coordinates
     result.vR = Tools::toSpherical(
@@ -432,18 +256,195 @@ Scatterer Reader::readSphericalScatterer(pugi::xml_node const &node) {
   return result;
 };
 
+std::shared_ptr<Excitation> read_excitation(pugi::xml_document const &inputFile, t_int nMax) {
+  // Find the source node
+  auto const ext_node = inputFile.child("source");
+  if(!ext_node)
+    std::runtime_error("Source not defined!");
+
+  int source_type;
+  double wavelength;
+  SphericalP<std::complex<double>> Einc(std::complex<double>(0.0, 0.0),
+                                        std::complex<double>(0.0, 0.0),
+                                        std::complex<double>(0.0, 0.0));
+  Spherical<double> vKinc(0.0, 0.0, 0.0);
+
+  // Determine source type
+  if(!std::strcmp(ext_node.attribute("type").value(), "planewave"))
+    source_type = 0;
+  else // Default is always planewave
+    source_type = 0;
+
+  // Determine wavelength
+  wavelength = ext_node.child("wavelength").attribute("value").as_double();
+  wavelength *= 1e-9;
+
+  // Determine propagation values
+  vKinc = Spherical<double>(
+      2 * consPi / wavelength,
+      ext_node.child("propagation").attribute("theta").as_double() * consPi / 180.0,
+      ext_node.child("propagation").attribute("phi").as_double() * consPi / 180.0);
+
+  // Determine polarisation (initial field values)
+  SphericalP<std::complex<double>> Eaux;
+  Spherical<double> vAux = Spherical<double>(0.0, vKinc.the, vKinc.phi);
+  Eaux = SphericalP<std::complex<double>>(
+      std::complex<double>(0.0, 0.0),
+      std::complex<double>(ext_node.child("polarization").attribute("Etheta.real").as_double(),
+                           ext_node.child("polarization").attribute("Etheta.imag").as_double()),
+      std::complex<double>(ext_node.child("polarization").attribute("Ephi.real").as_double(),
+                           ext_node.child("polarization").attribute("Ephi.imag").as_double()));
+  Einc = Tools::toProjection(vAux, Eaux);
+
+  // Initialize and populate the excitation
+  auto result = std::make_shared<optimet::Excitation>(source_type, Einc, vKinc, nMax);
+  result->populate();
+
+  return result;
+}
+
+void read_output(pugi::xml_document const &inputFile, Run &run) {
+  // Find the source node
+  auto const out_node = inputFile.child("output");
+  if(!out_node)
+    throw std::runtime_error("Output not defined!");
+
+  // Determine type
+  if(!std::strcmp(out_node.attribute("type").value(), "coefficients"))
+    run.outputType = 2;
+
+  if(!std::strcmp(out_node.attribute("type").value(), "field")) {
+    run.outputType = 0;      // Field output requested
+    run.singleComponent = 0; // Set this to zero as default
+
+    run.params[0] = out_node.child("grid").child("x").attribute("min").as_double() * 1e-9;
+    run.params[1] = out_node.child("grid").child("x").attribute("max").as_double() * 1e-9;
+    run.params[2] = out_node.child("grid").child("x").attribute("steps").as_double();
+    run.params[3] = out_node.child("grid").child("y").attribute("min").as_double() * 1e-9;
+    run.params[4] = out_node.child("grid").child("y").attribute("max").as_double() * 1e-9;
+    run.params[5] = out_node.child("grid").child("y").attribute("steps").as_double();
+    run.params[6] = out_node.child("grid").child("z").attribute("min").as_double() * 1e-9;
+    run.params[7] = out_node.child("grid").child("z").attribute("max").as_double() * 1e-9;
+    run.params[8] = out_node.child("grid").child("z").attribute("steps").as_double();
+
+    run.projection =
+        !std::strcmp(out_node.child("projection").attribute("spherical").value(), "true");
+
+    run.singleMode = out_node.child("singlemode");
+
+    if(!std::strcmp(out_node.child("singlemode").attribute("dominant").value(), "auto"))
+      run.dominantAuto = true;
+    else {
+      run.dominantAuto = false;
+      run.singleModeIndex.init(out_node.child("singlemode").attribute("n").as_int(),
+                               out_node.child("singlemode").attribute("m").as_int());
+      run.singleComponent =
+          !std::strcmp(out_node.child("singlemode").attribute("component").value(), "TE");
+    }
+  }
+
+  if(!std::strcmp(out_node.attribute("type").value(), "response")) {
+    if(out_node.child("scan").child("wavelength")) {
+      double lam_start(0.), lam_final(0.);
+      lam_start = out_node.child("scan").child("wavelength").attribute("initial").as_double();
+      lam_final = out_node.child("scan").child("wavelength").attribute("final").as_double();
+      run.params[0] =
+          out_node.child("scan").child("wavelength").attribute("initial").as_double() * 1e-9;
+      run.params[1] =
+          out_node.child("scan").child("wavelength").attribute("final").as_double() * 1e-9;
+
+      int stepsize(0), steps(0);
+      stepsize = out_node.child("scan").child("wavelength").attribute("stepsize").as_double();
+
+      // claculate no of steps
+      steps = int(lam_final - lam_start) / stepsize;
+      run.params[2] = steps + 1;
+      run.outputType = 11;
+    }
+
+    if(out_node.child("scan").child("radius")) {
+      run.params[3] =
+          out_node.child("scan").child("radius").attribute("initial").as_double() * 1e-9;
+      run.params[4] = out_node.child("scan").child("radius").attribute("final").as_double() * 1e-9;
+      run.params[5] = out_node.child("scan").child("radius").attribute("steps").as_double();
+      run.outputType = 12;
+    }
+
+    if(out_node.child("scan").child("wavelength") && out_node.child("scan").child("radius"))
+      run.outputType = 112;
+  }
+}
+
+scalapack::Parameters read_parallel(const pugi::xml_node &node) {
+  scalapack::Parameters result;
+  result.block_size = node.attribute("block_size").as_uint(result.block_size);
+  result.grid.rows = node.child("grid").attribute("rows").as_uint(result.grid.rows);
+  result.grid.cols = node.child("grid").attribute("cols").as_uint(result.grid.cols);
+  return result;
+}
+
 #ifdef OPTIMET_BELOS
-void Reader::readParameterList(pugi::xml_document const &root_node) {
+Teuchos::RCP<Teuchos::ParameterList> read_parameter_list(pugi::xml_document const &root_node) {
   auto const xml_params = root_node.child("ParameterList");
   std::ostringstream str_params;
   if(not xml_params)
     str_params << "<ParameterList name=\"belos\"></ParameterList>";
   else
     xml_params.print(str_params);
-  run->belos_params = Teuchos::getParametersFromXmlString(str_params.str());
-  if(not run->belos_params->isParameter("Solver"))
-    run->belos_params->set("Solver", "scalapack");
+  auto result = Teuchos::getParametersFromXmlString(str_params.str());
+  if(not result->isParameter("Solver"))
+    result->set("Solver", "scalapack");
+  return result;
 }
-#else
-void Reader::readParameterList(pugi::xml_document const &) {}
+
+std::tuple<bool, t_int> read_fmm_input(pugi::xml_node const &node) {
+  if(not node)
+    return std::make_tuple(false, 1);
+  if(not node.attribute("subdiagonals"))
+    return std::make_tuple(true, std::numeric_limits<t_int>::max());
+  return std::make_tuple(true, node.attribute("subdiagonals").as_int());
+}
 #endif
+
+Run simulation_input(pugi::xml_document const &inputFile) {
+  Run result;
+  result.geometry = read_geometry(inputFile);
+  result.nMax = result.geometry->nMax();
+
+  // Read Excitation
+  result.excitation = read_excitation(inputFile, result.nMax);
+  // Update the geometry in case we had dynamic models
+  result.geometry->update(result.excitation);
+
+  // Read Excitation
+  read_output(inputFile, result);
+
+  result.parallel_params = read_parallel(inputFile.child("parallel"));
+#ifdef OPTIMET_BELOS
+  result.belos_params = read_parameter_list(inputFile);
+  std::tie(result.do_fmm, result.fmm_subdiagonals) = read_fmm_input(inputFile.child("FMM"));
+#endif
+
+  return result;
+}
+}
+
+Run simulation_input(std::string const &fileName_) {
+  pugi::xml_document inputFile;
+  auto const fileResult = inputFile.load_file(fileName_.c_str());
+  if(!fileResult) {
+    std::ostringstream msg;
+    msg << "Error reading or parsing input file " << fileName_ << "!";
+    throw std::runtime_error(msg.str());
+  }
+  return simulation_input(inputFile);
+}
+
+Run simulation_input(std::istream &buffer) {
+  pugi::xml_document inputFile;
+  auto const fileResult = inputFile.load(buffer);
+  if(!fileResult)
+    throw std::runtime_error("Error reading or parsing istream input");
+  return simulation_input(inputFile);
+}
+}

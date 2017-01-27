@@ -1,3 +1,19 @@
+// (C) University College London 2017
+// This file is part of Optimet, licensed under the terms of the GNU Public License
+//
+// Optimet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Optimet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Optimet. If not, see <http://www.gnu.org/licenses/>.
+
 #ifndef OPTIMET_MPI_COMMUNICATOR_H
 #define OPTIMET_MPI_COMMUNICATOR_H
 
@@ -40,7 +56,11 @@ public:
   //! The rank of this proc
   decltype(Impl::rank) rank() const { return impl ? impl->rank : 0; }
   //! Returns the Blacs context in a way blacs undersands
-  decltype(Impl::comm) operator*() const { return impl->comm; }
+  decltype(Impl::comm) operator*() const {
+    if(not impl)
+      throw std::runtime_error("The communicator is not valid");
+    return impl->comm;
+  }
 
   //! Split current communicator
   Communicator split(t_int color) const { return split(color, rank()); }
@@ -83,7 +103,7 @@ public:
   }
   //! Helper function for gathering
   template <class T>
-  typename std::enable_if<std::is_fundamental<T>::value, T>::type
+  typename std::enable_if<is_registered_type<T>::value, T>::type
   all_reduce(T const &value, MPI_Op operation) const {
     T result;
     MPI_Allreduce(&value, &result, 1, registered_type(value), operation, **this);
@@ -95,6 +115,9 @@ public:
   //! Root id for this communicator
   static constexpr t_uint root_id() { return 0; }
 
+  //! True if the communicator is valid
+  bool is_valid() const { return static_cast<bool>(impl); }
+
 private:
   //! Holds data associated with the context
   std::shared_ptr<Impl const> impl;
@@ -102,12 +125,15 @@ private:
   //! Deletes an mpi communicator
   static void delete_comm(Impl *impl);
 
+protected:
   //! \brief Constructs a communicator
   //! \details Takes ownership of the communicator, unless it is MPI_COMM_WORLD.
   //! This means that once all the shared pointer to the impl are delete, the
   //! communicator will be
   //! released.
   Communicator(MPI_Comm const &comm);
+  //! Takes ownership of a communicator
+  void reset(MPI_Comm const *const comm);
 };
 
 } /* optime::mpi */

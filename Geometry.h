@@ -1,11 +1,28 @@
+// (C) University College London 2017
+// This file is part of Optimet, licensed under the terms of the GNU Public License
+//
+// Optimet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Optimet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Optimet. If not, see <http://www.gnu.org/licenses/>.
+
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_
 
 #include "Excitation.h"
 #include "Scatterer.h"
 #include "Types.h"
-#include <vector>
 #include <memory>
+#include <numeric>
+#include <vector>
 
 /**
  * The Geometry class implements a list of objects and properties of the medium.
@@ -76,10 +93,8 @@ public:
    * @param objectIndex_ the index of the object for which T_j is calculated.
    * @param nMax_ the maximum value of the n iterator.
    */
-  optimet::Matrix<optimet::t_complex>
+  optimet::Vector<optimet::t_complex>
   getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet::t_uint nMax_) const;
-
-  int getIaux(double omega_, int objectIndex_, int nMax_, std::complex<double> *I_aux_);
 
   int getCabsAux(double omega_, int objectIndex_, int nMax_, double *Cabs_aux_);
 
@@ -138,6 +153,21 @@ public:
 
   //! Size of the scattering vector
   optimet::t_uint scatterer_size() const;
+
+  //! Maximum nMax across objects
+  optimet::t_uint nMax() const {
+    return std::accumulate(objects.begin(), objects.end(), optimet::t_uint(0u),
+                           [](optimet::t_uint prior, Scatterer const &current) {
+                             return std::max<optimet::t_uint>(prior, current.nMax);
+                           });
+  }
+  //! Minimum nMax across objects
+  optimet::t_uint nMin() const {
+    return std::accumulate(objects.begin(), objects.end(), nMax(),
+                           [](optimet::t_uint prior, Scatterer const &current) {
+                             return std::min<optimet::t_uint>(prior, current.nMax);
+                           });
+  }
 
 protected:
   //! Validate last added sphere

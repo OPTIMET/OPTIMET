@@ -1,3 +1,19 @@
+// (C) University College London 2017
+// This file is part of Optimet, licensed under the terms of the GNU Public License
+//
+// Optimet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Optimet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Optimet. If not, see <http://www.gnu.org/licenses/>.
+
 #include "Coupling.h"
 #include "Geometry.h"
 
@@ -12,21 +28,25 @@
 
 #include <cmath>
 #include <iostream>
+#include <numeric>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
-#include <numeric>
 
 Geometry::~Geometry() {}
 Geometry::Geometry() {}
 
 void Geometry::pushObject(Scatterer const &object_) {
-  if(not no_overlap(object_)) {
-    std::ostringstream sstr;
-    sstr << "The sphere at (" << object_.vR.rrr << ", " << object_.vR.the << ", " << object_.vR.phi
-         << ") overlap";
-    throw std::runtime_error(sstr.str());
-  }
+  for(auto const &obj : objects)
+    if(Tools::findDistance(obj.vR, object_.vR) <= (object_.radius + obj.radius)) {
+      std::ostringstream sstr;
+      sstr << "The sphere at (" << Tools::toCartesian(object_.vR).x << ", "
+           << Tools::toCartesian(object_.vR).y << ", " << Tools::toCartesian(object_.vR).z << ") "
+           << "overlaps with the one at (" << Tools::toCartesian(obj.vR).x << ", "
+           << Tools::toCartesian(obj.vR).y << ", " << Tools::toCartesian(obj.vR).z << "), "
+           << "with radii " << object_.radius << " and " << obj.radius;
+      throw std::runtime_error(sstr.str());
+    }
   objects.emplace_back(object_);
 }
 
@@ -43,10 +63,9 @@ bool Geometry::is_valid() const {
 
 void Geometry::initBground(ElectroMagnetic bground_) { bground = bground_; }
 
-
 optimet::t_uint Geometry::scatterer_size() const {
   auto const object_size = [](optimet::t_uint current, Scatterer const &scatterer) {
-    return current + 2 * (optimet::HarmonicsIterator::max_flat(scatterer.nMax) - 1);
+    return current + 2 * scatterer.nMax * (scatterer.nMax + 2);
   };
   return std::accumulate(objects.cbegin(), objects.cend(), 0, object_size);
 }
@@ -122,58 +141,6 @@ int Geometry::getNLSources(double omega_, int objectIndex_, int nMax_,
     sourceV[p + nMax_] = std::complex<double>(0., 0.);                    // v''
   }
 
-  return 0;
-}
-
-int Geometry::getIaux(double omega_, int objectIndex_, int nMax_, std::complex<double> *I_aux_) {
-
-  std::complex<double> k_s =
-      omega_ * std::sqrt(objects[objectIndex_].elmag.epsilon * objects[objectIndex_].elmag.mu);
-  std::complex<double> k_b = omega_ * std::sqrt(bground.epsilon * bground.mu);
-
-  std::complex<double> rho = k_s / k_b;
-
-  std::complex<double> r_0 = k_b * objects[objectIndex_].radius;
-
-  std::complex<double> mu_j = objects[objectIndex_].elmag.mu;
-  std::complex<double> mu_0 = bground.mu;
-
-  std::complex<double> psi(0., 0.), ksi(0., 0.);
-  std::complex<double> dpsi(0., 0.), dksi(0., 0.);
-  std::complex<double> psirho(0., 0.);
-  std::complex<double> dpsirho(0., 0.);
-
-  std::vector<std::complex<double>> J_n_data, J_n_ddata;
-  std::vector<std::complex<double>> Jrho_n_data, Jrho_n_ddata;
-
-  try {
-    std::tie(J_n_data, J_n_ddata) = optimet::bessel<optimet::Bessel>(r_0, nMax_);
-    std::tie(Jrho_n_data, Jrho_n_ddata) = optimet::bessel<optimet::Bessel>(rho * r_0, nMax_);
-  } catch(std::range_error &e) {
-    std::cerr << e.what() << std::endl;
-    return 1;
-  }
-
-  CompoundIterator p;
-
-  int pMax = p.max(nMax_);
-
-  for(p = 0; (int)p < pMax; p++) {
-    // obtain Riccati-Bessel functions
-    psi = r_0 * J_n_data[p.first];
-    dpsi = r_0 * J_n_ddata[p.first] + J_n_data[p.first];
-
-    psirho = r_0 * rho * Jrho_n_data[p.first];
-    dpsirho = r_0 * rho * Jrho_n_ddata[p.first] + Jrho_n_data[p.first];
-
-    // TE Part
-    I_aux_[p] = (mu_j * rho) / (mu_0 * rho * dpsirho * psi - mu_j * psirho * dpsi);
-    I_aux_[p] *= std::complex<double>(0., 1.);
-
-    // TM part
-    I_aux_[(int)p + pMax] = (mu_j * rho) / (mu_j * psi * dpsirho - mu_0 * rho * psirho * dpsi);
-    I_aux_[(int)p + pMax] *= std::complex<double>(0., 1.);
-  }
   return 0;
 }
 
@@ -263,25 +230,26 @@ int Geometry::setSourcesSingle(std::shared_ptr<optimet::Excitation const> incWav
   std::complex<double> *sourceU = new std::complex<double>[2 * pMax];
   std::complex<double> *sourceV = new std::complex<double>[2 * pMax];
 
+  auto const omega = incWave_->omega();
   for(size_t j = 0; j < objects.size(); j++) {
-    getNLSources(incWave_->omega, j, nMax_, sourceU, sourceV);
+    getNLSources(omega, j, nMax_, sourceU, sourceV);
 
     for(p = 0; p < pMax; p++) {
       objects[j].sourceCoef[static_cast<int>(p)] =
           sourceU[p] * optimet::symbol::up_mn(p.second, p.first, nMax_,
                                               internalCoef_FF_[j * 2 * pMax + p.compound],
                                               internalCoef_FF_[pMax + j * 2 * pMax + p.compound],
-                                              incWave_->omega, objects[j], bground) +
+                                              omega, objects[j], bground) +
           sourceV[p] * optimet::symbol::vp_mn(p.second, p.first, nMax_,
                                               internalCoef_FF_[j * 2 * pMax + p.compound],
                                               internalCoef_FF_[pMax + j * 2 * pMax + p.compound],
-                                              incWave_->omega, objects[j], bground);
+                                              omega, objects[j], bground);
 
       objects[j].sourceCoef[static_cast<int>(p) + pMax] =
           sourceU[p + pMax] *
               optimet::symbol::upp_mn(
                   p.second, p.first, nMax_, internalCoef_FF_[j * 2 * pMax + p.compound],
-                  internalCoef_FF_[pMax + j * 2 * pMax + p.compound], incWave_->omega, objects[j]) +
+                  internalCoef_FF_[pMax + j * 2 * pMax + p.compound], omega, objects[j]) +
           sourceV[p + pMax]; //<- this last bit is zero for the moment
     }
   }
@@ -292,7 +260,7 @@ int Geometry::setSourcesSingle(std::shared_ptr<optimet::Excitation const> incWav
   return 0;
 }
 
-optimet::Matrix<optimet::t_complex> Geometry::getTLocal(optimet::t_real omega_,
+optimet::Vector<optimet::t_complex> Geometry::getTLocal(optimet::t_real omega_,
                                                         optimet::t_int objectIndex_,
                                                         optimet::t_uint nMax_) const {
   if(objectIndex_ >= static_cast<int>(objects.size()))
@@ -359,7 +327,7 @@ int Geometry::getSourceLocal(int objectIndex_, std::shared_ptr<optimet::Excitati
 void Geometry::update(std::shared_ptr<optimet::Excitation const> incWave_) {
   // Update the ElectroMagnetic properties of each object
   for(auto &object : objects)
-    object.elmag.update(incWave_->lambda);
+    object.elmag.update(incWave_->lambda());
 }
 
 void Geometry::updateRadius(double radius_, int object_) { objects[object_].radius = radius_; }

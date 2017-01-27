@@ -1,9 +1,26 @@
+// (C) University College London 2017
+// This file is part of Optimet, licensed under the terms of the GNU Public License
+//
+// Optimet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Optimet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Optimet. If not, see <http://www.gnu.org/licenses/>.
+
 #ifndef EXCITATION_H_
 #define EXCITATION_H_
 
 #include "Spherical.h"
 
 #include "Types.h"
+#include "constants.h"
 #include <complex>
 
 namespace optimet {
@@ -29,8 +46,6 @@ public:
   Vector<t_complex> dataIncBp; /**< The incoming wave b_n^m coefficients. */
 
   std::complex<double> waveK; /**< The incoming wave wavenumber. */
-  double lambda;              /**< The incoming wave wavelength (calculated). */
-  double omega;               /**< The incoming wave frequency (calculated). */
 
   /**
    * Initialization constructor for the Excitation class.
@@ -80,6 +95,14 @@ public:
    * @param lambda_ the new value of the wavelength.
    */
   void updateWavelength(double lambda_);
+
+  //! The incoming wave wavelength
+  t_real lambda() const { return 2 * constant::pi / std::real(vKInc.rrr); }
+  //! The incoming wave frequency number (calculated)
+  optimet::t_real wavenumber() const { return std::real(vKInc.rrr); }
+  //! The incoming wave frequency (calculated)
+  optimet::t_real omega() const { return constant::c * wavenumber(); }
+
 };
 }
 #endif /* EXCITATION_H_ */

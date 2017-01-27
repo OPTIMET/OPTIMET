@@ -1,3 +1,19 @@
+// (C) University College London 2017
+// This file is part of Optimet, licensed under the terms of the GNU Public License
+//
+// Optimet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Optimet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Optimet. If not, see <http://www.gnu.org/licenses/>.
+
 #include "catch.hpp"
 #include <iostream>
 #include <numeric>
@@ -10,7 +26,7 @@
 #include "scalapack/Belos.h"
 #include "scalapack/InitExit.h"
 #include "scalapack/LinearSystemSolver.h"
-#include "unittests/TmpFile.h"
+#include <string>
 
 using namespace optimet;
 
@@ -144,12 +160,17 @@ template <class SCALAR> void check_gmres(scalapack::Sizes const &grid, t_uint n,
   auto const A = Aserial.transfer_to(context);
   b.local() = Matrix<SCALAR>::Random(b.local().rows(), b.local().cols()).array() - 0.5;
 
-  auto const result = gmres_linear_system(A, b);
+  auto params = Teuchos::rcp(new Teuchos::ParameterList);
+  params->set("Solver", "GMRES");
+  params->set<int>("Num Blocks", Aserial.rows());
+  params->set("Maximum Iterations", 4000);
+  params->set("Convergence Tolerance", 1.0e-14);
+  auto const result = gmres_linear_system(A, b, params);
   REQUIRE(std::get<1>(result) == 0);
   if(context.is_valid()) {
     scalapack::Matrix<SCALAR> x = b;
     scalapack::pdgemm(1e0, A, std::get<0>(result), -1e0, x);
-    CHECK(x.local().isZero(1e-4));
+    CHECK(x.local().isZero(1e-6));
   }
 }
 
@@ -167,40 +188,38 @@ TEST_CASE("Compute solver in parallel, check result in serial") {
 }
 
 TEST_CASE("Read XML") {
-  TmpFile file;
-  file.write("<simulation>\n"
-             "  <harmonics nmax=\"6\" />\n"
-             "</simulation>\n"
-             "<source type=\"planewave\">\n"
-             "  <wavelength value=\"1460\" />\n"
-             "  <propagation theta=\"90\" phi=\"90\" />\n"
-             "  <polarization Etheta.real=\"1.0\" Etheta.imag=\"0.0\" Ephi.real=\"0.0\" "
-             "Ephi.imag=\"0.0\" />\n"
-             "</source>\n"
-             "<geometry>\n"
-             "  <object type=\"sphere\">\n"
-             "    <cartesian x=\"0.0\" y=\"0.0\" z=\"0.0\" />\n"
-             "    <properties radius=\"500.0\" />\n"
-             "    <epsilon type=\"relative\" value.real=\"13.0\" value.imag=\"0.0\" />\n"
-             "    <mu type=\"relative\" value.real=\"1.0\" value.imag=\"0.0\" />\n"
-             "  </object>\n"
-             "</geometry>\n"
-             "<output type=\"field\">\n"
-             "  <grid type=\"cartesian\">\n"
-             "    <x min=\"-1000\" max=\"1000\" steps=\"21\" />\n"
-             "    <y min=\"-0.1\" max=\"0.1\" steps=\"2\" />\n"
-             "    <z min=\"-1000\" max=\"1000\" steps=\"21\" />\n"
-             "  </grid>\n"
-             "</output>\n"
-             "<ParameterList name=\"Belos\">\n"
-             "  <Parameter name=\"Solver\" type=\"string\" value=\"GMRES\"/>\n"
-             "  <Parameter name=\"Maximum Iterations\" type=\"int\" value=\"4000\"/>\n"
-             "  <Parameter name=\"Output Frequency\" type=\"int\" value=\"20\"/>\n"
-             "</ParameterList>\n");
+  std::istringstream buffer(
+      "<simulation>\n"
+      "  <harmonics nmax=\"6\" />\n"
+      "</simulation>\n"
+      "<source type=\"planewave\">\n"
+      "  <wavelength value=\"1460\" />\n"
+      "  <propagation theta=\"90\" phi=\"90\" />\n"
+      "  <polarization Etheta.real=\"1.0\" Etheta.imag=\"0.0\" Ephi.real=\"0.0\" "
+      "Ephi.imag=\"0.0\" />\n"
+      "</source>\n"
+      "<geometry>\n"
+      "  <object type=\"sphere\">\n"
+      "    <cartesian x=\"0.0\" y=\"0.0\" z=\"0.0\" />\n"
+      "    <properties radius=\"500.0\" />\n"
+      "    <epsilon type=\"relative\" value.real=\"13.0\" value.imag=\"0.0\" />\n"
+      "    <mu type=\"relative\" value.real=\"1.0\" value.imag=\"0.0\" />\n"
+      "  </object>\n"
+      "</geometry>\n"
+      "<output type=\"field\">\n"
+      "  <grid type=\"cartesian\">\n"
+      "    <x min=\"-1000\" max=\"1000\" steps=\"21\" />\n"
+      "    <y min=\"-0.1\" max=\"0.1\" steps=\"2\" />\n"
+      "    <z min=\"-1000\" max=\"1000\" steps=\"21\" />\n"
+      "  </grid>\n"
+      "</output>\n"
+      "<ParameterList name=\"Belos\">\n"
+      "  <Parameter name=\"Solver\" type=\"string\" value=\"GMRES\"/>\n"
+      "  <Parameter name=\"Maximum Iterations\" type=\"int\" value=\"4000\"/>\n"
+      "  <Parameter name=\"Output Frequency\" type=\"int\" value=\"20\"/>\n"
+      "</ParameterList>\n");
 
-  Run run;
-  Reader reader(&run);
-  CHECK(reader.readSimulation(file.filename()) == 0);
+  auto const run = optimet::simulation_input(buffer);
   CHECK(run.belos_params->get<std::string>("Solver") == "GMRES");
   CHECK(run.belos_params->get<int>("Maximum Iterations") == 4000);
   CHECK(run.belos_params->get<int>("Output Frequency") == 20);
