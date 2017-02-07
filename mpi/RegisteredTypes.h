@@ -28,13 +28,10 @@ typedef decltype(MPI_CHAR) MPIType;
 
 //! MPI type associated with a c++ type
 template <class T> struct Type;
-//! True if the type is registered
-template <class T> class is_registered_type : public std::false_type {};
 
 static_assert(not std::is_same<char, std::int8_t>::value, "");
 #define OPTIMET_MACRO(TYPE)                                                                        \
-  template <> struct Type<TYPE> { static const MPIType value; };                                   \
-  template <> class is_registered_type<TYPE> : public std::true_type {};
+  template <> struct Type<TYPE> { static const MPIType value; };
 OPTIMET_MACRO(std::int8_t);
 OPTIMET_MACRO(std::int16_t);
 OPTIMET_MACRO(std::int32_t);
@@ -63,13 +60,21 @@ OPTIMET_MACRO(std::complex<long double>);
 #undef OPTIMET_MACRO
 
 //! MPI type associated with a c++ type
-template <class T> inline MPIType registered_type(T const &) { return Type<T>::value; }
+template <class T> inline constexpr MPIType registered_type(T const &) { return Type<T>::value; }
 
-static_assert(is_registered_type<int>::value, "Checking int is registered");
-static_assert(is_registered_type<std::complex<double>>::value,
-              "Checking complex double is registered");
-// static_assert(not is_registered_type<std::complex<int>>::value,
-//               "Checking complex int is NOT registered");
+namespace details {
+template <typename... Ts> struct make_void { typedef void type; };
+//! \brief Defines c++17 metafunction
+//! \details This implements [std::void_t](http://en.cppreference.com/w/cpp/types/void_t). See
+//! therein and [CWG 1558](http://open-std.org/JTC1/SC22/WG21/docs/cwg_defects.html#1558) for the
+//! reason behind the slightly convoluted approach.
+template <typename... Ts> using void_t = typename make_void<Ts...>::type;
+}
+//! True if the type is registered
+template <class T, class = details::void_t<>> class is_registered_type : public std::false_type {};
+template <class T>
+class is_registered_type<T, details::void_t<decltype(Type<T>::value)>> : public std::true_type {};
+
 } /* optime::mpi */
 } /* optimet */
 #endif /* ifndef OPTIMET_TYPES */
