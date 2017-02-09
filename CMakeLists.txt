@@ -39,19 +39,19 @@ include(dependencies)
 # adds flags for compiling with c++11
 include(AddCPP11Flags)
 
-include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR})
 include_directories(SYSTEM
   ${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS}
   ${F2C_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR}
   ${Belos_INCLUDE_DIRS})
 
 # list all object files
-file(GLOB SRC *.c*  pugi/*.c*)
-file(GLOB EXCLUDE .clang-format main.cpp GPL_Licence.c MainPage.c XML_Manual.c)
+file(GLOB SRC src/*.c*  pugi/*.c*)
+file(GLOB EXCLUDE .clang-format src/main.cpp)
 list(REMOVE_ITEM SRC ${EXCLUDE})
 if(dompi)
   set(OPTIMET_MPI TRUE)
-  file(GLOB parallel_files scalapack/*.cpp mpi/*.cpp)
+  file(GLOB parallel_files src/scalapack/*.cpp src/mpi/*.cpp)
   list(APPEND SRC ${parallel_files})
   # Add fortran interface for blacs and scalapack
   include(DetectFortran)
@@ -61,18 +61,18 @@ if(dompi)
   include(DetectIntegerArchitecture)
   DetectIntegerArchitecture(OPTIMET)
 else()
-  file(GLOB EXCLUDE ScalapackSolver.cpp MatrixBelosSolver.cpp FMMBelosSolver.cpp)
+  file(GLOB EXCLUDE src/ScalapackSolver.cpp src/MatrixBelosSolver.cpp src/FMMBelosSolver.cpp)
   list(REMOVE_ITEM SRC ${EXCLUDE})
 endif()
 
 if(NOT OPTIMET_BELOS)
-  file(GLOB EXCLUDE MatrixBelosSolver.cpp FMMBelosSolver.cpp)
+  file(GLOB EXCLUDE src/MatrixBelosSolver.cpp src/FMMBelosSolver.cpp)
   list(REMOVE_ITEM SRC ${EXCLUDE})
 endif()
 
 # configure a file with some build defaults
 include_directories("${PROJECT_BINARY_DIR}/include/optimet")
-configure_file(Types.in.h "${PROJECT_BINARY_DIR}/include/optimet/Types.h")
+configure_file(src/Types.in.h "${PROJECT_BINARY_DIR}/include/optimet/Types.h")
 
 # add a library that can be linked against in unittests as well
 add_library(optilib STATIC ${SRC})
@@ -89,7 +89,7 @@ endif()
 list(APPEND library_dependencies ${F2C_LIBRARIES})
 
 # main executable
-add_executable(Optimet3D main.cpp)
+add_executable(Optimet3D src/main.cpp)
 target_link_libraries(Optimet3D optilib ${library_dependencies})
 
 # all testing stuff below
