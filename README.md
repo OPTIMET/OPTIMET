@@ -1,6 +1,10 @@
 Optimet
 =======
 
+[![homepage](https://img.shields.io/badge/homepage-url-blue.svg)](https://www.ee.ucl.ac.uk/~npanoiu/Software.html)
+[![license](https://img.shields.io/badge/license-GPL-blue.svg)](LICENSE)
+[![downloads](https://img.shields.io/github/downloads/OPTIMET/optimet/total.svg)](github.com/OPTIMET/OPTIMET/releases)
+
 Optimet is a simulation of multiple-scattering of light on a distribution of homogeneous spherical
 nanoparticles embedded in a homogeneous medium. It can run in parallel on large clusters, using MPI.
 It accepts several linear-system solvers, including a direct solver from
@@ -20,6 +24,8 @@ The compiled program is called with a single argument, the path to the XML input
 ```
 Optimet3D input.xml
 ```
+
+A manual is available in [docx](manuals/manual.docx) and [pdf](manuals/manual.pdf) formats.
 
 Installation
 ============

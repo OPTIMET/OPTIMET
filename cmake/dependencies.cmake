@@ -27,6 +27,9 @@ endif(DOXYGEN_FOUND)
 
 include(CMakeParseArguments)
 
+if(NOT CMAKE_PREFIX_PATH AND NOT "$ENV{CMAKE_PREFIX_PATH}" STREQUAL "")
+  string(REGEX REPLACE ":" ";" CMAKE_PREFIX_PATH $ENV{CMAKE_PREFIX_PATH})
+endif()
 find_or_add_hunter_package(Boost)
 find_or_add_hunter_package(Eigen PACKAGE Eigen3)
 find_or_add_hunter_package(hdf5 PACKAGE HDF5 COMPONENTS C)
