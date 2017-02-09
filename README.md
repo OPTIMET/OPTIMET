@@ -21,6 +21,8 @@ The compiled program is called with a single argument, the path to the XML input
 Optimet3D input.xml
 ```
 
+A manual is available in [docx](manuals/manual.docx) and [pdf](manuals/manual.pdf) formats.
+
 Installation
 ============
 
