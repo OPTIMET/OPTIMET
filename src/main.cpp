@@ -26,10 +26,17 @@
 int main(int argc, const char *argv[]) {
   optimet::mpi::init(argc, argv);
   if(argc <= 1) {
-    std::cerr << "Usage: " << argv[0] << " <path/to/xml/file/without/extension>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " <path/to/xml/file>" << std::endl;
     return 1;
   }
-  optimet::Simulation simulation(argv[1]);
+
+  // Remove .xml from file name
+  std::string caseFile = argv[1];
+  auto const last_dot = caseFile.find_last_of(".");
+  if(last_dot != std::string::npos and caseFile.substr(last_dot) == ".xml")
+    caseFile = caseFile.substr(0, last_dot);
+
+  optimet::Simulation simulation(caseFile);
   simulation.run();
   simulation.done();
 

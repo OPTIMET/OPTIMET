@@ -43,7 +43,7 @@ function(add_regression_test testname)
     COPYONLY
   )
   # Command is always optimet + input
-  set(regr_CMD ${PROJECT_BINARY_DIR}/Optimet3D ${regr_INPUTFILE})
+  set(regr_CMD ${PROJECT_BINARY_DIR}/Optimet3D ${regr_INPUTFILE}.xml)
   if(regr_DOMPI)
     set(regr_CMD
       ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS}
