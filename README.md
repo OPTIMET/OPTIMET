@@ -2,10 +2,9 @@ Optimet
 =======
 
 [![homepage](https://img.shields.io/badge/homepage-url-blue.svg)](https://www.ee.ucl.ac.uk/~npanoiu/Software.html)
-[![license](https://img.shields.io/github/license/optimet/optimet.svg)](LICENSE)
+[![license](https://img.shields.io/badge/license-GPL-blue.svg)](LICENSE)
 [![manual](https://img.shields.io/badge/manual-docx-yellow.svg)](manuals/manual.docx)
 [![manual](https://img.shields.io/badge/manual-pdf-yellow.svg)](manuals/manual.pdf)
-[![downloads](https://img.shields.io/github/downloads/OPTIMET/OPTIMET/total.svg)](https://github.com/OPTIMET/OPTIMET/releases)
 
 Optimet is a simulation of multiple-scattering of light on a distribution of homogeneous spherical
 nanoparticles embedded in a homogeneous medium. It can run in parallel on large clusters, using MPI.
