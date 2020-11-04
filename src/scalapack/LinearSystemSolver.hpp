@@ -133,8 +133,8 @@ gmres_linear_system(Matrix<SCALARA> const &A, Matrix<SCALARB> const &b,
   // Attempt to solve the linear system.  result == Belos::Converged
   // means that it was solved to the desired tolerance.  This call
   // overwrites X with the computed approximate solution.
-  int info = solver->solve() == Belos::Converged ? 0 : 1;
 
+  int info = (solver->solve() == Belos::Converged ? 0 : 1);
   auto const view = as_matrix(*X, b);
   ConcreteMatrix result(b.context(), b.sizes(), b.blocks());
   result.local() = view.local();

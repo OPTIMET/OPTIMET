@@ -97,9 +97,7 @@ public:
   getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet::t_uint nMax_) const;
 
   int getCabsAux(double omega_, int objectIndex_, int nMax_, double *Cabs_aux_);
-
-  int getNLSources(double omega_, int objectIndex_, int nMax_, std::complex<double> *sourceU,
-                   std::complex<double> *sourceV) const;
+  
 
   /**
    * Returns the relative vector R_lj between two objects.
@@ -116,22 +114,26 @@ public:
    */
   int checkInner(Spherical<double> R_);
 
-  /**
-   * Calculates the local second harmonic sources.
-   * @param objectIndex_ the index of the object.
-   * @param incWave_ pointer to the incoming excitation.
-   * @param scatterCoef_ pointer to the ENTIRE scattering coefficients for the
-   * FF case
-   * @param nMax_ the maximum value of the n iterator.
-   * @param Q_SH_local_ the return value of the local SH source vector.
-   * @return 0 if successful, 1 otherwise.
-   */
-  int getSourceLocal(int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_,
-                     int nMax_, std::complex<double> *Q_SH_local_) const;
+  void Coefficients(int nMax, int nMaxS, std::vector<double *> CLGcoeff, int gran1, int gran2);
 
-  int setSourcesSingle(std::shared_ptr<optimet::Excitation const> incWave_,
-                       std::complex<double> const *internalCoef_FF_, int nMax_);
-
+   // Incident coefficients for the second harmonic case                  
+  int getIncLocalSH(std::vector<double *> CLGcoeff, int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_,
+         optimet::Vector<optimet::t_complex> &internalCoef_FF_, int nMaxS_, std::complex<double> *Inc_local); 
+  
+  // Incident coefficients for the second harmonic case for parallelization                 
+  int getIncLocalSH_parallel(std::vector<double *> CLGcoeff, int gran1, int gran2, std::shared_ptr<optimet::Excitation const> incWave_,
+         optimet::Vector<optimet::t_complex> &internalCoef_FF_, int nMaxS_, std::complex<double> *Inc_local);     
+           
+ // Coefficient for absorption cross section second harmonic      
+  int AbsCSSHcoeff(std::vector<double *> CLGcoeff, int gran1, int gran2, std::shared_ptr<optimet::Excitation const> incWave_, 
+            optimet::Vector<optimet::t_complex> &internalCoef_FF_, optimet::Vector<optimet::t_complex> &internalCoef_SH_, int 
+            nMaxS_, std::complex<double> *coefABS); 
+            
+   // Coefficients for the particular solution of SH differential equations                                     
+  int COEFFpartSH(int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_, optimet::Vector<optimet::t_complex> 
+                  &internalCoef_FF_, double r, int nMaxS_, std::complex<double> *coefXmn, std::complex<double> *coefXpl, 
+                   std::vector<double *> CLGcoeff);
+                                            
   /**
    * Updates the Geometry object to a new Excitation.
    * @param lambda_ the new wavelength.
@@ -161,6 +163,15 @@ public:
                              return std::max<optimet::t_uint>(prior, current.nMax);
                            });
   }
+
+ //! Maximum nMaxS across objects
+  optimet::t_uint nMaxS() const {
+    return std::accumulate(objects.begin(), objects.end(), optimet::t_uint(0u),
+                           [](optimet::t_uint prior, Scatterer const &current) {
+                             return std::max<optimet::t_uint>(prior, current.nMaxS);
+                           });
+  }
+
   //! Minimum nMax across objects
   optimet::t_uint nMin() const {
     return std::accumulate(objects.begin(), objects.end(), nMax(),

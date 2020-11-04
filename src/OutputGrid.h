@@ -49,10 +49,10 @@ namespace optimet {
  */
 class OutputGrid {
 private:
-  hid_t vecGroupId[3];  /**< The Group IDs for each of the three subgroups.
+  hid_t vecGroupId[4];  /**< The Group IDs for each of the four subgroups.
                            Internal. */
-  hid_t vecDataId[6];   /**< The Data IDs for each of the six datasets. Internal. */
-  hid_t vecDSpaceId[6]; /**< The Data IDs for each of the six dataspaces.
+  hid_t vecDataId[7];   /**< The Data IDs for each of the seven datasets. Internal. */
+  hid_t vecDSpaceId[7]; /**< The Data IDs for each of the seven dataspaces.
                            Internal. */
   //! Auxiliary data used internally
   std::array<t_real, 3> aux;
@@ -88,6 +88,7 @@ public:
    */
   OutputGrid(int type_, std::array<t_real, 9> const & parameters_, hid_t groupID_);
 
+  OutputGrid(int type_, std::array<t_real, 9> const & parameters_);
   /**
    * Initialization method for the OutputGrid class.
    * @param type_ the grid type as defined in "Aliases.h".
@@ -96,6 +97,8 @@ public:
    * @param groupID_ the HDF5 data space.
    */
   void init(int type_, std::array<t_real, 9> const & parameters_, hid_t groupID_);
+
+   void init(int type_, std::array<t_real, 9> const & parameters_);
 
   /**
    * Sets the iterator to the first point.

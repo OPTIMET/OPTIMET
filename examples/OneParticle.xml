@@ -1,23 +1,31 @@
 <simulation>
-  <harmonics nmax="6" />
+  <harmonics nmax="13" />
 </simulation>
 <source type="planewave">
-  <wavelength value="1460" />
-  <propagation theta="90" phi="90" />
+  <wavelength value="545" />
+  <propagation theta="45.0" phi="90.0" />
   <polarization Etheta.real="1.0" Etheta.imag="0.0" Ephi.real="0.0" Ephi.imag="0.0" />
 </source>
 <geometry>
-  <object type="sphere">
+<object type="sphere">
     <cartesian x="0.0" y="0.0" z="0.0" />
-    <properties radius="500.0" />
-    <epsilon type="relative" value.real="13.0" value.imag="0.0" />
+    <properties radius="200.0" />
+    <epsilon type="HydroModel">
+    <parameters
+    a.real="1.0" a.imag="0.0"
+    b.real="-1.0" b.imag="0.0"
+    d.real="1.0" d.imag="0.0" />
+    </epsilon>
     <mu type="relative" value.real="1.0" value.imag="0.0" />
-  </object>
+</object>
 </geometry>
-<output type="field">
-  <grid type="cartesian">
-    <x min="-1000" max="1000" steps="201" />
-    <y min="-0.1" max="0.1" steps="2" />
-    <z min="-1000" max="1000" steps="201" />
-  </grid>
+<output type="response">
+  <scan type="A+E">
+    <wavelength initial="1000" final="1010" stepsize="1" />
+  </scan>
 </output>
+
+
+
+
+

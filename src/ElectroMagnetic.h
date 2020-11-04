@@ -18,6 +18,7 @@
 #define ELECTROMAGNETIC_H_
 
 #include <complex>
+#include <vector>
 
 /**
  * @brief The ElectroMagnetic class implements EM properties for scatterers.
@@ -41,9 +42,10 @@ public:
    * Initializes epsilon_r and mu_r with RELATIVE values by calling init_r.
    * @param epsilon_r_ the complex relative value for permittivity.
    * @param mu_r_ the complex relative value for permeability.
+   * other parameters are values for the second harmonic case
    * @see init_r()
    */
-  ElectroMagnetic(std::complex<double> epsilon_r_, std::complex<double> mu_r_);
+  ElectroMagnetic(std::complex<double> epsilon_r_, std::complex<double> mu_r_, std::complex<double> epsilon_r_SH, std::complex<double> ksippp, std::complex<double> ksiparppar, std::complex<double> gamma);
 
   /**
    * Default destructor for ElectroMagnetic.
@@ -51,7 +53,7 @@ public:
   virtual ~ElectroMagnetic();
   // Model variables
   int modelType; /**< Mode being used. Currently supports 0 - fixed, 1 -
-                    Sellmeier, 2 - Drude. */
+                    Sellmeier, 2 - Drude., 3 - Hydrodynamic */
   double B1;
   double C1;
   double B2;
@@ -65,6 +67,10 @@ public:
   double lambda;
   std::complex<double> plasma_freq;
   std::complex<double> damping_freq;
+
+// Schinke data for lambda range 0.5 - 1.45um
+
+   std::vector<double> refInd, Extcoeff;
 
   // Fundamental Frequency variables
   std::complex<double> epsilon;   /**< The absolute electric permittivity. */
@@ -84,7 +90,12 @@ public:
       epsilon_r_SH; /**< The relative second harmonic electric permittivity. */
   std::complex<double>
       mu_r_SH; /**< The relative second harmonic magnetic permeability. */
-
+      
+  std::complex<double> ksippp; // value of the surface parameter perpendicular-perpendicular-perpendicular    
+  
+  std::complex<double> ksiparppar; // value of the surface parameter parallel-perpendicular-parallel
+  
+  std::complex<double> gamma; // value of the parameter gamma  
   /**
    * Initialization function for ElectroMagnetic.
    * Initializes epsilon and mu with ABSOLUTE values. Calculates relative
@@ -94,7 +105,8 @@ public:
    * @see ElectroMagnetic()
    * @see init_r()
    */
-  void init(std::complex<double> epsilon_, std::complex<double> mu_);
+   
+  //void init(std::complex<double> epsilon_, std::complex<double> mu_);
 
   /**
    * Initialization function for ElectroMagnetic.
@@ -105,7 +117,7 @@ public:
    * @see ElectroMagnetic()
    * @see init()
    */
-  void init_r(std::complex<double> epsilon_r_, std::complex<double> mu_r_);
+  void init_r(std::complex<double> epsilon_r_, std::complex<double> mu_r_, std::complex<double> epsilon_r_SH, std::complex<double> ksippp, std::complex<double> ksiparppar, std::complex<double> gamma);
 
   /**
    * Initialization function for Electromagnetic using the Sellmeier equation.
@@ -126,6 +138,13 @@ public:
   void initDrudeModel_r(std::complex<double> plasma_frequency_,
                         std::complex<double> damping_frequency_,
                         std::complex<double> mu_r_);
+                        
+ void initHydrodynamicModel_r(std::complex<double> a_SH,
+                        std::complex<double> b_SH,
+                        std::complex<double> d_SH,
+                        std::complex<double> mu_r_);                       
+
+  void initSiliconModel_r(std::complex<double> mu_r_);
 
   /**
    * Populates the Sellmeier coefficients.
@@ -133,6 +152,10 @@ public:
   void populateSellmeier();
 
   void populateDrudeModel();
+  
+  void populateHydrodynamicModel();
+
+  void populateSiliconModel();
 
   /**
    * Updates the ElectroMagnetic object to a new wavelength.

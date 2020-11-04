@@ -21,17 +21,28 @@
 namespace optimet {
 namespace solver {
 
-void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const {
+void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vector<t_complex> &X_sca_SH,
+                        Vector<t_complex> &X_int_SH, std::vector<double *> CGcoeff) const {
   if(belos_parameters()->get<std::string>("Solver", "GMRES") == "scalapack")
-    return Scalapack::solve(X_sca_, X_int_);
+    return Scalapack::solve(X_sca_, X_int_, X_sca_SH, X_int_SH, CGcoeff);
   auto const splitcomm = communicator().split(context().is_valid());
+    int nMaxS = geometry->nMaxS();
+    int N = 2 * nMaxS * (nMaxS + 2);
+    int nobj = geometry->objects.size();
   if(context().is_valid()) {
-    auto const solver = belos_parameters()->get<std::string>("Solver");
+   auto const solver = belos_parameters()->get<std::string>("Solver");
     if(solver == "scalapack") {
-      Scalapack::solve(X_sca_, X_int_);
+      Scalapack::solve(X_sca_, X_int_, X_sca_SH, X_int_SH, CGcoeff);
       return;
     }
+ 
+    int uppLIM =nobj * 2 * N;
+    belos_parameters()->set("Maximum Iterations", uppLIM);
+    belos_parameters()->set("Num Blocks", uppLIM);
+
+    // FF part
     auto input = parallel_input();
+
     // Now the actual work
     auto const gls_result = scalapack::gmres_linear_system(std::get<0>(input), std::get<1>(input),
                                                            belos_parameters(), splitcomm);
@@ -40,10 +51,40 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) co
     // Transfer back to root
     X_sca_ = gather_all_source_vector(std::get<0>(gls_result));
     PreconditionedMatrix::unprecondition(X_sca_, X_int_);
+   }
+
+  Vector<t_complex> KmNOD;
+  KmNOD = distributed_source_vector_SH_Mnode(*geometry, incWave, X_int_, CGcoeff);
+
+  if(context().is_valid()) {
+  //SH part
+   
+    Vector<t_complex> K;
+   // auto start = high_resolution_clock::now();
+    K = distributed_source_vector_SH(*geometry, KmNOD,  context(), block_size());
+   // auto stop = high_resolution_clock::now();
+   //  auto duration = duration_cast<microseconds>(stop - start);
+   // std::cout << duration.count() << std::endl;
+     auto input_SH = parallel_input_SH(K);
+   // Now the actual work
+    auto const gls_result_SH =
+    scalapack::gmres_linear_system(std::get<0>(input_SH), std::get<1>(input_SH),
+                                                           belos_parameters(), splitcomm);
+    if(std::get<1>(gls_result_SH) != 0)
+      throw std::runtime_error("Error encountered while solving the linear system");
+    // Transfer back to root
+    X_sca_SH = gather_all_source_vector(std::get<0>(gls_result_SH));
+
+    PreconditionedMatrix::unprecondition_SH(X_sca_SH, X_int_SH);
+
+
   }
   if(context().size() != communicator().size()) {
     broadcast_to_out_of_context(X_sca_, context(), communicator());
     broadcast_to_out_of_context(X_int_, context(), communicator());
+    broadcast_to_out_of_context(X_sca_SH, context(), communicator());
+    broadcast_to_out_of_context(X_int_SH, context(), communicator());
+   
   }
 }
 }

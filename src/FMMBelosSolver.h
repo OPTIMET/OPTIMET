@@ -54,7 +54,8 @@ public:
    * @param X_int_ the return vector for the internal coefficients.
    * @return 0 if successful, 1 otherwise.
    */
-  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const override;
+  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vector<t_complex> &X_sca_SH,
+             Vector<t_complex> &X_int_SH, std::vector<double *> CGcoeff) const override;
   //! \brief Update after internal parameters changed externally
   //! \details Because that's how the original implementation rocked.
   virtual void update() override;

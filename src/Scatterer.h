@@ -21,6 +21,8 @@
 #include "Spherical.h"
 #include "Types.h"
 #include <vector>
+#include <tuple>
+
 
 /**
  * The Scatterer class is the highest level element of a geometry.
@@ -35,7 +37,7 @@ public:
    * Default Scatterer constructor.
    * Does NOT initialize the object.
    */
-  Scatterer(int nMax_);
+  Scatterer(int nMax_, int nMaxS_);
 
   /**
    * Initialization constructor for Scatterer.
@@ -47,7 +49,7 @@ public:
    * @param nMax_ the maximum value of the n iterator.
    * @see init()
    */
-  Scatterer(Spherical<double> vR_, ElectroMagnetic elmag_, double radius_, int nMax_);
+  Scatterer(Spherical<double> vR_, ElectroMagnetic elmag_, double radius_, int nMax_, int nMaxS_);
 
   /**
    * Initialization constructor for Scatterer.
@@ -74,6 +76,7 @@ public:
   ElectroMagnetic elmag; /**< The electromagnetic properties of the scatterer.*/
   double radius;         /**< The radius of a sphere encompassing the scatterer.*/
   int nMax;              /**< Maximum value of the n iterator. */
+  int nMaxS;              /**< Maximum value of the n iterator SH */  
 
   std::vector<std::complex<double>> sourceCoef; /**< The source coefficients needed for SH work.*/
 
@@ -86,10 +89,23 @@ public:
    */
   optimet::Vector<optimet::t_complex>
   getTLocal(optimet::t_real omega_, ElectroMagnetic const &bground) const;
-
-  //! Coefficients for field inside a sphere
+   
+  optimet::Vector<optimet::t_complex> getTLocalSH1_outer(optimet::t_real omega_, ElectroMagnetic const &bground) const;
+  
+  optimet::Vector<optimet::t_complex> getTLocalSH2_outer(optimet::t_real omega_, ElectroMagnetic const &bground) const;
+  
+  //! Coefficients for field inside a sphere FF
   optimet::Vector<optimet::t_complex>
   getIaux(optimet::t_real omega_, ElectroMagnetic const &bground) const;
+  
+  //! Coefficients for field inside a sphere SH
+  optimet::Vector<optimet::t_complex>
+  getIauxSH1(optimet::t_real omega_, ElectroMagnetic const &bground) const;
+  
+  optimet::Vector<optimet::t_complex>
+  getIauxSH2(optimet::t_real omega_, ElectroMagnetic const &bground) const;
+  
+  
 };
 
 #endif /* SCATTERER_H_ */

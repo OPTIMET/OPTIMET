@@ -81,68 +81,7 @@ bool Geometry::no_overlap(Scatterer const &object_) {
   return true;
 }
 
-// AJ
-// -----------------------------------------------------------------------------------------------------
-int Geometry::getNLSources(double omega_, int objectIndex_, int nMax_,
-                           std::complex<double> *sourceU, std::complex<double> *sourceV) const {
-  double R = objects[objectIndex_].radius;
 
-  std::complex<double> mu_b = bground.mu;
-  std::complex<double> eps_b = bground.epsilon;
-  std::complex<double> mu_j2 = objects[objectIndex_].elmag.mu;       /* AJ - SH sphere eps - AJ */
-  std::complex<double> eps_j2 = objects[objectIndex_].elmag.epsilon; /* AJ - SH sphere eps - AJ */
-
-  // T_2w_ Auxiliary variables
-  // --------------------------------------------------------------------------------
-  std::complex<double> k_j2 = omega_ * std::sqrt(eps_j2 * mu_j2);
-  std::complex<double> k_b2 = omega_ * std::sqrt(eps_b * mu_b);
-  std::complex<double> x_j2 = k_j2 * R;
-  std::complex<double> x_b2 = k_b2 * R;
-  std::complex<double> zeta_b2 = std::sqrt(mu_b / eps_b);
-  std::complex<double> zeta_j2 = std::sqrt(mu_j2 / eps_j2);
-  std::complex<double> zeta_boj2 = zeta_b2 / zeta_j2;
-
-  // Auxiliary Riccati-Bessel functions
-  // ---------------------------------------------------------------------
-  std::complex<double> psi2(0., 0.), xsi2(0., 0.);
-  std::complex<double> dpsi2(0., 0.), dxsi2(0., 0.);
-
-  std::vector<std::complex<double>> J_n_data, J_n_ddata;
-  std::vector<std::complex<double>> H_n_data, H_n_ddata;
-
-  try {
-    std::tie(J_n_data, J_n_ddata) = optimet::bessel<optimet::Bessel>(x_j2, nMax_);
-    std::tie(H_n_data, H_n_ddata) = optimet::bessel<optimet::Hankel1>(x_b2, nMax_);
-  } catch(std::range_error &e) {
-    std::cerr << e.what() << std::endl;
-    return 1;
-  }
-
-  CompoundIterator p;
-
-  int pMax = p.max(nMax_);
-
-  for(p = 0; (int)p < pMax; p++) {
-    // obtain aux Riccati-Bessel functions ---------------------------
-    // psi
-    psi2 = x_j2 * J_n_data[p.first];
-    dpsi2 = x_j2 * J_n_ddata[p.first] + J_n_data[p.first];
-    // ksi
-    xsi2 = x_b2 * H_n_data[p.first];
-    dxsi2 = x_b2 * H_n_ddata[p.first] + H_n_data[p.first];
-
-    // obtain diagonal source matrices --------------------------------
-    // SRC_2w_p - TE Part
-    sourceU[p] = x_b2 * dpsi2 / (xsi2 * dpsi2 - zeta_boj2 * psi2 * dxsi2);                    // u'
-    sourceU[p + nMax_] = zeta_boj2 * x_b2 * psi2 / (zeta_boj2 * psi2 * dxsi2 - xsi2 * dpsi2); // u''
-
-    // SRC_2w_p - TM part
-    sourceV[p] = x_b2 * psi2 / (zeta_boj2 * xsi2 * dpsi2 - psi2 * dxsi2); // v'
-    sourceV[p + nMax_] = std::complex<double>(0., 0.);                    // v''
-  }
-
-  return 0;
-}
 
 int Geometry::getCabsAux(double omega_, int objectIndex_, int nMax_, double *Cabs_aux_) {
 
@@ -166,11 +105,13 @@ int Geometry::getCabsAux(double omega_, int objectIndex_, int nMax_, double *Cab
 
   std::vector<std::complex<double>> J_n_data, J_n_ddata;
   std::vector<std::complex<double>> Jrho_n_data, Jrho_n_ddata;
-
+  
+ 
+  
   try {
     std::tie(J_n_data, J_n_ddata) = optimet::bessel<optimet::Bessel>(r_0, nMax_);
     std::tie(Jrho_n_data, Jrho_n_ddata) = optimet::bessel<optimet::Bessel>(rho * r_0, nMax_);
-  } catch(std::range_error &e) {
+  } catch(std::range_error &e) { 
     std::cerr << e.what() << std::endl;
     return 1;
   }
@@ -203,6 +144,8 @@ int Geometry::getCabsAux(double omega_, int objectIndex_, int nMax_, double *Cab
   return 0;
 }
 
+
+
 Spherical<double> Geometry::translateCoordinates(int firstObject_, int secondObject_) {
   return objects[firstObject_].vR - objects[secondObject_].vR;
 }
@@ -222,43 +165,246 @@ int Geometry::checkInner(Spherical<double> R_) {
   return -1;
 }
 
-int Geometry::setSourcesSingle(std::shared_ptr<optimet::Excitation const> incWave_,
-                               std::complex<double> const *internalCoef_FF_, int nMax_) {
-  CompoundIterator p;
-  int pMax = p.max(nMax_);
 
-  std::complex<double> *sourceU = new std::complex<double>[2 * pMax];
-  std::complex<double> *sourceV = new std::complex<double>[2 * pMax];
+void Geometry::Coefficients(int nMax, int nMaxS, std::vector<double *> CLGcoeff, int gran1, int gran2){ 
+
+   
+   optimet::symbol::C_10m1coeff(CLGcoeff[0], nMax, nMaxS, gran1, gran2);
+   optimet::symbol::C_11m1coeff(CLGcoeff[1], nMax, nMaxS, gran1, gran2);
+   optimet::symbol::C_00m1coeff(CLGcoeff[2], nMax, nMaxS, gran1, gran2);
+   optimet::symbol::C_01m1coeff(CLGcoeff[3], nMax, nMaxS, gran1, gran2);
+   
+   optimet::symbol::W_m1m1coeff(CLGcoeff[4], nMax, nMaxS, gran1, gran2);
+   optimet::symbol::W_11coeff(CLGcoeff[5], nMax, nMaxS, gran1, gran2);
+   optimet::symbol::W_00coeff(CLGcoeff[6], nMax, nMaxS, gran1, gran2);
+   optimet::symbol::W_10coeff(CLGcoeff[7], nMax, nMaxS, gran1, gran2);
+   optimet::symbol::W_01coeff(CLGcoeff[8], nMax, nMaxS, gran1, gran2);
+}
+
+
+
+// Second harmonic sources
+
+int Geometry::getIncLocalSH(std::vector<double *> CLGcoeff, int objectIndex_, 
+                         std::shared_ptr<optimet::Excitation const> incWave_,
+                       optimet::Vector<optimet::t_complex> &internalCoef_FF_, int nMaxS_, 
+                       std::complex<double> *Inc_local) {
+  
+  
+   double *C_10m1 = CLGcoeff[0];
+   double *C_11m1 = CLGcoeff[1];
+   double *C_00m1 = CLGcoeff[2];
+   double *C_01m1 = CLGcoeff[3];
+   
+   double *W_m1m1 = CLGcoeff[4];
+   double *W_11 = CLGcoeff[5];
+   double *W_00 = CLGcoeff[6];
+   double *W_10 = CLGcoeff[7];
+   double *W_01 = CLGcoeff[8];
+  
+                               
+  CompoundIterator p;
+  
+  int pMax = p.max(nMaxS_);
+  int nMax_ = this->nMax();
+  
+  auto const omega = incWave_->omega();
+  
+    
+    for(p = 0; p < pMax; p++) {  
+     
+    
+      Inc_local[p] =
+                optimet::symbol::vp_mn(p, C_00m1, C_01m1, nMax_,
+                                              internalCoef_FF_,
+                                              objectIndex_,
+                                              omega, objects[objectIndex_], bground);
+                                              
+                                              
+                                              
+                                            
+      Inc_local[p+pMax] = optimet::symbol::up_mn(p, C_10m1, C_11m1, nMax_,
+                                              internalCoef_FF_,
+                                              objectIndex_,
+                                              omega, objects[objectIndex_], bground);            
+       
+                                              
+                                              
+
+      Inc_local[p + 2*pMax]=  std::complex<double> (0);//<- this last bit is zero for the moment, vpp
+              
+                                  
+                  
+      Inc_local[p + 3*pMax] = optimet::symbol::upp_mn(p, W_m1m1, W_00, W_11, W_10, W_01, nMax_, 
+                  internalCoef_FF_,
+                   objectIndex_,
+                  omega, objects[objectIndex_]); 
+              
+                                   
+     
+    }
+
+  
+  return 0;
+}
+
+
+// second harmonic sources adapted for paralellization
+
+int Geometry::getIncLocalSH_parallel(std::vector<double *> CLGcoeff, int gran1, int gran2, std::shared_ptr<optimet::Excitation const> incWave_,
+                       optimet::Vector<optimet::t_complex> &internalCoef_FF_, int nMaxS_, std::complex<double> *Inc_local) {
+ 
+   double *C_10m1 = CLGcoeff[0];
+   double *C_11m1 = CLGcoeff[1];
+   double *C_00m1 = CLGcoeff[2];
+   double *C_01m1 = CLGcoeff[3];
+   
+   double *W_m1m1 = CLGcoeff[4];
+   double *W_11 = CLGcoeff[5];
+   double *W_00 = CLGcoeff[6];
+   double *W_10 = CLGcoeff[7];
+   double *W_01 = CLGcoeff[8]; 
+                             
+  CompoundIterator p, q;
+  
+  int pMax = p.max(nMaxS_);
+  int qMax = q.max(nMaxS_);
+  int nMax_ = this->nMax();
+  int objectIndex_;
+  int brojac (0);
+  int size = gran2 - gran1;
+  
 
   auto const omega = incWave_->omega();
-  for(size_t j = 0; j < objects.size(); j++) {
-    getNLSources(omega, j, nMax_, sourceU, sourceV);
 
-    for(p = 0; p < pMax; p++) {
-      objects[j].sourceCoef[static_cast<int>(p)] =
-          sourceU[p] * optimet::symbol::up_mn(p.second, p.first, nMax_,
-                                              internalCoef_FF_[j * 2 * pMax + p.compound],
-                                              internalCoef_FF_[pMax + j * 2 * pMax + p.compound],
-                                              omega, objects[j], bground) +
-          sourceV[p] * optimet::symbol::vp_mn(p.second, p.first, nMax_,
-                                              internalCoef_FF_[j * 2 * pMax + p.compound],
-                                              internalCoef_FF_[pMax + j * 2 * pMax + p.compound],
-                                              omega, objects[j], bground);
+    
+    for(q = gran1; q < gran2; q++) {  
+     
+      objectIndex_ = q / qMax;
 
-      objects[j].sourceCoef[static_cast<int>(p) + pMax] =
-          sourceU[p + pMax] *
-              optimet::symbol::upp_mn(
-                  p.second, p.first, nMax_, internalCoef_FF_[j * 2 * pMax + p.compound],
-                  internalCoef_FF_[pMax + j * 2 * pMax + p.compound], omega, objects[j]) +
-          sourceV[p + pMax]; //<- this last bit is zero for the moment
+      p = q - objectIndex_ * qMax;
+    
+       Inc_local[brojac] = optimet::symbol::vp_mn(p, C_00m1, C_01m1, nMax_,
+                                              internalCoef_FF_,
+                                              objectIndex_,
+                                              omega, objects[objectIndex_], bground);                                        
+                                              
+                                           
+      Inc_local[brojac+size] = optimet::symbol::up_mn(p, C_10m1, C_11m1, nMax_,
+                                              internalCoef_FF_,
+                                              objectIndex_,
+                                              omega, objects[objectIndex_], bground);
+
+
+       
+                                              
+      Inc_local[brojac + 2*size]=  std::complex<double> (0);//<- this last bit is zero for the moment, vpp
+              
+                                  
+                  
+      Inc_local[brojac + 3*size] = optimet::symbol::upp_mn(p, W_m1m1, W_00, W_11, W_10, W_01, nMax_, 
+                  internalCoef_FF_,
+                   objectIndex_,
+                  omega, objects[objectIndex_]); 
+                             
+      brojac++;
+     
     }
-  }
 
-  delete[] sourceU;
-  delete[] sourceV;
+  
+  return 0;
+}
+
+
+ int Geometry::AbsCSSHcoeff(std::vector<double *> CLGcoeff, int gran1, int gran2, std::shared_ptr<optimet::Excitation const> incWave_, 
+optimet::Vector<optimet::t_complex> &internalCoef_FF_, optimet::Vector<optimet::t_complex> &internalCoef_SH_,
+        int nMaxS_, std::complex<double> *coefABS) {
+                 
+                                
+
+   double *W_m1m1 = CLGcoeff[4];
+   double *W_11 = CLGcoeff[5];
+   double *W_00 = CLGcoeff[6];
+              
+   CompoundIterator p, q;
+     
+   int pMax = p.max(nMaxS_);
+   int qMax = q.max(nMaxS_);
+   int nMax_ = this->nMax();
+
+   int objectIndex_; 
+   
+  int NO = this->objects.size();  
+
+  auto const omega = incWave_->omega();
+
+  std::complex<double> cmnSH, dmnSH;
+ 
+    int brojac(0);
+   
+    for(q = gran1; q < gran2; q++) {
+
+      objectIndex_ = q / qMax;
+
+      p = q - objectIndex_ * qMax;
+    
+  cmnSH = internalCoef_SH_[objectIndex_ * 4 * pMax + p.compound] + internalCoef_SH_[2 * pMax + objectIndex_ * 4 * pMax + p.compound];
+   
+  dmnSH = internalCoef_SH_[pMax + objectIndex_ * 4 * pMax + p.compound] + internalCoef_SH_[3 * pMax + 
+                           objectIndex_ * 4 * pMax + p.compound];
+     
+    
+    coefABS[brojac] = optimet::symbol::ACSshcoeff(p, W_m1m1, W_00, W_11, nMax_, nMaxS_,
+                  internalCoef_FF_, cmnSH, dmnSH,
+                   objectIndex_,
+                  omega, objects[objectIndex_]);
+
+    brojac++;        
+    }
+   
+  return 0;
+}
+
+
+int Geometry::COEFFpartSH(int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_, 
+optimet::Vector<optimet::t_complex> &internalCoef_FF_, double r,
+        int nMaxS_, std::complex<double> *coefXmn, std::complex<double> *coefXpl, std::vector<double *> CLGcoeff) {
+                 
+   double *W_m1m1 = CLGcoeff[4];
+   double *W_11 = CLGcoeff[5];
+   double *W_00 = CLGcoeff[6];                                
+                 
+   CompoundIterator p;
+  
+   int pMax = p.max(nMaxS_);
+   int nMax_ = this->nMax();   
+
+  auto const omega = incWave_->omega();
+
+ 
+    
+    for(p = 0; p < pMax; p++) {  
+         
+             
+    coefXmn[p] = optimet::symbol::CXm1(p, W_m1m1, W_00, W_11, nMax_,
+                  internalCoef_FF_, r,
+                   objectIndex_,
+                  omega, objects[objectIndex_]);
+                  
+                  
+                 
+    coefXpl[p] = optimet::symbol::CXp1(p, W_m1m1, W_00, W_11, nMax_,
+                  internalCoef_FF_, r,
+                   objectIndex_,
+                  omega, objects[objectIndex_]);              
+                  
+                   
+     
+    }
 
   return 0;
 }
+
 
 optimet::Vector<optimet::t_complex> Geometry::getTLocal(optimet::t_real omega_,
                                                         optimet::t_int objectIndex_,
@@ -270,59 +416,7 @@ optimet::Vector<optimet::t_complex> Geometry::getTLocal(optimet::t_real omega_,
   return objects[objectIndex_].getTLocal(omega_, bground);
 }
 
-int Geometry::getSourceLocal(int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_,
-                             int nMax_, std::complex<double> *Q_SH_local_) const {
-  CompoundIterator p;
-  CompoundIterator q;
 
-  int pMax = p.max(nMax_);
-  int qMax = q.max(nMax_);
-
-  // Make sure Q_SH_local_ is zero
-  for(p = 0; p < pMax; p++) {
-    Q_SH_local_[p] = std::complex<double>(0.0, 0.0);
-    Q_SH_local_[p + pMax] = std::complex<double>(0.0, 0.0);
-  }
-
-  std::complex<double> **T_AB = Tools::Get_2D_c_double(2 * pMax, 2 * qMax);
-  std::complex<double> *Q_interm = new std::complex<double>[pMax + qMax];
-
-  for(size_t j = 0; j < objects.size(); j++) {
-    if(static_cast<int>(j) == objectIndex_)
-      continue;
-
-    // Build the T_AB matrix
-    optimet::Coupling const AB(objects[objectIndex_].vR - objects[j].vR, incWave_->waveK, nMax_);
-
-    for(p = 0; p < pMax; p++) {
-      for(q = 0; q < qMax; q++) {
-        T_AB[p][q] = AB.diagonal(p, q);
-        T_AB[p + pMax][q + qMax] = AB.diagonal(p, q);
-        T_AB[p + pMax][q] = AB.offdiagonal(p, q);
-        T_AB[p][q + qMax] = AB.offdiagonal(p, q);
-      }
-    }
-
-    // Multiply T_AB with the single local sources
-    Algebra::multiplyVectorMatrix(T_AB, 2 * pMax, 2 * qMax, objects[j].sourceCoef.data(), Q_interm,
-                                  consC1, consC1);
-
-    // Finally, add Q_interm to Q_SH_local
-    for(p = 0; p < pMax; p++) {
-      Q_SH_local_[p] += Q_interm[p];
-      Q_SH_local_[p + pMax] += Q_interm[p + pMax];
-    }
-  }
-
-  // Clear up the memory
-  for(int i = 0; i < 2 * pMax; i++)
-    delete[] T_AB[i];
-
-  delete[] T_AB;
-  delete[] Q_interm;
-
-  return 0;
-}
 
 void Geometry::update(std::shared_ptr<optimet::Excitation const> incWave_) {
   // Update the ElectroMagnetic properties of each object

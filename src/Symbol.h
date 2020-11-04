@@ -25,6 +25,7 @@
 
 #include "Scatterer.h"
 #include "ElectroMagnetic.h"
+#include "CompoundIterator.h"
 
 namespace optimet {
 namespace symbol {
@@ -41,25 +42,59 @@ namespace symbol {
  * @param m3 coefficient.
  * @return the Wigner 3j symbol.
  */
+ 
+ 
 double Wigner3j(int j1, int j2, int j3, int m1, int m2, int m3);
 
-std::complex<double> up_mn(int m, int n, int nMax,
-                           const std::complex<double> &cmn_1,
-                           const std::complex<double> &dmn_1, double omega,
+std::complex<double> up_mn(CompoundIterator &kk, double *C_10m1, double *C_11m1, int nMax, 
+                           optimet::Vector<optimet::t_complex> &internalCoef_FF_,
+                           int objectIndex_,
+                           double omega,
                            const Scatterer &object,
                            const ElectroMagnetic &bground);
 
-std::complex<double> vp_mn(int m, int n, int nMax,
-                           const std::complex<double> &cmn_1,
-                           const std::complex<double> &dmn_1, double omega,
+std::complex<double> vp_mn(CompoundIterator &kk, double *C_00m1, double *C_01m1, int nMax,
+                           optimet::Vector<optimet::t_complex> &internalCoef_FF_,
+                           int objectIndex_, 
+                           double omega,
                            const Scatterer &object,
                            const ElectroMagnetic &bground);
 
-std::complex<double> upp_mn(int m, int n, int nMax,
-                            const std::complex<double> &cmn_1,
-                            const std::complex<double> &dmn_1, double omega,
+std::complex<double> upp_mn(CompoundIterator &kk, double *W_m1m1, double *W_00, double *W_11, double *W_10, double *W_01, int nMax, 
+                           optimet::Vector<optimet::t_complex> &internalCoef_FF_,
+                           int objectIndex_,
+                           double omega,
+                           const Scatterer &object);
+                           
+std::complex<double> ACSshcoeff(CompoundIterator &kk, double *W_m1m1, double *W_00, double *W_11, int nMax, int nMaxS, 
+                           optimet::Vector<optimet::t_complex> &internalCoef_FF_,
+                           std::complex<double> cmnSH,
+                           std::complex<double> dmnSH,
+                           int objectIndex_,
+                           double omega,
+                           const Scatterer &object);     
+                           
+std::complex<double> CXm1(CompoundIterator &kk, double *W_m1m1, double *W_00, double *W_11, int nMax,
+                            optimet::Vector<optimet::t_complex> &internalCoef_FF_,
+                            double r,
+                            int objectIndex_, double omega,
                             const Scatterer &object);
-
+                            
+std::complex<double> CXp1(CompoundIterator &kk, double *W_m1m1, double *W_00, double *W_11, int nMax,
+                            optimet::Vector<optimet::t_complex> &internalCoef_FF_,
+                            double r,
+                            int objectIndex_, double omega,
+                            const Scatterer &object);                            
+                                                       
+void C_10m1coeff (double *C_10m1, int nMax, int nMaxS, int gran1, int gran2); 
+void C_11m1coeff (double *C_11m1, int nMax, int nMaxS, int gran1, int gran2);  
+void C_00m1coeff (double *C_00m1, int nMax, int nMaxS, int gran1, int gran2);  
+void C_01m1coeff (double *C_01m1, int nMax, int nMaxS, int gran1, int gran2);  
+void W_m1m1coeff  (double *W_m1m1, int nMax, int nMaxS, int gran1, int gran2);    
+void W_11coeff  (double *W_11, int nMax, int nMaxS, int gran1, int gran2); 
+void W_00coeff  (double *W_00, int nMax, int nMaxS, int gran1, int gran2);
+void W_10coeff  (double *W_10, int nMax, int nMaxS, int gran1, int gran2);  
+void W_01coeff  (double *W_01, int nMax, int nMaxS, int gran1, int gran2);  
 } // namespace symbol
 } // namespace optimet
 

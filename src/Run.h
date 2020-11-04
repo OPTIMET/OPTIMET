@@ -55,6 +55,7 @@ public:
 
   //!  The maximum value of the n iterator
   t_int nMax;
+  t_int nMaxS; // second harmonic number of spherical harmonics
 
   //! This bit will be moved to the case or where it is appropiate
   t_int projection;

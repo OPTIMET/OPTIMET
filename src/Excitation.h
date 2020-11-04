@@ -18,10 +18,11 @@
 #define EXCITATION_H_
 
 #include "Spherical.h"
-
 #include "Types.h"
 #include "constants.h"
 #include <complex>
+#include <memory>
+
 
 namespace optimet {
 /**
@@ -45,8 +46,9 @@ public:
   Vector<t_complex> dataIncAp; /**< The incoming wave a_n^m coefficients. */
   Vector<t_complex> dataIncBp; /**< The incoming wave b_n^m coefficients. */
 
-  std::complex<double> waveK; /**< The incoming wave wavenumber. */
-
+  std::complex<double> waveK, bgcoef; /**< The incoming wave wavenumber. */
+  
+  
   /**
    * Initialization constructor for the Excitation class.
    * @param type_ the type of the wave.
@@ -55,7 +57,7 @@ public:
    * @param nMax_ the maximum value of the n iterator.
    */
   Excitation(unsigned long type_, SphericalP<std::complex<double>> Einc_,
-             Spherical<double> vKInc_, int nMax_);
+             Spherical<double> vKInc_, int nMax_, std::complex<double> bgcoeff);
 
   /**
    * Default destructor for the Excitation class.
@@ -89,7 +91,8 @@ public:
    */
   int getIncLocal(Spherical<double> point_, std::complex<double> *Inc_local_,
                   int nMax_) const;
-
+                  
+                                          
   /**
    * Updates the wavelength of the current excitation object to a new value.
    * @param lambda_ the new value of the wavelength.

@@ -1,3 +1,4 @@
+
 // (C) University College London 2017
 // This file is part of Optimet, licensed under the terms of the GNU Public License
 //
@@ -40,9 +41,9 @@ using namespace pugi;
 namespace optimet {
 namespace {
 std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &node);
-Scatterer read_spherical_scatterer(pugi::xml_node const &node, t_int nMax);
-std::shared_ptr<Geometry> read_structure(pugi::xml_node const &inputFile, t_int nMax);
-std::shared_ptr<Excitation> read_excitation(pugi::xml_document const &inputFile, t_int nMax);
+Scatterer read_spherical_scatterer(pugi::xml_node const &node, t_int nMax, t_int nMaxS);
+std::shared_ptr<Geometry> read_structure(pugi::xml_node const &inputFile, t_int nMax, t_int nMaxS);
+std::shared_ptr<Excitation> read_excitation(pugi::xml_document const &inputFile, t_int nMax, ElectroMagnetic &bground);
 scalapack::Parameters read_parallel(const pugi::xml_node &node);
 #ifdef OPTIMET_BELOS
 Teuchos::RCP<Teuchos::ParameterList> read_parameter_list(pugi::xml_document const &root_node);
@@ -57,7 +58,7 @@ std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &inputFile) {
     throw std::runtime_error("Simulation parameters not defined!");
 
   auto const nMax = simulation_node.child("harmonics").attribute("nmax").as_int();
-
+  auto const nMaxS =1 * nMax; //SH number of harmonics
   // Find the geometry node
   auto const geo_node = inputFile.child("geometry");
   if(!geo_node)
@@ -65,14 +66,14 @@ std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &inputFile) {
 
   // Check if a structure is defined
   if(geo_node.child("structure"))
-    return read_structure(geo_node, nMax);
+    return read_structure(geo_node, nMax, nMaxS);
 
   auto result = std::make_shared<Geometry>();
   result->structureType = 0;
 
   // Find all scattering objects
   for(xml_node node = geo_node.child("object"); node; node = node.next_sibling("object"))
-    result->pushObject(read_spherical_scatterer(node, nMax));
+    result->pushObject(read_spherical_scatterer(node, nMax, nMaxS));
 
   // Add the background properties
   if(geo_node.child("background")) {
@@ -85,21 +86,35 @@ std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &inputFile) {
           geo_node.child("background").child("epsilon").attribute("value.imag").as_double());
       aux_mu.real(geo_node.child("background").child("mu").attribute("value.real").as_double());
       aux_mu.imag(geo_node.child("background").child("mu").attribute("value.imag").as_double());
-      result->bground.init_r(aux_epsilon, aux_mu);
+      result->bground.init_r(aux_epsilon, aux_mu, 0.0, 0.0, 0.0, 0.0);
     }
   }
-
   // Validate the geometry in the return
   if(result->objects.size() == 0)
     throw std::runtime_error("No scatterers defined in input");
   return result;
 }
 
-std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax) {
+std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax, t_int nMaxS) {
   auto geometry = std::make_shared<Geometry>();
   xml_node struct_node = geo_node_.child("structure");
 
   geometry->structureType = 1; // set the spiral structure flag
+
+  // Add the background properties
+  if(geo_node_.child("background")) {
+    if(std::strcmp(geo_node_.child("background").attribute("type").value(), "relative")) {
+      std::complex<double> aux_epsilon(1.0, 0.);
+      std::complex<double> aux_mu(1.0, 0.);
+      aux_epsilon.real(
+          geo_node_.child("background").child("epsilon").attribute("value.real").as_double());
+      aux_epsilon.imag(
+          geo_node_.child("background").child("epsilon").attribute("value.imag").as_double());
+      aux_mu.real(geo_node_.child("background").child("mu").attribute("value.real").as_double());
+      aux_mu.imag(geo_node_.child("background").child("mu").attribute("value.imag").as_double());
+      geometry->bground.init_r(aux_epsilon, aux_mu, 0.0, 0.0, 0.0, 0.0);
+    }
+  }
 
   if(!std::strcmp(struct_node.attribute("type").value(), "spiral")) {
     // Build a spiral
@@ -166,7 +181,7 @@ std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax) 
 
     // Determine normal, convert to a spherical object and push
 
-    auto const scatterer = read_spherical_scatterer(struct_node.child("object"), nMax);
+    auto const scatterer = read_spherical_scatterer(struct_node.child("object"), nMax, nMaxS);
     for(int i = 0; i < No - 1; i++) {
       geometry->pushObject(scatterer);
       std::string const normal = struct_node.child("properties").attribute("normal").value();
@@ -186,16 +201,138 @@ std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax) 
         throw std::runtime_error("Unknown normal " + normal);
     }
   }
+  
+  
+  //assembly of spheres into a cube
+  if(!std::strcmp(struct_node.attribute("type").value(), "cube")) {
+    // Build a cube of spherical scatterers with a corner in origin
+    double d; //  distance between spheres
+    
+    int  No, Ntot;  // number of objects per side of the cube // total number of particles in cube
+
+      No = struct_node.child("properties").attribute("points").as_int();
+      
+      Ntot = std::pow(No , 3);
+ 
+      d = struct_node.child("properties").attribute("distance").as_double() * consFrnmTom;
+  
+
+    // Assign properties to the Scatterer work_object
+    if(struct_node.child("object").child("properties").attribute("radius")) {
+      auto const radius =
+          struct_node.child("object").child("properties").attribute("radius").as_double();
+    }
+
+    // Create vectors for X, Y and Z coordinates
+    std::vector<double> X(Ntot); // to store x coordinates for all particles in cube
+    std::vector<double> Y(Ntot); // to store y coordinates for all particles in cube
+    std::vector<double> Z(Ntot); // to store z coordinates for all particles in cube
+    
+    int i = 0, j = 0, k = 0, br = 0;
+   
+    for(k = 0; k < No; k++) {
+    
+     for(j = 0; j < No; j++) {
+      
+      for(i = 0; i < No; i++) {
+
+        X[br] = d * double(i);
+        Y[br] = d * double(j);
+        Z[br] = d * double(k);
+        
+        
+        br++;
+       }
+     }
+   }
+    
+
+    // convert to a spherical object and push
+
+    auto const scatterer = read_spherical_scatterer(struct_node.child("object"), nMax, nMaxS);
+    
+    geometry->pushObject(scatterer);
+   
+    for(int i = 1; i < Ntot; i++) {
+    
+        geometry->objects.back().vR = Tools::toSpherical({X[i], Y[i], Z[i]});
+ 
+        geometry->pushObject(scatterer);
+       
+  }  
+
+}
+
+
+ //assembly of spheres into a surface
+  if(!std::strcmp(struct_node.attribute("type").value(), "surface")) {
+    // Build a metasurface of spherical scatterers with a corner in origin
+    double d; //  distance between spheres
+    
+    int  No, Ntot;  // number of objects per side of the cube // total number of particles in cube
+
+      No = struct_node.child("properties").attribute("points").as_int();
+      
+      Ntot = std::pow(No , 2);
+ 
+      d = struct_node.child("properties").attribute("distance").as_double() * consFrnmTom;
+  
+
+    // Assign properties to the Scatterer work_object
+    if(struct_node.child("object").child("properties").attribute("radius")) {
+      auto const radius =
+          struct_node.child("object").child("properties").attribute("radius").as_double();
+    }
+
+    // Create vectors for X , Y and Z coordinates
+    std::vector<double> X(Ntot); // to store x coordinates for all particles in surface
+    std::vector<double> Y(Ntot); // to store y coordinates for all particles in surface
+    std::vector<double> Z(Ntot); // to store z coordinates for all particles in surface, for now 0.0
+    
+    int i = 0, j = 0, br = 0;
+    
+     for(j = 0; j < No; j++) {
+      
+      for(i = 0; i < No; i++) {
+
+        X[br] = d * double(i);
+        Y[br] = d * double(j);
+        Z[br] = 0.0;
+
+        br++;
+       }
+     }
+    
+
+    // convert to a spherical object and push
+
+    auto const scatterer = read_spherical_scatterer(struct_node.child("object"), nMax, nMaxS);
+    
+    geometry->pushObject(scatterer);
+   
+    for(int i = 1; i < Ntot; i++) {
+    
+        geometry->objects.back().vR = Tools::toSpherical({X[i], Y[i], Z[i]});
+ 
+        geometry->pushObject(scatterer);
+       
+  }  
+
+}
+
+
 
   if(geometry->objects.size() == 0)
     throw std::runtime_error("No scatterers defined in input");
   return geometry;
+
+
 }
 
-Scatterer read_spherical_scatterer(pugi::xml_node const &node, t_int nMax) {
+Scatterer read_spherical_scatterer(pugi::xml_node const &node, t_int nMax, t_int nMaxS) {
   if(node.attribute("type").value() != std::string("sphere"))
     std::runtime_error("Expecting a spherical scatterer");
-  Scatterer result(nMax);
+  Scatterer result(nMax, nMaxS);
   // Assign coordinates to the Scatterer work_object
   if(node.child("cartesian")) // Cartesian coordinates
     result.vR = Tools::toSpherical(
@@ -207,7 +344,7 @@ Scatterer read_spherical_scatterer(pugi::xml_node const &node, t_int nMax) {
                  node.child("spherical").attribute("the").as_double(),
                  node.child("spherical").attribute("phi").as_double()};
   else
-    result.vR = {0, 0, 0};
+    result.vR = {0.0, 0.0, 0.0};
 
   // Assign properties to the Scatterer work_object
   if(node.child("properties").attribute("radius"))
@@ -227,16 +364,51 @@ Scatterer read_spherical_scatterer(pugi::xml_node const &node, t_int nMax) {
       // Static values
       std::complex<double> epsilon(node.child("epsilon").attribute("value.real").as_double(),
                                    node.child("epsilon").attribute("value.imag").as_double());
-      result.elmag.init_r(epsilon, aux_mu);
+      std::complex<double> epsilon_SH(node.child("epsilon_SH").attribute("value.real").as_double(),
+                                   node.child("epsilon_SH").attribute("value.imag").as_double());
+                                   
+       std::complex<double> ksippp(node.child("ksippp").attribute("value.real").as_double(),                                     node.child("ksippp").attribute("value.imag").as_double()); 
+       
+       std::complex<double> ksiparppar(node.child("ksiparppar").attribute("value.real").as_double(),                                     node.child("ksiparppar").attribute("value.imag").as_double()); 
+       
+       std::complex<double> gamma(node.child("gamma").attribute("value.real").as_double(),                                     node.child("gamma").attribute("value.imag").as_double()); 
+                                                                
+      result.elmag.init_r(epsilon, aux_mu, epsilon_SH, ksippp, ksiparppar, gamma);
     } else if(node.child("epsilon").attribute("type").value() == std::string("DrudeModel")) {
       // Drude model
       auto const plasma_freq =
           node.child("epsilon").child("parameters").attribute("plasma_frequency").as_double();
       std::complex<double> const damping_freq(
           0, node.child("epsilon").child("parameters").attribute("damping_frequency").as_double());
-      result.elmag.init_r(0, aux_mu);
+      result.elmag.init_r(0.0, aux_mu, 0.0, 0.0, 0.0, 0.0);
       result.elmag.initDrudeModel_r(plasma_freq, damping_freq, aux_mu);
-    } else if(node.child("epsilon").attribute("type").value() == std::string("sellmeier")) {
+    }
+    else if(node.child("epsilon").attribute("type").value() == std::string("HydroModel")) {
+      // Hydrodynamic model (Sipe or Bachelier)
+   
+      std::complex<double> const a_SH(node.child("epsilon").child("parameters").attribute("a.real").as_double(),
+          node.child("epsilon").child("parameters").attribute("a.imag").as_double());
+      std::complex<double> const b_SH(
+          node.child("epsilon").child("parameters").attribute("b.real").as_double(),
+           node.child("epsilon").child("parameters").attribute("b.imag").as_double());
+      std::complex<double> const d_SH(
+          node.child("epsilon").child("parameters").attribute("d.real").as_double(),
+           node.child("epsilon").child("parameters").attribute("d.imag").as_double());     
+                                                                                       
+   
+      result.elmag.init_r(0.0, aux_mu, 0.0, 0.0, 0.0, 0.0);
+      result.elmag.initHydrodynamicModel_r(a_SH, b_SH, d_SH, aux_mu);
+    }
+
+   else if(node.child("epsilon").attribute("type").value() == std::string("SiliconModel")) {
+      // Model for Silicon from Schinke valid from 0.5 -1.45um           
+      // Surface and bulk tensor values taken as constants
+
+     result.elmag.init_r(0.0, aux_mu, 0.0, 0.0, 0.0, 0.0);
+                                                                                                       result.elmag.initSiliconModel_r(aux_mu);
+                                                                                                                                                         }
+    
+     else if(node.child("epsilon").attribute("type").value() == std::string("sellmeier")) {
       // Sellmeier model
       double B1(0.), C1(0.), B2(0.), C2(0.), B3(0.), C3(0.), B4(0.), C4(0.), B5(0.), C5(0.);
       B1 = node.child("epsilon").child("parameters").attribute("B1").as_double();
@@ -256,7 +428,7 @@ Scatterer read_spherical_scatterer(pugi::xml_node const &node, t_int nMax) {
   return result;
 };
 
-std::shared_ptr<Excitation> read_excitation(pugi::xml_document const &inputFile, t_int nMax) {
+std::shared_ptr<Excitation> read_excitation(pugi::xml_document const &inputFile, t_int nMax, ElectroMagnetic &bground) {
   // Find the source node
   auto const ext_node = inputFile.child("source");
   if(!ext_node)
@@ -268,20 +440,20 @@ std::shared_ptr<Excitation> read_excitation(pugi::xml_document const &inputFile,
                                         std::complex<double>(0.0, 0.0),
                                         std::complex<double>(0.0, 0.0));
   Spherical<double> vKinc(0.0, 0.0, 0.0);
-
+ 
   // Determine source type
   if(!std::strcmp(ext_node.attribute("type").value(), "planewave"))
     source_type = 0;
   else // Default is always planewave
     source_type = 0;
 
+  std::complex<double> bgcoeff = std::sqrt(bground.epsilon_r * bground.mu_r);
   // Determine wavelength
   wavelength = ext_node.child("wavelength").attribute("value").as_double();
   wavelength *= 1e-9;
-
   // Determine propagation values
   vKinc = Spherical<double>(
-      2 * consPi / wavelength,
+      (2 * consPi / wavelength),
       ext_node.child("propagation").attribute("theta").as_double() * consPi / 180.0,
       ext_node.child("propagation").attribute("phi").as_double() * consPi / 180.0);
 
@@ -295,9 +467,9 @@ std::shared_ptr<Excitation> read_excitation(pugi::xml_document const &inputFile,
       std::complex<double>(ext_node.child("polarization").attribute("Ephi.real").as_double(),
                            ext_node.child("polarization").attribute("Ephi.imag").as_double()));
   Einc = Tools::toProjection(vAux, Eaux);
-
+  
   // Initialize and populate the excitation
-  auto result = std::make_shared<optimet::Excitation>(source_type, Einc, vKinc, nMax);
+  auto result = std::make_shared<optimet::Excitation>(source_type, Einc, vKinc, nMax, bgcoeff);
   result->populate();
 
   return result;
@@ -410,9 +582,10 @@ Run simulation_input(pugi::xml_document const &inputFile) {
   Run result;
   result.geometry = read_geometry(inputFile);
   result.nMax = result.geometry->nMax();
-
+  result.nMaxS = result.geometry->nMaxS();
+  ElectroMagnetic bground =  result.geometry->bground;
   // Read Excitation
-  result.excitation = read_excitation(inputFile, result.nMax);
+  result.excitation = read_excitation(inputFile, result.nMax, bground);
   // Update the geometry in case we had dynamic models
   result.geometry->update(result.excitation);
 

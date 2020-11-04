@@ -47,7 +47,8 @@ public:
                     {run.parallel_params.block_size, run.parallel_params.block_size},
                     run.belos_params) {}
 
-  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const override;
+  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_, Vector<t_complex> &X_sca_SH,
+              Vector<t_complex> &X_int_SH, std::vector<double *> CGcoeff) const override;
 
   //! \brief Parameters for Belos/Trilinos solvers
   //! \note Mere access to the parameters requires the Teuchos::ParameterList to be modifiable. So

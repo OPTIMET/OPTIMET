@@ -35,14 +35,15 @@ public:
             mpi::Communicator const &comm = mpi::Communicator(),
             scalapack::Context const &context = scalapack::Context::Squarest(),
             scalapack::Sizes const &block_size = scalapack::Sizes{64, 64})
-      : PreconditionedMatrix(geometry, incWave, comm), context_(context), block_size_(block_size) {
+      :PreconditionedMatrix(geometry, incWave, comm), context_(context), block_size_(block_size) {
     update();
   }
   Scalapack(Run const &run)
       : Scalapack(run.geometry, run.excitation, run.communicator, run.context,
                   {run.parallel_params.block_size, run.parallel_params.block_size}) {}
 
-  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const override;
+  void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_, Vector<t_complex> &X_sca_SH, 
+             Vector<t_complex> &X_int_SH, std::vector<double *> CGcoeff) const override;
   void update() override;
 
   //! Scalapack context used during computation
@@ -58,6 +59,7 @@ protected:
 
   //! Creates scalapack matrix wrappers
   std::tuple<scalapack::Matrix<t_complex>, scalapack::Matrix<t_complex>> parallel_input() const;
+  std::tuple<scalapack::Matrix<t_complex>, scalapack::Matrix<t_complex>> parallel_input_SH(Vector<t_complex> &K) const;
 };
 }
 }

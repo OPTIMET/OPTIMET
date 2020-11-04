@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Optimet. If not, see <http://www.gnu.org/licenses/>.
 
+
 #include "Algebra.h"
 #include "AuxCoefficients.h"
 #include "Coupling.h"
@@ -28,7 +29,8 @@
 
 namespace optimet {
 Result::Result(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_)
-    : flagSH(false), result_FF(nullptr) {
+    : flagSH(true), result_FF(nullptr) {
+     
   init(geometry_, excitation_);
 }
 
@@ -41,12 +43,17 @@ void Result::init(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitatio
   geometry = geometry_;
   excitation = excitation_;
   waveK = excitation->waveK;
-  flagSH = false;
+  flagSH = true;
   result_FF = NULL;
+  result_SH = NULL;
   nMax = geometry_->nMax();
+  nMaxS = geometry_->nMaxS();
 
+  CLGcoeff.resize(9); 
   scatter_coef.resize(2 * Tools::iteratorMax(nMax) * geometry->objects.size());
   internal_coef.resize(2 * Tools::iteratorMax(nMax) * geometry->objects.size());
+  scatter_coef_SH.resize(4 * Tools::iteratorMax(nMaxS) * geometry->objects.size());
+  internal_coef_SH.resize(4 * Tools::iteratorMax(nMaxS) * geometry->objects.size());
   c_scatter_coef.resize(2 * Tools::iteratorMax(nMax));
 }
 
@@ -106,13 +113,14 @@ void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<doub
       }
 
       if(!singleComponent_) // Both TE and TM part
-      {
+      { 
         Einc = Einc + (aCoefInc.M(static_cast<long>(p)) * excitation->dataIncAp[p] +
                        aCoefInc.N(static_cast<long>(p)) * excitation->dataIncBp[p]);
         Hinc = Hinc +
                (aCoefInc.N(static_cast<long>(p)) * excitation->dataIncAp[p] +
                 aCoefInc.M(static_cast<long>(p)) * excitation->dataIncBp[p]) *
                    iZ;
+                              
       }
     } else // this a second harmonic frequency result - calculate the source
            // fields (save it in Einc for convenience)
@@ -121,7 +129,7 @@ void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<doub
       for(size_t j = 0; j < geometry->objects.size(); j++) {
         Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
         optimet::AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
-
+		 
         Einc =
             Einc +
             aCoef.M(static_cast<long>(p)) * geometry->objects[j].sourceCoef[static_cast<int>(p)] +
@@ -135,6 +143,7 @@ void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<doub
       SphericalP<std::complex<double>> Efield_local = SphericalP<std::complex<double>>(
           std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
           std::complex<double>(0.0, 0.0));
+         
 
       Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
       optimet::AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
@@ -156,6 +165,7 @@ void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<doub
         Hfield =
             Hfield +
             aCoef.N(static_cast<long>(p)) * scatter_coef[j * 2 * p.max(nMax) + p.compound] * iZ;
+            
       }
 
       if(!singleComponent_) {
@@ -168,6 +178,7 @@ void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<doub
                   aCoef.M(static_cast<long>(p)) *
                       scatter_coef[p.max(nMax) + j * 2 * p.max(nMax) + p.compound]) *
                      iZ;
+                                 
       }
     }
   } else // Inside a sphere
@@ -230,233 +241,233 @@ void Result::getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<doub
   }
 }
 
-void Result::getEHFields(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
-                         SphericalP<std::complex<double>> &HField_, bool projection_) const {
-  SphericalP<std::complex<double>> Efield = SphericalP<std::complex<double>>(
+void Result::getEHFields(Spherical<double> R_, SphericalP<std::complex<double>> &EField_FF,
+                         SphericalP<std::complex<double>> &HField_FF, SphericalP<std::complex<double>> &EField_SH,
+                         SphericalP<std::complex<double>> &HField_SH, bool projection_, std::complex<double> *coeffXmn, std::complex<double> *coeffXpl) const {
+                                                 
+  SphericalP<std::complex<double>> Efield_FF = SphericalP<std::complex<double>>(
       std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
       std::complex<double>(0.0, 0.0));
-  SphericalP<std::complex<double>> Einc = SphericalP<std::complex<double>>(
+  SphericalP<std::complex<double>> Einc_FF = SphericalP<std::complex<double>>(
       std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
       std::complex<double>(0.0, 0.0));
-  SphericalP<std::complex<double>> Hfield = SphericalP<std::complex<double>>(
+  SphericalP<std::complex<double>> Hfield_FF = SphericalP<std::complex<double>>(
       std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
       std::complex<double>(0.0, 0.0));
-  SphericalP<std::complex<double>> Hinc = SphericalP<std::complex<double>>(
+  SphericalP<std::complex<double>> Hinc_FF = SphericalP<std::complex<double>>(
       std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
       std::complex<double>(0.0, 0.0));
-
+                                                       
+   
+      
+  SphericalP<std::complex<double>> Efield_SH = SphericalP<std::complex<double>>(
+      std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double>> Egamma_SH = SphericalP<std::complex<double>>( // particular solution of diff equations
+      std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));
+  SphericalP<std::complex<double>> Hfield_SH = SphericalP<std::complex<double>>(
+      std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));
+ 
+  int NO = geometry->objects.size(); // how many particles there is
+  
+   std::complex<double> amnSH, bmnSH, cmnSH, dmnSH;
+  
+  auto const omega = excitation->omega();
+  
+  const std::complex<double> waveK_0 = (omega) * std::sqrt(consEpsilon0 * consMu0);
+  
   Spherical<double> Rrel;
 
   std::complex<double> iZ = (consCmi / sqrt(geometry->bground.mu / geometry->bground.epsilon));
-
+  
   int pMax = Tools::iteratorMax(nMax);
-
+  int pMaxS = Tools::iteratorMax(nMaxS);
+  
   CompoundIterator p;
 
   // Check for inner point and set to 0
   int intInd = geometry->checkInner(R_);
-
+  
+  
   if(intInd < 0) // Outside a sphere
   {
-    if(!flagSH) // this a fundamental frequency result - calculate the incoming
+    // this a fundamental frequency result - calculate the incoming
                 // field
-    {
+    
       // Incoming field
-      optimet::AuxCoefficients aCoefInc(R_, waveK, 1, nMax);
+      optimet::AuxCoefficients aCoefInc(R_, waveK, 1, nMax); //regular spherical functions
+      
       for(p = 0; p < p.max(nMax); p++) {
-        Einc = Einc + (aCoefInc.M(static_cast<long>(p)) * excitation->dataIncAp[p] +
-                       aCoefInc.N(static_cast<long>(p)) * excitation->dataIncBp[p]);
-        Hinc = Hinc +
+      
+        Einc_FF = Einc_FF + (aCoefInc.M(static_cast<long>(p)) * excitation->dataIncAp[p] +
+                       aCoefInc.N(static_cast<long>(p)) * excitation->dataIncBp[p]); 
+        Hinc_FF = Hinc_FF +
                (aCoefInc.N(static_cast<long>(p)) * excitation->dataIncAp[p] +
                 aCoefInc.M(static_cast<long>(p)) * excitation->dataIncBp[p]) *
-                   iZ;
+                   iZ;           
       }
-    } else // this a second harmonic frequency result - calculate the source
-           // fields (save it in Einc for convenience)
-    {
-      // Source fields
-      for(size_t j = 0; j < geometry->objects.size(); j++) {
-        Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
-        optimet::AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
-
-        for(p = 0; p < pMax; p++) {
-          Einc =
-              Einc +
-              aCoef.M(static_cast<long>(p)) * geometry->objects[j].sourceCoef[static_cast<int>(p)] +
-              aCoef.N(static_cast<long>(p)) *
-                  geometry->objects[j].sourceCoef[static_cast<int>(p) + pMax];
-        }
-      }
-    }
+    
 
     // Scattered field
+       // this a fundamental frequency result 
+     
     for(size_t j = 0; j < geometry->objects.size(); j++) {
-      SphericalP<std::complex<double>> Efield_local = SphericalP<std::complex<double>>(
-          std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
-          std::complex<double>(0.0, 0.0));
+      
 
       Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
-      optimet::AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
 
+ 
+      optimet::AuxCoefficients aCoefFF(Rrel, waveK, 0, nMax); //radiative spherical vector functions
+
+       
       for(p = 0; p < p.max(nMax); p++) {
-        Efield = Efield + aCoef.M(static_cast<long>(p)) * scatter_coef[j * 2 * pMax + p.compound] +
-                 aCoef.N(static_cast<long>(p)) * scatter_coef[pMax + j * 2 * pMax + p.compound];
-        Hfield = Hfield +
-                 (aCoef.N(static_cast<long>(p)) * scatter_coef[j * 2 * pMax + p.compound] +
-                  aCoef.M(static_cast<long>(p)) * scatter_coef[pMax + j * 2 * pMax + p.compound]) *
-                     iZ;
+     
+        
+        Efield_FF = Efield_FF + aCoefFF.M(static_cast<long>(p)) * scatter_coef[j * 2 * pMax + p.compound] +
+                 aCoefFF.N(static_cast<long>(p)) * scatter_coef[pMax + j * 2 * pMax + p.compound];
+                 
+        Hfield_FF = Hfield_FF +
+                 (aCoefFF.N(static_cast<long>(p)) * scatter_coef[j * 2 * pMax + p.compound] +
+                  aCoefFF.M(static_cast<long>(p)) * scatter_coef[pMax + j * 2 * pMax + p.compound]) *
+                     (iZ);
       }
+            
     }
-  } else // Inside a sphere
-  {
-    Rrel = Tools::toPoint(R_, geometry->objects[intInd].vR);
-    optimet::AuxCoefficients aCoef(Rrel, waveK * sqrt(geometry->objects[intInd].elmag.epsilon_r *
-                                                      geometry->objects[intInd].elmag.mu_r),
-                                   1, nMax);
+    
+  
+      // this a second harmonic frequency result 
+  
+  for(size_t j = 0; j < geometry->objects.size(); j++) {
 
+
+      Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
+      
+      optimet::AuxCoefficients aCoefSH(Rrel, std::complex<double>(2.0, 0.0) * waveK, 0, nMaxS); //radiative spherical
+
+      for(p = 0; p < p.max(nMaxS); p++) {
+      
+      bmnSH = scatter_coef_SH[j * 4 * pMaxS + p.compound] + scatter_coef_SH[2 * pMaxS + j * 4 * pMaxS + p.compound];
+      
+      amnSH = scatter_coef_SH[j * 4 * pMaxS + pMaxS + p.compound] + scatter_coef_SH[j * 4 * pMaxS + 3 * pMaxS +  p.compound];
+     
+        Efield_SH = Efield_SH + (aCoefSH.M(static_cast<long>(p)) * (bmnSH) +
+                                 aCoefSH.N(static_cast<long>(p)) * (amnSH)) * waveK_0; 
+        
+        Hfield_SH = Hfield_SH +
+                 (aCoefSH.N(static_cast<long>(p)) * (bmnSH) +
+                  aCoefSH.M(static_cast<long>(p)) * (amnSH)) * (iZ * waveK_0);
+                      
+      }
+      
+    }    
+    
+   } // if
+ 
+ 
+  else // Inside a sphere
+ 
+    {
+    
+    Rrel = Tools::toPoint(R_, geometry->objects[intInd].vR);
+    
+    optimet::AuxCoefficients aCoefFF(Rrel, waveK_0 * sqrt(geometry->objects[intInd].elmag.epsilon_r *
+                                                      geometry->objects[intInd].elmag.mu_r), 1, nMax); //regular vector spherical functions
+                                                      
+                                   
     std::complex<double> iZ_object = (consCmi / sqrt(geometry->objects[intInd].elmag.mu /
                                                      geometry->objects[intInd].elmag.epsilon));
-
+                                                                                                     
+  
     for(p = 0; p < p.max(nMax); p++) {
-      Efield =
-          Efield +
-          (aCoef.M(static_cast<long>(p)) * internal_coef[intInd * 2 * pMax + p.compound] +
-           aCoef.N(static_cast<long>(p)) * internal_coef[pMax + intInd * 2 * pMax + p.compound]);
-      Hfield =
-          Hfield +
-          (aCoef.N(static_cast<long>(p)) * internal_coef[intInd * 2 * pMax + p.compound] +
-           aCoef.M(static_cast<long>(p)) * internal_coef[pMax + intInd * 2 * pMax + p.compound]) *
-              iZ_object;
+      Efield_FF =
+          Efield_FF +
+          (aCoefFF.M(static_cast<long>(p)) * internal_coef[intInd * 2 * pMax + p.compound] +
+           aCoefFF.N(static_cast<long>(p)) * internal_coef[pMax + intInd * 2 * pMax + p.compound]);
+           
+                
+      Hfield_FF =
+          Hfield_FF +
+          (aCoefFF.N(static_cast<long>(p)) * internal_coef[intInd * 2 * pMax + p.compound] +
+           aCoefFF.M(static_cast<long>(p)) * internal_coef[pMax + intInd * 2 * pMax + p.compound]) *
+              iZ_object; 
+                       
+              
+         
     }
-  }
+    
+    
+    // this a second harmonic frequency result 
+    optimet::AuxCoefficients aCoefSH(Rrel, std::complex<double> (2.0 , 0.0) * waveK_0 * sqrt(geometry->objects[intInd].elmag.epsilon_r_SH * geometry->objects[intInd].elmag.mu_r_SH),
+                                   1, nMaxS); // regular vector spherical functions
+                                   
+                                   
+    std::complex<double> iZ_object_SH = (consCmi / sqrt(geometry->objects[intInd].elmag.mu_SH /
+                                                     geometry->objects[intInd].elmag.epsilon_SH));
+                                                                                                                                                       
+
+    for(p = 0; p < p.max(nMaxS); p++) {
+    
+    cmnSH = internal_coef_SH[intInd * 4 * pMaxS + p.compound] + internal_coef_SH[2 * pMaxS + intInd * 4 * pMaxS + p.compound];
+
+    dmnSH = internal_coef_SH[pMaxS + intInd * 4 * pMaxS + p.compound] + 
+    internal_coef_SH[3 * pMaxS + intInd * 4 * pMaxS + p.compound];
+    
+     Efield_SH =
+          Efield_SH +
+          (aCoefSH.M(static_cast<long>(p)) * (cmnSH) +
+           aCoefSH.N(static_cast<long>(p)) * (dmnSH)) * (waveK_0); //predznak postavljen kao u papiru
+           
+      Egamma_SH = Egamma_SH +
+             (aCoefSH.Xm(static_cast<long>(p)) * coeffXmn[p] +
+            aCoefSH.Xp(static_cast<long>(p)) * coeffXpl[p]);
+        
+      Hfield_SH =
+          Hfield_SH +
+          (aCoefSH.N(static_cast<long>(p)) * (cmnSH) +
+           aCoefSH.M(static_cast<long>(p)) * (dmnSH)) * iZ_object_SH * waveK_0;  // predznak postavljen kao u papiru
+              
+
+   } 
+     
+}
 
   if(projection_) {
     SphericalP<std::complex<double>> SphEField;
     SphericalP<std::complex<double>> SphHField;
     Rrel = Tools::toPoint(R_, geometry->objects[0].vR);
 
-    SphEField = Tools::fromProjection(Rrel, Einc + Efield);
-    SphHField = Tools::fromProjection(Rrel, Hinc + Hfield);
-
-    EField_ = SphEField;
-    HField_ = SphHField;
+    SphEField = Tools::fromProjection(Rrel, Einc_FF + Efield_FF);
+    SphHField = Tools::fromProjection(Rrel, Hinc_FF + Hfield_FF);
+    
+    EField_FF = SphEField;
+    HField_FF = SphHField;
+      
+    
   } else {
-    EField_ = Einc + Efield;
-    HField_ = Hinc + Hfield;
+    EField_FF = Einc_FF + Efield_FF;
+    HField_FF = Hinc_FF + Hfield_FF;
+   
+    EField_SH = Efield_SH + Egamma_SH;
+    HField_SH = Hfield_SH;
+ 
+ 
   }
+  
 }
 
-Eigen::Matrix<t_complex, 3, 2> Result::getEHFields(Spherical<double> R_, bool projection_) const {
-  SphericalP<t_complex> simple_things, made_complicated;
-  getEHFields(R_, simple_things, made_complicated, projection_);
-  Eigen::Matrix<t_complex, 3, 2> result;
-  result(0, 0) = simple_things.rrr;
-  result(0, 1) = made_complicated.rrr;
-  result(1, 0) = simple_things.the;
-  result(1, 1) = made_complicated.the;
-  result(2, 0) = simple_things.phi;
-  result(2, 1) = made_complicated.phi;
-  return result;
-}
 
-SphericalP<std::complex<double>> Result::getEFieldC(Spherical<double> R_, bool projection) {
-  /* TEST FUNCTION. NOT USED IN PRODUCTION CODE! */
 
-  SphericalP<std::complex<double>> Efield = SphericalP<std::complex<double>>(
-      std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
-      std::complex<double>(0.0, 0.0));
-  SphericalP<std::complex<double>> Einc = SphericalP<std::complex<double>>(
-      std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
-      std::complex<double>(0.0, 0.0));
-  Spherical<double> Rrel;
-
-  int pMax = Tools::iteratorMax(nMax);
-
-  CompoundIterator p;
-
-  // Check for inner point and set to 0
-  int intInd = geometry->checkInner(R_);
-
-  if(intInd < 0) // Outside a sphere
-  {
-    if(!flagSH) // this a fundamental frequency result - calculate the incoming
-                // field
-    {
-      // Incoming field
-      optimet::AuxCoefficients aCoefInc(R_, waveK, 1, nMax);
-      for(p = 0; p < p.max(nMax); p++) {
-        Einc = Einc + (aCoefInc.M(static_cast<long>(p)) * excitation->dataIncAp[p] +
-                       aCoefInc.N(static_cast<long>(p)) * excitation->dataIncBp[p]);
-      }
-
-      if(projection) // Spherical projection
-      {
-        Einc = Tools::fromProjection(R_, Einc);
-      }
-    } else // this a second harmonic frequency result - calculate the source
-           // fields (save it in Einc for convenience)
-    {
-      // Source fields
-      for(size_t j = 0; j < geometry->objects.size(); j++) {
-        Rrel = Tools::toPoint(R_, geometry->objects[j].vR);
-        optimet::AuxCoefficients aCoef(Rrel, waveK, 0, nMax);
-
-        for(p = 0; p < pMax; p++) {
-          Einc =
-              Einc +
-              aCoef.M(static_cast<long>(p)) * geometry->objects[j].sourceCoef[static_cast<int>(p)] +
-              aCoef.N(static_cast<long>(p)) *
-                  geometry->objects[j].sourceCoef[static_cast<int>(p) + pMax];
-        }
-      }
-
-      if(projection) // Spherical projection
-      {
-        Einc = Tools::fromProjection(R_, Einc);
-      }
-    }
-
-    optimet::AuxCoefficients aCoef(R_, waveK, 0, nMax);
-
-    // Scattered field
-    for(p = 0; p < p.max(nMax); p++) {
-      Efield = Efield + (aCoef.M(static_cast<long>(p)) * c_scatter_coef[p.compound] +
-                         aCoef.N(static_cast<long>(p)) * c_scatter_coef[pMax + p.compound]);
-    }
-
-    if(projection) // Spherical projection
-    {
-      Efield = Tools::fromProjection(R_, Efield);
-    }
-  } else // Inside a sphere
-  {
-    Rrel = Tools::toPoint(R_, geometry->objects[intInd].vR);
-    optimet::AuxCoefficients aCoef(Rrel, waveK, 1, nMax);
-
-    for(p = 0; p < p.max(nMax); p++) {
-      Efield =
-          Efield +
-          (aCoef.M(static_cast<long>(p)) * internal_coef[intInd * 2 * pMax + p.compound] +
-           aCoef.N(static_cast<long>(p)) * internal_coef[pMax + intInd * 2 * pMax + p.compound]);
-    }
-
-    if(projection) // Spherical projection
-    {
-      Efield = Tools::fromProjection(R_, Efield);
-    }
-  }
-
-  return Einc + Efield;
-}
-
-double Result::getExtinctionCrossSection() {
+double Result::getExtinctionCrossSection(int gran1, int gran2) {
   CompoundIterator p;
   int pMax = Tools::iteratorMax(nMax);
 
   double Cext(0.);
   std::complex<double> *Q_local = new std::complex<double>[2 * pMax];
 
-  for(size_t j = 0; j < geometry->objects.size(); j++) {
+  for(int j = gran1; j < gran2; j++) {
+
     excitation->getIncLocal(geometry->objects[j].vR, Q_local, nMax);
     for(p = 0; p < pMax; p++) {
       Cext += std::real(std::conj(Q_local[p]) * scatter_coef[j * 2 * pMax + p.compound] +
@@ -464,21 +475,25 @@ double Result::getExtinctionCrossSection() {
                             scatter_coef[pMax + j * 2 * pMax + p.compound]);
     }
   }
+  
+  
 
   delete[] Q_local;
   return (-1. / (std::real(waveK) * std::real(waveK))) * Cext;
 }
 
-double Result::getAbsorptionCrossSection() {
+
+
+double Result::getAbsorptionCrossSection(int gran1, int gran2) {
+ 
   CompoundIterator p;
   int pMax = Tools::iteratorMax(nMax);
 
   double Cabs(0.);
   double temp1(0.), temp2(0.);
   double *Cabs_aux = new double[2 * pMax];
-
   auto const omega = excitation->omega();
-  for(size_t j = 0; j < geometry->objects.size(); j++) {
+  for(int j = gran1; j < gran2; j++) {
 
     geometry->getCabsAux(omega, j, nMax, Cabs_aux);
 
@@ -488,34 +503,227 @@ double Result::getAbsorptionCrossSection() {
       temp2 = abs(scatter_coef[pMax + j * 2 * pMax + p.compound]);
       temp2 *= temp2;
       Cabs += temp1 * Cabs_aux[p.compound] + temp2 * Cabs_aux[pMax + p.compound];
+      
     }
   }
+ 
   delete[] Cabs_aux;
+  
   return (1 / (std::real(waveK) * std::real(waveK))) * Cabs;
 }
 
-int Result::setFields(OutputGrid &oEGrid_, OutputGrid &oHGrid_, bool projection_) {
-  Spherical<double> Rloc;
 
-  // centerScattering();
+double Result::getScatteringCrossSection_SH(int gran1, int gran2) {
+ 
+  CompoundIterator p, q;
+  int pMax = Tools::iteratorMax(nMaxS);
+  int qMax = q.max(nMaxS);
 
-  // Calculate the fields
-  while(!oEGrid_.gridDone) {
-    Rloc = oEGrid_.getPoint();
-    oHGrid_.getPoint();
-    std::cout << "Calculating fields for point " << oEGrid_.iterator + 1 << " out of "
-              << oEGrid_.gridPoints << std::endl;
-
-    SphericalP<std::complex<double>> EField;
-    SphericalP<std::complex<double>> HField;
-
-    getEHFields(Rloc, EField, HField, projection_);
-
-    oHGrid_.pushDataNext(HField);
-    oEGrid_.pushDataNext(EField);
+  double temp1(0.0);
+  
+  std::complex<double> **T_AB = new std::complex<double> *[2 * (p.max(nMaxS))];
+  
+  std::complex<double> *SCcoefpom_SH = new std::complex<double>[2 * pMax];
+  
+  for(p = 0; p < (int)(2 * p.max(nMaxS)); p++) {
+    T_AB[p] = new std::complex<double>[2 * p.max(nMaxS)];
   }
 
+  double mu_b_r = std::real(geometry->bground.mu_r);
+
+  double eps_b_r = std::real(geometry->bground.epsilon_r);
+
+  auto const omega = excitation->omega();
+  
+  for(int j = gran1; j < gran2; j++) {
+
+   Spherical<double> point_ = geometry->objects[j].vR;
+   
+   Spherical<double> Rrel = point_ - Spherical<double>(0.0, 0.0, 0.0);
+  
+   optimet::Coupling const coupling(Rrel,  2.0 * waveK, nMaxS, false);  // paziti na waveK
+   
+    for(p = 0; p < pMax; p++)   {
+    for(q = 0; q < qMax; q++) {
+    
+      T_AB[p][q] = coupling.diagonal(q, p);
+      T_AB[p + pMax][q + qMax] = coupling.diagonal(q, p);  // This is the transfer matrix for the incident wave
+      T_AB[p + pMax][q] = coupling.offdiagonal(q, p);
+      T_AB[p][q + qMax] = coupling.offdiagonal(q, p);
+      
+    }
+  }
+  
+  for(p = 0; p < 2*pMax; p++) {
+
+  SCcoefpom_SH[ p ] = scatter_coef_SH[j * 4 * pMax + p.compound] + scatter_coef_SH[2 * pMax + j * 4 * pMax + p.compound] ;
+ 
+  }
+  
+   for(p = 0; p < 2 * pMax; p++) {
+   
+    for(q = 0; q < 2 * qMax; q++) {
+
+
+      temp1 += std::real( (T_AB[p][q]) * std::conj(SCcoefpom_SH[q.compound]) * 
+      
+        std::conj(T_AB[p][q]) * SCcoefpom_SH[q.compound] );
+      
+
+    }
+  }  
+}
+
+   delete[] SCcoefpom_SH;
+
+  for(p = 0; p < 2 * pMax; p++) {
+    delete[] T_AB[p];
+  }
+
+  delete[] T_AB;
+  
+  return  (1.0 / (4.0 * mu_b_r*eps_b_r))* temp1 ; // frequency doubled because of SH
+}
+
+
+ double Result::getAbsorptionCrossSection_SH(std::vector<double *> CLGcoeff, int gran1, int gran2) {
+
+
+  auto const omega = excitation->omega();
+      
+  int NO = geometry->objects.size(); // how many particles there is
+  
+  double absCS (0.0);
+  
+  CompoundIterator p;
+  
+  std::complex<double> mu_b = geometry->bground.mu;
+  
+  std::complex<double> eps_b = geometry->bground.epsilon;
+  
+  std::complex<double> eta = std::sqrt (mu_b / eps_b);
+  
+  int pMaxS = p.max(nMaxS);
+ 
+  std::complex<double>  sigma;
+ 
+  int sizeCFsh = gran2-gran1; 
+
+  Vector<t_complex> coeffSH(sizeCFsh);
+
+  geometry->AbsCSSHcoeff(CLGcoeff, gran1, gran2, excitation, internal_coef, internal_coef_SH, nMaxS, coeffSH.data());
+  
+  int brojac(0);
+
+  int objIndex;
+ 
+  for(int ii = gran1; ii < gran2; ii++) {
+
+   objIndex = ii / pMaxS;
+
+  sigma = - std::complex<double>(0.0, 1.0) * consEpsilon0 * 2.0 * omega * (geometry->objects[objIndex].elmag.epsilon_r_SH - 1.0); 
+   
+    absCS = absCS +  std::real( (2.0 * eta) * 0.5 * sigma * coeffSH(brojac));
+
+   brojac++;  
+  } // for  ii
+   
+  return  absCS ;
+   
+  }
+
+
+
+     int Result::setFields(std::vector<double> &Rr, std::vector<double> 
+                           &Rthe, std::vector<double> &Rphi, bool projection_, std::vector<double *> CLGcoeff) {
+  
+  Spherical<double> Rloc, Rrel;
+  
+  int sizeField;
+  
+  CompoundIterator p;
+
+  int pMaxS = p.max(nMaxS);
+ 
+  std::complex<double> coeffXpl[pMaxS], coeffXmn[pMaxS];
+    
+  // Calculate the fields Fundamental Frequency and SH Frequency
+
+    SphericalP<std::complex<double>> EField_FF;
+    SphericalP<std::complex<double>> HField_FF;
+    SphericalP<std::complex<double>> EField_SH;
+    SphericalP<std::complex<double>> HField_SH;
+    
+    std::vector<std::complex<double>> EField_FF_x;
+    std::vector<std::complex<double>> EField_FF_y;
+    std::vector<std::complex<double>> EField_FF_z;
+    std::vector<std::complex<double>> HField_FF_x;
+    std::vector<std::complex<double>> HField_FF_y;
+    std::vector<std::complex<double>> HField_FF_z;
+    
+    std::vector<std::complex<double>> EField_SH_x;
+    std::vector<std::complex<double>> EField_SH_y;
+    std::vector<std::complex<double>> EField_SH_z;
+    std::vector<std::complex<double>> HField_SH_x;
+    std::vector<std::complex<double>> HField_SH_y;
+    std::vector<std::complex<double>> HField_SH_z;
+   
+    
+    for (int ii=0; ii<Rr.size(); ii++){
+
+    Rloc.rrr = Rr[ii];
+    Rloc.the = Rthe[ii];
+    Rloc.phi = Rphi[ii];
+
+    int intInd = geometry->checkInner(Rloc);
+    
+    if(intInd >= 0){
+    
+    Rrel = Tools::toPoint(Rloc, geometry->objects[intInd].vR);
+    geometry->COEFFpartSH(intInd, excitation, internal_coef, Rrel.rrr, nMaxS, coeffXmn, coeffXpl, CLGcoeff);
+    
+    }
+   
+    getEHFields(Rloc, EField_FF, HField_FF, EField_SH, HField_SH, projection_, coeffXmn, coeffXpl);
+    
+    EField_FF_x.push_back (EField_FF.rrr);
+    EField_FF_y.push_back (EField_FF.the);
+    EField_FF_z.push_back (EField_FF.phi);
+    HField_FF_x.push_back (HField_FF.rrr);
+    HField_FF_y.push_back (HField_FF.the);
+    HField_FF_z.push_back (HField_FF.phi);
+
+    EField_SH_x.push_back (EField_SH.rrr);
+    EField_SH_y.push_back (EField_SH.the);
+    EField_SH_z.push_back (EField_SH.phi);
+    HField_SH_x.push_back (HField_SH.rrr);
+    HField_SH_y.push_back (HField_SH.the);
+    HField_SH_z.push_back (HField_SH.phi);
+
+   
+}//for
+
+
+   sizeField = EField_FF_x.size();
+   
+   MPI_Send(&EField_FF_x[0], EField_FF_x.size(), MPI_DOUBLE_COMPLEX, 0, 1, MPI_COMM_WORLD);
+   MPI_Send(&EField_FF_y[0], EField_FF_y.size(), MPI_DOUBLE_COMPLEX, 0, 2, MPI_COMM_WORLD);
+   MPI_Send(&EField_FF_z[0], EField_FF_z.size(), MPI_DOUBLE_COMPLEX, 0, 3, MPI_COMM_WORLD);   
+   MPI_Send(&HField_FF_x[0], HField_FF_x.size(), MPI_DOUBLE_COMPLEX, 0, 4, MPI_COMM_WORLD);
+   MPI_Send(&HField_FF_y[0], HField_FF_y.size(), MPI_DOUBLE_COMPLEX, 0, 5, MPI_COMM_WORLD);
+   MPI_Send(&HField_FF_z[0], HField_FF_z.size(), MPI_DOUBLE_COMPLEX, 0, 6, MPI_COMM_WORLD);
+
+   MPI_Send(&EField_SH_x[0], EField_SH_x.size(), MPI_DOUBLE_COMPLEX, 0, 7, MPI_COMM_WORLD);
+   MPI_Send(&EField_SH_y[0], EField_SH_y.size(), MPI_DOUBLE_COMPLEX, 0, 8, MPI_COMM_WORLD);
+   MPI_Send(&EField_SH_z[0], EField_SH_z.size(), MPI_DOUBLE_COMPLEX, 0, 9, MPI_COMM_WORLD);
+   MPI_Send(&HField_SH_x[0], HField_SH_x.size(), MPI_DOUBLE_COMPLEX, 0, 10, MPI_COMM_WORLD);
+   MPI_Send(&HField_SH_y[0], HField_SH_y.size(), MPI_DOUBLE_COMPLEX, 0, 11, MPI_COMM_WORLD);
+   MPI_Send(&HField_SH_z[0], HField_SH_z.size(), MPI_DOUBLE_COMPLEX, 0, 12, MPI_COMM_WORLD);
+   
+   MPI_Send(&sizeField, 1, MPI_INT, 0, 13, MPI_COMM_WORLD);
+
   return 0;
+
 }
 
 int Result::setFieldsModal(OutputGrid &oEGrid_, OutputGrid &oHGrid_, bool projection_,
@@ -526,8 +734,8 @@ int Result::setFieldsModal(OutputGrid &oEGrid_, OutputGrid &oHGrid_, bool projec
   while(!oEGrid_.gridDone) {
     Rloc = oEGrid_.getPoint();
     oHGrid_.getPoint();
-    std::cout << "Calculating fields for point " << oEGrid_.iterator + 1 << " out of "
-              << oEGrid_.gridPoints << std::endl;
+    //std::cout << "Calculating fields for point " << oEGrid_.iterator + 1 << " out of "
+              //<< oEGrid_.gridPoints << std::endl;
 
     SphericalP<std::complex<double>> EField;
     SphericalP<std::complex<double>> HField;
@@ -540,58 +748,7 @@ int Result::setFieldsModal(OutputGrid &oEGrid_, OutputGrid &oHGrid_, bool projec
   return 0;
 }
 
-void Result::centerScattering() {
-  CompoundIterator p, q;
 
-  int pMax = p.max(nMax);
-  int qMax = q.max(nMax);
-
-  for(p = 0; p < 2 * p.max(nMax); p++) {
-    c_scatter_coef[p] = std::complex<double>(0.0, 0.0);
-  }
-
-  std::complex<double> **T_AB = new std::complex<double> *[2 * (p.max(nMax))];
-  std::complex<double> *scatter_aux = new std::complex<double>[2 * p.max(nMax)];
-  std::complex<double> *scatter_fin = new std::complex<double>[2 * p.max(nMax)];
-
-  for(p = 0; p < (int)(2 * p.max(nMax)); p++) {
-    T_AB[p] = new std::complex<double>[2 * p.max(nMax)];
-  }
-
-  for(size_t i = 0; i < geometry->objects.size(); i++) {
-    Spherical<double> Rrel =
-        Tools::toPoint(Spherical<double>(0.0, 0.0, 0.0), geometry->objects[i].vR);
-
-    optimet::Coupling const coupling(Rrel, excitation->waveK, nMax);
-
-    for(p = 0; p < pMax; p++)
-      for(q = 0; q < qMax; q++) {
-        T_AB[p][q] = coupling.diagonal(p, q);
-        T_AB[p + pMax][q + qMax] = coupling.diagonal(p, q);
-        T_AB[p + pMax][q] = coupling.offdiagonal(p, q);
-        T_AB[p][q + qMax] = coupling.offdiagonal(p, q);
-      }
-
-    for(p = 0; p < 2 * p.max(nMax); p++) {
-      scatter_aux[p] += scatter_coef[p.compound + i * 2 * pMax * geometry->objects.size()];
-    }
-
-    Algebra::multiplyVectorMatrix(T_AB, 2 * pMax, 2 * pMax, scatter_aux, scatter_fin, consC1,
-                                  consC0);
-
-    for(p = 0; p < 2 * pMax; p++) {
-      c_scatter_coef[p] += scatter_fin[p];
-    }
-  }
-
-  for(p = 0; p < (int)(2 * p.max(nMax)); p++) {
-    delete[] T_AB[p];
-  }
-
-  delete[] T_AB;
-  delete[] scatter_aux;
-  delete[] scatter_fin;
-}
 
 CompoundIterator Result::getDominant() {
   CompoundIterator p, q;

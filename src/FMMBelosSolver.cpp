@@ -95,7 +95,8 @@ void FMMBelos::update() {
   }
 }
 
-void FMMBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const {
+void FMMBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vector<t_complex> &X_sca_SH,
+                     Vector<t_complex> &X_int_SH, std::vector<double *> CGcoeff) const {
   auto const distribution =
       mpi::details::vector_distribution(geometry->objects.size(), communicator().size());
 

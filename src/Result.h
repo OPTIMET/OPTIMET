@@ -23,6 +23,8 @@
 #include "OutputGrid.h"
 #include "Spherical.h"
 #include "SphericalP.h"
+#include <vector>
+#include <mpi.h>
 
 #include <complex>
 
@@ -41,13 +43,17 @@ private:
   std::complex<double> waveK;             /**< The std::complex wave number. */
   bool flagSH;                            /**< Specifies if handling Second Harmonic results. */
   Result *result_FF;                      /**< The Fundamental Frequency results vector. */
+  Result *result_SH;                      /**< The Second Harmonic results vector. */
   //! Maximum nMax
   optimet::t_uint nMax;
+  optimet::t_uint nMaxS;
 public:
   Vector<t_complex> scatter_coef;   /**< The scattering coefficients. */
   Vector<t_complex> internal_coef;  /**< The internal coefficients. */
+  Vector<t_complex> scatter_coef_SH;   /**< The scattering coefficients. second harmonic */
+  Vector<t_complex> internal_coef_SH;  /**< The internal coefficients. second harmonic */
   Vector<t_complex> c_scatter_coef; /**< The cluster centered scattering coefficients. */
-
+  std::vector<double *> CLGcoeff; // Coefficients needed for SH source calculations
   /**
    * Initialization constructor for the Result class.
    * Fundamental Frequency version.
@@ -98,15 +104,6 @@ public:
   void init(std::shared_ptr<Geometry> geometry_, std::shared_ptr<Excitation> excitation_,
             Result *result_FF_);
 
-  /**
-   * Returns the E field at a given point using the cluster centered
-   * formulation.
-   * @warning Testing method only. DO NOT USE IN PRODUCTION CODE!
-   * @param R_ the position of the point.
-   * @param projection_ defines spherical (1) or cartesian (0) projection.
-   * @return the value of the E field
-   */
-  SphericalP<std::complex<double>> getEFieldC(Spherical<double> R_, bool projection_);
 
   /**
    * Returns the E and H fields at a given point.
@@ -115,19 +112,11 @@ public:
    * @param HField_ SphericalP vector that will store the H field.
    * @param projection_ defines spherical (1) or cartesian (0) projection.
    */
-  void getEHFields(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
-                   SphericalP<std::complex<double>> &HField_, bool projection_) const;
-  /**
-   * Returns the E and H fields at a given point.
-   * @param R_ the coordinates of the point.
-   * @param projection_ defines spherical (1) or cartesian (0) projection.
-   */
-  Eigen::Matrix<t_complex, 3, 2> getEHFields(Spherical<double> R_, bool projection_ = false) const;
-  template <class T>
-  Eigen::Matrix<t_complex, 3, 2>
-  getEHFields(Eigen::MatrixBase<T> const &R_, bool projection_ = false) const {
-    return getEHFields(Spherical<double>::toSpherical(R_), projection_);
-  }
+  void getEHFields(Spherical<double> R_, SphericalP<std::complex<double>> &EField_FF,
+                   SphericalP<std::complex<double>> &HField_FF, SphericalP<std::complex<double>> &EField_SH,
+                   SphericalP<std::complex<double>> &HField_SH, bool projection_, std::complex<double> *coeffXmn, std::complex<double> *coeffXpl) const;
+                   
+                   
 
   /**
    * Returns the E and H fields for a single harmonic and/or TE/TM component.
@@ -142,44 +131,55 @@ public:
                         SphericalP<std::complex<double>> &HField_, bool projection_,
                         CompoundIterator p_, int singleComponent_);
 
-  /**
-   * Center the scattering coefficients.
-   * @warning Test method only! DO NOT USE FOR PRODUCTION CODE!
-   */
-  void centerScattering();
+  
 
   /**
-   * Returns the Extinction Cross Section.
-   * @return the extinction cross section.
+   * Returns the Extinction Cross Section for Fundamental Frequency.
+   * @return the extinction cross section for Fundamental Frequency.
    */
-  double getExtinctionCrossSection();
+  double getExtinctionCrossSection(int gran1, int gran2);
+  
 
   /**
-   * Returns the Absorption Cross Section.
-   * @return the absorptions cross section.
+   * Returns the Absorption Cross Section for Fundamental Frequency.
+   * @return the absorptions cross section for Fundamental Frequency.
    */
-  double getAbsorptionCrossSection();
+  double getAbsorptionCrossSection(int gran1, int gran2);
+  
+   /* Returns the Scattering Cross Section for SH Frequency.
+   * @return the scattering cross section for SH Frequency.
+   */
+  double getScatteringCrossSection_SH(int gran1, int gran2);
+  
+  // Returns the Absorption Cross Section for SH Frequency.
+  double getAbsorptionCrossSection_SH(std::vector<double *> CLGcoeff, int gran1, int gran2);
+  
 
   /**
    * Populate a grid with E and H fields.
-   * @param oEGrid_ the OutputGrid object for the E fields.
-   * @param oHGrid_ the OutputGrid object for the H fields.
+   * @param oEGrid_FF the OutputGrid object for the E fields, fundamental freq.
+   * @param oHGrid_FF the OutputGrid object for the H fields fundamental freq.
+   * @param oEGrid_SH the OutputGrid object for the E fields, SH freq.
+   * @param oHGrid_SH the OutputGrid object for the H fields SH freq.
    * @param projection_ defines spherical (1) or cartesian (0) projection.
    * @return 0 if succesful, 1 otherwise.
    */
-  int setFields(OutputGrid &oEGrid_, OutputGrid &oHGrid_, bool projection_);
+  int setFields(std::vector<double> &Rr, std::vector<double> &Rthe, 
+std::vector<double> &Rphi, bool projection_, std::vector<double *> CLGcoeff);
 
   /**
    * Populate a grid with E and H fields for a single harmonic and/or TE/TM
    * component.
-   * @param oEGrid_ the OutputGrid object for the E fields.
-   * @param oHGrid_ the OutputGrid object for the H fields.
+   * @param oEGrid_ the OutputGrid object for the E fields FF.
+   * @param oHGrid_ the OutputGrid object for the H fields FF.
+   * @param oEGrid_ the OutputGrid object for the E fields SH freq.
+   * @param oHGrid_ the OutputGrid object for the H fields SH freq.
    * @param projection_ defines spherical (1) or cartesian (0) projection.
    * @param p_ the harmonic to be used.
    * @param singleComponent_ return TE+TM (0), TE(1) or TM(2).
    * @return 0 if succesful, 1 otherwise.
    */
-  int setFieldsModal(OutputGrid &oEGrid_, OutputGrid &oHGrid_, bool projection_,
+  int setFieldsModal(OutputGrid &oEGrid, OutputGrid &oHGrid, bool projection_,
                      CompoundIterator p_, int singleComponent_);
 
   /**

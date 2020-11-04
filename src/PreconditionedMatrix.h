@@ -18,6 +18,7 @@
 #define OPTIMET_PRECONDITIONNED_MATRIX_H
 
 #include "Excitation.h"
+#include "mpi/Communicator.h"
 #include "Geometry.h"
 #include "Types.h"
 #include "scalapack/Context.h"
@@ -31,23 +32,55 @@ source_vector(Geometry const &geometry, std::shared_ptr<Excitation const> incWav
 Vector<t_complex> source_vector(std::vector<Scatterer>::const_iterator first,
                                 std::vector<Scatterer>::const_iterator const &last,
                                 std::shared_ptr<Excitation const> incWave);
-//! \brief Computes source vector from fundamental frequency
-Vector<t_complex> local_source_vector(Geometry const &geometry,
-                                      std::shared_ptr<Excitation const> incWave,
-                                      Vector<t_complex> const &input_coeffs);
+                                
+   
+ Vector<t_complex> source_vectorSH(Geometry &geometry, std::shared_ptr<Excitation const> incWave, 
+                                   Vector<t_complex> &internalCoef_FF_, std::vector<double *> CGcoeff);  
+                                
+ //! \brief Computes source SH vector from a range of scatterers                               
+Vector<t_complex> source_vectorSH(Geometry &geometry,std::vector<Scatterer>::const_iterator first,
+                                std::vector<Scatterer>::const_iterator const &last,
+                                std::shared_ptr<Excitation const> incWave, Vector<t_complex> &internalCoef_FF_, std::vector<double *> CGcoeff);                                
 
-//! Computes preconditioned scattering matrix
+//! \brief Computes source SH vector from a range of scatterers adapted for parallelization                              
+Vector<t_complex> source_vectorSH_parallel(Geometry &geometry, int gran1, int gran2,
+                                std::shared_ptr<Excitation const> incWave, Vector<t_complex> &internalCoef_FF_, std::vector<double *> CGcoeff);                                 
+
+// computes the distributed source vector for SH on many nodes
+Vector<t_complex> distributed_source_vector_SH_Mnode(Geometry &geometry,
+                                           std::shared_ptr<Excitation const> incWave,
+                                           Vector<t_complex> &X_int_, std::vector<double *> CGcoeff);                      
+
+//! Computes preconditioned scattering matrix in serial for fundamental frequency
 Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
                                                    std::shared_ptr<Excitation const> incWave);
-
+                                                                                                  
+ 
+//! Computes preconditioned scattering matrix in serial for SH frequency, scattering coefficients
+ 
+Matrix<t_complex> preconditioned_scattering_matrixSH(Geometry const &geometry,
+                                                   std::shared_ptr<Excitation const> incWave); 
+                                                                                                                                                                                                        
+                                                 
 //! Computes preconditioned scattering matrix in paralllel
 Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
+                                                   std::shared_ptr<Excitation const> incWave,
+                                                   scalapack::Context const &context,
+                                                   scalapack::Sizes const &blocks);
+
+//! Computes preconditioned scattering matrix for SH in paralllel
+Matrix<t_complex> preconditioned_scattering_matrix_SH(Geometry const &geometry,
                                                    std::shared_ptr<Excitation const> incWave,
                                                    scalapack::Context const &context,
                                                    scalapack::Sizes const &blocks);
 //! Distributes the source vectors
 Vector<t_complex> distributed_source_vector(Vector<t_complex> const &input,
                                             scalapack::Context const &context,
+                                            scalapack::Sizes const &blocks);
+
+
+Vector<t_complex> distributed_source_vector_SH(Geometry &geometry, Vector<t_complex> &VecMnod,
+                                           scalapack::Context const &context,
                                             scalapack::Sizes const &blocks);
 
 #ifdef OPTIMET_SCALAPACK
@@ -57,6 +90,7 @@ Vector<t_complex> gather_all_source_vector(t_uint n, Vector<t_complex> const &in
                                            scalapack::Sizes const &blocks);
 //! Gather the distributed vector into a single vector
 Vector<t_complex> gather_all_source_vector(scalapack::Matrix<t_complex> const &matrix);
+
 #endif
 }
 #endif

@@ -22,6 +22,7 @@
 #include "scalapack/InitExit.h"
 #include "scalapack/Parameters.h"
 #include <memory>
+#include <iostream>
 
 namespace optimet {
 namespace scalapack {
@@ -64,7 +65,8 @@ public:
   //! The number of cols
   decltype(Impl::cols) cols() const { return is_valid() ? impl->cols : 0; }
   //! Total number of processes
-  t_uint size() const { return is_valid() ? static_cast<t_uint>(cols() * rows()) : 0; }
+  t_uint size() const {return is_valid() ? static_cast<t_uint>(cols() * 
+rows()) : 0; }
   //! Index of this row
   decltype(Impl::row) row() const { return is_valid() ? impl->row : 0; }
   //! Index of this row
