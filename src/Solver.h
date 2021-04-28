@@ -52,7 +52,7 @@ Vector<t_complex> convertIndirect_SH_outer(Vector<t_complex> const &scattered, t
                                   ElectroMagnetic const &bground, std::vector<Scatterer> const &); 
                                   
 //  Computes coeffs internal to spheres SH                                
-Vector<t_complex> convertInternal_SH(Vector<t_complex> const &scattered, t_real const &omega,
+Vector<t_complex> convertInternal_SH(Vector<t_complex> const &scattered, Vector<t_complex> const &K_1, t_real const &omega,
                                   ElectroMagnetic const &bground,
                                   std::vector<Scatterer> const &);                                  
                                   
@@ -126,8 +126,8 @@ public:
   }
   
       //! Solves for the internal coefficients SH frequency
-  Vector<t_complex> solveInternal_SH(Vector<t_complex> const &scattered) const {
-    return optimet::convertInternal_SH(scattered, incWave->omega(), geometry->bground,
+  Vector<t_complex> solveInternal_SH(Vector<t_complex> const &scattered, Vector<t_complex> const &K_1) const {
+    return optimet::convertInternal_SH(scattered, K_1, incWave->omega(), geometry->bground,
                                     geometry->objects);
   }
 

@@ -70,9 +70,6 @@ protected:
   void scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolver> solver);
   void field_simulation(Run &run, std::shared_ptr<solver::AbstractSolver> solver);
   void All2all(std::vector<double *> CLGcoeff, std::vector<double *> CLGcoeff_par, int sizeVec);
-  void radius_scan(Run &run, std::shared_ptr<solver::AbstractSolver> solver);
-  void radius_and_wavelength_scan(Run &run, std::shared_ptr<solver::AbstractSolver> solver);
-  void coefficients(Run &run, std::shared_ptr<solver::AbstractSolver> solver);
 
 private:
   std::string caseFile; /**< Name of the case without extensions. */

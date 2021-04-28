@@ -443,13 +443,13 @@ for(int ii = 0; ii <  xi.size(); ii++) {
 
   W00 = W_00[kk*size1 +brojac];
 
-   COEFFXm1 += (-eps_0 / eps_j2) * gamma * (-cmn_1 * cmn_2 * W00 * F_d00(p.first, q.first, r, waveK_j1, nMax) + dmn_1 * dmn_2 * (1.0 / 
+   COEFFXm1 += (-eps_0 / eps_j2) * gamma * (cmn_1 * cmn_2 * W00 * F_d00(p.first, q.first, r, waveK_j1, nMax) + dmn_1 * dmn_2 * (1.0 / 
                (std::pow(waveK_j1, 2.0))) *
 
                (W11 * F_d11(p.first, q.first, r, waveK_j1, nMax) + Wm1m1 * std::sqrt(p.first * q.first * (p.first + 1) * (q.first + 1)) *  
                 F_dm1m1(p.first, q.first, r, waveK_j1, nMax)));
 
-   COEFFXp1 += (-eps_0 / eps_j2) * gamma * (-cmn_1 * cmn_2 * W00 * std::sqrt(n * (n + 1)) * (1.0 / r) * F_00(p.first, q.first, r, waveK_j1, 
+   COEFFXp1 += (-eps_0 / eps_j2) * gamma * (cmn_1 * cmn_2 * W00 * std::sqrt(n * (n + 1)) * (1.0 / r) * F_00(p.first, q.first, r, waveK_j1, 
                 nMax) + dmn_1 * dmn_2 * (1.0 / (std::pow(waveK_j1, 2.0))) *
 
              (W11 * std::sqrt(n * (n + 1)) * (1.0 / r) * F_11(p.first, q.first, r, waveK_j1, nMax) + Wm1m1 * std::sqrt(p.first * q.first * 
@@ -464,11 +464,11 @@ for(int ii = 0; ii <  xi.size(); ii++) {
 
   std::tie(data, ddata) = bessel<Bessel, false>(r * waveK_SH, nMaxS);
 
-  COEFFXm1SH =  waveK_01 * dmnSH * (1.0 / waveK_SH) * std::complex<double>(1.0, 0.0) * std::sqrt(n * (n + 1)) * (1.0/ r) * data[n];
+  COEFFXm1SH =  waveK_01 * dmnSH * (1.0 / waveK_SH)  * std::sqrt(n * (n + 1)) * (1.0/ r) * data[n];
 
-  COEFFX0 =  waveK_01 * cmnSH * data[n];
+  COEFFX0 =  - waveK_01 * cmnSH * data[n];
 
-  COEFFXp1SH =  waveK_01 * dmnSH * (1.0 / waveK_SH) * std::complex<double>(1.0, 0.0) * ((1.0 / r) * data[n] + waveK_SH * ddata[n]);
+  COEFFXp1SH =  waveK_01 * dmnSH * (1.0 / waveK_SH) * ((1.0 / r) * data[n] +  ddata[n]);
 
 
   INTEGRAL = INTEGRAL + wi[ii] * std::pow(r , 2.0) * ((COEFFXm1 + COEFFXm1SH) * std::conj(COEFFXm1 + COEFFXm1SH) + 
@@ -548,7 +548,7 @@ std::complex<double> CXm1(CompoundIterator &kk, double *W_m1m1, double *W_00, do
    W11 =  W_11[kk*size1 +brojac];
                  
    
-   COEFFXm1 += (-eps_0 / eps_j2) * gamma * (-cmn_1 * cmn_2 * W00 * F_d00(p.first, q.first, r, waveK_j1, nMax)
+   COEFFXm1 += (-eps_0 / eps_j2) * gamma * ( cmn_1 * cmn_2 * W00 * F_d00(p.first, q.first, r, waveK_j1, nMax)
 
       + dmn_1 * dmn_2 * (1.0 / (std::pow(waveK_j1, 2.0))) * (W11 * F_d11(p.first, q.first, r, waveK_j1, nMax)
        
@@ -628,7 +628,7 @@ std::complex<double> CXp1(CompoundIterator &kk, double *W_m1m1, double *W_00, do
    
                           
    
-   COEFFXp1 += (-eps_0 / eps_j2) * gamma * (-cmn_1 * cmn_2 * W00 * std::sqrt(n * (n + 1)) * (1.0 / r) * F_00(p.first, q.first, r, waveK_j1, nMax) + 
+   COEFFXp1 += (-eps_0 / eps_j2) * gamma * ( cmn_1 * cmn_2 * W00 * std::sqrt(n * (n + 1)) * (1.0 / r) * F_00(p.first, q.first, r, waveK_j1, nMax) + 
 
               dmn_1  * dmn_2 * (1.0 / (std::pow(waveK_j1, 2.0))) * (W11 * std::sqrt(n * (n + 1)) * (1.0 / r) * 
 

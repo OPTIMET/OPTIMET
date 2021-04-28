@@ -31,9 +31,9 @@
 
 
 namespace optimet {
-Excitation::Excitation(unsigned long type, SphericalP<std::complex<double>> Einc,
+Excitation::Excitation(unsigned long type, SphericalP<std::complex<double>> Einc, bool SH_cond,
                        Spherical<double> waveKInc, int nMax, std::complex<double> bgcoeff)
-    : Einc(Einc), vKInc(waveKInc), nMax(nMax), type(type), dataIncAp(Tools::iteratorMax(nMax)),
+    : Einc(Einc), vKInc(waveKInc), SH_cond(SH_cond), nMax(nMax), type(type), dataIncAp(Tools::iteratorMax(nMax)),
       dataIncBp(Tools::iteratorMax(nMax)), waveK(waveKInc.rrr * bgcoeff), bgcoef(bgcoeff) {}
 
 void Excitation::update(unsigned long type_, SphericalP<std::complex<double>> Einc_,

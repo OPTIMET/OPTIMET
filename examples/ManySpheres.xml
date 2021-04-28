@@ -1,27 +1,26 @@
 <simulation>
-  <harmonics nmax="12" />
+  <harmonics nmax="10" />
 </simulation>
 <source type="planewave">
-  <wavelength value="1100" />
-  <propagation theta="45.0" phi="45.0" />
+  <wavelength value="1200" />
+  <propagation theta="45.0" phi="90.0" />
   <polarization Etheta.real="1.0" Etheta.imag="0.0" Ephi.real="0.0" Ephi.imag="0.0" />
+  <SHsources condition="yes" />
 </source>
 <geometry>
   <structure type="cube">
     <object type="sphere">
-    <properties radius="150.0" />
+    <properties radius="400.0" />
     <epsilon type="SiliconModel"/>
     <mu type="relative" value.real="1.0" value.imag="0.0" />
     </object>
-    <properties points="4" distance="350.0" />
+    <properties points="2" distance="900.0" />
    </structure>
 </geometry>
-<output type="field">
-<grid type="cartesian">
-    <x min ="-200" max="1250" steps="181" />
-    <y min ="-200" max="1250" steps="181" />
-    <z min ="699.95" max="700.05" steps="2" />
-</grid>
+<output type="response">
+  <scan type="A+E">
+    <wavelength initial="1000" final="1450" stepsize="3" />
+  </scan>
 </output>
 
 

@@ -35,21 +35,40 @@ Vector<t_complex> source_vector(std::vector<Scatterer>::const_iterator first,
                                 
    
  Vector<t_complex> source_vectorSH(Geometry &geometry, std::shared_ptr<Excitation const> incWave, 
-                                   Vector<t_complex> &internalCoef_FF_, std::vector<double *> CGcoeff);  
+                                   Vector<t_complex> &internalCoef_FF_, Vector<t_complex> &scatteredCoef_FF_,
+                                    std::vector<double *> CGcoeff);  
                                 
  //! \brief Computes source SH vector from a range of scatterers                               
 Vector<t_complex> source_vectorSH(Geometry &geometry,std::vector<Scatterer>::const_iterator first,
                                 std::vector<Scatterer>::const_iterator const &last,
-                                std::shared_ptr<Excitation const> incWave, Vector<t_complex> &internalCoef_FF_, std::vector<double *> CGcoeff);                                
+                                std::shared_ptr<Excitation const> incWave, Vector<t_complex> &internalCoef_FF_, 
+                                Vector<t_complex> &scatteredCoef_FF_, std::vector<double *> CGcoeff);
+
+// source vector needed for SH arbitrary shapes
+Vector<t_complex> source_vectorSHarb1(Geometry &geometry, std::shared_ptr<Excitation const> incWave, 
+                                 Vector<t_complex> &internalCoef_FF_, Vector<t_complex> &scatteredCoef_FF_, std::vector<double*>CGcoeff);                                 
 
 //! \brief Computes source SH vector from a range of scatterers adapted for parallelization                              
 Vector<t_complex> source_vectorSH_parallel(Geometry &geometry, int gran1, int gran2,
                                 std::shared_ptr<Excitation const> incWave, Vector<t_complex> &internalCoef_FF_, std::vector<double *> CGcoeff);                                 
+// source vectors needed for SH arbitrary shapes and parallel
+Vector<t_complex> source_vectorSH_parallelAR3(Geometry &geometry, int gran1, int gran2,
+                                std::shared_ptr<Excitation const> incWave, Vector<t_complex> &internalCoef_FF_, Vector<t_complex> &scatteredCoef_FF_,
+                                  std::vector<double *> CGcoeff);
+
+
+Vector<t_complex> source_vectorSH_parallelAR1(Geometry &geometry, int gran1, int gran2,
+                                std::shared_ptr<Excitation const> incWave, Vector<t_complex> &internalCoef_FF_, Vector<t_complex> &scatteredCoef_FF_,
+                                  std::vector<double *> CGcoeff);
 
 // computes the distributed source vector for SH on many nodes
 Vector<t_complex> distributed_source_vector_SH_Mnode(Geometry &geometry,
                                            std::shared_ptr<Excitation const> incWave,
-                                           Vector<t_complex> &X_int_, std::vector<double *> CGcoeff);                      
+                                           Vector<t_complex> &X_int_, Vector<t_complex> &X_sca_, std::vector<double *> CGcoeff);
+
+Vector<t_complex> distributed_vector_SH_AR1(Geometry &geometry,
+                                           std::shared_ptr<Excitation const> incWave,
+                                           Vector<t_complex> &X_int_, Vector<t_complex> &X_sca_, std::vector<double *> CGcoeff);                      
 
 //! Computes preconditioned scattering matrix in serial for fundamental frequency
 Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,

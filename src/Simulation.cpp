@@ -15,7 +15,6 @@
 // along with Optimet. If not, see <http://www.gnu.org/licenses/>.
 
 #include "Simulation.h"
-
 #include "Aliases.h"
 #include "CompoundIterator.h"
 #include "Output.h"
@@ -23,6 +22,7 @@
 #include "Result.h"
 #include "Run.h"
 #include "Solver.h"
+#include <string>
 #include <chrono>
 #include <cstdlib>
 #include <fstream>
@@ -51,15 +51,6 @@ int Simulation::run() {
   case 11:
     scan_wavelengths(run, solver);
     break;
-  case 12:
-    radius_scan(run, solver);
-    break;
-  case 112:
-    radius_and_wavelength_scan(run, solver);
-    break;
-  case 2:
-    coefficients(run, solver);
-    break;
   default:
     std::cerr << "Nothing to do?\n";
     return 1;
@@ -69,9 +60,9 @@ int Simulation::run() {
 
 void Simulation::field_simulation(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
   // Determine the simulation type and proceed accordingly
-
+  
   Result result(run.geometry, run.excitation);
-
+ 
    int nMax = run.geometry->nMax();
   int nMaxS = run.geometry->nMaxS();
   int flatMax = nMax * (nMax + 2);
@@ -306,6 +297,11 @@ if(communicator().rank() == communicator().root_id()) {
     oEGrid_SH2.close();
     oHGrid_SH2.close();
     oFile_SH.close();
+    if(!run.excitation->SH_cond){
+    std::string SH = caseFile + "_SH.h5";
+    const char *cstr = SH.c_str();
+    remove(cstr);
+    }
   }
 }
 
@@ -330,7 +326,7 @@ void Simulation::All2all (std::vector<double *> CLGcoeff, std::vector<double *> 
 
 
 void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
-  std::ofstream outASec_FF, outESec_FF, outSSec_SH, outASec_SH;
+  std::ofstream outASec_FF, outSSec_FF, outSSec_SH, outASec_SH;
  
   int nMax = run.geometry->nMax();
   int nMaxS = run.geometry->nMaxS();
@@ -339,7 +335,8 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
   int sizeCF = flatMaxS * flatMax * flatMax;
   int gran1, gran2, gran1AC, gran2AC, gran1CG, gran2CG;
   int rank = communicator().rank();
-  int size = communicator().size(); 
+  int size = communicator().size();
+  
  
       gran1CG = (sizeCF / (size))*(rank);
 
@@ -363,33 +360,23 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
                                        &W_m1m1_par[0], &W_11_par[0], &W_00_par[0], &W_10_par[0], &W_01_par[0]};
 
   std::vector<double *> CLGcoeff = {&C_10m1[0], &C_11m1[0], &C_00m1[0], &C_01m1[0],
-                                       &W_m1m1[0], &W_11[0], &W_00[0], &W_10[0], &W_01[0]};
-
-  auto start1 = high_resolution_clock::now(); 
+                                       &W_m1m1[0], &W_11[0], &W_00[0], &W_10[0], &W_01[0]}; 
 
   run.geometry->Coefficients(nMax, nMaxS, CLGcoeff_par, gran1CG, gran2CG);
 
       
   All2all(CLGcoeff, CLGcoeff_par, sizeCF_par);
  
-    auto stop1 = high_resolution_clock::now();
-    auto duration1 = duration_cast<microseconds>(stop1 - start1);
-
-   if(communicator().rank() == 0) {
-    //  std::cout << "CG coeff asse-" << std::endl;
-    //  std::cout << duration1.count()/1e6 <<"e-0"<< std::endl;
-    }
-
-  
   if(communicator().rank() == communicator().root_id()) {
   
  
     outASec_FF.open(caseFile + "_AbsorptionCS_FF.dat");
-    outESec_FF.open(caseFile + "_ExtinctionCS_FF.dat");
+    outSSec_FF.open(caseFile + "_ScatteringCS_FF.dat");
     
-   
+   if(run.excitation->SH_cond){  
     outSSec_SH.open(caseFile + "_ScatteringCS_SH.dat");
     outASec_SH.open(caseFile + "_AbsorptionCS_SH.dat");
+    }
     
   }
 
@@ -401,11 +388,9 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
   double lam;
   double lams;
 
-  double absCS_SH(0.0), scaCS_SH(0.0), absCS_FF(0.0), extCS_FF(0.0);
+  double absCS_SH(0.0), scaCS_SH(0.0), scaCS_FF(0.0), extCS_FF(0.0);
   int NO = run.geometry->objects.size();
-  int sizet = NO;
-
-  Vector<double> absCS_SH_vec(size), scaCS_SH_vec(size), absCS_FF_vec(size), extCS_FF_vec(size);
+  int TMax = NO * flatMaxS;
   
   lams = (lamf - lami) / (steps - 1); 
   
@@ -416,33 +401,19 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
     run.excitation->updateWavelength(lam);
     run.geometry->update(run.excitation);
 
-    auto start2 = high_resolution_clock::now();
-    solver->update(run);
-   
-    int nMaxS = run.nMaxS;
-    t_uint const pMax = nMaxS * (nMaxS + 2);
-    int TMax = NO * pMax;
-    
+    solver->update(run); // building of the sistem matrices   
 
-    Result result(run.geometry, run.excitation);
+    Vector<double> absCS_SH_vec(size), scaCS_SH_vec(size), scaCS_FF_vec(size), extCS_FF_vec(size);
 
     if(communicator().rank() == communicator().root_id()) {
 
       std::cout << "Solving for Lambda = " << lam << std::endl;
 
     }
+
+  Result result(run.geometry, run.excitation);
    
   solver->solve(result.scatter_coef, result.internal_coef, result.scatter_coef_SH, result.internal_coef_SH, CLGcoeff);
-
-
-    auto stop2 = high_resolution_clock::now();
-    auto duration2 = duration_cast<microseconds>(stop2 - start2);
-
-    if(communicator().rank() == 0) {
-   // std::cout << "FF and SH assembly and solve-" << std::endl;
-   // std::cout << duration2.count()/1e6<<"e-0"<< std::endl; 
-    }
-
 
       if (size <= NO) {  // if the number of processes is less or eq numb of part
 
@@ -462,34 +433,36 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
 
        	else { gran2AC = TMax;}
 
-   
+    if(run.excitation->SH_cond){
      absCS_SH = result.getAbsorptionCrossSection_SH(CLGcoeff, gran1AC, gran2AC);
      scaCS_SH = result.getScatteringCrossSection_SH(gran1, gran2);
-     absCS_FF = result.getAbsorptionCrossSection(gran1, gran2);
+     }
+     scaCS_FF = result.getScatteringCrossSection(gran1, gran2);
      extCS_FF = result.getExtinctionCrossSection(gran1, gran2);
 
+    if(run.excitation->SH_cond){
     MPI_Gather(&absCS_SH, 1, MPI_DOUBLE, &absCS_SH_vec(0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);    
-    MPI_Gather(&scaCS_SH, 1, MPI_DOUBLE, &scaCS_SH_vec(0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);     
-    MPI_Gather(&absCS_FF, 1, MPI_DOUBLE, &absCS_FF_vec(0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Gather(&scaCS_SH, 1, MPI_DOUBLE, &scaCS_SH_vec(0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    }     
+    MPI_Gather(&scaCS_FF, 1, MPI_DOUBLE, &scaCS_FF_vec(0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Gather(&extCS_FF, 1, MPI_DOUBLE, &extCS_FF_vec(0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
  
       if(communicator().rank() == communicator().root_id()) {    
-      
-     //  std::cout<<absCS_FF_vec.sum()<<std::endl;    
-     //    std::cout<<absCS_SH_vec.sum()<<std::endl;
               
-      outASec_FF << lam << "\t" << absCS_FF_vec.sum() << std::endl;
-      outESec_FF << lam << "\t" << extCS_FF_vec.sum() << std::endl;
+      outASec_FF << lam << "\t" << extCS_FF_vec.sum() - scaCS_FF_vec.sum() << std::endl;
+      outSSec_FF << lam << "\t" << scaCS_FF_vec.sum() << std::endl;
 
+      if(run.excitation->SH_cond){
       outSSec_SH << lam << "\t" << scaCS_SH_vec.sum() << std::endl;
       outASec_SH << lam << "\t" << absCS_SH_vec.sum() << std::endl;
+     }
   }
     
   }// if
 
 
- else if ((size > NO))  {  // if the number of processes is more than numb of part
+ else if (size > NO)  {  // if the number of processes is more than numb of part
 
     gran1AC = (TMax / (size))*(rank);
 
@@ -499,42 +472,47 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
 
        	else { gran2AC = TMax;}
     
-   //  absCS_SH = result.getAbsorptionCrossSection_SH(CLGcoeff, gran1AC, gran2AC);
+     if(run.excitation->SH_cond){
+       absCS_SH = result.getAbsorptionCrossSection_SH(CLGcoeff, gran1AC, gran2AC);
     
-   //  MPI_Gather(&absCS_SH, 1, MPI_DOUBLE, &absCS_SH_vec(0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+       MPI_Gather(&absCS_SH, 1, MPI_DOUBLE, &absCS_SH_vec(0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
      if(communicator().rank() == communicator().root_id()) {
-
-       // std::cout<<absCS_SH_vec.sum()<<std::endl;
   
       outASec_SH << lam << "\t" << absCS_SH_vec.sum() << std::endl;
 
       }
+     }
 
      if (rank<NO){     
      
      gran1 = rank;
 
      gran2 = rank + 1;
- 
+
+     if(run.excitation->SH_cond)
      scaCS_SH = result.getScatteringCrossSection_SH(gran1, gran2);
-     absCS_FF = result.getAbsorptionCrossSection(gran1, gran2);
+     
+     scaCS_FF = result.getScatteringCrossSection(gran1, gran2);
      extCS_FF = result.getExtinctionCrossSection(gran1, gran2);
 
    }//if
- 
+    
+    if(run.excitation->SH_cond)
     MPI_Gather(&scaCS_SH, 1, MPI_DOUBLE, &scaCS_SH_vec(0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Gather(&absCS_FF, 1, MPI_DOUBLE, &absCS_FF_vec(0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    
+    MPI_Gather(&scaCS_FF, 1, MPI_DOUBLE, &scaCS_FF_vec(0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Gather(&extCS_FF, 1, MPI_DOUBLE, &extCS_FF_vec(0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 
       if(communicator().rank() == communicator().root_id()) {
 
-      std::cout<<scaCS_SH_vec.sum()<<std::endl;
-      outASec_FF << lam << "\t" << absCS_FF_vec.sum() << std::endl;
-      outESec_FF << lam << "\t" << extCS_FF_vec.sum() << std::endl;
-      outSSec_SH << lam << "\t" << scaCS_SH_vec.sum() << std::endl;
+      outASec_FF << lam << "\t" << extCS_FF_vec.sum() - scaCS_FF_vec.sum() << std::endl;
+      outSSec_FF << lam << "\t" << scaCS_FF_vec.sum()<< std::endl;
 
+      if(run.excitation->SH_cond)
+      outSSec_SH << lam << "\t" << scaCS_SH_vec.sum() << std::endl;
+      std::cout<<scaCS_SH_vec.sum()<<std::endl;
       }
 
       
@@ -546,166 +524,15 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
   if(communicator().rank() == communicator().root_id()) {
 
     outASec_FF.close();
-    outESec_FF.close();
-    
+    outSSec_FF.close();
+    if(run.excitation->SH_cond){    
     outSSec_SH.close();
     outASec_SH.close();
+   }
   }
 }
 
-void Simulation::radius_scan(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
-  std::ofstream outASec, outESec;
 
-  if(communicator().rank() == communicator().root_id()) {
-    outASec.open(caseFile + "_AbsorptionCS.dat");
-    outESec.open(caseFile + "_ExtinctionCS.dat");
-  }
-
-  // Now scan over the wavelengths given in params
-  double radi = run.params[3];
-  double radf = run.params[4];
-  int radsteps = run.params[5];
-
-  double rad;
-  double rads;
-
-  int gran1, gran2;
-
-  rads = (radf - radi) / (radsteps - 1);
-
-  for(int i = 0; i < radsteps; i++) {
-    rad = radi + i * rads;
-
-    std::cout << "Solving for R = " << rad << std::endl;
-
-    for(size_t k = 0; k < run.geometry->objects.size(); k++) {
-      run.geometry->updateRadius(rad, k);
-    }
-
-    if(run.geometry->structureType == 1) {
-      run.geometry->rebuildStructure();
-    }
-
-    if(!run.geometry->is_valid()) {
-      std::cerr << "Geometry no longer valid!";
-      exit(1);
-    }
-
-    solver->update(run);
-
-    Result result(run.geometry, run.excitation);
-    solver->solve(result.scatter_coef, result.internal_coef, result.scatter_coef_SH, result.internal_coef_SH, result.CLGcoeff);
-
-    if(communicator().rank() == communicator().root_id()) {
-      outASec << rad << "\t" << result.getAbsorptionCrossSection(gran1, gran2) << std::endl;
-      outESec << rad << "\t" << result.getExtinctionCrossSection(gran1, gran2) << std::endl;
-    }
-  }
-
-  if(communicator().rank() == communicator().root_id()) {
-    outASec.close();
-    outESec.close();
-  }
-}
-
-void Simulation::radius_and_wavelength_scan(Run &run,
-                                            std::shared_ptr<solver::AbstractSolver> solver) {
-  std::ofstream outASec, outESec, outParams;
-
-  if(communicator().rank() == communicator().root_id()) {
-    outASec.open(caseFile + "_AbsorptionCS.dat");
-    outESec.open(caseFile + "_ExtinctionCS.dat");
-    outParams.open(caseFile + "_RadiusLambda.dat");
-  }
-
-  // Now scan over the wavelengths given in params
-  double lami = run.params[0];
-  double lamf = run.params[1];
-  int lamsteps = run.params[2];
-
-  double radi = run.params[3];
-  double radf = run.params[4];
-  int radsteps = run.params[5];
-
-  double lam, lams, rad, rads;
-
-  lams = (lamf - lami) / (lamsteps - 1);
-  rads = (radf - radi) / (radsteps - 1);
-
-  for(int i = 0; i < lamsteps; i++) {
-    lam = lami + i * lams;
-
-    for(int j = 0; j < radsteps; j++) {
-      rad = radi + j * rads;
-
-      std::cout << "Solving for Lambda = " << lam << " and R =" << rad << std::endl;
-
-      run.excitation->updateWavelength(lam);
-      run.geometry->update(run.excitation);
-      for(size_t k = 0; k < run.geometry->objects.size(); k++) {
-        run.geometry->updateRadius(rad, k);
-      }
-
-      if(run.geometry->structureType == 1) {
-        run.geometry->rebuildStructure();
-      }
-
-      if(!run.geometry->is_valid()) {
-        std::cerr << "Geometry no longer valid!";
-        exit(1);
-      }
-
-      solver->update(run);
-
-      int gran1, gran2;
-
-      Result result(run.geometry, run.excitation);
-      solver->solve(result.scatter_coef, result.internal_coef, result.scatter_coef_SH, result.internal_coef_SH, result.CLGcoeff);
-
-      if(communicator().rank() == communicator().root_id()) {
-        outASec << result.getAbsorptionCrossSection(gran1, gran2) << "\t";
-        outESec << result.getExtinctionCrossSection(gran1, gran2) << "\t";
-        outParams << "(" << rad * 1e9 << " , " << lam * 1e9 << ")"
-                  << "\t";
-      }
-    }
-
-    if(communicator().rank() == communicator().root_id()) {
-      outASec << std::endl;
-      outESec << std::endl;
-      outParams << std::endl;
-    }
-  }
-
-  if(communicator().rank() == communicator().root_id()) {
-    outASec.close();
-    outESec.close();
-    outParams.close();
-  }
-}
-
-void Simulation::coefficients(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
-  // Scattering coefficients requests
-
-  Result result(run.geometry, run.excitation);
-  solver->solve(result.scatter_coef, result.internal_coef, result.scatter_coef_SH, result.internal_coef_SH, result.CLGcoeff);
-
-  if(communicator().rank() == communicator().root_id()) {
-    std::ofstream outPCoef(caseFile + "_pCoefficients.dat");
-    std::ofstream outQCoef(caseFile + "_qCoefficients.dat");
-
-    for(CompoundIterator p = 0; p < p.max(run.nMax); p++) {
-      outPCoef << p.first << "\t" << p.second << "\t"
-               << abs(result.scatter_coef(static_cast<int>(p))) << std::endl;
-      outQCoef << p.first << "\t" << p.second << "\t"
-               << abs(result.scatter_coef(static_cast<int>(p.compound) + p.max(run.nMax)))
-               << std::endl;
-    }
-
-    outPCoef.close();
-    outQCoef.close();
-  }
-}
 
 int Simulation::done() {
   // Placeholder method. Not needed at the moment.

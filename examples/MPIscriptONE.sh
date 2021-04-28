@@ -7,7 +7,7 @@
 #$ -S /bin/bash
 
 # 2. Request ten minutes of wallclock time (format hours:minutes:seconds).
-#$ -l h_rt=17:10:0
+#$ -l h_rt=47:10:0
 
 # 3. Request 1 gigabyte of RAM per process (must be an integer)
 #$ -l mem=2G
@@ -23,11 +23,14 @@ module load openblas/0.3.7-serial/gnu-4.9.2 scalapack/2.0.2/gnu-4.9.2/openblas-0
 
 module list
 
+cd /home/uceeise/Scratch/OPTIMET/build_belos
+make
+
 # 5. Set the name of the job.
-#$ -N OneSphere
+#$ -N OneParticleAu
 
 # 6. Select the MPI parallel environment and number of processes.
-#$ -pe mpi 105
+#$ -pe mpi 48
 
 # 7. Set the working directory to somewhere in your scratch space.  This is
 # a necessary step with the upgraded software stack as compute nodes cannot

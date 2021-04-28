@@ -46,7 +46,7 @@ struct Parameters {
 //! grids.
 //! \details The cost function is n * m - skew * (n - m) * (n - m). Smaller skews result in grids
 //! that will include more processes in the grid at the expense of a less square grid.
-Sizes squarest_largest_grid(t_uint nprocs, t_real skew=0.5);
+Sizes squarest_largest_grid(t_uint nprocs, t_real skew=0.1);
 #endif
 } // scalapack
 } // optimet

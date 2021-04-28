@@ -1,6 +1,14 @@
 <simulation>
   <harmonics nmax="12" />
 </simulation>
+<ParameterList name="Belos">
+  <Parameter name="Solver" type="string" value="GMRES"/>
+  <Parameter name="Convergence Tolerance" type="double" value="1.0e-4"/>
+  <Parameter name="Verbosity" type="int" value="8"/>
+  <Parameter name="Num Blocks" type="int" value="1000"/>
+  <Parameter name="Block Size" type="int" value="1"/>
+  <Parameter name="Maximum Restarts" type="int" value="20"/>
+</ParameterList>
 <source type="planewave">
   <wavelength value="1460" />
   <propagation theta="45" phi="45" />
@@ -27,10 +35,10 @@
   </object>
 </geometry>
 <output type="field">
- <grid type="cartesian">
-    <x min ="-210" max="360" steps="146" />
-    <y min ="-0.1" max="0.1" steps="2" />
-    <z min ="-210" max="360" steps="146" />
+<grid type="cartesian">
+    <x min ="-450" max="4450" steps="191" />
+    <y min ="-450" max="4450" steps="271" />
+    <z min ="-0.1" max="0.1" steps="2" />
 </grid>
 </output>
 

@@ -15,9 +15,7 @@
 // along with Optimet. If not, see <http://www.gnu.org/licenses/>.
 
 #include "Solver.h"
-
 #include "ElectroMagnetic.h"
-#include "FMMBelosSolver.h"
 #include "MatrixBelosSolver.h"
 #include "PreconditionedMatrixSolver.h"
 #include "ScalapackSolver.h"
@@ -36,28 +34,20 @@ std::shared_ptr<AbstractSolver> factory(Run const &run) {
   return std::make_shared<PreconditionedMatrix>(run);
 #elif defined(OPTIMET_SCALAPACK) && !defined(OPTIMET_BELOS)
   
-  if(run.do_fmm)
-    throw std::runtime_error("Scalapack and Fast Matrix Multiplication are not compatible");
   return std::make_shared<Scalapack>(run);
 #elif defined(OPTIMET_BELOS) && defined(OPTIMET_SCALAPACK)
-  if((run.belos_params()->get<std::string>("Solver") == "scalapack" or
-      run.belos_params()->get<std::string>("Solver") == "eigen") and
-     run.do_fmm)
-    throw std::runtime_error("Cannot run FMM with scalapack or eigen solver");
+   
   if(run.belos_params()->get<std::string>("Solver") == "eigen")
     return std::make_shared<PreconditionedMatrix>(run);
   if(run.belos_params()->get<std::string>("Solver") == "scalapack")
     return std::make_shared<Scalapack>(run);
-  if(run.do_fmm)
-    return std::make_shared<FMMBelos>(run);
+  
   return std::make_shared<MatrixBelos>(run);
 #elif defined(OPTIMET_BELOS)
 
   if(run.belos_params()->get<std::string>("Solver") == "scalapack")
     throw std::runtime_error("Optimet was not compiled with scalapack");
-  if(not run.do_fmm)
-    throw std::runtime_error("Optimet was not compiled with scalapack, please choose FMM matrix");
-  return std::make_shared<FMMBelos>(run);
+  
 #else
 #error Need at least Belos to run MPI solvers
 #endif
@@ -69,12 +59,24 @@ Vector<t_complex> convertInternal(Vector<t_complex> const &scattered, t_real con
                                   std::vector<Scatterer> const &objects) {
   Vector<t_complex> result(scattered.size());
   size_t i = 0;
+  auto const N = 2 * objects[0].nMax * (objects[0].nMax + 2);
+  Matrix<t_complex> Intrmatrix(N, N);
+
   for(auto const &object : objects) {
-    auto const N = 2 * object.nMax * (object.nMax + 2);
+  
+   if (object.scatterer_type == "sphere"){
     result.segment(i, N).array() =
         scattered.segment(i, N).array() * object.getIaux(omega, bground).array();
-       //  std::cout<<object.getIaux(omega, bground).sum()<<std::endl;
+    }
+   else if (object.scatterer_type == "arbitrary.shape"){
+
+    object.getQLocal(Intrmatrix, omega, bground);  
+    result.segment(i, N) = Intrmatrix * scattered.segment(i, N);
+   
+    }
+
     i += N;
+
   }
    
   return result;
@@ -87,12 +89,14 @@ Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered, t_real con
                                   std::vector<Scatterer> const &objects) {
   Vector<t_complex> result(scattered.size());
   size_t i(0);
-  for(auto const &object : objects) {
-    auto const N = 2 * object.nMax * (object.nMax + 2);
+  auto const N = 2 * objects[0].nMax * (objects[0].nMax + 2);
+  Matrix<t_complex> Tmatrix(N, N);
 
-    result.segment(i, N) =
-        object.getTLocal(omega, bground).array() * scattered.segment(i, N).array();
- 
+  for(auto const &object : objects) {
+
+    object.getTLocal(Tmatrix, omega, bground);
+    result.segment(i, N) = Tmatrix * scattered.segment(i, N);
+   
     i += N;
   }
  
@@ -103,11 +107,13 @@ Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered, t_real con
 Vector<t_complex> convertIndirect_SH_outer(Vector<t_complex> const &scattered, t_real const &omega,
                                   ElectroMagnetic const &bground,
                                   std::vector<Scatterer> const &objects) {
-  Vector<t_complex> result(scattered.size());
-
+  
   size_t i(0);
+  auto const N = 2 * objects[0].nMaxS * (objects[0].nMaxS + 2);
+
+  if (objects[0].scatterer_type == "sphere"){
+  Vector<t_complex> result(scattered.size());
   for(auto const &object : objects) {
-    auto const N = 2 * object.nMaxS * (object.nMaxS + 2);
    
     result.segment(i, N) =
         object.getTLocalSH1_outer(omega, bground).array() * scattered.segment(i, N).array();
@@ -121,17 +127,23 @@ Vector<t_complex> convertIndirect_SH_outer(Vector<t_complex> const &scattered, t
   }
 
   return result;
+ }
+
+   else if (objects[0].scatterer_type == "arbitrary.shape")
+   return scattered;
 }
 
 
-Vector<t_complex> convertInternal_SH(Vector<t_complex> const &scattered, t_real const &omega,
+Vector<t_complex> convertInternal_SH(Vector<t_complex> const &scattered, Vector<t_complex> const &K_1, t_real const &omega,
                                   ElectroMagnetic const &bground,
                                   std::vector<Scatterer> const &objects) {
   Vector<t_complex> result(scattered.size());
-  
-  size_t i = 0;
+  auto const N = 2 * objects[0].nMaxS * (objects[0].nMaxS + 2);
+  Matrix<t_complex> Intrmatrix(N, N);
+  size_t i = 0; 
+ auto const k_b_SH = 2 * omega * std::sqrt(bground.epsilon * bground.mu);
+  if (objects[0].scatterer_type == "sphere"){
   for(auto const &object : objects) {
-    auto const N = 2 * object.nMaxS * (object.nMaxS + 2);
     
     result.segment(i, N).array() =
         scattered.segment(i, N).array() * object.getIauxSH1(omega, bground).array();
@@ -141,9 +153,21 @@ Vector<t_complex> convertInternal_SH(Vector<t_complex> const &scattered, t_real 
   
     i += 2 * N;
   }
-   
+ }
+ else if (objects[0].scatterer_type == "arbitrary.shape"){
+  
+  for(auto const &object : objects) {
+  
+  object.getQLocalSH(Intrmatrix, omega, bground);
+    
+  result.segment(i, N) = Intrmatrix.inverse()*((-consCi*consPi/k_b_SH)*scattered.segment(i, N) + K_1.segment(i, N));
+  
+  i += N;
+  
+  }
+  
+  } 
   return result;
 }
-
 
 } // optimet namespace

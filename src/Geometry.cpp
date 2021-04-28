@@ -13,10 +13,10 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Optimet. If not, see <http://www.gnu.org/licenses/>.
-
+#include "AuxCoefficients.h"
 #include "Coupling.h"
 #include "Geometry.h"
-
+#include "Trian.h"
 #include "Algebra.h"
 #include "Bessel.h"
 #include "CompoundIterator.h"
@@ -145,14 +145,13 @@ int Geometry::getCabsAux(double omega_, int objectIndex_, int nMax_, double *Cab
 }
 
 
-
-Spherical<double> Geometry::translateCoordinates(int firstObject_, int secondObject_) {
-  return objects[firstObject_].vR - objects[secondObject_].vR;
-}
-
 int Geometry::checkInner(Spherical<double> R_) {
   Spherical<double> Rrel;
+  Cartesian <double> Rcar, centCar;
+  std::vector<double> RtoCp(3);
+  double DOT;
 
+  if (objects[0].scatterer_type == "sphere"){
   for(size_t j = 0; j < objects.size(); j++) {
     // Translate to object j
     Rrel = Tools::toPoint(R_, objects[j].vR);
@@ -163,6 +162,58 @@ int Geometry::checkInner(Spherical<double> R_) {
   }
 
   return -1;
+}
+
+else if (objects[0].scatterer_type == "arbitrary.shape"){
+  Rcar = Tools::toCartesian(R_);
+  
+  for(size_t j = 0; j < objects.size(); j++) {
+  
+  int clearPass(1);
+  centCar = Tools::toCartesian(objects[j].vR);
+  unsigned int Nt = (objects[j].getTopolsize()) / 3;
+  
+  for (int ele1 = 0; ele1 < Nt; ++ele1){
+	        
+	        const int* n1 = objects[j].getNOvertex(ele1);
+	
+		const double* p1 = objects[j].getCoord(n1[0]);
+
+		const double* p2 = objects[j].getCoord(n1[1]);
+	
+		const double* p3 = objects[j].getCoord(n1[2]);
+                
+                Trian trian(p1, p2, p3); 
+               
+		std::vector<double> nvec = trian.getnorm();
+		std::vector<double> cp = trian.getcp();
+
+		
+		cp[0] = cp[0] + centCar.x;
+		cp[1] = cp[1] + centCar.y;
+		cp[2] = cp[2] + centCar.z;
+		
+		RtoCp[0] = Rcar.x - cp[0];
+		RtoCp[1] = Rcar.y - cp[1];
+		RtoCp[2] = Rcar.z - cp[2];
+		
+       DOT = Tools::dot(&nvec[0], &RtoCp[0]);
+         
+         if ( DOT >= 0 ){  // the point is outside the particle
+         clearPass = 0;
+	 break;	
+	 }
+	 
+	 
+    }
+      	
+      if (clearPass)
+      return j;		
+  }
+  
+  return -1;
+  
+  }
 }
 
 
@@ -239,8 +290,7 @@ int Geometry::getIncLocalSH(std::vector<double *> CLGcoeff, int objectIndex_,
                   internalCoef_FF_,
                    objectIndex_,
                   omega, objects[objectIndex_]); 
-              
-                                   
+                                                 
      
     }
 
@@ -347,11 +397,22 @@ optimet::Vector<optimet::t_complex> &internalCoef_FF_, optimet::Vector<optimet::
       objectIndex_ = q / qMax;
 
       p = q - objectIndex_ * qMax;
-    
+  
+  if (objects[0].scatterer_type == "sphere"){   
+  
   cmnSH = internalCoef_SH_[objectIndex_ * 4 * pMax + p.compound] + internalCoef_SH_[2 * pMax + objectIndex_ * 4 * pMax + p.compound];
    
   dmnSH = internalCoef_SH_[pMax + objectIndex_ * 4 * pMax + p.compound] + internalCoef_SH_[3 * pMax + 
                            objectIndex_ * 4 * pMax + p.compound];
+  }
+
+  else if (objects[0].scatterer_type == "arbitrary.shape"){
+ 
+ cmnSH = (1.0 / incWave_->waveK) * internalCoef_SH_[objectIndex_ * 2 * pMax + p.compound];
+
+ dmnSH = (1.0 / incWave_->waveK) * internalCoef_SH_[objectIndex_ * 2 * pMax + pMax + p.compound];
+ 
+ }
      
     
     coefABS[brojac] = optimet::symbol::ACSshcoeff(p, W_m1m1, W_00, W_11, nMax_, nMaxS_,
@@ -405,18 +466,973 @@ optimet::Vector<optimet::t_complex> &internalCoef_FF_, double r,
   return 0;
 }
 
+void Geometry::getEXCvecSH_ARB3(optimet::Vector<optimet::t_complex>& EXvec, std::shared_ptr<optimet::Excitation const> excitation, optimet::Vector<optimet::t_complex> &externalCoef_FF_, optimet::Vector<optimet::t_complex> &internalCoef_FF_, std::vector<double *> CGcoeff, int objIndex){
+  using namespace optimet;
+  
+  int nMax = this->nMax();
+  int nMaxS = this->nMaxS();
+  auto const N = nMaxS * (nMaxS + 2);
+  
+          CompoundIterator mu1, mup, pp;
+         
+          optimet::t_real omega_ = excitation->omega();
+          Cartesian<double> intpoinCar; // integration point in Cartesian system
+          Spherical<double> intpoinSph; // integration point in spherical system
 
-optimet::Vector<optimet::t_complex> Geometry::getTLocal(optimet::t_real omega_,
-                                                        optimet::t_int objectIndex_,
-                                                        optimet::t_uint nMax_) const {
-  if(objectIndex_ >= static_cast<int>(objects.size()))
-    std::out_of_range("Object index out of range");
-  if(nMax_ != static_cast<optimet::t_uint>(objects[objectIndex_].nMax))
-    std::runtime_error("Internal inconsistency");
-  return objects[objectIndex_].getTLocal(omega_, bground);
-}
+          SphericalP<std::complex<double>> Eext_FF, E_gamma;
+          
+          int muMax =mu1.max(nMaxS);
+          int ppMax = pp.max(nMax);
+          
+          std::complex<double> coeffXpl[muMax], coeffXmn[muMax];
+          
+          std::complex<double>* Etan = new std::complex<double>[3];
+          std::complex<double>* Tan = new std::complex<double>[3];
+          std::complex<double>* resCR = new std::complex<double>[3];
+          std::complex<double> Enorm, resDOT1, resDOT2;
+          
+         const std::complex<double> k_0_SH = 2 * (omega_) * std::sqrt(consEpsilon0 * consMu0); 
+         auto const k_s_SH = 2 * omega_ * std::sqrt(objects[objIndex].elmag.epsilon_SH * objects[objIndex].elmag.mu_SH); 
+         auto const k_b_SH = 2 * omega_ * std::sqrt(bground.epsilon * bground.mu);
+         auto const k_b = omega_ * std::sqrt(bground.epsilon * bground.mu);
+         auto const k_s = omega_ * std::sqrt(objects[objIndex].elmag.epsilon * objects[objIndex].elmag.mu); 
+         
+         const std::complex<double> ksiparppar = objects[objIndex].elmag.ksiparppar; // SH coefficient
+         const std::complex<double> ksippp = objects[objIndex].elmag.ksippp; // SH coefficient
 
+         unsigned int Nt = (objects[objIndex].getTopolsize()) / 3;  //number of triangles
+        
+        std::vector<std::vector<double>> Points = Tools::getPoints4();
 
+	std::vector<double> Weights = Tools::getWeights4();
+	
+	std::vector<double> LinePoints = Tools::getLinePts4();
+	
+	std::vector<double> LineWeights = Tools::getLineWghts4();
+
+	for (mu1 = 0; mu1 < muMax ; mu1++){
+	
+	std::complex<double> I11s(0.0,0.0), I21s(0.0,0.0), I31s(0.0,0.0), I12s(0.0,0.0), I22s(0.0,0.0), I32s(0.0,0.0);
+        	
+	int nn = mu1.first;
+	int mm =  mu1.second;
+	mup = nn * (nn + 1) + mm - 1;
+	
+	
+	for (int ele1 = 0; ele1 < Nt; ++ele1){
+
+        const int* n1 = objects[objIndex].getNOvertex(ele1);
+	
+		const double* p1 = objects[objIndex].getCoord(n1[0]);
+
+		const double* p2 = objects[objIndex].getCoord(n1[1]);
+	
+		const double* p3 = objects[objIndex].getCoord(n1[2]);
+                
+                Trian trian(p1, p2, p3); 
+                
+		double det = trian.getDeter();
+		std::vector<double> nvec = trian.getnorm();
+		
+	// surface integration	
+	 for (int ni = 0; ni != Weights.size(); ++ni) {
+
+          Eext_FF = SphericalP<std::complex<double>>(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));
+      
+      E_gamma = SphericalP<std::complex<double>>(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));
+	
+	double N1 = Points[ni][0];
+	double N2 = Points[ni][1];
+        double N0 = 1.0 - N1 - N2;
+
+	double wi = Weights[ni];
+         
+	intpoinCar.x = (p1[0])*N1 + (p2[0])*N2 + (p3[0])*N0;
+	intpoinCar.y = (p1[1])*N1 + (p2[1])*N2 + (p3[1])*N0;
+	intpoinCar.z = (p1[2])*N1 + (p2[2])*N2 + (p3[2])*N0;
+	
+	intpoinSph = Tools::toSpherical(intpoinCar); 
+	
+	// Incoming field
+	optimet::AuxCoefficients aCoefInc(intpoinSph, k_b, 1, nMax); //incident FF field
+      
+      optimet::AuxCoefficients aCoefSca(intpoinSph, k_b, 0, nMax); // scattered FF field
+      
+      // this works just for object centered at (0,0,0), so the global coordinates are equal to local!!!!!/////
+      //  calculation of the total exterior field on the boundary of the particle (surface)
+      for(pp = 0; pp < ppMax; pp++) {
+     
+        Eext_FF = Eext_FF + (aCoefInc.M(static_cast<long>(pp)) * 2.0 * excitation->dataIncAp[pp] +
+                       aCoefInc.N(static_cast<long>(pp)) * 2.0 * excitation->dataIncBp[pp]); 
+                       
+        Eext_FF = Eext_FF + (aCoefSca.M(static_cast<long>(pp)) * 2.0 * externalCoef_FF_[pp] +
+                       aCoefSca.N(static_cast<long>(pp)) * 2.0 * externalCoef_FF_[ppMax + pp]);    
+                                                                  
+      }
+
+      Tools::crossTanTr(Etan, resCR, &nvec[0], Eext_FF);
+      
+      // inner component of normal field at FF
+      Enorm = (bground.epsilon / objects[objIndex].elmag.epsilon) * Tools::dot (&nvec[0], Eext_FF);
+      
+     
+      Tools::crossTan(Tan, resCR, &nvec[0], &Etan[0]);
+      
+      optimet::AuxCoefficients aCoefext3(intpoinSph, k_b_SH, 0, nMaxS); //radiative VSWF (3)
+
+      resDOT1 = Tools::dot (&Tan[0], aCoefext3.M(static_cast<long>(mup)));
+      resDOT2 = Tools::dot (&Tan[0], aCoefext3.N(static_cast<long>(mup)));
+      
+      I11s = I11s + wi * det * 2.0 * Enorm * ksiparppar * k_0_SH * k_0_SH * resDOT1;
+      I12s = I12s + wi * det * 2.0 * Enorm * ksiparppar * k_0_SH * k_0_SH * resDOT2;
+      
+      resDOT1 = Tools::dot (&nvec[0], aCoefext3.M(static_cast<long>(mup)));
+      resDOT2 = Tools::dot (&nvec[0], aCoefext3.N(static_cast<long>(mup)));
+      
+      I21s = I21s - wi * det * k_b_SH * k_b_SH *  ksippp * Enorm*Enorm * resDOT1;
+      I22s = I22s - wi * det * k_b_SH * k_b_SH *  ksippp * Enorm*Enorm * resDOT2 ;
+                                                                             
+      
+      // calculation of the particular solution on the surface // valid just for one object
+       COEFFpartSH(objIndex, excitation, internalCoef_FF_, intpoinSph.rrr, nMaxS, coeffXmn, coeffXpl, CGcoeff);
+      
+      optimet::AuxCoefficients aCoefSH(intpoinSph, k_s_SH,  1, nMaxS);
+      
+      for(pp = 0; pp < pp.max(nMaxS); pp++) {
+     
+        E_gamma = E_gamma +
+            (aCoefSH.Xm(static_cast<long>(pp)) * coeffXmn[pp] +
+            aCoefSH.Xp(static_cast<long>(pp)) * coeffXpl[pp]) ;             
+                                          
+      }
+      
+     Tools::cross(resCR, &nvec[0], E_gamma); 
+     
+     resDOT1 = Tools::dot(&resCR[0], aCoefext3.N(static_cast<long>(mup)));
+     resDOT2 = Tools::dot (&resCR[0], aCoefext3.M(static_cast<long>(mup)));
+     
+     I31s = I31s - ( wi * det * k_b_SH ) * resDOT1;
+     I32s = I32s - ( wi * det * k_b_SH ) * resDOT2; 
+  
+  }// surface integration over the triangle is OVER
+  } // all the triangles surface integration
+  
+  
+  /// **************************************************************************//////
+    // line integration around the triangles 
+    for (int ele1 = 0; ele1 < Nt; ++ele1){
+	        
+	        const int* n1 = objects[objIndex].getNOvertex(ele1);
+	        
+	        const double* p1 = objects[objIndex].getCoord(n1[0]);
+
+		const double* p2 = objects[objIndex].getCoord(n1[1]);
+	
+		const double* p3 = objects[objIndex].getCoord(n1[2]);
+                
+                Trian trian(p1, p2, p3); 
+                
+		std::vector<double> nvec = trian.getnorm();
+		
+		std::vector<double*> lvec = trian.getlvec(); // unit vectors in direction of line
+		
+		std::vector<double> dl = trian.getdl();  // lengths of lines
+
+                for (int jj = 0; jj < 3; ++jj){	
+ 
+		int ll = (jj + 1) % 3;
+		
+		const double* p11 = objects[objIndex].getCoord(n1[jj]);
+
+		const double* p22 = objects[objIndex].getCoord(n1[ll]);
+
+                double DL = dl[jj];
+                
+                std::vector<double> LVEC = { *lvec[jj], *(lvec[jj] + 1), *(lvec[jj] + 2) };
+                
+  for (int ni = 0; ni != LineWeights.size(); ++ni) {
+  
+  Eext_FF = SphericalP<std::complex<double>>(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));  
+  
+  intpoinCar.x = p11[0] + ((p22[0] - p11[0]) / 2.0) * (1.0 + LinePoints[ni]); // X int coordinate
+  intpoinCar.y = p11[1] + ((p22[1] - p11[1]) / 2.0) * (1.0 + LinePoints[ni]); // Y int coordinate
+  intpoinCar.z = p11[2] + ((p22[2] - p11[2]) / 2.0) * (1.0 + LinePoints[ni]); // Z int coordinate
+  
+   intpoinSph = Tools::toSpherical(intpoinCar); 
+	
+	// Incoming field
+	optimet::AuxCoefficients aCoefInc(intpoinSph, k_b, 1, nMax); //incident FF field
+      
+      optimet::AuxCoefficients aCoefSca(intpoinSph, k_b, 0, nMax); // scattered FF field
+
+      // this works just for object centered at (0,0,0), so the global coordinates are equal to local!!!!!/////
+      // calculation of the total exterior field on the boundary of the particle (lines)
+      for(pp = 0; pp < ppMax; pp++) {
+
+       Eext_FF = Eext_FF + (aCoefInc.M(static_cast<long>(pp)) * 2.0 * excitation->dataIncAp[pp] +
+                       aCoefInc.N(static_cast<long>(pp)) * 2.0 * excitation->dataIncBp[pp]); 
+                       
+        Eext_FF = Eext_FF + (aCoefSca.M(static_cast<long>(pp)) * 2.0 * externalCoef_FF_[pp] +
+                       aCoefSca.N(static_cast<long>(pp)) * 2.0 * externalCoef_FF_[ppMax + pp]);   
+                                                
+                                          
+      }
+      
+      // inner component of normal field at FF
+      Enorm = (bground.epsilon / objects[objIndex].elmag.epsilon) * Tools::dot (&nvec[0], Eext_FF);
+
+      
+      optimet::AuxCoefficients aCoefext3(intpoinSph, k_b_SH, 0, nMaxS); //radiative VSWF (3)
+      
+      resDOT1 = Tools::dot (&LVEC[0], aCoefext3.N(static_cast<long>(mup)));
+      resDOT2 = Tools::dot (&LVEC[0], aCoefext3.M(static_cast<long>(mup)));
+      
+      I21s = I21s +  (DL / 2.0) * LineWeights[ni] * k_b_SH * ksippp * Enorm * Enorm * resDOT1;
+      I22s = I22s +  (DL / 2.0) * LineWeights[ni] * k_b_SH * ksippp * Enorm * Enorm * resDOT2;
+  }// line integration
+
+   } // line integration around all the sides
+  
+  } // line integration around all the triangles
+
+  EXvec (mu1) = I11s + I21s + I31s;
+  EXvec (mu1 + muMax) = I12s + I22s + I32s;
+  
+  }
+  }
+
+void Geometry::getEXCvecSH_ARB1(optimet::Vector<optimet::t_complex>& EXvec, std::shared_ptr<optimet::Excitation const> excitation, optimet::Vector<optimet::t_complex> &externalCoef_FF_, optimet::Vector<optimet::t_complex> &internalCoef_FF_, std::vector<double *> CGcoeff, int objIndex){
+  using namespace optimet;
+  
+  int nMax = this->nMax();
+  int nMaxS = this->nMaxS();
+  auto const N = nMaxS * (nMaxS + 2);
+  
+          CompoundIterator mu1, mup, pp;
+         
+          optimet::t_real omega_ = excitation->omega();
+          Cartesian<double> intpoinCar; // integration point in Cartesian system
+          Spherical<double> intpoinSph; // integration point in spherical system
+
+          SphericalP<std::complex<double>> Eext_FF, E_gamma;
+          
+          int muMax =mu1.max(nMaxS);
+          int ppMax = pp.max(nMax);
+          
+          std::complex<double> coeffXpl[muMax], coeffXmn[muMax];
+          
+          std::complex<double>* Etan = new std::complex<double>[3];
+          std::complex<double>* Tan = new std::complex<double>[3];
+          std::complex<double>* resCR = new std::complex<double>[3];
+          std::complex<double> Enorm, resDOT1, resDOT2;
+          
+         const std::complex<double> k_0_SH = 2 * (omega_) * std::sqrt(consEpsilon0 * consMu0); 
+         auto const k_s_SH = 2 * omega_ * std::sqrt(objects[objIndex].elmag.epsilon_SH * objects[objIndex].elmag.mu_SH); 
+         auto const k_b_SH = 2 * omega_ * std::sqrt(bground.epsilon * bground.mu);
+         auto const k_b = omega_ * std::sqrt(bground.epsilon * bground.mu);
+         auto const k_s = omega_ * std::sqrt(objects[objIndex].elmag.epsilon * objects[objIndex].elmag.mu); 
+         const std::complex<double> ksiparppar = objects[objIndex].elmag.ksiparppar; // SH coefficient
+         const std::complex<double> ksippp = objects[objIndex].elmag.ksippp; // SH coefficient
+
+          unsigned int Nt = (objects[objIndex].getTopolsize()) / 3;  //number of triangles
+        
+        std::vector<std::vector<double>> Points = Tools::getPoints4();
+
+	std::vector<double> Weights = Tools::getWeights4();
+	
+	std::vector<double> LinePoints = Tools::getLinePts4();
+	
+	std::vector<double> LineWeights = Tools::getLineWghts4();
+
+	for (mu1 = 0; mu1 < muMax ; mu1++){
+	
+	std::complex<double> I11s(0.0,0.0), I21s(0.0,0.0), I31s(0.0,0.0), I12s(0.0,0.0), I22s(0.0,0.0), I32s(0.0,0.0);
+        	
+	int nn = mu1.first;
+	int mm =  mu1.second;
+	mup = nn * (nn + 1) + mm - 1;
+	
+	
+	for (int ele1 = 0; ele1 < Nt; ++ele1){
+	        
+	        const int* n1 = objects[objIndex].getNOvertex(ele1);
+	
+		const double* p1 = objects[objIndex].getCoord(n1[0]);
+
+		const double* p2 = objects[objIndex].getCoord(n1[1]);
+	
+		const double* p3 = objects[objIndex].getCoord(n1[2]);
+                
+                Trian trian(p1, p2, p3); 
+                
+		double det = trian.getDeter();
+		std::vector<double> nvec = trian.getnorm();
+		
+	// surface integration	
+	for (int ni = 0; ni != Weights.size(); ++ni) {
+	
+      Eext_FF = SphericalP<std::complex<double>>(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));
+      
+      E_gamma = SphericalP<std::complex<double>>(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));
+	
+	double N1 = Points[ni][0];
+	double N2 = Points[ni][1];
+        double N0 = 1.0 - N1 - N2;
+
+	double wi = Weights[ni];
+         
+	intpoinCar.x = (p1[0])*N1 + (p2[0])*N2 + (p3[0])*N0;
+	intpoinCar.y = (p1[1])*N1 + (p2[1])*N2 + (p3[1])*N0;
+	intpoinCar.z = (p1[2])*N1 + (p2[2])*N2 + (p3[2])*N0;
+	
+	intpoinSph = Tools::toSpherical(intpoinCar); 
+	
+	// Incoming field
+	optimet::AuxCoefficients aCoefInc(intpoinSph, k_b, 1, nMax); //incident FF field
+      
+      optimet::AuxCoefficients aCoefSca(intpoinSph, k_b, 0, nMax); // scattered FF field
+      
+      // this works just for object centered at (0,0,0), so the global coordinates are equal to local!!!!!/////
+      // calculation of the total exterior field on the boundary of the particle (surface) 
+      
+      for(pp = 0; pp < ppMax; pp++) {
+     
+        Eext_FF = Eext_FF + (aCoefInc.M(static_cast<long>(pp)) * 2.0 * excitation->dataIncAp[pp] +
+                       aCoefInc.N(static_cast<long>(pp)) * 2.0 * excitation->dataIncBp[pp]); 
+                       
+        Eext_FF = Eext_FF + (aCoefSca.M(static_cast<long>(pp)) * 2.0 *externalCoef_FF_[pp] +
+                       aCoefSca.N(static_cast<long>(pp)) * 2.0 *externalCoef_FF_[ppMax + pp]);   
+                                 
+                                          
+      }
+      
+
+      Tools::crossTanTr(Etan, resCR, &nvec[0], Eext_FF);
+ 
+      // inner component of normal field at FF
+      Enorm = (bground.epsilon / objects[objIndex].elmag.epsilon) * Tools::dot (&nvec[0], Eext_FF);
+      
+      Tools::crossTan(Tan, resCR, &nvec[0], &Etan[0]);
+      
+      optimet::AuxCoefficients aCoefext1(intpoinSph, k_b_SH, 1, nMaxS); //incoming VSWF (1)
+      
+      resDOT1 = Tools::dot (&Tan[0], aCoefext1.M(static_cast<long>(mup)));
+      resDOT2 = Tools::dot (&Tan[0], aCoefext1.N(static_cast<long>(mup)));
+      
+      I11s = I11s + wi * det * 2.0 * Enorm * ksiparppar * k_0_SH * k_0_SH * resDOT1;
+      I12s = I12s + wi * det * 2.0 * Enorm * ksiparppar * k_0_SH * k_0_SH * resDOT2;
+      
+      resDOT1 = Tools::dot (&nvec[0], aCoefext1.M(static_cast<long>(mup)));
+      resDOT2 = Tools::dot (&nvec[0], aCoefext1.N(static_cast<long>(mup)));
+      
+      I21s = I21s - wi * det * k_b_SH * k_b_SH * ksippp * Enorm*Enorm * resDOT1;
+      I22s = I22s - wi * det * k_b_SH * k_b_SH * ksippp * Enorm*Enorm * resDOT2 ;
+                                                                             
+      
+      // calculation of the particular solution on the surface // valid just for one object
+
+      COEFFpartSH(objIndex, excitation, internalCoef_FF_, intpoinSph.rrr, nMaxS, coeffXmn, coeffXpl, CGcoeff);
+                         
+      optimet::AuxCoefficients aCoefSH(intpoinSph, k_s_SH,  1, nMaxS);
+ 
+       for(pp = 0; pp < pp.max(nMaxS); pp++) {
+     
+        E_gamma = E_gamma +
+            (aCoefSH.Xm(static_cast<long>(pp)) * coeffXmn[pp] +
+            aCoefSH.Xp(static_cast<long>(pp)) * coeffXpl[pp]) ;             
+                                          
+      }
+      
+     Tools::cross(resCR, &nvec[0], E_gamma); 
+     
+     resDOT1 = Tools::dot(&resCR[0], aCoefext1.N(static_cast<long>(mup)));
+     resDOT2 = Tools::dot (&resCR[0], aCoefext1.M(static_cast<long>(mup)));
+     
+     I31s = I31s - ( wi * det * k_b_SH ) * resDOT1;
+     I32s = I32s - ( wi * det * k_b_SH ) * resDOT2; 
+  
+  }// surface integration over the triangle is OVER
+  
+  } // all the triangles surface integration
+
+  /// **************************************************************************//////
+  //line integration around the triangles 
+     
+        for (int ele1 = 0; ele1 < Nt; ++ele1){
+
+          const int* n1 = objects[objIndex].getNOvertex(ele1);
+	        
+	        const double* p1 = objects[objIndex].getCoord(n1[0]);
+
+		const double* p2 = objects[objIndex].getCoord(n1[1]);
+	
+		const double* p3 = objects[objIndex].getCoord(n1[2]);
+                
+                Trian trian(p1, p2, p3); 
+                
+		std::vector<double> nvec = trian.getnorm();
+		
+		std::vector<double*> lvec = trian.getlvec(); // unit vectors in direction of line
+		
+		std::vector<double> dl = trian.getdl();  // lengths of lines
+	        
+  for (int jj = 0; jj < 3; ++jj){	
+ 
+		int ll = (jj + 1) % 3;
+		
+		const double* p11 = objects[objIndex].getCoord(n1[jj]);
+
+		const double* p22 = objects[objIndex].getCoord(n1[ll]);
+
+                double DL = dl[jj];
+                
+                std::vector<double> LVEC = { *lvec[jj], *(lvec[jj] + 1), *(lvec[jj] + 2) };
+                
+  for (int ni = 0; ni != LineWeights.size(); ++ni) {
+  
+  Eext_FF = SphericalP<std::complex<double>>(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));
+        
+  
+  intpoinCar.x = p11[0] + ((p22[0] - p11[0]) / 2.0) * (1.0 + LinePoints[ni]); // X int coordinate
+  intpoinCar.y = p11[1] + ((p22[1] - p11[1]) / 2.0) * (1.0 + LinePoints[ni]); // Y int coordinate
+  intpoinCar.z = p11[2] + ((p22[2] - p11[2]) / 2.0) * (1.0 + LinePoints[ni]); // Z int coordinate
+  
+      intpoinSph = Tools::toSpherical(intpoinCar); 
+
+      // Incoming field
+      optimet::AuxCoefficients aCoefInc(intpoinSph, k_b, 1, nMax); //incident FF field
+      
+      optimet::AuxCoefficients aCoefSca(intpoinSph, k_b, 0, nMax); // scattered FF field
+
+      
+      // this works just for object centered at (0,0,0), so the global coordinates are equal to local!!!!!/////
+      // calculation of the total exterior field on the boundary of the particle (lines)
+      for(pp = 0; pp < ppMax; pp++) {
+     
+        Eext_FF = Eext_FF + (aCoefInc.M(static_cast<long>(pp)) * 2.0 * excitation->dataIncAp[pp] +
+                       aCoefInc.N(static_cast<long>(pp)) * 2.0 * excitation->dataIncBp[pp]); 
+                       
+        Eext_FF = Eext_FF + (aCoefSca.M(static_cast<long>(pp)) * 2.0 *externalCoef_FF_[pp] +
+                       aCoefSca.N(static_cast<long>(pp)) * 2.0 *externalCoef_FF_[ppMax + pp]);  
+                                                 
+                                          
+      }
+
+     // inner component of normal field at FF
+     Enorm = (bground.epsilon / objects[objIndex].elmag.epsilon) * Tools::dot (&nvec[0], Eext_FF);
+
+     optimet::AuxCoefficients aCoefext1(intpoinSph, k_b_SH, 1, nMaxS); //incoming VSWF (1)
+
+     resDOT1 = Tools::dot (&LVEC[0], aCoefext1.N(static_cast<long>(mup)));
+      resDOT2 = Tools::dot (&LVEC[0], aCoefext1.M(static_cast<long>(mup)));
+      
+      I21s = I21s +  (DL / 2.0) * LineWeights[ni] * k_b_SH * ksippp * Enorm * Enorm * resDOT1;
+      I22s = I22s +  (DL / 2.0) * LineWeights[ni] * k_b_SH * ksippp * Enorm * Enorm * resDOT2;
+  }// line integration
+  
+  } // line integration around all the sides
+  
+  } // line integration around all the triangles
+
+  EXvec (mu1) = I11s + I21s + I31s;
+  EXvec (mu1 + muMax) = I12s + I22s + I32s;
+  
+  }
+  }
+
+void Geometry::getEXCvecSH_ARB3_parall(optimet::Vector<optimet::t_complex>& EXvec, std::shared_ptr<optimet::Excitation const> excitation, optimet::Vector<optimet::t_complex> &externalCoef_FF_, optimet::Vector<optimet::t_complex> &internalCoef_FF_, std::vector<double *> CGcoeff, int gran1, int gran2){
+  using namespace optimet;
+  
+  int nMax = this->nMax();
+  int nMaxS = this->nMaxS();
+  auto const N = nMaxS * (nMaxS + 2);
+  
+          CompoundIterator mu1, mup, pp;
+         
+          optimet::t_real omega_ = excitation->omega();
+          Cartesian<double> intpoinCar; // integration point in Cartesian system
+          Spherical<double> intpoinSph; // integration point in spherical system
+          
+          SphericalP<std::complex<double>> Eext_FF, E_gamma;
+          
+          int muMax =mu1.max(nMaxS);
+          int ppMax = pp.max(nMax);
+          int objIndex, brojac(0);
+          int size = gran2 - gran1;
+
+          std::complex<double> coeffXpl[muMax], coeffXmn[muMax];
+          
+          std::complex<double>* Etan = new std::complex<double>[3];
+          std::complex<double>* Tan = new std::complex<double>[3];
+          std::complex<double>* resCR = new std::complex<double>[3];
+          std::complex<double> Enorm, resDOT1, resDOT2;
+          
+         const std::complex<double> k_0_SH = 2 * (omega_) * std::sqrt(consEpsilon0 * consMu0); 
+         auto const k_s_SH = 2 * omega_ * std::sqrt(objects[objIndex].elmag.epsilon_SH * objects[objIndex].elmag.mu_SH); 
+         auto const k_b_SH = 2 * omega_ * std::sqrt(bground.epsilon * bground.mu);
+         auto const k_b = omega_ * std::sqrt(bground.epsilon * bground.mu);
+         auto const k_s = omega_ * std::sqrt(objects[objIndex].elmag.epsilon * objects[objIndex].elmag.mu);
+
+         const std::complex<double> ksiparppar = objects[objIndex].elmag.ksiparppar; // SH coefficient
+         const std::complex<double> ksippp = objects[objIndex].elmag.ksippp; // SH coefficient
+         
+  
+        unsigned int Nt = (objects[objIndex].getTopolsize()) / 3;  //number of triangles
+        
+        std::vector<std::vector<double>> Points = Tools::getPoints4();
+
+        std::vector<double> Weights = Tools::getWeights4();
+	
+	std::vector<double> LinePoints = Tools::getLinePts4();
+	
+	std::vector<double> LineWeights = Tools::getLineWghts4();
+
+	for (mu1 = gran1; mu1 < gran2 ; mu1++){
+        
+        objIndex = mu1 / muMax;
+	
+	std::complex<double> I11s(0.0,0.0), I21s(0.0,0.0), I31s(0.0,0.0), I12s(0.0,0.0), I22s(0.0,0.0), I32s(0.0,0.0);
+        	
+	int nn = mu1.first;
+	int mm =  mu1.second;
+	mup = nn * (nn + 1) + mm - 1;
+	
+	
+	for (int ele1 = 0; ele1 < Nt; ++ele1){
+	        
+	        const int* n1 = objects[objIndex].getNOvertex(ele1);
+	
+		const double* p1 = objects[objIndex].getCoord(n1[0]);
+
+		const double* p2 = objects[objIndex].getCoord(n1[1]);
+	
+		const double* p3 = objects[objIndex].getCoord(n1[2]);
+                
+                Trian trian(p1, p2, p3); 
+                
+		double det = trian.getDeter();
+		std::vector<double> nvec = trian.getnorm();
+		
+	// surface integration	
+	for (int ni = 0; ni != Weights.size(); ++ni) {
+	
+      Eext_FF = SphericalP<std::complex<double>>(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));
+      
+      E_gamma = SphericalP<std::complex<double>>(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));
+	
+	double N1 = Points[ni][0];
+	double N2 = Points[ni][1];
+        double N0 = 1.0 - N1 - N2;
+
+	double wi = Weights[ni];
+         
+	intpoinCar.x = (p1[0])*N1 + (p2[0])*N2 + (p3[0])*N0;
+	intpoinCar.y = (p1[1])*N1 + (p2[1])*N2 + (p3[1])*N0;
+	intpoinCar.z = (p1[2])*N1 + (p2[2])*N2 + (p3[2])*N0;
+	
+	intpoinSph = Tools::toSpherical(intpoinCar); 
+	
+	// Incoming field
+	 optimet::AuxCoefficients aCoefInc(intpoinSph, k_b, 1, nMax); //incident FF field
+      
+      optimet::AuxCoefficients aCoefSca(intpoinSph, k_b, 0, nMax); // scattered FF field
+      
+      // this works just for object centered at (0,0,0), so the global coordinates are equal to local!!!!!/////
+      // calculation of the total exterior field on the boundary of the particle (surface)
+      for(pp = 0; pp < ppMax; pp++) {
+     
+        Eext_FF = Eext_FF + (aCoefInc.M(static_cast<long>(pp)) * 2.0 * excitation->dataIncAp[pp] +
+                       aCoefInc.N(static_cast<long>(pp)) * 2.0 * excitation->dataIncBp[pp]); 
+                       
+        Eext_FF = Eext_FF + (aCoefSca.M(static_cast<long>(pp)) * 2.0 * externalCoef_FF_[pp] +
+                       aCoefSca.N(static_cast<long>(pp)) * 2.0 * externalCoef_FF_[ppMax + pp]);    
+                                                                  
+      }
+
+      Tools::crossTanTr(Etan, resCR, &nvec[0], Eext_FF);
+      
+      // inner component of normal field at FF
+      Enorm = (bground.epsilon / objects[objIndex].elmag.epsilon) * Tools::dot (&nvec[0], Eext_FF);
+                        
+       Tools::crossTan(Tan, resCR, &nvec[0], &Etan[0]);
+                                 
+       optimet::AuxCoefficients aCoefext3(intpoinSph, k_b_SH, 0, nMaxS); //radiative VSWFs (3)
+                                                    
+       resDOT1 = Tools::dot (&Tan[0], aCoefext3.M(static_cast<long>(mup)));
+       resDOT2 = Tools::dot (&Tan[0], aCoefext3.N(static_cast<long>(mup))); 
+
+       I11s = I11s + wi * det * 2.0 * Enorm * ksiparppar * k_0_SH * k_0_SH * resDOT1;
+      I12s = I12s + wi * det * 2.0 * Enorm * ksiparppar * k_0_SH * k_0_SH * resDOT2;
+      
+      resDOT1 = Tools::dot (&nvec[0], aCoefext3.M(static_cast<long>(mup)));
+      resDOT2 = Tools::dot (&nvec[0], aCoefext3.N(static_cast<long>(mup)));
+      
+      I21s = I21s - wi * det * k_b_SH * k_b_SH *  ksippp * Enorm*Enorm * resDOT1;
+      I22s = I22s - wi * det * k_b_SH * k_b_SH *  ksippp * Enorm*Enorm * resDOT2 ;
+                                                                             
+      
+      // calculation of the particular solution on the surface // valid just for one object
+             
+      COEFFpartSH(objIndex, excitation, internalCoef_FF_, intpoinSph.rrr, nMaxS, coeffXmn, coeffXpl, CGcoeff);
+ 
+      optimet::AuxCoefficients aCoefSH(intpoinSph, k_s_SH,  1, nMaxS);
+      
+      for(pp = 0; pp < pp.max(nMaxS); pp++) {
+     
+        E_gamma = E_gamma +
+            (aCoefSH.Xm(static_cast<long>(pp)) * coeffXmn[pp] +
+            aCoefSH.Xp(static_cast<long>(pp)) * coeffXpl[pp]) ;             
+                                          
+      }
+      
+     Tools::cross(resCR, &nvec[0], E_gamma); 
+     
+     resDOT1 = Tools::dot(&resCR[0], aCoefext3.N(static_cast<long>(mup)));
+     resDOT2 = Tools::dot (&resCR[0], aCoefext3.M(static_cast<long>(mup)));
+     
+     I31s = I31s - ( wi * det * k_b_SH ) * resDOT1;
+     I32s = I32s - ( wi * det * k_b_SH ) * resDOT2; 
+  
+  }// surface integration over the triangle is OVER
+  
+  } // all the triangles surface integration
+  
+  // line integration around the triangles 
+     
+  for (int ele1 = 0; ele1 < Nt; ++ele1){ 
+
+  const int* n1 = objects[objIndex].getNOvertex(ele1);
+	        
+	        const double* p1 = objects[objIndex].getCoord(n1[0]);
+
+		const double* p2 = objects[objIndex].getCoord(n1[1]);
+	
+		const double* p3 = objects[objIndex].getCoord(n1[2]);
+                
+                Trian trian(p1, p2, p3); 
+                
+		std::vector<double> nvec = trian.getnorm();
+		
+		std::vector<double*> lvec = trian.getlvec(); // unit vectors in direction of line
+		
+		std::vector<double> dl = trian.getdl();  // lengths of lines
+	        
+  for (int jj = 0; jj < 3; ++jj){	
+ 
+		int ll = (jj + 1) % 3;
+		
+		const double* p11 = objects[objIndex].getCoord(n1[jj]);
+
+		const double* p22 = objects[objIndex].getCoord(n1[ll]);
+
+                double DL = dl[jj];
+                
+                std::vector<double> LVEC = { *lvec[jj], *(lvec[jj] + 1), *(lvec[jj] + 2) };
+                
+  for (int ni = 0; ni != LineWeights.size(); ++ni) {
+  
+  Eext_FF = SphericalP<std::complex<double>>(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));  
+  
+  intpoinCar.x = p11[0] + ((p22[0] - p11[0]) / 2.0) * (1.0 + LinePoints[ni]); // X int coordinate
+  intpoinCar.y = p11[1] + ((p22[1] - p11[1]) / 2.0) * (1.0 + LinePoints[ni]); // Y int coordinate
+  intpoinCar.z = p11[2] + ((p22[2] - p11[2]) / 2.0) * (1.0 + LinePoints[ni]); // Z int coordinate
+
+  intpoinSph = Tools::toSpherical(intpoinCar); 
+	
+	// Incoming field
+	optimet::AuxCoefficients aCoefInc(intpoinSph, k_b, 1, nMax); //incident FF field
+	             
+	optimet::AuxCoefficients aCoefSca(intpoinSph, k_b, 0, nMax); // scattered FF field
+	                         
+	// this works just for object centered at (0,0,0), so the global coordinates are equal to local!!!!!/////
+	// calculation of the total exterior field on the boundary of the particle (lines)
+	
+	for(pp = 0; pp < ppMax; pp++) {
+     
+        Eext_FF = Eext_FF + (aCoefInc.M(static_cast<long>(pp)) * 2.0 * excitation->dataIncAp[pp] +
+                       aCoefInc.N(static_cast<long>(pp)) * 2.0 * excitation->dataIncBp[pp]); 
+                       
+        Eext_FF = Eext_FF + (aCoefSca.M(static_cast<long>(pp)) * 2.0 * externalCoef_FF_[pp] +
+                       aCoefSca.N(static_cast<long>(pp)) * 2.0 * externalCoef_FF_[ppMax + pp]);   
+                                                
+                                          
+      }
+      
+      // inner component of normal field at FF
+       Enorm = (bground.epsilon / objects[objIndex].elmag.epsilon) * Tools::dot (&nvec[0], Eext_FF);
+
+      
+      optimet::AuxCoefficients aCoefext3(intpoinSph, k_b_SH, 0, nMaxS); //radiative VSWFs (3)
+      
+       resDOT1 = Tools::dot (&LVEC[0], aCoefext3.N(static_cast<long>(mup)));
+      resDOT2 = Tools::dot (&LVEC[0], aCoefext3.M(static_cast<long>(mup)));
+      
+      I21s = I21s +  (DL / 2.0) * LineWeights[ni] * k_b_SH * ksippp * Enorm * Enorm * resDOT1;
+      I22s = I22s +  (DL / 2.0) * LineWeights[ni] * k_b_SH * ksippp * Enorm * Enorm * resDOT2;
+  }// line integration
+  
+  } // line integration around all the sides
+  
+  } // line integration around all the triangles
+
+  EXvec (brojac) = I11s + I21s + I31s;
+  EXvec (brojac + size) = I12s + I22s + I32s;
+  brojac++;
+  }
+  }
+
+  void Geometry::getEXCvecSH_ARB1_parall(optimet::Vector<optimet::t_complex>& EXvec, std::shared_ptr<optimet::Excitation const> excitation, optimet::Vector<optimet::t_complex> &externalCoef_FF_, optimet::Vector<optimet::t_complex> &internalCoef_FF_, std::vector<double *> CGcoeff, int gran1, int gran2){
+  using namespace optimet;
+  
+  int nMax = this->nMax();
+  int nMaxS = this->nMaxS();
+  auto const N = nMaxS * (nMaxS + 2);
+  
+          CompoundIterator mu1, mup, pp;
+         
+          optimet::t_real omega_ = excitation->omega();
+          Cartesian<double> intpoinCar; // integration point in Cartesian system
+          Spherical<double> intpoinSph; // integration point in spherical system
+          
+          SphericalP<std::complex<double>> Eext_FF, E_gamma;
+          
+          int muMax =mu1.max(nMaxS);
+          int ppMax = pp.max(nMax);
+          int objIndex, brojac(0);
+          int size = gran2 - gran1;
+
+          std::complex<double> coeffXpl[muMax], coeffXmn[muMax];
+          
+          std::complex<double>* Etan = new std::complex<double>[3];
+          std::complex<double>* Tan = new std::complex<double>[3];
+          std::complex<double>* resCR = new std::complex<double>[3];
+          std::complex<double> Enorm, resDOT1, resDOT2;
+          
+         const std::complex<double> k_0_SH = 2 * (omega_) * std::sqrt(consEpsilon0 * consMu0); 
+         auto const k_s_SH = 2 * omega_ * std::sqrt(objects[objIndex].elmag.epsilon_SH * objects[objIndex].elmag.mu_SH); 
+         auto const k_b_SH = 2 * omega_ * std::sqrt(bground.epsilon * bground.mu);
+         auto const k_b = omega_ * std::sqrt(bground.epsilon * bground.mu);
+         auto const k_s = omega_ * std::sqrt(objects[objIndex].elmag.epsilon * objects[objIndex].elmag.mu); 
+         const std::complex<double> ksiparppar = objects[objIndex].elmag.ksiparppar; // SH coefficient
+         const std::complex<double> ksippp = objects[objIndex].elmag.ksippp; // SH coefficient
+         
+  
+        unsigned int Nt = (objects[objIndex].getTopolsize()) / 3;  //number of triangles
+        
+        std::vector<std::vector<double>> Points = Tools::getPoints4();
+
+	std::vector<double> Weights = Tools::getWeights4();
+	
+	std::vector<double> LinePoints = Tools::getLinePts4();
+	
+	std::vector<double> LineWeights = Tools::getLineWghts4();
+
+	for (mu1 = gran1; mu1 < gran2 ; mu1++){
+        
+        objIndex = mu1 / muMax;	
+	std::complex<double> I11s(0.0,0.0), I21s(0.0,0.0), I31s(0.0,0.0), I12s(0.0,0.0), I22s(0.0,0.0), I32s(0.0,0.0);
+        	
+	int nn = mu1.first;
+	int mm =  mu1.second;
+	mup = nn * (nn + 1) + mm - 1;
+	
+	
+	for (int ele1 = 0; ele1 < Nt; ++ele1){
+	        
+	        const int* n1 = objects[objIndex].getNOvertex(ele1);
+	
+		const double* p1 = objects[objIndex].getCoord(n1[0]);
+
+		const double* p2 = objects[objIndex].getCoord(n1[1]);
+	
+		const double* p3 = objects[objIndex].getCoord(n1[2]);
+                
+                Trian trian(p1, p2, p3); 
+                
+		double det = trian.getDeter();
+		std::vector<double> nvec = trian.getnorm();
+		
+	// surface integration	
+	for (int ni = 0; ni != Weights.size(); ++ni) {
+	
+      Eext_FF = SphericalP<std::complex<double>>(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));
+      
+      E_gamma = SphericalP<std::complex<double>>(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));
+	
+	double N1 = Points[ni][0];
+	double N2 = Points[ni][1];
+        double N0 = 1.0 - N1 - N2;
+
+	double wi = Weights[ni];
+         
+	intpoinCar.x = (p1[0])*N1 + (p2[0])*N2 + (p3[0])*N0;
+	intpoinCar.y = (p1[1])*N1 + (p2[1])*N2 + (p3[1])*N0;
+	intpoinCar.z = (p1[2])*N1 + (p2[2])*N2 + (p3[2])*N0;
+	
+	intpoinSph = Tools::toSpherical(intpoinCar); 
+	
+	// Incoming field
+	optimet::AuxCoefficients aCoefInc(intpoinSph, k_b, 1, nMax); //incident FF field
+      
+      optimet::AuxCoefficients aCoefSca(intpoinSph, k_b, 0, nMax); // scattered FF field
+
+      // this works just for object centered at (0,0,0), so the global coordinates are equal to local!!!!!/////
+      // calculation of the total exterior field on the boundary of the particle (surface)
+      for(pp = 0; pp < ppMax; pp++) {
+     
+        Eext_FF = Eext_FF + (aCoefInc.M(static_cast<long>(pp)) * 2.0 * excitation->dataIncAp[pp] +
+                       aCoefInc.N(static_cast<long>(pp)) * 2.0 * excitation->dataIncBp[pp]); 
+                       
+        Eext_FF = Eext_FF + (aCoefSca.M(static_cast<long>(pp)) * 2.0 *externalCoef_FF_[pp] +
+                       aCoefSca.N(static_cast<long>(pp)) * 2.0 *externalCoef_FF_[ppMax + pp]);   
+                                 
+                                          
+      }
+      
+
+      Tools::crossTanTr(Etan, resCR, &nvec[0], Eext_FF);
+ 
+      // inner component of normal field at FF
+      Enorm = (bground.epsilon / objects[objIndex].elmag.epsilon) * Tools::dot (&nvec[0], Eext_FF);
+      
+      Tools::crossTan(Tan, resCR, &nvec[0], &Etan[0]);
+      
+      optimet::AuxCoefficients aCoefext1(intpoinSph, k_b_SH, 1, nMaxS); //incoming VSWFs (1)
+     
+      resDOT1 = Tools::dot (&Tan[0], aCoefext1.M(static_cast<long>(mup)));
+      resDOT2 = Tools::dot (&Tan[0], aCoefext1.N(static_cast<long>(mup)));
+      
+      I11s = I11s + wi * det * 2.0 * Enorm * ksiparppar * k_0_SH * k_0_SH * resDOT1;
+      I12s = I12s + wi * det * 2.0 * Enorm * ksiparppar * k_0_SH * k_0_SH * resDOT2;
+      
+      resDOT1 = Tools::dot (&nvec[0], aCoefext1.M(static_cast<long>(mup)));
+      resDOT2 = Tools::dot (&nvec[0], aCoefext1.N(static_cast<long>(mup)));
+      
+      I21s = I21s - wi * det * k_b_SH * k_b_SH * ksippp * Enorm*Enorm * resDOT1;
+      I22s = I22s - wi * det * k_b_SH * k_b_SH * ksippp * Enorm*Enorm * resDOT2 ;
+                                                                             
+      
+      // calculation of the particular solution on the surface // valid just for one object
+
+      COEFFpartSH(objIndex, excitation, internalCoef_FF_, intpoinSph.rrr, nMaxS, coeffXmn, coeffXpl, CGcoeff);
+      
+      optimet::AuxCoefficients aCoefSH(intpoinSph, k_s_SH,  1, nMaxS);
+      
+      for(pp = 0; pp < pp.max(nMaxS); pp++) {
+     
+        E_gamma = E_gamma +
+            (aCoefSH.Xm(static_cast<long>(pp)) * coeffXmn[pp] +
+            aCoefSH.Xp(static_cast<long>(pp)) * coeffXpl[pp]) ;             
+                                          
+      }
+      
+     Tools::cross(resCR, &nvec[0], E_gamma); 
+     
+     resDOT1 = Tools::dot(&resCR[0], aCoefext1.N(static_cast<long>(mup)));
+     resDOT2 = Tools::dot (&resCR[0], aCoefext1.M(static_cast<long>(mup)));
+     
+     I31s = I31s - ( wi * det * k_b_SH ) * resDOT1;
+     I32s = I32s - ( wi * det * k_b_SH ) * resDOT2; 
+  
+  }// surface integration over the triangle is OVER
+  
+  } // all the triangles surface integration
+  
+  /// **************************************************************************//////
+  //  line integration around the triangles 
+         
+  for (int ele1 = 0; ele1 < Nt; ++ele1){
+	        
+	        const int* n1 = objects[objIndex].getNOvertex(ele1);
+	        
+	        const double* p1 = objects[objIndex].getCoord(n1[0]);
+
+		const double* p2 = objects[objIndex].getCoord(n1[1]);
+	
+		const double* p3 = objects[objIndex].getCoord(n1[2]);
+                
+                Trian trian(p1, p2, p3); 
+                
+		std::vector<double> nvec = trian.getnorm();
+		
+		std::vector<double*> lvec = trian.getlvec(); // unit vectors in direction of line
+                
+                std::vector<double> dl = trian.getdl();  // lengths of lines
+	        
+  for (int jj = 0; jj < 3; ++jj){	
+ 
+		int ll = (jj + 1) % 3;
+		
+		const double* p11 = objects[objIndex].getCoord(n1[jj]);
+
+		const double* p22 = objects[objIndex].getCoord(n1[ll]);
+
+                double DL = dl[jj];
+                
+                std::vector<double> LVEC = { *lvec[jj], *(lvec[jj] + 1), *(lvec[jj] + 2) };
+                
+  for (int ni = 0; ni != LineWeights.size(); ++ni) {
+  
+  Eext_FF = SphericalP<std::complex<double>>(std::complex<double>(0.0, 0.0), std::complex<double>(0.0, 0.0),
+      std::complex<double>(0.0, 0.0));
+        
+  
+  intpoinCar.x = p11[0] + ((p22[0] - p11[0]) / 2.0) * (1.0 + LinePoints[ni]); // X int coordinate
+  intpoinCar.y = p11[1] + ((p22[1] - p11[1]) / 2.0) * (1.0 + LinePoints[ni]); // Y int coordinate
+  intpoinCar.z = p11[2] + ((p22[2] - p11[2]) / 2.0) * (1.0 + LinePoints[ni]); // Z int coordinate
+  
+      intpoinSph = Tools::toSpherical(intpoinCar); 
+	
+	// Incoming field
+	optimet::AuxCoefficients aCoefInc(intpoinSph, k_b, 1, nMax); //incident FF field
+      
+      optimet::AuxCoefficients aCoefSca(intpoinSph, k_b, 0, nMax); // scattered FF field
+
+       // this works just for object centered at (0,0,0), so the global coordinates are equal to local!!!!!/////
+       // calculation of the total exterior field on the boundary of the particle (lines)
+       for(pp = 0; pp < ppMax; pp++) {
+
+       Eext_FF = Eext_FF + (aCoefInc.M(static_cast<long>(pp)) * 2.0 * excitation->dataIncAp[pp] +
+                       aCoefInc.N(static_cast<long>(pp)) * 2.0 * excitation->dataIncBp[pp]); 
+                       
+        Eext_FF = Eext_FF + (aCoefSca.M(static_cast<long>(pp)) * 2.0 *externalCoef_FF_[pp] +
+                       aCoefSca.N(static_cast<long>(pp)) * 2.0 *externalCoef_FF_[ppMax + pp]);  
+                                                 
+                                          
+      }
+      
+      // inner component of normal field at FF
+      Enorm = (bground.epsilon / objects[objIndex].elmag.epsilon) * Tools::dot (&nvec[0], Eext_FF);
+      
+      optimet::AuxCoefficients aCoefext1(intpoinSph, k_b_SH, 1, nMaxS); //incoming spherical vector functions (1)
+      
+      resDOT1 = Tools::dot (&LVEC[0], aCoefext1.N(static_cast<long>(mup)));
+      resDOT2 = Tools::dot (&LVEC[0], aCoefext1.M(static_cast<long>(mup)));
+      
+      I21s = I21s +  (DL / 2.0) * LineWeights[ni] * k_b_SH * ksippp * Enorm * Enorm * resDOT1;
+      I22s = I22s +  (DL / 2.0) * LineWeights[ni] * k_b_SH * ksippp * Enorm * Enorm * resDOT2;
+  }// line integration
+  
+  } // line integration around all the sides
+  
+  } // line integration around all the triangles
+
+  EXvec (brojac) = I11s + I21s + I31s;
+  EXvec (brojac + size) = I12s + I22s + I32s;
+  brojac++;
+  }
+  }
 
 void Geometry::update(std::shared_ptr<optimet::Excitation const> incWave_) {
   // Update the ElectroMagnetic properties of each object
@@ -424,118 +1440,3 @@ void Geometry::update(std::shared_ptr<optimet::Excitation const> incWave_) {
     object.elmag.update(incWave_->lambda());
 }
 
-void Geometry::updateRadius(double radius_, int object_) { objects[object_].radius = radius_; }
-
-void Geometry::rebuildStructure() {
-  if(structureType == 1) {
-    // Spiral structure needs to be rebuilt
-    double R, d;
-    int Np, No;
-    double Theta;
-
-    Np = ((objects.size() - 1) / 4) + 1;
-
-    Theta = consPi / (Np - 1); // Calculate the separation angle
-
-    d = 2 * (spiralSeparation + 2 * objects[0].radius);
-    R = d / (4 * sin(Theta / 2.0));
-
-    No = objects.size();
-
-    // Create vectors for r, theta, x and y, X and Y
-    std::vector<double> X(No - 1);
-    std::vector<double> Y(No - 1);
-
-    int j = 0;
-
-    //"Vertical" arms
-    for(int i = 0; i < Np; i++) {
-      double x_;
-      double y_;
-
-      Tools::Pol2Cart(R, i * Theta, x_, y_);
-
-      if(i == 0) {
-        X[j] = x_ + R;
-        Y[j] = y_;
-        j++;
-        continue;
-      }
-
-      if(i == Np - 1) {
-        X[j] = x_ - R;
-        Y[j] = -1.0 * y_;
-        j++;
-        continue;
-      }
-
-      X[j] = x_ + R;
-      Y[j] = y_;
-      j++;
-
-      X[j] = x_ - R;
-      Y[j] = -1.0 * y_;
-      j++;
-    }
-
-    //"Horizontal" arms
-    for(int i = 0; i < Np; i++) {
-      double x_;
-      double y_;
-      Tools::Pol2Cart(R, i * Theta - consPi / 2, x_, y_);
-
-      if(i == 0) {
-        X[j] = x_;
-        Y[j] = y_ - R;
-        j++;
-        continue;
-      }
-
-      if(i == Np - 1) {
-        X[j] = -1.0 * x_;
-        Y[j] = y_ + R;
-        j++;
-        continue;
-      }
-
-      X[j] = -1.0 * x_;
-      Y[j] = y_ + R;
-      j++;
-
-      X[j] = x_;
-      Y[j] = y_ - R;
-      j++;
-    }
-
-    // Determine normal, convert to a spherical object and push
-
-    Cartesian<double> auxCar(0.0, 0.0, 0.0);
-    Spherical<double> auxSph(0.0, 0.0, 0.0);
-
-    for(int i = 0; i < No - 1; i++) {
-      if(normalToSpiral == 0) {
-        // x is normal (conversion is x(pol) -> y; y(pol) -> z
-        auxCar.x = 0.0;
-        auxCar.y = X[i];
-        auxCar.z = Y[i];
-      }
-
-      if(normalToSpiral == 1) {
-        // y is normal (conversion is x(pol) -> z; y(pol) -> x
-        auxCar.x = Y[i];
-        auxCar.y = 0.0;
-        auxCar.z = X[i];
-      }
-
-      if(normalToSpiral == 2) {
-        // z is normal (conversion is x(pol) -> x; y(pol) -> x
-        auxCar.x = X[i];
-        auxCar.y = Y[i];
-        auxCar.z = 0.0;
-      }
-
-      auxSph = Tools::toSpherical(auxCar);
-      objects[i + 1].vR = auxSph;
-    }
-  }
-}

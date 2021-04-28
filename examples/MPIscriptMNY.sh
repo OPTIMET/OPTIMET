@@ -10,7 +10,7 @@
 #$ -l h_rt=23:10:0
 
 # 3. Request 1 gigabyte of RAM per process (must be an integer)
-#$ -l mem=7G
+#$ -l mem=3G
 
 module unload default-modules/2018
 
@@ -22,9 +22,12 @@ module load compilers/gnu/4.9.2 mpi/openmpi/3.1.4/gnu-4.9.2 hdf/5-1.10.5/gnu-4.9
 module load openblas/0.3.7-serial/gnu-4.9.2 scalapack/2.0.2/gnu-4.9.2/openblas-0.3.7 optimet/1.0.1 f2c
 
 module list
+
+cd /home/uceeise/Scratch/OPTIMET/build_belos
+make
  
 # 5. Set the name of the job.
-#$ -N ManySpheresnonc
+#$ -N ManySpheres
 
 # 6. Select the MPI parallel environment and number of processes.
 #$ -pe mpi 120
@@ -37,6 +40,6 @@ module list
 
 # 8. Run our MPI job.  GERun is a wrapper that launches MPI jobs on our clusters.
 cd /home/uceeise/Scratch/OPTIMET/examples
-gerun /home/uceeise/Scratch/OPTIMET/build_belos/Optimet3D ManySpheresnonc.xml | grep "e-"  
+gerun /home/uceeise/Scratch/OPTIMET/build_belos/Optimet3D ManySpheres.xml | grep "e-"  
 
 

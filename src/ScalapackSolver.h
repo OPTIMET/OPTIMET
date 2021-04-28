@@ -59,7 +59,7 @@ protected:
 
   //! Creates scalapack matrix wrappers
   std::tuple<scalapack::Matrix<t_complex>, scalapack::Matrix<t_complex>> parallel_input() const;
-  std::tuple<scalapack::Matrix<t_complex>, scalapack::Matrix<t_complex>> parallel_input_SH(Vector<t_complex> &K) const;
+  std::tuple<scalapack::Matrix<t_complex>, scalapack::Matrix<t_complex>> parallel_input_SH(Vector<t_complex> &K, int Dims) const;
 };
 }
 }

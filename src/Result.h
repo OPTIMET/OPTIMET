@@ -41,7 +41,6 @@ private:
   std::shared_ptr<Geometry> geometry;     /**< Pointer to the Geometry. */
   std::shared_ptr<Excitation> excitation; /**< Pointer to the Excitation. */
   std::complex<double> waveK;             /**< The std::complex wave number. */
-  bool flagSH;                            /**< Specifies if handling Second Harmonic results. */
   Result *result_FF;                      /**< The Fundamental Frequency results vector. */
   Result *result_SH;                      /**< The Second Harmonic results vector. */
   //! Maximum nMax
@@ -52,7 +51,6 @@ public:
   Vector<t_complex> internal_coef;  /**< The internal coefficients. */
   Vector<t_complex> scatter_coef_SH;   /**< The scattering coefficients. second harmonic */
   Vector<t_complex> internal_coef_SH;  /**< The internal coefficients. second harmonic */
-  Vector<t_complex> c_scatter_coef; /**< The cluster centered scattering coefficients. */
   std::vector<double *> CLGcoeff; // Coefficients needed for SH source calculations
   /**
    * Initialization constructor for the Result class.
@@ -116,38 +114,21 @@ public:
                    SphericalP<std::complex<double>> &HField_FF, SphericalP<std::complex<double>> &EField_SH,
                    SphericalP<std::complex<double>> &HField_SH, bool projection_, std::complex<double> *coeffXmn, std::complex<double> *coeffXpl) const;
                    
-                   
 
-  /**
-   * Returns the E and H fields for a single harmonic and/or TE/TM component.
-   * @param R_ the coordinates of the point.
-   * @param EField_ SphericalP vector that will store the E field.
-   * @param HField_ SphericalP vector that will store the H field.
-   * @param projection_ defines spherical (1) or cartesian (0) projection.
-   * @param p_ the harmonic to be used.
-   * @param singleComponent_ return TE+TM (0), TE(1) or TM(2).
-   */
-  void getEHFieldsModal(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
-                        SphericalP<std::complex<double>> &HField_, bool projection_,
-                        CompoundIterator p_, int singleComponent_);
-
-  
 
   /**
    * Returns the Extinction Cross Section for Fundamental Frequency.
-   * @return the extinction cross section for Fundamental Frequency.
    */
   double getExtinctionCrossSection(int gran1, int gran2);
   
-
+  // Scattering cross section for FF
+  double getScatteringCrossSection(int gran1, int gran2);
   /**
-   * Returns the Absorption Cross Section for Fundamental Frequency.
-   * @return the absorptions cross section for Fundamental Frequency.
+   * Returns the Absorption Cross Section for Fundamental Frequency..
    */
   double getAbsorptionCrossSection(int gran1, int gran2);
   
    /* Returns the Scattering Cross Section for SH Frequency.
-   * @return the scattering cross section for SH Frequency.
    */
   double getScatteringCrossSection_SH(int gran1, int gran2);
   
@@ -167,48 +148,6 @@ public:
   int setFields(std::vector<double> &Rr, std::vector<double> &Rthe, 
 std::vector<double> &Rphi, bool projection_, std::vector<double *> CLGcoeff);
 
-  /**
-   * Populate a grid with E and H fields for a single harmonic and/or TE/TM
-   * component.
-   * @param oEGrid_ the OutputGrid object for the E fields FF.
-   * @param oHGrid_ the OutputGrid object for the H fields FF.
-   * @param oEGrid_ the OutputGrid object for the E fields SH freq.
-   * @param oHGrid_ the OutputGrid object for the H fields SH freq.
-   * @param projection_ defines spherical (1) or cartesian (0) projection.
-   * @param p_ the harmonic to be used.
-   * @param singleComponent_ return TE+TM (0), TE(1) or TM(2).
-   * @return 0 if succesful, 1 otherwise.
-   */
-  int setFieldsModal(OutputGrid &oEGrid, OutputGrid &oHGrid, bool projection_,
-                     CompoundIterator p_, int singleComponent_);
-
-  /**
-   * Return the dominant harmonic.
-   * @return the CompoundIterator corresponding to the dominant harmonic
-   * (TE+TM).
-   */
-  CompoundIterator getDominant();
-
-  /**
-   * Returns the E and H fields at a given point using either the scattered or
-   * internal field methods.
-   * Used for continuity tests.
-   * @param R_ the coordinates of the point.
-   * @param EField_ SphericalP vector that will store the E field.
-   * @param HField_ SphericalP vector that will store the H field.
-   * @param projection_ defines spherical (1) or cartesian (0) projection.
-   * @param inside_ uses the internal (1) or external (0) field calculations.
-   */
-  void getEHFieldsContCheck(Spherical<double> R_, SphericalP<std::complex<double>> &EField_,
-                            SphericalP<std::complex<double>> &HField_, bool projection_,
-                            int inside_);
-
-  /**
-   * Writes a set of files that check the field continuity around a particular
-   * object.
-   * @param objectIndex_ the object index for field continuity check.
-   */
-  void writeContinuityCheck(int objectIndex_);
 };
 }
 #endif /* RESULT_H_ */

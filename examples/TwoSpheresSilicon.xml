@@ -1,32 +1,35 @@
 <simulation>
-<harmonics nmax="17" />
+<harmonics nmax="10" />
 </simulation>
 <source type="planewave">
-  <wavelength value="1000" />
+  <wavelength value="1240" />
   <propagation theta="45.0" phi="90.0" />
   <polarization Etheta.real="1.0" Etheta.imag="0.0" Ephi.real="0.0" Ephi.imag="0.0" />
+  <SHsources condition="no" />
 </source>
 <geometry>
-<object type="sphere">
+<object type="arbitrary.shape">
     <cartesian x="0.0" y="0.0" z="0.0" />
     <properties radius="300.0" />
     <epsilon type="SiliconModel"/>
     <mu type="relative" value.real="1.0" value.imag="0.0" />
-</object>
-<object type="sphere">
+    </object>
+<object type="arbitrary.shape">
     <cartesian x="0.0" y="0.0" z="800.0" />
     <properties radius="300.0" />
     <epsilon type="SiliconModel"/>
     <mu type="relative" value.real="1.0" value.imag="0.0" />
-</object>
+    </object>
 </geometry>
 <output type="field">
 <grid type="cartesian">
-    <x min ="-400" max="400" steps="51" />
-    <y min ="-400" max="400" steps="51" />
-    <z min ="399.95" max="400.05" steps="2" />
+    <x min ="-400" max="400" steps="121" />
+    <y min ="-0.1" max="0.1" steps="2" />
+    <z min ="-400" max="1200" steps="241" />
 </grid>
 </output>
+
+
 
 
 

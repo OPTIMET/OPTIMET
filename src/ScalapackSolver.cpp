@@ -18,6 +18,7 @@
 #include "scalapack/BroadcastToOutOfContext.h"
 #include "scalapack/LinearSystemSolver.h"
 #include <chrono>
+#include <Eigen/Dense>
 using namespace std::chrono;
 namespace optimet {
 namespace solver {
@@ -36,9 +37,10 @@ Scalapack::parallel_input() const {
 }
 
 std::tuple<scalapack::Matrix<t_complex>, scalapack::Matrix<t_complex>>
-Scalapack::parallel_input_SH(Vector<t_complex> &K) const {
-  auto const nMaxS = geometry->nMaxS();
-  auto const N = 4 * nMaxS * (nMaxS + 2) * geometry->objects.size();
+Scalapack::parallel_input_SH(Vector<t_complex> &K, int Dims) const {
+
+   t_uint N = Dims;
+
   scalapack::Matrix<t_complex> Aparallel(context(), {N, N}, block_size());
   if(Aparallel.size() > 0)
     Aparallel.local() = V;
@@ -55,59 +57,102 @@ void Scalapack::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_, Vect
  if(context().is_valid()) {
     auto input = parallel_input();
     // Now the actual work
+   // auto start3 = high_resolution_clock::now();
     auto const gls_result =
         scalapack::general_linear_system(std::get<0>(input), std::get<1>(input));
+  //  auto stop3 = high_resolution_clock::now();
+  //  auto duration3 = duration_cast<microseconds>(stop3 - start3);
+   if(communicator().rank() == 0) {
+  //   std::cout << "FF solve directe-" << std::endl;
+  //   std::cout << duration3.count()/1e6 <<"e-"<<  std::endl;
+              }
+    
     if(std::get<1>(gls_result) != 0)
       throw std::runtime_error("Error encountered while solving the linear system");
     // Transfer back to root
     X_sca_ = gather_all_source_vector(std::get<0>(gls_result)); 
     PreconditionedMatrix::unprecondition(X_sca_, X_int_);
-  }
 
-  Vector<t_complex> KmNOD;
-  KmNOD = distributed_source_vector_SH_Mnode(*geometry, incWave, X_int_, CGcoeff);
-  if(context().is_valid()) {
-    //SH part
-    auto const nMaxS = geometry->nMaxS();
-    auto const N = 2 * nMaxS * (nMaxS + 2);
-    auto const nobj = geometry->objects.size();
-    Vector<t_complex> K ;
- 
-    K = distributed_source_vector_SH(*geometry, KmNOD, context(), block_size());
-     auto input_SH = parallel_input_SH(K);
-    // Now the actual work
-    auto const gls_result_SH =
-        scalapack::general_linear_system(std::get<0>(input_SH), std::get<1>(input_SH));
- 
-    if(std::get<1>(gls_result_SH) != 0)
-      throw std::runtime_error("Error encountered while solving the linear system");
-    // Transfer back to root
-    X_sca_SH = gather_all_source_vector(std::get<0>(gls_result_SH));
-    
-    PreconditionedMatrix::unprecondition_SH(X_sca_SH, X_int_SH);
-    double sum(0.0);
-    Vector<double> X_FF_abs(X_sca_.size()), X_SH_abs(X_sca_SH.size());
-   
-    for (int i = 0; i < X_int_.size(); i++)
-    X_FF_abs(i) = abs(X_int_(i));
-
-    if(communicator().rank()==0){ 
-    // std::cout<<X_FF_abs.sum()<<std::endl;      
-    }  
+    if(communicator().rank()==0){
+   // std::cout<<X_int_.norm()<<std::endl;
+    }
   }
   if(context().size() != communicator().size()) {
     broadcast_to_out_of_context(X_sca_, context(), communicator());
     broadcast_to_out_of_context(X_int_, context(), communicator());
+  }
+
+  if(incWave->SH_cond){
+  Vector<t_complex> KmNOD, K1;
+  
+  KmNOD = distributed_source_vector_SH_Mnode(*geometry, incWave, X_int_, X_sca_, CGcoeff);
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  K1 =  distributed_vector_SH_AR1(*geometry, incWave, X_int_, X_sca_, CGcoeff);
+  MPI_Barrier(MPI_COMM_WORLD);
+     
+  if(context().is_valid()) {
+    //SH part
+    int Dims = KmNOD.size();
+    Vector<t_complex> K;
+ 
+    K = distributed_source_vector_SH(*geometry, KmNOD, context(), block_size());
+     auto input_SH = parallel_input_SH(K, Dims);
+    // Now the actual work
+   //  auto start4 = high_resolution_clock::now();
+ 
+    auto const gls_result_SH =
+        scalapack::general_linear_system(std::get<0>(input_SH), std::get<1>(input_SH));
+   
+   //  auto stop4 = high_resolution_clock::now();
+   //  auto duration4 = duration_cast<microseconds>(stop4 - start4);
+   if(communicator().rank() == 0) {
+   //  std::cout << "SH solve directe-" << std::endl;
+   //  std::cout << duration4.count()/1e6 <<"e-"<< std::endl;
+              }
+
+    if(std::get<1>(gls_result_SH) != 0)
+      throw std::runtime_error("Error encountered while solving the linear system");
+    // Transfer back to root
+    X_sca_SH = gather_all_source_vector(std::get<0>(gls_result_SH));
+       
+    PreconditionedMatrix::unprecondition_SH(X_sca_SH, X_int_SH, K1);
+
+    if(communicator().rank()==0){ 
+    //std::cout<<X_int_SH.norm()<<std::endl;      
+    }  
+  }
+if(context().size() != communicator().size()) {
     broadcast_to_out_of_context(X_sca_SH, context(), communicator());
     broadcast_to_out_of_context(X_int_SH, context(), communicator());
   }
+}
+ 
 }
 
 void Scalapack::update() {
 
   Q = distributed_source_vector(source_vector(*geometry, incWave), context(), block_size());
+  MPI_Barrier(MPI_COMM_WORLD);
+//  auto start1 = high_resolution_clock::now();  
   S = preconditioned_scattering_matrix(*geometry, incWave, context(), block_size());
+  MPI_Barrier(MPI_COMM_WORLD);
+//  auto stop1 = high_resolution_clock::now();
+//    auto duration1 = duration_cast<microseconds>(stop1 - start1);
+ //   auto start2 = high_resolution_clock::now();
+ if(incWave->SH_cond){
   V = preconditioned_scattering_matrix_SH(*geometry, incWave, context(), block_size());
+  MPI_Barrier(MPI_COMM_WORLD);
+ }
+ //  auto stop2 = high_resolution_clock::now();
+ //  auto duration2 = duration_cast<microseconds>(stop2 - start2);
+//  if(communicator().rank() == 0) {
+   //    std::cout << FF assemblye- << std::endl;
+   //  std::cout << duration1.count()/1e6 <<"e-"<< std::endl;
+   //  std::cout << "SH assemblye-" << std::endl;
+   //  std::cout << duration2.count()/1e6 <<"e-"<< std::endl;
+  //            }
+
 
 }
 }

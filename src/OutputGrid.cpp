@@ -147,7 +147,7 @@ Spherical<double> OutputGrid::getPoint() {
     double local_x = gridParameters[0] + cursor[0] * aux[0] + 1e-12; // Correct for 0
     double local_y = gridParameters[3] + cursor[1] * aux[1] + 1e-12; // Correct for 0
     double local_z = gridParameters[6] + cursor[2] * aux[2] + 1e-12; // Correct for 0
-
+    // diagonal plane just for zincblende local_z=local_y
     // Create a spherical vector from Cartesian and return it with the local
     // coordinates
     return Tools::toSpherical(Cartesian<double>(local_x, local_y, local_z));

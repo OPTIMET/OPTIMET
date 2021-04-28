@@ -28,11 +28,10 @@ namespace optimet {
 /**
  * The Excitation class implements the incoming wave coefficients.
  * Possible Excitation types are:
- *  0 - plane wave
+ *  plane wave -- FF
  * The wave is considered to be in freespace. Do not forget to divide by
  * relative
- * speed of light in background medium.
- * @warning Do not use without initialization.
+ * SH - sources - Polarization densities
  */
 class Excitation {
 public:
@@ -42,7 +41,7 @@ public:
                               Kinc_the, Kinc_pphi). */
   long nMax;               /**< The maximum value for the n iterator. */
   unsigned long type;      /**< The Excitation type. */
-
+  bool SH_cond; // condition for the SH sources
   Vector<t_complex> dataIncAp; /**< The incoming wave a_n^m coefficients. */
   Vector<t_complex> dataIncBp; /**< The incoming wave b_n^m coefficients. */
 
@@ -56,7 +55,7 @@ public:
    * @param waveKInc_ the incoming wavevector values.
    * @param nMax_ the maximum value of the n iterator.
    */
-  Excitation(unsigned long type_, SphericalP<std::complex<double>> Einc_,
+  Excitation(unsigned long type_, SphericalP<std::complex<double>> Einc_, bool SH_cond,
              Spherical<double> vKInc_, int nMax_, std::complex<double> bgcoeff);
 
   /**

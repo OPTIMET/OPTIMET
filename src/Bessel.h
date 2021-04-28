@@ -71,7 +71,6 @@ bessel(const std::complex<double> &z, long int max_order) {
     for(int i = 0; i <= max_order; i++)
       data[i] = ddata[i] = std::complex<double>(0.0, 0.0);
     if(BesselType == Bessel)
-      // The
       data[0] = std::complex<double>(1, 0);
   } else {
     const double zr = z.real();
@@ -131,6 +130,15 @@ bessel(const std::complex<double> &z, long int max_order) {
                        ((double)max_order / z) * data[max_order];
   }
 
+   if ( (z.imag() == 0.0) && (BesselType == Bessel) ){   
+   // corrects the error if the imaginary part of the argument is exactly zero fro Bessel func
+   for (int i = 0; i <= max_order; i++){
+   data[i]=data[i].real();
+   ddata[i]=ddata[i].real();
+   }
+  
+  }
+
   return std::make_tuple(data, ddata);
 }
 
@@ -156,7 +164,7 @@ bessel3der(const std::complex<double> &z, long int max_order) {
       dddata[i] = std::complex<double>(0.0, 0.0);
       }
     if(BesselType == Bessel)
-      // The
+      
       data[0] = std::complex<double>(1, 0);
   } else {
     const double zr = z.real();
@@ -223,6 +231,14 @@ bessel3der(const std::complex<double> &z, long int max_order) {
       dddata[i] = consCm1 * ((double)i / z) * ddata[i] + ((double)i / std::pow(z , 2.0)) * data[i] + ddata[i - 1];
                        
                        
+  }
+
+  if ( (z.imag() == 0.0) && (BesselType == Bessel) ){
+   // corrects the error if the imaginary part of the argument is exactly zero for Bessel func
+   for (int i = 1; i <= max_order; i++){
+   dddata[i]=dddata[i].real();
+   }
+  
   }
 
   return dddata;
