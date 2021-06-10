@@ -64,10 +64,13 @@ public:
                   t_uint nMax);
 
   const SphericalP<t_complex> &M(t_uint i) const { return _M[i]; }
+  const SphericalP<t_complex> &Xp(t_uint i) const { return _Xp[i]; }
+  const SphericalP<t_complex> &Xm(t_uint i) const { return _Xm[i]; }
   const SphericalP<t_complex> &N(t_uint i) const { return _N[i]; }
   const SphericalP<t_complex> &B(t_uint i) const { return _B[i]; }
   const SphericalP<t_complex> &C(t_uint i) const { return _C[i]; }
-
+  
+  
   const t_real &dn(t_uint i) const { return _dn[i]; }
 
 private:
@@ -95,6 +98,7 @@ private:
   compute_Cn(t_uint nMax, t_int m, const Spherical<t_real> &R,
              const std::vector<t_real> &Wigner,
              const std::vector<t_real> &dWigner);
+                     
 
   /**
    * Compute the Bn functions
@@ -126,6 +130,18 @@ private:
   compute_Mn(t_uint nMax, t_int m, const Spherical<t_real> &R,
              std::complex<t_real> waveK, const std::vector<t_real> &dn,
              const std::vector<SphericalP<t_complex>> &Cnm, BESSEL_TYPE BHreg);
+             
+        // compute the Xn functions       
+             
+    std::vector<SphericalP<t_complex>>
+   compute_Xm1 (t_uint nMax, t_int m, const Spherical<t_real> &R,
+             std::complex<t_real> waveK, const std::vector<t_real> &dn,
+             const std::vector<SphericalP<t_complex>> &Pn, BESSEL_TYPE BHreg);
+             
+   std::vector<SphericalP<t_complex>>
+   compute_Xp1 (t_uint nMax, t_int m, const Spherical<t_real> &R,
+             std::complex<t_real> waveK, const std::vector<t_real> &dn,
+             const std::vector<SphericalP<t_complex>> &Bn, BESSEL_TYPE BHreg); 
 
   /**
    * Compute the Nn functions.
@@ -145,7 +161,7 @@ private:
              const std::vector<SphericalP<t_complex>> &Bn, BESSEL_TYPE BHreg);
 
   std::vector<SphericalP<t_complex>> _M, _N, _B,
-      _C; /**< The M, N, B and C functions in compound iterator format. */
+      _C, _Xp, _Xm; /**< The M, N, B and C functions in compound iterator format. */
 
   std::vector<t_real>
       _dn; /**< The dn symbols (required for the Excitation class). */

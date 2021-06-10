@@ -37,12 +37,28 @@
 #endif
 
 namespace optimet {
-//! Computes coeffs scattered from spheres
+//! Computes coeffs scattered from spheres FF
 Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered, t_real const &omega,
                                   ElectroMagnetic const &bground, std::vector<Scatterer> const &);
-//! Computes coeffs internal to spheres
+                                  
+                                  
+//! Computes coeffs internal to spheres FF
 Vector<t_complex> convertInternal(Vector<t_complex> const &scattered, t_real const &omega,
                                   ElectroMagnetic const &bground, std::vector<Scatterer> const &);
+  
+  
+  //! Computes coeffs scattered from spheres SH
+Vector<t_complex> convertIndirect_SH_outer(Vector<t_complex> const &scattered, t_real const &omega,
+                                  ElectroMagnetic const &bground, std::vector<Scatterer> const &); 
+                                  
+//  Computes coeffs internal to spheres SH                                
+Vector<t_complex> convertInternal_SH(Vector<t_complex> const &scattered, Vector<t_complex> const &K_1, t_real const &omega,
+                                  ElectroMagnetic const &bground,
+                                  std::vector<Scatterer> const &);                                  
+                                  
+                                                                
+                                  
+                                  
 namespace solver {
 
 //! Abstract base class for all solvers
@@ -57,7 +73,9 @@ public:
   AbstractSolver(std::shared_ptr<Geometry> geometry, std::shared_ptr<Excitation const> incWave,
                  mpi::Communicator const &communicator = mpi::Communicator())
       : geometry(geometry), incWave(incWave), communicator_(communicator), nMax(0) {}
+
   AbstractSolver(Run const &run) : AbstractSolver(run.geometry, run.excitation, run.communicator) {}
+
 
   ~AbstractSolver(){};
 
@@ -68,7 +86,8 @@ public:
    * @param X_int_ the return vector for the internal coefficients.
    * @return 0 if successful, 1 otherwise.
    */
-  virtual void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const = 0;
+  virtual void solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_, Vector<t_complex> &X_sca_SH, 
+                    Vector<t_complex> &X_int_SH, std::vector<double *> CGcoeff) const = 0;
   /**
    * Update method for the Solver class.
    * @param geometry_ the geometry of the simulation.
@@ -91,13 +110,29 @@ public:
     return optimet::convertIndirect(scattered, incWave->omega(), geometry->bground,
                                     geometry->objects);
   }
+  
 
-  //! Solves for the internal coefficients.
+  //! Solves for the internal coefficients fundamental frequency
   Vector<t_complex> solveInternal(Vector<t_complex> const &scattered) const {
     return optimet::convertInternal(scattered, incWave->omega(), geometry->bground,
                                     geometry->objects);
   }
+  
+  
+    //! Converts back to the scattered result from the indirect calculation SH frequency outer coefficients
+  Vector<t_complex> convertIndirect_SH_outer(Vector<t_complex> const &scattered) const {
+    return optimet::convertIndirect_SH_outer(scattered, incWave->omega(), geometry->bground,
+                                    geometry->objects);
+  }
+  
+      //! Solves for the internal coefficients SH frequency
+  Vector<t_complex> solveInternal_SH(Vector<t_complex> const &scattered, Vector<t_complex> const &K_1) const {
+    return optimet::convertInternal_SH(scattered, K_1, incWave->omega(), geometry->bground,
+                                    geometry->objects);
+  }
 
+  
+  
   //! Number of spherical harmonics in expansion
   t_uint scattering_size() const {
     auto const n = nMax == 0 ? geometry->nMax() : nMax;

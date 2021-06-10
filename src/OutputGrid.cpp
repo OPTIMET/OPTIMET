@@ -33,6 +33,11 @@ OutputGrid::OutputGrid(int type_, std::array<t_real, 9> const &parameters_, hid_
   init(type_, parameters_, groupID_);
 }
 
+OutputGrid::OutputGrid(int type_, std::array<t_real, 9> const &parameters_)
+    : OutputGrid() {
+  init(type_, parameters_);
+}
+
 void OutputGrid::init(int type_, std::array<t_real, 9> const &parameters_, hid_t groupID_) {
   type = type_;
   gridParameters = parameters_;
@@ -40,6 +45,7 @@ void OutputGrid::init(int type_, std::array<t_real, 9> const &parameters_, hid_t
 
   // Cartesian Regular
   if(type == O3DCartesianRegular) {
+
     iterator = 0;
     gridPoints = (int)(gridParameters[2] * gridParameters[5] * gridParameters[8]);
 
@@ -53,7 +59,7 @@ void OutputGrid::init(int type_, std::array<t_real, 9> const &parameters_, hid_t
     vecGroupId[0] = H5Gcreate(groupID, "X", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     vecGroupId[1] = H5Gcreate(groupID, "Y", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     vecGroupId[2] = H5Gcreate(groupID, "Z", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-
+    vecGroupId[3] = H5Gcreate(groupID, "ABS", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     // Create the associated datasets and dataspaces
     hsize_t dims[3];
 
@@ -62,7 +68,7 @@ void OutputGrid::init(int type_, std::array<t_real, 9> const &parameters_, hid_t
     dims[2] = gridParameters[8];
 
     // Create the dataspaces for real and imag
-    for(int i = 0; i < 6; i++) {
+    for(int i = 0; i < 7; i++) {
       vecDSpaceId[i] = H5Screate_simple(3, dims, NULL);
     }
 
@@ -79,11 +85,37 @@ void OutputGrid::init(int type_, std::array<t_real, 9> const &parameters_, hid_t
                              H5P_DEFAULT, H5P_DEFAULT);
     vecDataId[5] = H5Dcreate(vecGroupId[2], "imag", H5T_NATIVE_DOUBLE, vecDSpaceId[5], H5P_DEFAULT,
                              H5P_DEFAULT, H5P_DEFAULT);
+    vecDataId[6] = H5Dcreate(vecGroupId[3], "abs", H5T_NATIVE_DOUBLE, vecDSpaceId[6], H5P_DEFAULT,
+                             H5P_DEFAULT, H5P_DEFAULT);
   }
 
   gridDone = false;
   initDone = true;
 }
+
+
+void OutputGrid::init(int type_, std::array<t_real, 9> const &parameters_) {
+  type = type_;
+  gridParameters = parameters_;
+  
+
+  // Cartesian Regular
+  if(type == O3DCartesianRegular) {
+
+    iterator = 0;
+    gridPoints = (int)(gridParameters[2] * gridParameters[5] * gridParameters[8]);
+
+    cursor = {{0, 0, 0}};
+    // Step sizes (X, Y, Z)
+    aux = {{std::abs(gridParameters[1] - gridParameters[0]) / (gridParameters[2] - 1),
+            std::abs(gridParameters[4] - gridParameters[3]) / (gridParameters[5] - 1),
+            std::abs(gridParameters[7] - gridParameters[6]) / (gridParameters[8] - 1)}};
+}
+gridDone = false;
+  initDone = true;
+
+}
+
 
 void OutputGrid::gotoStart() {
   iterator = 0;
@@ -115,7 +147,7 @@ Spherical<double> OutputGrid::getPoint() {
     double local_x = gridParameters[0] + cursor[0] * aux[0] + 1e-12; // Correct for 0
     double local_y = gridParameters[3] + cursor[1] * aux[1] + 1e-12; // Correct for 0
     double local_z = gridParameters[6] + cursor[2] * aux[2] + 1e-12; // Correct for 0
-
+    // diagonal plane just for zincblende local_z=local_y
     // Create a spherical vector from Cartesian and return it with the local
     // coordinates
     return Tools::toSpherical(Cartesian<double>(local_x, local_y, local_z));
@@ -142,8 +174,11 @@ void OutputGrid::pushData(SphericalP<std::complex<double>> data_) {
     // Select sequence of points in the file dataspace(fid).
     // Write new selection of points to the dataset(dataset).
     // Repeat for all six components.
-    double real, imag;
+    double real, imag, data_abs;
     real = data_.rrr.real();
+
+     data_abs = std::sqrt( std::pow((std::abs(data_.rrr)), 2) + std::pow((std::abs(data_.the)), 2)                    + std::pow((std::abs(data_.phi)), 2) );
+
     H5Sselect_elements(vecDSpaceId[0], H5S_SELECT_SET, 1, (const hsize_t *)coord);
     H5Dwrite(vecDataId[0], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[0], H5P_DEFAULT, &real);
 
@@ -166,6 +201,9 @@ void OutputGrid::pushData(SphericalP<std::complex<double>> data_) {
     imag = data_.phi.imag();
     H5Sselect_elements(vecDSpaceId[5], H5S_SELECT_SET, 1, (const hsize_t *)coord);
     H5Dwrite(vecDataId[5], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[5], H5P_DEFAULT, &imag);
+    
+    H5Sselect_elements(vecDSpaceId[6], H5S_SELECT_SET, 1, (const hsize_t *)coord);
+    H5Dwrite(vecDataId[6], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[6], H5P_DEFAULT, &data_abs);
 
     // Close the auxiliary dataspace
     H5Sclose(mid2);
@@ -180,15 +218,15 @@ void OutputGrid::pushDataNext(SphericalP<std::complex<double>> data_) {
 void OutputGrid::close() {
   if(initDone) {
     // Close datasets
-    for(int i = 0; i < 6; i++)
+    for(int i = 0; i < 7; i++)
       H5Dclose(vecDataId[i]);
 
     // Close dataspaces
-    for(int i = 0; i < 6; i++)
+    for(int i = 0; i < 7; i++)
       H5Sclose(vecDSpaceId[i]);
 
     // Close sub-groups
-    for(int i = 0; i < 3; i++)
+    for(int i = 0; i < 4; i++)
       H5Gclose(vecGroupId[i]);
 
     // Close the Group from Output

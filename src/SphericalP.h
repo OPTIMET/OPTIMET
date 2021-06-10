@@ -20,7 +20,7 @@
 #include <complex>
 
 /**
- * The SphericalP class implements shpherical projection coordinates.
+ * The SphericalP class implements spherical projection coordinates.
  * This is a template class so any standard type may be used to create
  * spherical coordinates.
  * @warning Do not use without initialization.

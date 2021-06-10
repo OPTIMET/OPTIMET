@@ -59,19 +59,25 @@ AuxCoefficients::compute_Cn(t_uint nMax, t_int m, const Spherical<t_real> &R,
 
   for (t_uint i = 0; i <= nMax; ++i) {
     t_real A;
-    if (m == 0)
-      A = 0.0;
+    if (m == 0){
+      A = 0.0;}
     else if (std::abs(R.the) < 1e-10 ||
-             (std::abs(R.the) - consPi + 1e-10) > 0.0)
+             (std::abs(R.the) - consPi + 1e-10) > 0.0){
       A = m / std::cos(R.the) * dWigner[i];
+      }
     else
-      A = m / std::sin(R.the) * Wigner[i];
-
+      {A = m / std::sin(R.the) * Wigner[i];
+      }
+      
+  
+ 
     Cn[i].rrr = t_complex(0.0, 0.0);
     Cn[i].the = t_complex(0.0, A);
     Cn[i].phi = t_complex(-dWigner[i], 0.0);
+    
   }
-
+                       
+   
   return Cn;
 }
 
@@ -123,6 +129,54 @@ AuxCoefficients::compute_Mn(t_uint nMax, t_int m, const Spherical<t_real> &R,
   return Mn;
 }
 
+
+
+std::vector<SphericalP<t_complex>>
+AuxCoefficients::compute_Xm1(t_uint nMax, t_int m, const 
+Spherical<t_real> &R, t_complex waveK, const std::vector<t_real> &dn,
+ const std::vector<SphericalP<t_complex>> &Pn, BESSEL_TYPE besselType) {
+                            
+  std::vector<SphericalP<t_complex>> Xm1(nMax + 1);
+
+  const t_real dm = std::pow(-1.0, m); // Legendre to Wigner function
+  const t_complex exp_imphi(std::cos(m * R.phi), std::sin(m * R.phi));
+
+  for (t_uint i = 0; i <= nMax; ++i) {
+    const t_complex c_temp = dm * dn[i] * std::sqrt(i * (i + 1)) * exp_imphi;
+
+    Xm1[i].rrr = c_temp  * Pn[i].rrr;
+    Xm1[i].the = c_temp  * Pn[i].the;
+    Xm1[i].phi = c_temp  * Pn[i].phi;
+  }
+
+  return Xm1;
+}
+
+
+std::vector<SphericalP<t_complex>>
+AuxCoefficients::compute_Xp1(t_uint nMax, t_int m, const 
+Spherical<t_real> &R, t_complex waveK, const std::vector<t_real> &dn,
+const std::vector<SphericalP<t_complex>> &Bn,
+BESSEL_TYPE besselType) {
+                            
+  std::vector<SphericalP<t_complex>> Xp1(nMax + 1);
+
+  const t_real dm = std::pow(-1.0, m); // Legendre to Wigner function
+  const t_complex exp_imphi(std::cos(m * R.phi), std::sin(m * R.phi));
+
+  for (t_uint i = 0; i <= nMax; ++i) {
+    const t_complex c_temp = dm * dn[i] * exp_imphi;
+
+    Xp1[i].rrr = c_temp  * Bn[i].rrr;
+    Xp1[i].the = c_temp  * Bn[i].the;
+    Xp1[i].phi = c_temp  * Bn[i].phi;
+  }
+
+  return Xp1;
+}
+
+
+
 std::vector<SphericalP<t_complex>> AuxCoefficients::compute_Nn(
     t_uint nMax, t_int m, const Spherical<t_real> &R, t_complex waveK,
     const std::vector<t_real> &dn, const std::vector<SphericalP<t_complex>> &Pn,
@@ -170,7 +224,8 @@ AuxCoefficients::VIGdVIG(t_uint nMax, t_int m, const Spherical<t_real> &R) {
   // vector spherical function index : n_min=max(|l|,|m|), where l == 0
   const t_uint n_min = static_cast<t_uint>(m = std::abs(m));
   // wigner function argument : [0<=the<=PI]
-  const t_real vig_the = (check_m_negative) ? consPi - R.the : R.the;
+  t_real vig_the = (check_m_negative) ? consPi - R.the : R.the;
+  if((std::abs(R.the) < 1e-10) || (std::abs(R.the) - consPi + 1e-10 > 0.0)){vig_the = vig_the + 1e-6;} //prevents Nans in computation of Wigners functions
   // wigner function auxiliary variable   : x=cos(the)
   const t_real vig_x = std::cos(vig_the); // calculate in radians
 
@@ -207,6 +262,8 @@ AuxCoefficients::VIGdVIG(t_uint nMax, t_int m, const Spherical<t_real> &R) {
          (((s + 1) * std::sqrt(s * s * (s * s - m * m)) * Wigner[s - 1]) /
           (s * (2 * s + 1)))) /
         std::sin(vig_the);
+
+        
   }
   if (nMax > 0) {
     // Calculate the final term in the dWigner recursion
@@ -234,9 +291,11 @@ AuxCoefficients::VIGdVIG(t_uint nMax, t_int m, const Spherical<t_real> &R) {
 
 AuxCoefficients::AuxCoefficients(const Spherical<t_real> &R, t_complex waveK,
                                  bool regular, t_uint nMax)
-    : _M(Tools::iteratorMax(nMax)), _N(Tools::iteratorMax(nMax)),
+    : _M(Tools::iteratorMax(nMax)), _Xp(Tools::iteratorMax(nMax)), 
+      _Xm(Tools::iteratorMax(nMax)), _N(Tools::iteratorMax(nMax)),
       _B(Tools::iteratorMax(nMax)), _C(Tools::iteratorMax(nMax)),
       _dn(compute_dn(nMax)) {
+
 
   const BESSEL_TYPE besselType = (regular) ? Bessel : Hankel1;
 
@@ -251,6 +310,7 @@ AuxCoefficients::AuxCoefficients(const Spherical<t_real> &R, t_complex waveK,
     const std::vector<SphericalP<t_complex>> Pn = compute_Pn(nMax, Wigner);
     const std::vector<SphericalP<t_complex>> Cn =
         compute_Cn(nMax, q.second, R, Wigner, dWigner);
+                      
     const std::vector<SphericalP<t_complex>> Bn =
         compute_Bn(nMax, q.second, R, Wigner, dWigner);
 
@@ -259,6 +319,11 @@ AuxCoefficients::AuxCoefficients(const Spherical<t_real> &R, t_complex waveK,
         compute_Mn(nMax, q.second, R, waveK, _dn, Cn, besselType);
     const std::vector<SphericalP<t_complex>> Nn =
         compute_Nn(nMax, q.second, R, waveK, _dn, Pn, Bn, besselType);
+     const std::vector<SphericalP<t_complex>> Xm1 =
+        compute_Xm1(nMax, q.second, R, waveK, _dn, Pn, besselType); 
+     const std::vector<SphericalP<t_complex>> Xp1 =
+        compute_Xp1(nMax, q.second, R, waveK, _dn, Bn, besselType);     
+        
 
     for (t_uint n = static_cast<t_uint>(std::abs(q.second)); n <= nMax; ++n) {
       if (n != 0) {
@@ -267,7 +332,11 @@ AuxCoefficients::AuxCoefficients(const Spherical<t_real> &R, t_complex waveK,
         _B[static_cast<t_uint>(p)] = Tools::toProjection(R, Bn[n]);
         _C[static_cast<t_uint>(p)] = Tools::toProjection(R, Cn[n]);
         _M[static_cast<t_uint>(p)] = Tools::toProjection(R, Mn[n]);
+        _Xm[static_cast<t_uint>(p)] = Tools::toProjection(R, Xm1[n]);
+        _Xp[static_cast<t_uint>(p)] = Tools::toProjection(R, Xp1[n]);
         _N[static_cast<t_uint>(p)] = Tools::toProjection(R, Nn[n]);
+        
+       
       }
     }
   }

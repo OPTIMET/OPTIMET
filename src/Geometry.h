@@ -40,27 +40,10 @@ public:
 
   ElectroMagnetic bground; /**< The properties of the background. */
 
-  int structureType; /**< The type of structure used: 0 - non-structured, 1 -
-                        spiral . */
-
-  double spiralSeparation; /**< Spiral separation (NOT distance between centers
-                              but between surfaces. */
-  int normalToSpiral;      /**< Spiral normal plane (0 - x, 1 - y, 2 - z). */
-
   /**
    * Default constructor for the Geometry class. Does not initialize.
    */
   Geometry();
-
-  /**
-   * Alternative constructor for the Geometry class.
-   * Can initialize with a list of Scatterer type objects.
-   * @param objects_ the list of Scatterer objects
-   * @see init()
-   * @warning Try to use the pushObject method for best results.
-   * @see pushObject()
-   */
-  // Geometry(int capacity_, Scatterer* objects_);
 
   /**
    * Default destructor for the Geometry class.
@@ -77,37 +60,15 @@ public:
    * Add an object to the Geometry.
    * @param object_ the Scatterer type object to be added.
    * @return 0 if add successful, 1 otherwise
-   * @see init()
-   * @see noObjects
-   * @see capacity
    */
   void pushObject(Scatterer const &object_);
 
   //! \brief Validate geometry
   //! \details Fails if no objects, or if two objects overlap.
   bool is_valid() const;
-  /**
-   * Returns the single object local scattering matrix T_j.
-   * Currently implements the scattering matrix for spherical objects.
-   * @param omega_ the angular frequency of the simulation.
-   * @param objectIndex_ the index of the object for which T_j is calculated.
-   * @param nMax_ the maximum value of the n iterator.
-   */
-  optimet::Vector<optimet::t_complex>
-  getTLocal(optimet::t_real omega_, optimet::t_int objectIndex_, optimet::t_uint nMax_) const;
-
+  
+  // vector used in the transformation of outer to inner expansion coefficients Analytical results FF
   int getCabsAux(double omega_, int objectIndex_, int nMax_, double *Cabs_aux_);
-
-  int getNLSources(double omega_, int objectIndex_, int nMax_, std::complex<double> *sourceU,
-                   std::complex<double> *sourceV) const;
-
-  /**
-   * Returns the relative vector R_lj between two objects.
-   * @param firstObject_ the index of the first (l) object.
-   * @param secondObjecT_ the index of the second (j) object.
-   * @return the vector R_lj = R_l-R_j.
-   */
-  Spherical<double> translateCoordinates(int firstObject_, int secondObject_);
 
   /**
    * Checks if a point R is located inside an object.
@@ -115,41 +76,41 @@ public:
    * @return the index of the object in which this point is or -1 if outside.
    */
   int checkInner(Spherical<double> R_);
+  // Clebsch Gordan series coeff
+  void Coefficients(int nMax, int nMaxS, std::vector<double *> CLGcoeff, int gran1, int gran2);
 
-  /**
-   * Calculates the local second harmonic sources.
-   * @param objectIndex_ the index of the object.
-   * @param incWave_ pointer to the incoming excitation.
-   * @param scatterCoef_ pointer to the ENTIRE scattering coefficients for the
-   * FF case
-   * @param nMax_ the maximum value of the n iterator.
-   * @param Q_SH_local_ the return value of the local SH source vector.
-   * @return 0 if successful, 1 otherwise.
-   */
-  int getSourceLocal(int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_,
-                     int nMax_, std::complex<double> *Q_SH_local_) const;
+   // Incident coefficients for the second harmonic case                  
+  int getIncLocalSH(std::vector<double *> CLGcoeff, int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_,
+         optimet::Vector<optimet::t_complex> &internalCoef_FF_, int nMaxS_, std::complex<double> *Inc_local); 
+  
+  // Incident coefficients for the second harmonic case for parallelization                 
+  int getIncLocalSH_parallel(std::vector<double *> CLGcoeff, int gran1, int gran2, std::shared_ptr<optimet::Excitation const> incWave_,
+         optimet::Vector<optimet::t_complex> &internalCoef_FF_, int nMaxS_, std::complex<double> *Inc_local);     
+           
+ // Coefficient for absorption cross section second harmonic      
+  int AbsCSSHcoeff(std::vector<double *> CLGcoeff, int gran1, int gran2, std::shared_ptr<optimet::Excitation const> incWave_, 
+            optimet::Vector<optimet::t_complex> &internalCoef_FF_, optimet::Vector<optimet::t_complex> &internalCoef_SH_, int 
+            nMaxS_, std::complex<double> *coefABS); 
+            
+   // Coefficients for the particular solution of SH differential equations                                     
+  int COEFFpartSH(int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_, optimet::Vector<optimet::t_complex> 
+                  &internalCoef_FF_, double r, int nMaxS_, std::complex<double> *coefXmn, std::complex<double> *coefXpl, 
+                   std::vector<double *> CLGcoeff);
 
-  int setSourcesSingle(std::shared_ptr<optimet::Excitation const> incWave_,
-                       std::complex<double> const *internalCoef_FF_, int nMax_);
+ // vectors needed for the SH arbitrary shapes
+  void getEXCvecSH_ARB3(optimet::Vector<optimet::t_complex>& EXvec, std::shared_ptr<optimet::Excitation const> excitation, optimet::Vector<optimet::t_complex> &externalCoef_FF_, optimet::Vector<optimet::t_complex> &internalCoef_FF_, std::vector<double *> CGcoeff, int objIndex);       
+  
+ void getEXCvecSH_ARB1(optimet::Vector<optimet::t_complex>& EXvec, std::shared_ptr<optimet::Excitation const> excitation, optimet::Vector<optimet::t_complex> &externalCoef_FF_, optimet::Vector<optimet::t_complex> &internalCoef_FF_, std::vector<double *> CGcoeff, int objIndex);                                            
+// vectors needed for the SH arbitrary shape in parallel
+void getEXCvecSH_ARB3_parall(optimet::Vector<optimet::t_complex>& EXvec, std::shared_ptr<optimet::Excitation const> excitation, optimet::Vector<optimet::t_complex> &externalCoef_FF_, optimet::Vector<optimet::t_complex> &internalCoef_FF_, std::vector<double *> CGcoeff, int gran1, int gran2);
+
+void getEXCvecSH_ARB1_parall(optimet::Vector<optimet::t_complex>& EXvec, std::shared_ptr<optimet::Excitation const> excitation, optimet::Vector<optimet::t_complex> &externalCoef_FF_, optimet::Vector<optimet::t_complex> &internalCoef_FF_, std::vector<double *> CGcoeff, int gran1, int gran2);
 
   /**
    * Updates the Geometry object to a new Excitation.
    * @param lambda_ the new wavelength.
    */
   void update(std::shared_ptr<optimet::Excitation const> incWave_);
-
-  /**
-   * Updates the Geometry object by modifying the radius of an object.
-   * Also validates the geometry.
-   * @param radius_ the new radius.
-   * @param object_ the object to be modified.
-   */
-  void updateRadius(double radius_, int object_);
-
-  /**
-   * Rebuilds a structure based on the new updated Radius.
-   */
-  void rebuildStructure();
 
   //! Size of the scattering vector
   optimet::t_uint scatterer_size() const;
@@ -161,6 +122,15 @@ public:
                              return std::max<optimet::t_uint>(prior, current.nMax);
                            });
   }
+
+ //! Maximum nMaxS across objects
+  optimet::t_uint nMaxS() const {
+    return std::accumulate(objects.begin(), objects.end(), optimet::t_uint(0u),
+                           [](optimet::t_uint prior, Scatterer const &current) {
+                             return std::max<optimet::t_uint>(prior, current.nMaxS);
+                           });
+  }
+
   //! Minimum nMax across objects
   optimet::t_uint nMin() const {
     return std::accumulate(objects.begin(), objects.end(), nMax(),

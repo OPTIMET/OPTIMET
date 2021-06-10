@@ -18,20 +18,20 @@
 #define EXCITATION_H_
 
 #include "Spherical.h"
-
 #include "Types.h"
 #include "constants.h"
 #include <complex>
+#include <memory>
+
 
 namespace optimet {
 /**
  * The Excitation class implements the incoming wave coefficients.
  * Possible Excitation types are:
- *  0 - plane wave
+ *  plane wave -- FF
  * The wave is considered to be in freespace. Do not forget to divide by
  * relative
- * speed of light in background medium.
- * @warning Do not use without initialization.
+ * SH - sources - Polarization densities
  */
 class Excitation {
 public:
@@ -41,12 +41,13 @@ public:
                               Kinc_the, Kinc_pphi). */
   long nMax;               /**< The maximum value for the n iterator. */
   unsigned long type;      /**< The Excitation type. */
-
+  bool SH_cond; // condition for the SH sources
   Vector<t_complex> dataIncAp; /**< The incoming wave a_n^m coefficients. */
   Vector<t_complex> dataIncBp; /**< The incoming wave b_n^m coefficients. */
 
-  std::complex<double> waveK; /**< The incoming wave wavenumber. */
-
+  std::complex<double> waveK, bgcoef; /**< The incoming wave wavenumber. */
+  
+  
   /**
    * Initialization constructor for the Excitation class.
    * @param type_ the type of the wave.
@@ -54,8 +55,8 @@ public:
    * @param waveKInc_ the incoming wavevector values.
    * @param nMax_ the maximum value of the n iterator.
    */
-  Excitation(unsigned long type_, SphericalP<std::complex<double>> Einc_,
-             Spherical<double> vKInc_, int nMax_);
+  Excitation(unsigned long type_, SphericalP<std::complex<double>> Einc_, bool SH_cond,
+             Spherical<double> vKInc_, int nMax_, std::complex<double> bgcoeff);
 
   /**
    * Default destructor for the Excitation class.
@@ -89,7 +90,8 @@ public:
    */
   int getIncLocal(Spherical<double> point_, std::complex<double> *Inc_local_,
                   int nMax_) const;
-
+                  
+                                          
   /**
    * Updates the wavelength of the current excitation object to a new value.
    * @param lambda_ the new value of the wavelength.

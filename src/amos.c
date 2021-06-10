@@ -5,6 +5,7 @@
 
 #include "f2c.h"
 
+
 /* Table of constant values */
 
 static integer c__4 = 4;
@@ -133,6 +134,7 @@ dgamln_ (doublereal * z, integer * ierr)
   /*             LN(2*PI) */
 
   /* ***FIRST EXECUTABLE STATEMENT  DGAMLN */
+  
   *ierr = 0;
   if (*z <= 0.)
     {
@@ -155,9 +157,11 @@ dgamln_ (doublereal * z, integer * ierr)
   ret_val = gln[nz - 1];
   return ret_val;
 L10:
+  
   wdtol = d1mach_ (&c__4);
   wdtol = max (wdtol, 5e-19);
   i1m = i1mach_ (&c__14);
+
   rln = d1mach_ (&c__5) * (real) i1m;
   fln = min (rln, 20.);
   fln = max (fln, 3.);
@@ -438,6 +442,7 @@ L60:
       goto L70;
     }
   iuf = 0;
+ 
   ascle = d1mach_ (&c__1) * 1e3 / *tol;
   zs1s2_ (&znr, &zni, &c1r, &c1i, &c2r, &c2i, &nw, &ascle, alim, &iuf);
   *nz += nw;
@@ -585,6 +590,7 @@ L20:
   c1i = s1i;
   c2r = yr[1];
   c2i = yi[1];
+
   ascle = d1mach_ (&c__1) * 1e3 / *tol;
   if (*kode == 1)
     {
@@ -654,6 +660,7 @@ L40:
   csrr[2] = cscl;
   bry[0] = ascle;
   bry[1] = 1. / ascle;
+   
   bry[2] = d1mach_ (&c__2);
   as2 = z1abs_ (&s2r, &s2i);
   kflag = 2;
@@ -999,6 +1006,7 @@ zairy_ (doublereal * zr, doublereal * zi, integer * id,
     }
   az = z1abs_ (zr, zi);
   /* Computing MAX */
+  
   d__1 = d1mach_ (&c__4);
   tol = max (d__1, 1e-18);
   fid = (doublereal) ((real) (*id));
@@ -2668,8 +2676,9 @@ zbesj_ (doublereal * zr, doublereal * zi, doublereal * fnu,
   /* ***FIRST EXECUTABLE STATEMENT  ZBESJ */
   *ierr = 0;
   *nz = 0;
+  
   if (*fnu < 0.)
-    {
+    { 
       *ierr = 1;
     }
   if (*kode < 1 || *kode > 2)
@@ -2794,7 +2803,7 @@ L50:
       return 0;
     }
   rtol = 1. / tol;
-  ascle = d1mach_ (&c__1) * rtol * 1e3;
+  ascle = d1mach_ (&c__1) * rtol * 1e3; ///////////////////////////////////////////////////////////////////////////////////////////////
   i__1 = nl;
   for (i = 1; i <= i__1; ++i)
     {
