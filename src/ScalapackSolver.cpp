@@ -83,12 +83,16 @@ void Scalapack::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_, Vect
   }
 
   if(incWave->SH_cond){
-  Vector<t_complex> KmNOD, K1;
+  Vector<t_complex> KmNOD, K1, K1ana, X_int_conj;
+  X_int_conj = X_int_.conjugate();
   
-  KmNOD = distributed_source_vector_SH_Mnode(*geometry, incWave, X_int_, X_sca_, CGcoeff);
+  KmNOD = distributed_source_vector_SH_Mnode(*geometry, incWave, X_int_conj, X_sca_, CGcoeff);
   MPI_Barrier(MPI_COMM_WORLD);
 
-  K1 =  distributed_vector_SH_AR1(*geometry, incWave, X_int_, X_sca_, CGcoeff);
+  K1ana = source_vectorSH_K1ana_parallel(*geometry, incWave, X_int_conj, X_sca_, CGcoeff);
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  K1 =  distributed_vector_SH_AR1(*geometry, incWave, X_sca_);
   MPI_Barrier(MPI_COMM_WORLD);
      
   if(context().is_valid()) {
@@ -116,8 +120,8 @@ void Scalapack::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_, Vect
     // Transfer back to root
     X_sca_SH = gather_all_source_vector(std::get<0>(gls_result_SH));
        
-    PreconditionedMatrix::unprecondition_SH(X_sca_SH, X_int_SH, K1);
-
+    PreconditionedMatrix::unprecondition_SH(X_sca_SH, X_int_SH, K1, K1ana);
+    
     if(communicator().rank()==0){ 
     //std::cout<<X_int_SH.norm()<<std::endl;      
     }  

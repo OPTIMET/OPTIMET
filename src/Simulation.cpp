@@ -73,13 +73,14 @@ void Simulation::field_simulation(Run &run, std::shared_ptr<solver::AbstractSolv
   int rank_pc = communicator().rank();
   int size_r = communicator().size();
 
-      gran1CG = (sizeCF / (size_r))*(rank_pc);
+     if (rank_pc < (sizeCF % size_r)) {
+    gran1CG = rank_pc * (sizeCF/size_r + 1);
+    gran2CG = gran1CG + sizeCF/size_r + 1;
+    } else {
+    gran1CG = rank_pc * (sizeCF/size_r) + (sizeCF % size_r);
+    gran2CG = gran1CG + (sizeCF/size_r);
+    }
 
-      if(rank_pc < (size_r-1)) {
-
-      gran2CG = (rank_pc + 1)*(sizeCF / (size_r)); }
-
-        else { gran2CG = sizeCF;}
 
    int sizeCF_par = gran2CG - gran1CG;
 
@@ -336,20 +337,18 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
   int gran1, gran2, gran1AC, gran2AC, gran1CG, gran2CG;
   int rank = communicator().rank();
   int size = communicator().size();
+
+    if (rank < (sizeCF % size)) {
+    gran1CG = rank * (sizeCF/size + 1);
+    gran2CG = gran1CG + sizeCF/size + 1;
+    } else {
+    gran1CG = rank * (sizeCF/size) + (sizeCF % size);
+    gran2CG = gran1CG + (sizeCF/size);
+    }
   
- 
-      gran1CG = (sizeCF / (size))*(rank);
-
-      if(rank<(size-1)) {
-
-      gran2CG = (rank+1)*(sizeCF / (size)); }
-
-       	else { gran2CG = sizeCF;}
-
    int sizeCF_par = gran2CG - gran1CG;
+  
  
-  
-  
   std::vector<double> C_10m1_par(sizeCF_par), C_11m1_par(sizeCF_par), C_00m1_par(sizeCF_par), C_01m1_par(sizeCF_par);
   std::vector<double> W_m1m1_par(sizeCF_par), W_11_par(sizeCF_par), W_00_par(sizeCF_par), W_10_par(sizeCF_par), W_01_par(sizeCF_par);
 
@@ -417,21 +416,23 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
 
       if (size <= NO) {  // if the number of processes is less or eq numb of part
 
-      gran1 = (NO / (size))*(rank);
+    if (rank < (NO % size)) {
+    gran1 = rank * (NO/size + 1);
+    gran2 = gran1 + NO/size + 1;
+    } else {
+    gran1 = rank * (NO/size) + (NO % size);
+    gran2 = gran1 + (NO/size);
+    }
 
-      if(rank<(size-1)) {
 
-      gran2 = (rank+1)*(NO / (size));}
+    if (rank < (TMax % size)) {
+    gran1AC = rank * (TMax/size + 1);
+    gran2AC = gran1AC + TMax/size + 1;
+    } else {
+    gran1AC = rank * (TMax/size) + (TMax % size);
+    gran2AC = gran1AC + (TMax/size);
+    }
 
-	else { gran2 = NO;}
-
-    gran1AC = (TMax / (size))*(rank);
-
-      if(rank<(size-1)) {
-
-      gran2AC = (rank+1)*(TMax / (size)); }
-
-       	else { gran2AC = TMax;}
 
     if(run.excitation->SH_cond){
      absCS_SH = result.getAbsorptionCrossSection_SH(CLGcoeff, gran1AC, gran2AC);
@@ -456,6 +457,8 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
       if(run.excitation->SH_cond){
       outSSec_SH << lam << "\t" << scaCS_SH_vec.sum() << std::endl;
       outASec_SH << lam << "\t" << absCS_SH_vec.sum() << std::endl;
+      std::cout<<scaCS_SH_vec.sum()<<std::endl;
+      std::cout<<absCS_SH_vec.sum()<<std::endl;
      }
   }
     
@@ -464,13 +467,13 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
 
  else if (size > NO)  {  // if the number of processes is more than numb of part
 
-    gran1AC = (TMax / (size))*(rank);
-
-      if(rank<(size-1)) {
-
-      gran2AC = (rank+1)*(TMax / (size));}
-
-       	else { gran2AC = TMax;}
+    if (rank < (TMax % size)) {
+    gran1AC = rank * (TMax/size + 1);
+    gran2AC = gran1AC + TMax/size + 1;
+    } else {
+    gran1AC = rank * (TMax/size) + (TMax % size);
+    gran2AC = gran1AC + (TMax/size);
+    }
     
      if(run.excitation->SH_cond){
        absCS_SH = result.getAbsorptionCrossSection_SH(CLGcoeff, gran1AC, gran2AC);
@@ -513,6 +516,7 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
       if(run.excitation->SH_cond)
       outSSec_SH << lam << "\t" << scaCS_SH_vec.sum() << std::endl;
       std::cout<<scaCS_SH_vec.sum()<<std::endl;
+      std::cout<<absCS_SH_vec.sum()<<std::endl;
       }
 
       

@@ -186,9 +186,9 @@ void Result::getEHFields(Spherical<double> R_, SphericalP<std::complex<double>> 
       for(p = 0; p < p.max(nMaxS); p++) {
       
       if (geometry->objects[j].scatterer_type == "sphere"){   
-      bmnSH = scatter_coef_SH[j * 4 * pMaxS + p.compound] + scatter_coef_SH[2 * pMaxS + j * 4 * pMaxS + p.compound];
+      bmnSH = scatter_coef_SH[j * 2 * pMaxS + p.compound];
       
-      amnSH = scatter_coef_SH[j * 4 * pMaxS + pMaxS + p.compound] + scatter_coef_SH[j * 4 * pMaxS + 3 * pMaxS +  p.compound];
+      amnSH = scatter_coef_SH[j * 2 * pMaxS + pMaxS + p.compound];
      }
 
       else if (geometry->objects[j].scatterer_type == "arbitrary.shape"){ 
@@ -255,9 +255,9 @@ void Result::getEHFields(Spherical<double> R_, SphericalP<std::complex<double>> 
     for(p = 0; p < p.max(nMaxS); p++) {
 
     if (geometry->objects[intInd].scatterer_type == "sphere"){
-    cmnSH = internal_coef_SH[intInd * 4 * pMaxS + p.compound] + internal_coef_SH[2 * pMaxS + intInd * 4 * pMaxS + p.compound];
+    cmnSH = internal_coef_SH[intInd * 2 * pMaxS + p.compound];
 
-    dmnSH = internal_coef_SH[pMaxS + intInd * 4 * pMaxS + p.compound] + internal_coef_SH[3 * pMaxS + intInd * 4 * pMaxS + p.compound];
+    dmnSH = internal_coef_SH[pMaxS + intInd * 2 * pMaxS + p.compound];
     }
 
    if (geometry->objects[intInd].scatterer_type == "arbitrary.shape"){
@@ -480,7 +480,7 @@ double Result::getScatteringCrossSection_SH(int gran1, int gran2) {
   for(p = 0; p < 2*pMax; p++) {
   
   if (geometry->objects[0].scatterer_type == "sphere"){
-  SCcoefpom_SH[ p ] = scatter_coef_SH[j * 4 * pMax + p.compound] + scatter_coef_SH[2 * pMax + j * 4 * pMax + p.compound] ;
+  SCcoefpom_SH[ p ] = scatter_coef_SH[j * 2 * pMax + p.compound];
   ArbCf = eps_b_r * mu_b_r;
   }
 

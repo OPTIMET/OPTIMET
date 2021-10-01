@@ -111,30 +111,16 @@ Vector<t_complex> convertIndirect_SH_outer(Vector<t_complex> const &scattered, t
   size_t i(0);
   auto const N = 2 * objects[0].nMaxS * (objects[0].nMaxS + 2);
 
-  if (objects[0].scatterer_type == "sphere"){
-  Vector<t_complex> result(scattered.size());
-  for(auto const &object : objects) {
-   
-    result.segment(i, N) =
-        object.getTLocalSH1_outer(omega, bground).array() * scattered.segment(i, N).array();
-  
-    result.segment(N + i, N) =
-        object.getTLocalSH2_outer(omega, bground).array() * scattered.segment(N + i, N).array();
-       
-        
-     i += 2 * N;   
-
-  }
-
-  return result;
- }
+  if (objects[0].scatterer_type == "sphere")
+  return scattered;
+ 
 
    else if (objects[0].scatterer_type == "arbitrary.shape")
    return scattered;
 }
 
 
-Vector<t_complex> convertInternal_SH(Vector<t_complex> const &scattered, Vector<t_complex> const &K_1, t_real const &omega,
+Vector<t_complex> convertInternal_SH(Vector<t_complex> const &scattered, Vector<t_complex> const &K_1, Vector<t_complex> const &K_1ana, t_real const &omega,
                                   ElectroMagnetic const &bground,
                                   std::vector<Scatterer> const &objects) {
   Vector<t_complex> result(scattered.size());
@@ -142,16 +128,16 @@ Vector<t_complex> convertInternal_SH(Vector<t_complex> const &scattered, Vector<
   Matrix<t_complex> Intrmatrix(N, N);
   size_t i = 0; 
  auto const k_b_SH = 2 * omega * std::sqrt(bground.epsilon * bground.mu);
+
   if (objects[0].scatterer_type == "sphere"){
   for(auto const &object : objects) {
     
     result.segment(i, N).array() =
         scattered.segment(i, N).array() * object.getIauxSH1(omega, bground).array();
         
-      result.segment(N + i, N).array() =
-        scattered.segment(N + i, N).array() * object.getIauxSH2(omega, bground).array();    
+    result.segment(i, N) = result.segment(i, N)  - K_1ana.segment(i, N);  
   
-    i += 2 * N;
+    i += N;
   }
  }
  else if (objects[0].scatterer_type == "arbitrary.shape"){
@@ -160,7 +146,7 @@ Vector<t_complex> convertInternal_SH(Vector<t_complex> const &scattered, Vector<
   
   object.getQLocalSH(Intrmatrix, omega, bground);
     
-  result.segment(i, N) = Intrmatrix.inverse()*((-consCi*consPi/k_b_SH)*scattered.segment(i, N) + K_1.segment(i, N));
+  result.segment(i, N) = Intrmatrix.inverse()*((-consCi/k_b_SH)*scattered.segment(i, N) + K_1.segment(i, N));
   
   i += N;
   

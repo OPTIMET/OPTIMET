@@ -30,7 +30,7 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vec
     return Scalapack::solve(X_sca_, X_int_, X_sca_SH, X_int_SH, CGcoeff);
   auto const splitcomm = communicator().split(context().is_valid());
     int nMaxS = geometry->nMaxS();
-    int N = 2 * nMaxS * (nMaxS + 2);
+    int N = nMaxS * (nMaxS + 2);
     int nobj = geometry->objects.size();
   if(context().is_valid()) {
    auto const solver = belos_parameters()->get<std::string>("Solver");
@@ -40,8 +40,8 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vec
     }
  
     int uppLIM =nobj * 2 * N;
-    belos_parameters()->set("Maximum Iterations", uppLIM);
-    belos_parameters()->set("Num Blocks", 1000);
+    //belos_parameters()->set("Maximum Iterations", uppLIM);
+    //belos_parameters()->set("Num Blocks", 1000);
 
     // FF part
     auto input = parallel_input();
@@ -69,11 +69,16 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vec
    }
 
   if(incWave->SH_cond){
-  Vector<t_complex> KmNOD, K1;
- 
-  KmNOD = distributed_source_vector_SH_Mnode(*geometry, incWave, X_int_, X_sca_, CGcoeff);
+  Vector<t_complex> KmNOD, K1, X_int_conj, K1ana;
+  X_int_conj = X_int_.conjugate();
+
+  KmNOD = distributed_source_vector_SH_Mnode(*geometry, incWave, X_int_conj, X_sca_, CGcoeff);
   MPI_Barrier(MPI_COMM_WORLD);
-  K1 = distributed_vector_SH_AR1(*geometry, incWave, X_int_, X_sca_, CGcoeff);
+  
+  K1ana = source_vectorSH_K1ana_parallel(*geometry, incWave, X_int_conj, X_sca_, CGcoeff);
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  K1 = distributed_vector_SH_AR1(*geometry, incWave, X_sca_);
   MPI_Barrier(MPI_COMM_WORLD);
 
   if(context().is_valid()) {
@@ -103,7 +108,7 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vec
     // Transfer back to root
     X_sca_SH = gather_all_source_vector(std::get<0>(gls_result_SH));
 
-    PreconditionedMatrix::unprecondition_SH(X_sca_SH, X_int_SH, K1);
+    PreconditionedMatrix::unprecondition_SH(X_sca_SH, X_int_SH, K1, K1ana);
 
 
   }

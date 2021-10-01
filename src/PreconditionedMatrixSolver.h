@@ -51,19 +51,21 @@ public:
     X_sca_ = S.colPivHouseholderQr().solve(Q);
     
     unprecondition(X_sca_, X_int_);
-
-    Vector<t_complex> K, K1;
     
     // SH frequency
     if(incWave->SH_cond){
+    Vector<t_complex> K, K1, K1ana, X_int_conj;
+    X_int_conj = X_int_.conjugate();
 
-    K = source_vectorSH(*geometry, incWave, X_int_, X_sca_, CGcoeff);
+    K = source_vectorSH(*geometry, incWave, X_int_conj, X_sca_, CGcoeff);
 
-    K1 = source_vectorSHarb1(*geometry, incWave, X_int_, X_sca_, CGcoeff);
+    K1ana = source_vectorSH_K1ana(*geometry, incWave, X_int_conj, X_sca_, CGcoeff);
+
+    K1 = source_vectorSHarb1(*geometry, incWave, X_sca_);
 
     X_sca_SH = V.colPivHouseholderQr().solve(K);
-    
-    unprecondition_SH(X_sca_SH, X_int_SH, K1);
+        
+    unprecondition_SH(X_sca_SH, X_int_SH, K1, K1ana);
     }
   }
   
@@ -97,9 +99,9 @@ protected:
     }
      
     
-    void unprecondition_SH(Vector<t_complex> &X_sca_SH, Vector<t_complex> &X_int_SH, Vector<t_complex> &K1) const {
+    void unprecondition_SH(Vector<t_complex> &X_sca_SH, Vector<t_complex> &X_int_SH, Vector<t_complex> &K1, Vector<t_complex> &K1ana) const {
     X_sca_SH = AbstractSolver::convertIndirect_SH_outer(X_sca_SH);
-    X_int_SH = AbstractSolver::solveInternal_SH(X_sca_SH, K1);
+    X_int_SH = AbstractSolver::solveInternal_SH(X_sca_SH, K1, K1ana);
     
     }
 
