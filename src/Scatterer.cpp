@@ -288,15 +288,15 @@ void Scatterer::getTLocal(optimet::Matrix<optimet::t_complex>& Tmatrix,
 	}// Gauss Legendre integration of spherical harmonics over a triangle 
         }// iteration over all triangles, complete surface integration	
 
-       Q (mu1 , nu1) = (1.0 / consPi) * (I11 + I12);
-	Q (mu1 , nu1 + nuMax) = (1.0 / consPi) * (I21 + I22);
-	Q (mu1 + muMax , nu1) = (1.0 / consPi) * (I31 + I32);
-	Q (mu1 + muMax , nu1 + nuMax) = (1.0 / consPi) * (I41 + I42);
+       Q (mu1 , nu1) = (I11 + I12);
+	Q (mu1 , nu1 + nuMax) = (I21 + I22);
+	Q (mu1 + muMax , nu1) = (I31 + I32);
+	Q (mu1 + muMax , nu1 + nuMax) = (I41 + I42);
 	
-	RgQ (mu1 , nu1) = (1.0 / consPi) * (RgI11 + RgI12);
-	RgQ (mu1 , nu1 + nuMax) = (1.0 / consPi) * (RgI21 + RgI22);
-	RgQ (mu1 + muMax , nu1) = (1.0 / consPi) * (RgI31 + RgI32);
-	RgQ (mu1 + muMax , nu1 + nuMax) = (1.0 / consPi) * (RgI41 + RgI42);
+	RgQ (mu1 , nu1) = (RgI11 + RgI12);
+	RgQ (mu1 , nu1 + nuMax) = (RgI21 + RgI22);
+	RgQ (mu1 + muMax , nu1) = (RgI31 + RgI32);
+	RgQ (mu1 + muMax , nu1 + nuMax) = (RgI41 + RgI42);
          
 	}
 	
@@ -444,10 +444,10 @@ void Scatterer::getQLocal(optimet::Matrix<optimet::t_complex>& Intrmatrix, optim
 	}// Gauss Legendre integration of spherical harmonics over a triangle 
         }// iteration over all triangles, complete surface integration
 
-       RgQ (mu1 , nu1) = (1.0 / consPi) * (RgI11 + RgI12);
-	RgQ (mu1 , nu1 + nuMax) = (1.0 / consPi) * (RgI21 + RgI22);
-	RgQ (mu1 + muMax , nu1) = (1.0 / consPi) * (RgI31 + RgI32);
-	RgQ (mu1 + muMax , nu1 + nuMax) = (1.0 / consPi) * (RgI41 + RgI42);
+       RgQ (mu1 , nu1) = (RgI11 + RgI12);
+	RgQ (mu1 , nu1 + nuMax) = (RgI21 + RgI22);
+	RgQ (mu1 + muMax , nu1) = (RgI31 + RgI32);
+	RgQ (mu1 + muMax , nu1 + nuMax) = (RgI41 + RgI42);
          
 	}
 	
@@ -457,7 +457,67 @@ void Scatterer::getQLocal(optimet::Matrix<optimet::t_complex>& Intrmatrix, optim
   
   }
                   
+void Scatterer::getTLocalSH(optimet::Matrix<optimet::t_complex>& Tmatrix, optimet::t_real omega_, ElectroMagnetic const &bground) const {
+  using namespace optimet;
+  
+  auto const N = HarmonicsIterator::max_flat(nMaxS) - 1;
+ 
+  if (this->scatterer_type == "sphere"){
+  
+  auto const k_s = 2.0 * omega_ * std::sqrt(elmag.epsilon_SH * elmag.mu_SH);
+  auto const k_b = 2.0 * omega_ * std::sqrt(bground.epsilon * bground.mu);
+  auto const rho = k_s / k_b;
+  auto const r_0 = k_b * radius;
+  
+  auto const mu_sob = elmag.mu_SH / bground.mu;
 
+  auto const Jn = bessel<Bessel>(r_0, nMaxS);
+  auto const Jrho = bessel<Bessel>(rho * r_0, nMaxS);
+  auto const Hn = bessel<Hankel1>(r_0, nMaxS);
+  auto const Hnrho = bessel<Hankel1>(rho * r_0, nMaxS);
+   
+
+  std::complex<double> zeta_b2 = std::sqrt(bground.mu / bground.epsilon);
+  std::complex<double> zeta_j2 = std::sqrt(elmag.mu_SH / elmag.epsilon_SH); 
+  std::complex<double> zeta_boj2 = zeta_b2 / zeta_j2;   
+  
+  Vector<t_complex> result = Vector<t_complex>::Zero(2 * N);
+ 
+  std::vector<std::complex<double>> data, ddata;
+  
+  for(t_uint n(1), current(0); n <= nMaxS; current += 2 * n + 1, ++n) {
+    
+    
+    auto const psi = r_0 * std::get<0>(Jn)[n];
+    auto const dpsi = r_0 * std::get<1>(Jn)[n] + std::get<0>(Jn)[n];
+    
+    auto const ksi = r_0 * std::get<0>(Hn)[n];
+    auto const dksi = r_0 * std::get<1>(Hn)[n] + std::get<0>(Hn)[n];
+    
+    auto const psirho = r_0 * rho * std::get<0>(Jrho)[n];
+    auto const dpsirho = r_0 * rho * std::get<1>(Jrho)[n] + std::get<0>(Jrho)[n];
+    
+
+    // TE Part  b_n coefficients fundamental frequency
+    auto const TE = ((psi / ksi) * (mu_sob * dpsi / psi - rho * dpsirho / psirho) /
+                    (rho * dpsirho / psirho - mu_sob * dksi / ksi));
+                                  
+    result.segment(current, 2 * n + 1).fill(TE);
+
+    // TM part  a_n coefficients fundamental frequency
+    auto const TM = ((psi / ksi) * (mu_sob * dpsirho / psirho - rho * dpsi / psi) /
+                    (rho * dksi / ksi - mu_sob * dpsirho / psirho));  
+                                                             
+    result.segment(current + N, 2 * n + 1).fill(TM);
+
+  }
+  	
+  Tmatrix = result.asDiagonal();
+  
+  	
+  }
+  
+  }
 
 optimet::Vector<optimet::t_complex>
 Scatterer::getTLocalSH1_outer(optimet::t_real omega_, ElectroMagnetic const &bground) const {
@@ -503,19 +563,19 @@ Scatterer::getTLocalSH1_outer(optimet::t_real omega_, ElectroMagnetic const &bgr
     auto const dpsirho_SH = r_0_SH * rho_SH * std::get<1>(Jrho_SH)[n] + std::get<0>(Jrho_SH)[n];
     
      
-    // TE 1 Part  b_n' coefficients SH frequency                
+    // TE1 Part  b_n' coefficients SH frequency                
     auto const TE_SH1 = - x_b2 * psirho_SH / (zeta_boj2 * ksi_SH * dpsirho_SH - psirho_SH * dksi_SH); 
     
 
     resultSH1.segment(current, 2 * n + 1).fill(TE_SH1);
  
                 
-    // TE 2 Part  a_n' coefficients SH frequency  
+    // TM1 Part  a_n' coefficients SH frequency  
     
-     auto const TE_SH2 = - x_b2 * dpsirho_SH / (zeta_boj2 * psirho_SH * dksi_SH - ksi_SH * dpsirho_SH);
+     auto const TM_SH1 = - x_b2 * dpsirho_SH / (zeta_boj2 * psirho_SH * dksi_SH - ksi_SH * dpsirho_SH);
     
 
-    resultSH1.segment(current + N, 2 * n + 1).fill(TE_SH2);
+    resultSH1.segment(current + N, 2 * n + 1).fill(TM_SH1);
     
     
   }
@@ -564,10 +624,10 @@ Scatterer::getTLocalSH2_outer(optimet::t_real omega_, ElectroMagnetic const &bgr
     auto const dpsirho_SH = r_0_SH * rho_SH * std::get<1>(Jrho_SH)[n] + std::get<0>(Jrho_SH)[n];
     
      
-    // TM 1 Part  b_n'' coefficients SH frequency 
-    auto const TM_SH1 = zeta_boj2 * x_b2 * dpsirho_SH / (zeta_boj2 * ksi_SH * dpsirho_SH - psirho_SH * dksi_SH);
+    // TE 2 Part  b_n'' coefficients SH frequency 
+    auto const TE_SH2 = zeta_boj2 * x_b2 * dpsirho_SH / (zeta_boj2 * ksi_SH * dpsirho_SH - psirho_SH * dksi_SH);
               
-    resultSH2.segment(current, 2 * n + 1).fill(TM_SH1);
+    resultSH2.segment(current, 2 * n + 1).fill(TE_SH2);
     
   
     // TM 2 Part  a_n'' coefficients SH frequency  
@@ -992,8 +1052,8 @@ Scatterer::getIauxSH1(optimet::t_real omega_, ElectroMagnetic const &bground) co
   auto const Hn_SH = optimet::bessel<optimet::Hankel1>(r_0_SH, nMaxS);
 
   optimet::Vector<optimet::t_complex> result(2 * nMaxS * (nMaxS + 2));
-  auto TE1 = result.head( nMaxS * (nMaxS + 2));
-  auto TE2 = result.tail( nMaxS * (nMaxS + 2));
+  auto TE = result.head( nMaxS * (nMaxS + 2));
+  auto TM = result.tail( nMaxS * (nMaxS + 2));
   
   for(auto n = 1, i = 0; n <= nMaxS; ++n) {
     // obtain Riccati-Bessel functions
@@ -1006,9 +1066,9 @@ Scatterer::getIauxSH1(optimet::t_real omega_, ElectroMagnetic const &bground) co
 
     for(auto m = -n; m <= n; ++m, ++i) {
     
-      TE1(i) = (- x_i2 * ksi_SH) / (x_b2 * psirho_SH) ; // result related to the bmn'
+      TE(i) = (- x_i2 * ksi_SH) / (x_b2 * psirho_SH) ; // result related to the bmn'
              
-      TE2(i) = (- x_i2 * dksi_SH) / (x_b2 * dpsirho_SH); // result related to the amn'       
+      TM(i) = (- x_i2 * dksi_SH) / (x_b2 * dpsirho_SH); // result related to the amn'       
                      
     }
   }
@@ -1027,6 +1087,7 @@ Scatterer::getIauxSH2(optimet::t_real omega_, ElectroMagnetic const &bground) co
   auto const r_0_SH = k_b_SH * radius;
   auto const mu_0 = bground.mu;
   
+  std::complex<double> bnpp, anpp;
   std::complex<double> x_b2 = k_b_SH * radius;
   std::complex<double> x_i2 = k_s_SH * radius;
   std::complex<double> zeta_b2 = std::sqrt(bground.mu / bground.epsilon);
@@ -1038,8 +1099,8 @@ Scatterer::getIauxSH2(optimet::t_real omega_, ElectroMagnetic const &bground) co
   auto const Hn_SH = optimet::bessel<optimet::Hankel1>(r_0_SH, nMaxS);
 
   optimet::Vector<optimet::t_complex> result(2 * nMaxS * (nMaxS + 2));
-  auto TM1 = result.head( nMaxS * (nMaxS + 2));
-  auto TM2 = result.tail( nMaxS * (nMaxS + 2));
+  auto TE = result.head( nMaxS * (nMaxS + 2));
+  auto TM = result.tail( nMaxS * (nMaxS + 2));
   
   for(auto n = 1, i = 0; n <= nMaxS; ++n) {
     // obtain Riccati-Bessel functions
@@ -1050,11 +1111,15 @@ Scatterer::getIauxSH2(optimet::t_real omega_, ElectroMagnetic const &bground) co
     auto const ksi_SH = r_0_SH * std::get<0>(Hn_SH)[n];
     auto const dksi_SH = r_0_SH * std::get<1>(Hn_SH)[n] + std::get<0>(Hn_SH)[n];
 
-    for(auto m = -n; m <= n; ++m, ++i) {       
-     
-      TM1(i) = (- x_i2 * dksi_SH) / (zeta_boj2 * x_b2 * dpsirho_SH) ; // result related to the bmn''
+    for(auto m = -n; m <= n; ++m, ++i) {
+
+      bnpp =   (zeta_boj2 * x_b2 * dpsirho_SH) / (zeta_boj2 * ksi_SH * dpsirho_SH - psirho_SH * dksi_SH);
       
-      TM2(i) = (- x_i2 * ksi_SH) / (zeta_boj2 * x_b2 * psirho_SH); // result related to amn''
+      anpp =    (zeta_boj2 * x_b2 * psirho_SH) / (zeta_boj2 * psirho_SH * dksi_SH - ksi_SH * dpsirho_SH);       
+     
+      TE(i) =  bnpp * ((- x_i2 * ksi_SH) / (x_b2 * psirho_SH) + (x_i2 * dksi_SH) / (zeta_boj2 * x_b2 * dpsirho_SH)) ;  //related to bmn and cmn 
+      
+      TM(i) = anpp * ((- x_i2 * dksi_SH) / (x_b2 * dpsirho_SH) + (x_i2 * ksi_SH) / (zeta_boj2 * x_b2 * psirho_SH));  //related to amn and dmn
                      
     }
   }

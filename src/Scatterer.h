@@ -96,7 +96,6 @@ public:
   Spherical<double> vR;  /**< The coordinates of the center of the scatterer.*/
   ElectroMagnetic elmag; /**< The electromagnetic properties of the scatterer.*/
   double radius;         /**< The radius of a sphere encompassing the scatterer.*/
-  double side;           // the length of the side of Platonic solid used in meshes
   int nMax;              /**< Maximum value of the n iterator. */
   int nMaxS;              /**< Maximum value of the n iterator SH */  
   std::string scatterer_type; // type of scatterer, sphere or arbitrary shaped
@@ -106,7 +105,8 @@ public:
 
   // FF external-to-internal matrix for arbitrary objects
   void getQLocal(optimet::Matrix<optimet::t_complex>& Intrmatrix, optimet::t_real omega_, ElectroMagnetic const &bground) const;
-
+  
+  void getTLocalSH(optimet::Matrix<optimet::t_complex>& Tmatrix, optimet::t_real omega_, ElectroMagnetic const &bground) const;
   // SH Tmatrix for spherical objects 
   optimet::Vector<optimet::t_complex> getTLocalSH1_outer(optimet::t_real omega_, ElectroMagnetic const &bground) const;
   

@@ -1,0 +1,25 @@
+<simulation>
+  <harmonics nmax="12" />
+</simulation>
+<source type="planewave">
+  <wavelength value="1200" />
+  <propagation theta="45.0" phi="90.0" />
+  <polarization Etheta.real="1.0" Etheta.imag="0.0" Ephi.real="0.0" Ephi.imag="0.0" />
+  <SHsources condition="yes" />
+</source>
+<geometry>
+  <structure type="GaAscube">
+    <object type="sphere">
+    <properties radius="426.0" />
+    <epsilon type="SiliconModel"/>
+    <mu type="relative" value.real="1.0" value.imag="0.0" />
+    </object>
+    <properties No_cells="2" cell_size="2000"/>
+   </structure>
+</geometry>
+<output type="response">
+  <scan type="A+E">
+    <wavelength initial="1000" final="1450" stepsize="3" />
+  </scan>
+</output>
+

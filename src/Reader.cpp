@@ -59,7 +59,7 @@ std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &inputFile) {
     throw std::runtime_error("Simulation parameters not defined!");
 
   auto const nMax = simulation_node.child("harmonics").attribute("nmax").as_int();
-  auto const nMaxS = 2 * nMax; //SH number of harmonics
+  auto const nMaxS = 1 * nMax; //SH number of harmonics
   // Find the geometry node
   auto const geo_node = inputFile.child("geometry");
   if(!geo_node)
@@ -676,10 +676,8 @@ else if(node.attribute("type").value() == std::string("arbitrary.shape")){
      
     // Assign properties to the Scatterer 
     if(node.child("properties").attribute("radius"))
-    result.radius = node.child("properties").attribute("radius").as_double() * consFrnmTom; // if the mesh is spheres
+    result.radius = node.child("properties").attribute("radius").as_double() * consFrnmTom; //radius of the circumscribed sphere
 
-    else if(node.child("properties").attribute("side"))
-    result.side = node.child("properties").attribute("side").as_double() * consFrnmTom; // if the mesh is one of the Platonic solids
     // reading the mesh data
     std::ifstream file1("coord.txt"); // coordinates of the vertices
     std::ifstream file2("topol.txt"); // vertices forming a triangle in a counterclockwise manner
