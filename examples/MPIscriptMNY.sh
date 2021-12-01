@@ -7,10 +7,10 @@
 #$ -S /bin/bash
 
 # 2. Request ten minutes of wallclock time (format hours:minutes:seconds).
-#$ -l h_rt=10:10:0
+#$ -l h_rt=15:10:0
 
 # 3. Request 1 gigabyte of RAM per process (must be an integer)
-#$ -l mem=3G
+#$ -l mem=5G
 
 module unload default-modules/2018
 
@@ -30,7 +30,7 @@ make
 #$ -N ManySpheres
 
 # 6. Select the MPI parallel environment and number of processes.
-#$ -pe mpi 100
+#$ -pe mpi 64
 
 # 7. Set the working directory to somewhere in your scratch space.  This is
 # a necessary step with the upgraded software stack as compute nodes cannot
@@ -40,6 +40,6 @@ make
 
 # 8. Run our MPI job.  GERun is a wrapper that launches MPI jobs on our clusters.
 cd /home/uceeise/Scratch/OPTIMET/examples
-gerun /home/uceeise/Scratch/OPTIMET/build_belos/Optimet3D ManySpheres.xml | grep "e-"  
+gerun /home/uceeise/Scratch/OPTIMET/build_belos/Optimet3D ManySpheres.xml 
 
 

@@ -87,20 +87,8 @@ Vector<t_complex> convertInternal(Vector<t_complex> const &scattered, t_real con
 Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered, t_real const &omega,
                                   ElectroMagnetic const &bground,
                                   std::vector<Scatterer> const &objects) {
-  Vector<t_complex> result(scattered.size());
-  size_t i(0);
-  auto const N = 2 * objects[0].nMax * (objects[0].nMax + 2);
-  Matrix<t_complex> Tmatrix(N, N);
-
-  for(auto const &object : objects) {
-
-    object.getTLocal(Tmatrix, omega, bground);
-    result.segment(i, N) = Tmatrix * scattered.segment(i, N);
-   
-    i += N;
-  }
  
-  return result;
+  return scattered;
 }
 
 
@@ -108,14 +96,6 @@ Vector<t_complex> convertIndirect_SH_outer(Vector<t_complex> const &scattered, t
                                   ElectroMagnetic const &bground,
                                   std::vector<Scatterer> const &objects) {
   
-  size_t i(0);
-  auto const N = 2 * objects[0].nMaxS * (objects[0].nMaxS + 2);
-
-  if (objects[0].scatterer_type == "sphere")
-  return scattered;
- 
-
-   else if (objects[0].scatterer_type == "arbitrary.shape")
    return scattered;
 }
 

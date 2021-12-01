@@ -43,7 +43,7 @@ namespace optimet {
 namespace {
 std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &node);
 Scatterer read_scatterer(pugi::xml_node const &node, t_int nMax, t_int nMaxS);
-std::shared_ptr<Geometry> read_structure(pugi::xml_node const &inputFile, t_int nMax, t_int nMaxS);
+std::shared_ptr<Geometry> read_structure(pugi::xml_node const &inputFile, t_int nMax, t_int nMaxS, bool ACA_cond);
 std::shared_ptr<Excitation> read_excitation(pugi::xml_document const &inputFile, t_int nMax, ElectroMagnetic &bground);
 scalapack::Parameters read_parallel(const pugi::xml_node &node);
 #ifdef OPTIMET_BELOS
@@ -58,6 +58,11 @@ std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &inputFile) {
   if(!simulation_node)
     throw std::runtime_error("Simulation parameters not defined!");
 
+  bool ACA_cond;
+  if(!std::strcmp(simulation_node.child("ACA").attribute("compression").value(), "yes"))
+  ACA_cond = true;
+  else
+  ACA_cond = false;
   auto const nMax = simulation_node.child("harmonics").attribute("nmax").as_int();
   auto const nMaxS = 1 * nMax; //SH number of harmonics
   // Find the geometry node
@@ -67,10 +72,10 @@ std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &inputFile) {
 
   // Check if a structure is defined
   if(geo_node.child("structure"))
-    return read_structure(geo_node, nMax, nMaxS);
+    return read_structure(geo_node, nMax, nMaxS, ACA_cond);
 
   auto result = std::make_shared<Geometry>();
-
+  result->ACAcompression(ACA_cond);
   // Find all scattering objects
   for(xml_node node = geo_node.child("object"); node; node = node.next_sibling("object"))
     result->pushObject(read_scatterer(node, nMax, nMaxS));
@@ -95,7 +100,7 @@ std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &inputFile) {
   return result;
 }
 
-std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax, t_int nMaxS) {
+std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax, t_int nMaxS, bool ACA_cond) {
   auto geometry = std::make_shared<Geometry>();
   xml_node struct_node = geo_node_.child("structure");
 
@@ -172,7 +177,7 @@ std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax, 
         geometry->pushObject(scatterer);
        
   }  
-
+ geometry->ACAcompression(ACA_cond);
 }
 
 //assembly of spheres into a zincblende structure (GaAs) with unit cells forming a surface in xy plane
@@ -306,7 +311,7 @@ std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax, 
         geometry->pushObject(scatterer);
        
   }  
-
+geometry->ACAcompression(ACA_cond);
 }
    
 //assembly of spheres into a zincblende structure (GaAs) with unit cells forming a cube in first quadrant
@@ -508,8 +513,8 @@ if(!std::strcmp(struct_node.attribute("type").value(), "GaAscube")) {
  
         geometry->pushObject(scatterer);
        
-  }  
-
+   }  
+  geometry->ACAcompression(ACA_cond);
 }
 
  //assembly of spheres into a surface
@@ -565,7 +570,7 @@ if(!std::strcmp(struct_node.attribute("type").value(), "GaAscube")) {
         geometry->pushObject(scatterer);
        
   }  
-
+ geometry->ACAcompression(ACA_cond);
 }
 
 

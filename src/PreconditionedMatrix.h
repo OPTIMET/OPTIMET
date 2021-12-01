@@ -25,13 +25,21 @@
 #include "scalapack/Matrix.h"
 
 namespace optimet {
+
+struct Matrix_ACA{
+Matrix<t_complex> U;
+Matrix<t_complex> V;
+Matrix<t_complex> S_sub;
+int dim;
+};
+
 //! \brief Computes source vector
 Vector<t_complex>
 source_vector(Geometry const &geometry, std::shared_ptr<Excitation const> incWave);
 //! \brief Computes source vector from a range of scatterers
 Vector<t_complex> source_vector(std::vector<Scatterer>::const_iterator first,
                                 std::vector<Scatterer>::const_iterator const &last,
-                                std::shared_ptr<Excitation const> incWave);
+                                std::shared_ptr<Excitation const> incWave, Geometry const &geometry);
                                 
    
  Vector<t_complex> source_vectorSH(Geometry &geometry, std::shared_ptr<Excitation const> incWave, 
@@ -78,10 +86,41 @@ Vector<t_complex> distributed_vector_SH_AR1(Geometry &geometry,
 //! Computes preconditioned scattering matrix in serial for fundamental frequency
 Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
                                                    std::shared_ptr<Excitation const> incWave);
+
+// Computes scattering matrix at FF with ACA compression parallel
+void Scattering_matrix_ACA_FF_parallel(Geometry const &geometry,
+                                                   std::shared_ptr<Excitation const> incWave, std::vector<Matrix_ACA>& S_comp);
+
+// Computes scattering matrix at SH with ACA compression parallel
+void Scattering_matrix_ACA_SH_parallel(Geometry const &geometry,
+                         std::shared_ptr<Excitation const> incWave, std::vector<Matrix_ACA>& S_comp); 
+
+// Computes scattering matrix at FF with ACA compression serial
+void Scattering_matrix_ACA_FF(Geometry const &geometry,
+                                                    std::shared_ptr<Excitation const> incWave, std::vector<Matrix_ACA>& S_comp);
+
+// Computes scattering matrix at SH with ACA compression serial
+void Scattering_matrix_ACA_SH(Geometry const &geometry,
+                         std::shared_ptr<Excitation const> incWave, std::vector<Matrix_ACA>& S_comp);
+
+// ACA algorithm
+void ACA_compression(Matrix<t_complex> &U, Matrix<t_complex> &V, Matrix<t_complex> &CoupMat);
+
+//search for the index of the largest absolute element in row/column for ACA algorithm
+int getMaxInd(Vector<t_complex> &RowCol, Vector<int> &K, int kmax);
+
+//the gmres solver for ACA compressed matrices                                                   
+Vector<t_complex> Gmres_Zcomp(std::vector<Matrix_ACA>const &S_comp, Vector<t_complex>const &Y, double tol, int maxit, Geometry const &geometry);  
+
+// matrix-vector product for compressed matrices in parallel
+Vector<t_complex> matvec_parallel(std::vector<Matrix_ACA>const &S_comp, Vector<t_complex> &J, Geometry const &geometry);
+
+// matrix-vector product for compressed matrices in serial
+Vector<t_complex> matvec(std::vector<Matrix_ACA>const &S_comp, Vector<t_complex> &J, Geometry const &geometry);
+
+Matrix<t_complex> det_approx (double beta, int n, Matrix<t_complex> &H);
                                                                                                   
- 
-//! Computes preconditioned scattering matrix in serial for SH frequency, scattering coefficients
- 
+//! Computes preconditioned scattering matrix in serial for SH frequency, scattering coefficients 
 Matrix<t_complex> preconditioned_scattering_matrixSH(Geometry const &geometry,
                                                    std::shared_ptr<Excitation const> incWave); 
                                                                                                                                                                                                         

@@ -20,6 +20,7 @@
 #include "scalapack/BroadcastToOutOfContext.h"
 #include <iostream>
 #include <chrono>
+#include <Eigen/Dense>
 using namespace std::chrono;
 
 namespace optimet {
@@ -95,7 +96,7 @@ Vector<t_complex> gather_all_source_vector(scalapack::Matrix<t_complex> const &m
 Vector<t_complex> distributed_vector_SH_AR1(Geometry &geometry,
                                            std::shared_ptr<Excitation const> incWave,
                                            Vector<t_complex> &X_sca_) {
-auto const nobj = geometry.objects.size();
+  auto const nobj = geometry.objects.size();
   if(nobj == 0)
      return Vector<t_complex>::Zero(0); 
   int gran, gran1, gran2;
@@ -103,12 +104,14 @@ auto const nobj = geometry.objects.size();
   int rank = communicator.rank();
   int size = communicator.size();
   auto const nMaxS = geometry.objects.front().nMaxS;
-
   t_uint const pMax = nMaxS * (nMaxS + 2);
+  Vector<t_complex> resultK1(2*nobj*pMax);
+
+  if (geometry.objects[0].scatterer_type == "arbitrary.shape"){
 
   int TMax = nobj * pMax;
 
-  Vector<t_complex> result1(2*nobj*pMax), resultK1(2*nobj*pMax);
+  Vector<t_complex> result1(2*nobj*pMax);
  
   Vector<t_complex> X_sca_proc;
 
@@ -132,8 +135,6 @@ auto const nobj = geometry.objects.size();
     gran2 = gran1 + (TMax/size);
     }
 
-  if (geometry.objects[0].scatterer_type == "arbitrary.shape"){
-
     int sizeVec = 2 * (gran2 - gran1);
 
      resultK1.setZero();
@@ -146,8 +147,7 @@ auto const nobj = geometry.objects.size();
 
    for (int kk = 0; kk < size; kk++)
    disps(kk) = (kk > 0) ? (disps(kk-1) + sizesProc(kk-1)) : 0;
-
-    
+   
     resultProc1 = source_vectorSH_parallelAR1(geometry, gran1, gran2, incWave, X_sca_proc);
 
     MPI_Gatherv (&resultProc1(0), sizeVec, MPI_DOUBLE_COMPLEX, &result1(0), &sizesProc(0), &disps(0), MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
@@ -192,7 +192,7 @@ auto const nobj = geometry.objects.size();
 Vector<t_complex> source_vectorSH_K1ana_parallel(Geometry &geometry,
                                            std::shared_ptr<Excitation const> incWave,
                                            Vector<t_complex> &X_int_, Vector<t_complex> &X_sca_, std::vector<double *> CGcoeff) {
-auto const nobj = geometry.objects.size();
+  auto const nobj = geometry.objects.size();
   if(nobj == 0)
      return Vector<t_complex>::Zero(0);
 
@@ -356,7 +356,6 @@ auto const nobj = geometry.objects.size();
     gran2 = gran1 + (TMax/size);
     }
 
-
    // Analytical for spheres
     if (geometry.objects[0].scatterer_type == "sphere"){
 
@@ -433,6 +432,8 @@ auto const nobj = geometry.objects.size();
 
   }
    } // if rank0
+
+   MPI_Bcast(&resultK(0), 2 * nobj *pMax, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
   } // if sphere
 
 // arbitrary shapes
@@ -499,6 +500,8 @@ else if (geometry.objects[0].scatterer_type == "arbitrary.shape"){
    
   }
 
+MPI_Bcast(&resultK(0), 2*pMax, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+
 }// end if arb.shapes
 
 return resultK;
@@ -524,13 +527,13 @@ preconditioned_scattering_matrix(std::vector<Scatterer>::const_iterator const &f
 
   Matrix<t_complex> result(2 * n * (end_first - first), 2 * n * (end_second - second));
   
-  size_t y(0);
-  for(auto iterj(second); iterj != end_second; ++iterj, y += 2 * n) {
-     
-    iterj->getTLocal(Tmatrix, incWave->omega(), bground);
-          
-    size_t x(0);
-    for(auto iteri(first); iteri != end_first; ++iteri, x += 2 * n) {
+   size_t x(0);
+   for(auto iteri(first); iteri != end_first; ++iteri, x += 2 * n) {
+
+     iteri->getTLocal(Tmatrix, incWave->omega(), bground);
+
+     size_t y(0);
+     for(auto iterj(second); iterj != end_second; ++iterj, y += 2 * n) {
 
     
       if(iteri == iterj) {
@@ -545,7 +548,7 @@ preconditioned_scattering_matrix(std::vector<Scatterer>::const_iterator const &f
         result.block(x + n, y + n, n, n) = AB.diagonal.transpose();
         result.block(x, y + n, n, n) = AB.offdiagonal.transpose();
         result.block(x + n, y, n, n) = AB.offdiagonal.transpose();
-        result.block(x, y, 2 * n, 2 * n) *= (-Tmatrix);
+        result.block(x, y, 2 * n, 2 * n) = (-Tmatrix) * result.block(x, y, 2 * n, 2 * n);
         
   
     }
@@ -556,6 +559,159 @@ preconditioned_scattering_matrix(std::vector<Scatterer>::const_iterator const &f
   
   return result;
 }
+
+void Scattering_matrix_ACA_FF_parallel(Geometry const &geometry, std::shared_ptr<Excitation const> incWave, std::vector<Matrix_ACA> &S_comp){
+
+ 
+  auto const nMax = geometry.objects[0].nMax;
+  auto const n = nMax * (nMax + 2);
+  Matrix<t_complex> Tmatrix (2*n , 2*n), U, V;
+  Matrix<t_complex> CoupSubm (2*n, 2*n);
+  double distance;
+  int nobj = geometry.objects.size();
+  
+  mpi::Communicator communicator;
+  int rank = communicator.rank();
+  int size = communicator.size();
+  int gran1, gran2, Ncp_proc;
+  Vector<int> sizeMAT_vec(size);
+  
+  if (rank < (nobj % size)) {
+    gran1 = rank * (nobj/size + 1);
+    gran2 = gran1 + nobj/size + 1;
+    } else {
+    gran1 = rank * (nobj/size) + (nobj % size);
+    gran2 = gran1 + (nobj/size);
+    }
+
+   Ncp_proc = nobj*(gran2 - gran1);
+   S_comp.resize(Ncp_proc);
+   
+   int brojac(0), sizeMAT(0);
+   
+ 
+  for(int ii = gran1; ii < gran2; ++ii) {
+  
+     geometry.objects[ii].getTLocal(Tmatrix, incWave->omega(), geometry.bground);
+
+      for(int jj = 0; jj != nobj; ++jj) {
+       
+    
+      if(ii == jj) {
+        S_comp[brojac].S_sub= Matrix<t_complex>::Identity(2 * n, 2 * n);
+        S_comp[brojac].dim = 2 * n;
+        sizeMAT = sizeMAT + (S_comp[brojac].S_sub.size())*16;
+        
+      } else {
+      
+        distance = Tools::findDistance(geometry.objects[ii].vR, geometry.objects[jj].vR);
+      
+        Coupling const AB(geometry.objects[ii].vR - geometry.objects[jj].vR, incWave->waveK, nMax);
+        
+        CoupSubm.block(0, 0, n, n) = AB.diagonal.transpose();
+        CoupSubm.block(n, n, n, n) = AB.diagonal.transpose();
+        CoupSubm.block(0, n, n, n) = AB.offdiagonal.transpose();
+        CoupSubm.block(n, 0, n, n) = AB.offdiagonal.transpose();
+        CoupSubm = - (Tmatrix) * CoupSubm;
+        
+
+        if (distance >= 4.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
+        
+        ACA_compression(U , V, CoupSubm);
+        
+        S_comp[brojac].U = U;
+        S_comp[brojac].V = V;
+        S_comp[brojac].dim = 2 * n;
+        sizeMAT = sizeMAT + (S_comp[brojac].U.size())*16 + (S_comp[brojac].V.size())*16; 
+        }
+        
+        else{
+        S_comp[brojac].S_sub =  CoupSubm;
+        S_comp[brojac].dim = 2 * n;
+        sizeMAT = sizeMAT + (S_comp[brojac].S_sub.size())*16;
+        } 
+        
+
+   }
+
+  brojac++;
+  } 
+
+ }
+// sum all the partial sizes of matrices
+MPI_Gather(&sizeMAT, 1, MPI_INT, &sizeMAT_vec(0), 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+if(rank==0)
+std::cout<<"The size of the FF scattering matrix in MB is"<< sizeMAT_vec.sum()/1e6<<std::endl;
+ 
+}
+
+void Scattering_matrix_ACA_FF(Geometry const &geometry, std::shared_ptr<Excitation const> incWave, std::vector<Matrix_ACA> &S_comp){
+
+ 
+  auto const nMax = geometry.objects[0].nMax;
+  auto const n = nMax * (nMax + 2);
+  Matrix<t_complex> Tmatrix (2*n , 2*n), U, V;
+  Matrix<t_complex> CoupSubm (2*n, 2*n);
+  double distance, rows, cols;
+  int nobj = geometry.objects.size();
+  S_comp.resize(nobj*nobj);
+  int sizeMAT(0);
+  
+ 
+  for(int jj = 0; jj != nobj; ++jj) {
+      
+     geometry.objects[jj].getTLocal(Tmatrix, incWave->omega(), geometry.bground);
+     
+    
+    for(int ii = 0; ii != nobj; ++ii) {
+
+    
+      if(ii == jj) {
+        S_comp[nobj*ii + jj].S_sub= Matrix<t_complex>::Identity(2 * n, 2 * n);
+        S_comp[nobj*ii + jj].dim = 2 * n;
+        sizeMAT = sizeMAT + (S_comp[ii*nobj + jj].S_sub.size())*16;
+        
+      } else {
+      
+        distance = Tools::findDistance(geometry.objects[ii].vR, geometry.objects[jj].vR);
+      
+        Coupling const AB(geometry.objects[ii].vR - geometry.objects[jj].vR, incWave->waveK, nMax);
+        
+        CoupSubm.block(0, 0, n, n) = AB.diagonal.transpose();
+        CoupSubm.block(n, n, n, n) = AB.diagonal.transpose();
+        CoupSubm.block(0, n, n, n) = AB.offdiagonal.transpose();
+        CoupSubm.block(n, 0, n, n) = AB.offdiagonal.transpose();
+        CoupSubm = - CoupSubm * (Tmatrix);
+        
+
+        if (distance >= 2.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
+        
+        ACA_compression(U , V, CoupSubm);
+        
+        S_comp[nobj*ii + jj].U = U;
+        S_comp[nobj*ii + jj].V = V;
+        S_comp[nobj*ii + jj].dim = 2 * n; 
+        sizeMAT = sizeMAT + (S_comp[ii*nobj + jj].U.size())*16 + (S_comp[ii*nobj + jj].V.size())*16;
+        }
+        
+        else{
+        S_comp[nobj*ii + jj].S_sub =  CoupSubm; 
+        S_comp[nobj*ii + jj].dim = 2 * n;
+        sizeMAT = sizeMAT + (S_comp[ii*nobj + jj].S_sub.size())*16;
+        }
+        
+
+    }
+  
+      }
+  
+        }
+        
+  std::cout<<"The size of the FF matrix in MB is"  << sizeMAT/1e6<< std::endl;      
+  
+}
+
 
 
 Matrix<t_complex>
@@ -645,18 +801,514 @@ preconditioned_scattering_matrixSH(std::vector<Scatterer>::const_iterator const 
         resultSH.block(x, y, 2 * n, 2 * n) = - (TmatrixSH) * resultSH.block(x, y, 2 * n, 2 * n);
         
   
+      }
+  
+    }
+  
+   }
+ }
+    
+  return resultSH;
+  
+}
+
+
+void Scattering_matrix_ACA_SH_parallel(Geometry const &geometry, std::shared_ptr<Excitation const> incWave, std::vector<Matrix_ACA> &S_comp){
+
+  auto const nMaxS = geometry.objects[0].nMaxS;
+  auto const n = nMaxS * (nMaxS + 2);
+  Matrix<t_complex> TmatrixSH (2*n , 2*n), U, V;
+  Matrix<t_complex> CoupSubmSH (2*n, 2*n);
+  double distance, rows, cols;
+  int nobj = geometry.objects.size();
+
+  mpi::Communicator communicator;
+  int rank = communicator.rank();
+  int size = communicator.size();
+  int gran1, gran2, Ncp_proc;
+  Vector<int> sizeMAT_vec(size);
+
+  if (rank < (nobj % size)) {
+    gran1 = rank * (nobj/size + 1);
+    gran2 = gran1 + nobj/size + 1;
+    } else {
+    gran1 = rank * (nobj/size) + (nobj % size);
+    gran2 = gran1 + (nobj/size);
+    }
+
+   Ncp_proc = nobj*(gran2 - gran1);
+   S_comp.resize(Ncp_proc);
+   int brojac(0), sizeMAT(0);
+  
+ 
+  for(int ii = gran1; ii < gran2; ++ii) {
+      
+     geometry.objects[ii].getTLocalSH(TmatrixSH, incWave->omega(), geometry.bground);
+     
+    
+    for(int jj = 0; jj != nobj; ++jj) {
+
+    
+      if(ii == jj) {
+        S_comp[brojac].S_sub= Matrix<t_complex>::Identity(2 * n, 2 * n);
+        S_comp[brojac].dim = 2 * n;
+        sizeMAT = sizeMAT + (S_comp[brojac].S_sub.size())*16;
+        
+      } else {
+      
+        distance = Tools::findDistance(geometry.objects[ii].vR, geometry.objects[jj].vR);
+      
+        Coupling const AB(geometry.objects[ii].vR - geometry.objects[jj].vR, 2.0 * incWave->waveK, nMaxS);
+        
+        CoupSubmSH.block(0, 0, n, n) = AB.diagonal.transpose();
+        CoupSubmSH.block(n, n, n, n) = AB.diagonal.transpose();
+        CoupSubmSH.block(0, n, n, n) = AB.offdiagonal.transpose();
+        CoupSubmSH.block(n, 0, n, n) = AB.offdiagonal.transpose();
+        CoupSubmSH = - (TmatrixSH) * CoupSubmSH;
+        
+
+        if (distance >= 4.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
+
+        ACA_compression(U , V, CoupSubmSH);
+        
+        S_comp[brojac].U = U;
+        S_comp[brojac].V = V;
+        S_comp[brojac].dim = 2 * n;
+        sizeMAT = sizeMAT + (S_comp[brojac].U.size())*16 + (S_comp[brojac].V.size())*16;
+         
+        }
+        
+        else{
+        S_comp[brojac].S_sub =  CoupSubmSH;
+        S_comp[brojac].dim = 2 * n;
+        sizeMAT = sizeMAT + (S_comp[brojac].S_sub.size())*16;   
+        } 
+        
+
+   }
+  brojac++;
+  }
+  
+ }
+
+MPI_Gather(&sizeMAT, 1, MPI_INT, &sizeMAT_vec(0), 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+if(rank==0)
+std::cout<<"The size of the SH scattering matrix in MB is"<< sizeMAT_vec.sum()/1e6<<std::endl;
+  
+}
+
+void Scattering_matrix_ACA_SH(Geometry const &geometry, std::shared_ptr<Excitation const> incWave, std::vector<Matrix_ACA> &S_comp){
+
+  auto const nMaxS = geometry.objects[0].nMaxS;
+  auto const n = nMaxS * (nMaxS + 2);
+  Matrix<t_complex> TmatrixSH (2*n , 2*n), U, V;
+  Matrix<t_complex> CoupSubmSH (2*n, 2*n);
+  double distance, rows, cols;
+  int nobj = geometry.objects.size();
+  S_comp.resize(nobj*nobj);
+  int sizeMAT(0);
+ 
+  for(int ii = 0; ii != nobj; ++ii) {
+      
+     geometry.objects[ii].getTLocalSH(TmatrixSH, incWave->omega(), geometry.bground);
+     
+    
+    for(int jj = 0; jj != nobj; ++jj) {
+
+    
+      if(ii == jj) {
+        S_comp[nobj*ii + jj].S_sub= Matrix<t_complex>::Identity(2 * n, 2 * n);
+        S_comp[nobj*ii + jj].dim = 2 * n;
+        sizeMAT = sizeMAT + (S_comp[ii*nobj + jj].S_sub.size())*16;
+        
+      } else {
+      
+        distance = Tools::findDistance(geometry.objects[ii].vR, geometry.objects[jj].vR);
+      
+        Coupling const AB(geometry.objects[ii].vR - geometry.objects[jj].vR, 2.0 * incWave->waveK, nMaxS);
+        
+        CoupSubmSH.block(0, 0, n, n) = AB.diagonal.transpose();
+        CoupSubmSH.block(n, n, n, n) = AB.diagonal.transpose();
+        CoupSubmSH.block(0, n, n, n) = AB.offdiagonal.transpose();
+        CoupSubmSH.block(n, 0, n, n) = AB.offdiagonal.transpose();
+        CoupSubmSH = - (TmatrixSH) * CoupSubmSH;
+        
+
+        if (distance >= 2.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
+
+        ACA_compression(U , V, CoupSubmSH);
+        
+        S_comp[nobj*ii + jj].U = U;
+        S_comp[nobj*ii + jj].V = V;
+        S_comp[nobj*ii + jj].dim = 2 * n;
+        sizeMAT = sizeMAT + (S_comp[ii*nobj + jj].U.size())*16 + (S_comp[ii*nobj + jj].V.size())*16;
+        }
+        
+        else{
+        S_comp[nobj*ii + jj].S_sub =  CoupSubmSH; 
+        S_comp[nobj*ii + jj].dim = 2 * n;
+        sizeMAT = sizeMAT + (S_comp[ii*nobj + jj].S_sub.size())*16;
+        }
+
     }
   
       }
   
         }
-  
+        
+ std::cout<<"The size of the SH matrix in MB is"  << sizeMAT/1e6<< std::endl;         
+}
+
+
+
+
+void ACA_compression(Matrix<t_complex> &U, Matrix<t_complex> &V, Matrix<t_complex> &CoupMat){
+
+ int kmax = CoupMat.cols(); // square coupling matrices
+
+ U.resize(kmax , 1);
+ V.resize(1 , kmax);
+ Matrix<t_complex>  sum11(1 , kmax);
+ Vector<int> I(1), J(1);
+ Vector<t_complex> RowCol, Row, Col, Row1, Col1, Row2, Col2, sum22;
+ Vector<double> NORMA(1);
+ Matrix<t_complex> R = Matrix<t_complex>::Zero(kmax, kmax);
+ double eps_ACA = 1e-3; // compression tolerance
  
+ for (int k = 0; k != kmax; ++k) {
+ 
+ if(k == 0){
+ I(k) = 0;
+ R.row(I(k)) = CoupMat.row(I(k));
+ RowCol = R.row(I(k));
+ J(k) = getMaxInd(RowCol, J, kmax);
+ 
+ V.row(k) = R.row(I(k)) / R(I(k) , J(k));
+ Row = V.row(k);
+ 
+ R.col(J(k)) = CoupMat.col(J(k));
+ U.col(k) = R.col(J(k));
+ Col = U.col(k);
+ 
+ NORMA(k) = std::pow(Col.norm(), 2) * std::pow(Row.norm(), 2);
+ 
+ RowCol = R.col(J(0));
+ I.conservativeResize(2);
+ I(1) = getMaxInd(RowCol, I, kmax);
  
  }
-    
-  return resultSH;
-  
+ else
+ {
+ 
+ Matrix<t_complex> sum1 = Matrix<t_complex>::Zero(1, kmax);
+ 
+ for (int p = 0; p <= (k-1); ++p) {
+ sum11 = U(I(k) , p) * V.row(p);
+ 
+ sum1 = sum1 + sum11;
+ }
+ 
+ R.row(I(k)) = CoupMat.row(I(k)) - sum1;
+ RowCol = R.row(I(k));
+ J.conservativeResize(k+1);
+ J(k) = getMaxInd(RowCol, J, kmax);
+
+ V.conservativeResize(k+1 , kmax);
+ V.row(k) = R.row(I(k)) / R(I(k) , J(k));
+ 
+ Vector<t_complex> sum2 = Vector<t_complex>::Zero(kmax);
+ for (int p = 0; p <= (k-1); ++p) {
+ sum22 = V(p , J(k)) * U.col(p);
+ sum2 = sum2 + sum22;
+ }
+ 
+ R.col(J(k)) = CoupMat.col(J(k)) - sum2;
+ 
+ U.conservativeResize(kmax , k+1);
+ U.col(k) = R.col(J(k));
+ 
+ double sum = 0.0;
+ Col2 = U.col(k);
+ Row2= V.row(k);
+ for (int p = 0; p != (k-1); ++p) {
+ Col1 = U.col(p);
+ Row1= V.row(p);
+
+ t_complex pom1(0.0, 0.0), pom2(0.0, 0.0);
+ 
+  for (int tt = 0; tt != k; ++tt){
+  pom1 = pom1 + Col1(tt)*Col2(tt);
+  pom2 = pom2 + Row1(tt)*Row2(tt);
+  }
+
+ sum = sum + abs(pom1) * abs(pom2);
+ }
+ 
+ Row = V.row(k);
+ Col = U.col(k);
+ 
+ NORMA.conservativeResize(k+1);
+ NORMA(k) = NORMA(k-1) + std::pow(Col.norm(), 2) * std::pow(Row.norm(), 2) + 2.0 * sum;
+ 
+ if (eps_ACA * sqrt(NORMA(k)) >= Col.norm() * Row.norm())
+ break;
+ 
+ RowCol = R.col(J(k));
+ I.conservativeResize(k+2);
+ I(k+1) = getMaxInd(RowCol, I, kmax);
+ 
+  }
+ 
+ }
+ 
+}
+
+int getMaxInd(Vector<t_complex> &RowCol, Vector<int> &K, int kmax){
+
+double max = 0.0;
+int imax, flag_same = 0;
+
+for (int i = 0; i != kmax; ++i) {
+
+for (int j = 0; j < (K.size()-1); ++j) {
+
+ if(i==K(j))
+ flag_same = 1;
+ 
+ }
+ 
+ if (flag_same==0){
+ 
+ if (abs (RowCol(i)) > max){
+   max = abs (RowCol(i));
+   imax = i;
+   }
+ 
+ } 
+ flag_same = 0;
+}
+return imax;
+}
+
+// gmres solver for compressed matrices, compressed blocks are always square, with number of rows kmax
+Vector<t_complex> Gmres_Zcomp(std::vector<Matrix_ACA>const &S_comp, Vector<t_complex>const &Y, double tol, int maxit, Geometry const &geometry){
+int N = Y.size(); // right hand side
+
+int n = 0;
+Vector<t_complex> x0 = Vector<t_complex>::Zero(N);
+Vector<t_complex> vn , w , vt , gi(2), gipom, ym ,x;
+Vector<t_complex> xn = Vector<t_complex>::Zero(N);
+Vector<double> err(1);
+
+Matrix<t_complex> v = Matrix<t_complex>::Zero(N , maxit+1);
+Matrix<t_complex> H = Matrix<t_complex>::Zero(maxit + 1 , maxit);
+Matrix<t_complex> Rigi(2,2) , Ri(2 , 1), Ripom;
+
+double beta = Y.norm();
+v.col(0) = Y / beta ;
+double abs_y = Y.norm();
+err(0) = 1.0 ; 
+
+while ((n < (maxit)) && (err(n) > tol)){
+
+vn = v.col(n);
+
+#ifdef OPTIMET_MPI
+w = matvec_parallel(S_comp , vn, geometry);// matrix-vector product for compressed matrices
+#else
+w = matvec(S_comp , vn, geometry);
+#endif
+
+for (int t = 0; t <= n; ++t) {
+vt = v.col(t);
+H(t , n) = vt.adjoint() * w;
+w = w - H(t , n) * vt;
+}
+
+H(n+1 , n) = w.norm();
+v.col(n+1) = w / H(n+1,n);
+ 
+if(n>0)
+Rigi.conservativeResize(n+2 , n+2);
+
+Rigi = det_approx (beta , n , H);
+
+if(n>0)
+Ri.conservativeResize(n+2 , n+1);
+
+Ri = Rigi.block(0 , 0 , n+2 , n+1);
+
+if(n>0)
+gi.conservativeResize(n+2);
+
+gi = Rigi.col(n+1);
+
+err.conservativeResize(n+2);
+err(n+1) = abs(gi(n+1))/abs_y;
+n = n + 1;
+}
+
+if (n>0){
+Ripom = Ri.block(0,0,n,n);
+gipom = gi.segment(0 , n);
+ym = Ripom.colPivHouseholderQr().solve(gipom);
+x = Vector<t_complex>::Zero(N);
+for (int j = 0; j != ym.size(); ++j) {
+x = x + ym(j) * v.col(j);
+}
+x = x + x0;
+}
+else
+x = xn;
+
+return x;
+}
+
+// matrix - vector product in parallel
+Vector<t_complex> matvec_parallel(std::vector<Matrix_ACA>const &S_comp, Vector<t_complex> &J, Geometry const &geometry){
+// here we go through the matrix blocks and check if it is compressed or not
+auto const nobj = geometry.objects.size();
+int gran1, gran2, Ncp_proc, N;
+mpi::Communicator communicator;
+  int rank = communicator.rank();
+  int size = communicator.size();
+ 
+   if(rank==0)
+   N = S_comp[0].dim;
+   
+  MPI_Bcast(&N, 1, MPI_INT, 0, MPI_COMM_WORLD); 
+ 
+    if (rank < (nobj % size)) {
+    gran1 = rank * (nobj/size + 1);
+    gran2 = gran1 + nobj/size + 1;
+    } else {
+    gran1 = rank * (nobj/size) + (nobj % size);
+    gran2 = gran1 + (nobj/size);
+    }
+
+Ncp_proc = N*(gran2 - gran1);
+
+
+Vector<t_complex> Y_proc = Vector<t_complex>::Zero(Ncp_proc);; // process solution
+Vector<t_complex> Y_fin = Vector<t_complex>::Zero(nobj*N);; // final solution
+double distance;
+Matrix<t_complex> U , V;
+int brojac1(0), brojac2(0);
+
+for(int ii = gran1; ii < gran2; ii++)  {
+
+  for(int jj = 0; jj != nobj; jj++)  {
+
+  distance = Tools::findDistance(geometry.objects[ii].vR, geometry.objects[jj].vR);
+
+   if (distance >= 4.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
+      
+        Y_proc.segment(brojac1*N , N) = Y_proc.segment(brojac1*N , N) + (S_comp[brojac2].U)*(S_comp[brojac2].V * J.segment(jj*N , N));
+        
+        }
+        
+    else{
+    Y_proc.segment(brojac1*N , N) = Y_proc.segment(brojac1*N , N) + S_comp[brojac2].S_sub * J.segment(jj*N , N);    
+     
+    }
+    brojac2++;
+    }
+    brojac1++;
+  } 
+
+// now gather all the partial solutions
+
+   Vector<int> sizesProc(size), disps(size);
+
+    MPI_Allgather (&Ncp_proc, 1, MPI_INT, &sizesProc(0), 1, MPI_INT, MPI_COMM_WORLD);
+
+   for (int kk = 0; kk < size; kk++)
+   disps(kk) = (kk > 0) ? (disps(kk-1) + sizesProc(kk-1)) : 0;
+
+    MPI_Gatherv (&Y_proc(0), Ncp_proc, MPI_DOUBLE_COMPLEX, &Y_fin(0), &sizesProc(0), &disps(0), MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+
+    MPI_Bcast(&Y_fin(0), nobj*N, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+
+return Y_fin;
+}
+
+// matrix-vector product in serial
+Vector<t_complex> matvec (std::vector<Matrix_ACA>const &S_comp, Vector<t_complex> &J, Geometry const &geometry){
+auto const nobj = geometry.objects.size();
+int N = S_comp[0].dim;
+Vector<t_complex> Y = Vector<t_complex>::Zero(nobj*N); // solution vector 
+double distance;
+Matrix<t_complex> U , V;
+
+for(int ii = 0; ii != nobj; ii++)  {
+
+  for(int jj = 0; jj != nobj; jj++)  {
+
+  distance = Tools::findDistance(geometry.objects[ii].vR, geometry.objects[jj].vR);
+
+   if (distance >= 2.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility
+      
+        Y.segment(ii*N , N) = Y.segment(ii*N , N) + (S_comp[ii*nobj + jj].U)*(S_comp[ii*nobj + jj].V * J.segment(jj*N , N));
+
+        }
+        
+    else{
+    Y.segment(ii*N , N) = Y.segment(ii*N , N) + S_comp[ii*nobj + jj].S_sub * J.segment(jj*N , N);           
+    }
+    }
+   
+}
+
+return Y;
+}
+
+Matrix<t_complex> det_approx (double beta, int n, Matrix<t_complex> &H){
+
+Matrix<t_complex> Rigi(2,2), Ri(2,1), W, POM(2,2);
+if(n>0){
+Rigi.conservativeResize(n+2 , n+2);
+Ri.conservativeResize(n+2 , n+1);
+}
+
+Vector<t_complex> gi = Vector<t_complex>::Zero(n+2);
+t_complex hi1, hi2, temp, c, s;
+
+Ri = H.block(0,0, n+2,n+1);
+gi(0) = beta;
+
+for (int i = 0; i <= n; ++i) {
+
+hi1 = Ri(i,i);
+hi2 = Ri(i+1,i);
+
+if (abs(hi2)>abs(hi1)){
+      temp = hi1/hi2; 
+      s = 1.0 / sqrt(1.0 + std::pow(abs(temp),2)); 
+      c = -temp*s;
+      }
+      
+ else{
+     temp = hi2/hi1; 
+      c = 1.0 / sqrt(1.0 + std::pow(abs(temp),2)); 
+      s = -temp*c;
+ } 
+
+ POM(0,0) = std::conj(c);
+ POM(0,1) = std::conj(-s);
+ POM(1,0) = s;
+ POM(1,1) = c;
+ W = Matrix<t_complex>::Identity(n+2 , n+2);
+ W.block(i,i, 2, 2)  = POM;
+ 
+ Ri = W*Ri;
+ gi = W*gi; 
+}
+
+Rigi.block(0,0, n+2,n+1) = Ri;
+Rigi.col(n+1) = gi; 
+ 
+return Rigi;
 }
 
 
@@ -724,6 +1376,7 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
   if(nobj == 0)
     return Matrix<t_complex>::Zero(0, 0);
   auto rank_map = context.rank_map();
+ 
   rank_map.resize(1, context.size());
   auto const linear_context = context.subcontext(rank_map.leftCols(std::min(context.size(), nobj)));
   auto const nMax = geometry.objects.front().nMax;
@@ -767,7 +1420,7 @@ Matrix<t_complex> preconditioned_scattering_matrix(Geometry const &geometry,
   scalapack::Matrix<t_complex> distributed_matrix(context, linear_matrix.sizes(), blocks);
  
   linear_matrix.transfer_to(context, distributed_matrix);
-    
+     
   return distributed_matrix.local();
 }
 
@@ -851,14 +1504,20 @@ Matrix<t_complex> preconditioned_scattering_matrix_SH(Geometry const &geometry,
 
 Vector<t_complex> source_vector(std::vector<Scatterer>::const_iterator first,
                                 std::vector<Scatterer>::const_iterator const &last,
-                                std::shared_ptr<Excitation const> incWave) {
+                                std::shared_ptr<Excitation const> incWave, Geometry const &geometry) {
   if(first == last)
     return Vector<t_complex>::Zero(0);
   auto const nMax = first->nMax;
   auto const flatMax = nMax * (nMax + 2);
+  Matrix<t_complex> TmatrixFF (2 * flatMax , 2 * flatMax);
   Vector<t_complex> result(2 * flatMax * (last - first));
+
   for(size_t i(0); first != last; ++first, i += 2 * flatMax){
+
     incWave->getIncLocal(first->vR, result.data() + i, nMax);
+    first->getTLocal(TmatrixFF, incWave->omega(), geometry.bground);   
+    result.segment(i , 2 * flatMax) = TmatrixFF * result.segment(i , 2 * flatMax);
+
     }
   return result;
 }
@@ -1053,8 +1712,8 @@ return resultProc;
 
 }
 
-Vector<t_complex> source_vector(std::vector<Scatterer> const &objects, std::shared_ptr<Excitation const> incWave) {
-  return source_vector(objects.begin(), objects.end(), incWave);
+Vector<t_complex> source_vector(std::vector<Scatterer> const &objects, std::shared_ptr<Excitation const> incWave, Geometry const &geometry) {
+  return source_vector(objects.begin(), objects.end(), incWave, geometry);
 }
 
 
@@ -1067,7 +1726,7 @@ Vector<t_complex> source_vector(Geometry const &geometry, std::shared_ptr<Excita
   for(auto const &scatterer : geometry.objects)
     if(scatterer.nMax != nMax)
       throw std::runtime_error("All objects must have same number of harmonics");
-  return source_vector(geometry.objects, incWave);
+  return source_vector(geometry.objects, incWave, geometry);
 }
 
 

@@ -453,12 +453,11 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
               
       outASec_FF << lam << "\t" << extCS_FF_vec.sum() - scaCS_FF_vec.sum() << std::endl;
       outSSec_FF << lam << "\t" << scaCS_FF_vec.sum() << std::endl;
-
+      std::cout<<scaCS_FF_vec.sum()<<std::endl;
       if(run.excitation->SH_cond){
       outSSec_SH << lam << "\t" << scaCS_SH_vec.sum() << std::endl;
       outASec_SH << lam << "\t" << absCS_SH_vec.sum() << std::endl;
       std::cout<<scaCS_SH_vec.sum()<<std::endl;
-      std::cout<<absCS_SH_vec.sum()<<std::endl;
      }
   }
     
@@ -512,11 +511,12 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
 
       outASec_FF << lam << "\t" << extCS_FF_vec.sum() - scaCS_FF_vec.sum() << std::endl;
       outSSec_FF << lam << "\t" << scaCS_FF_vec.sum()<< std::endl;
+      std::cout<<scaCS_FF_vec.sum()<<std::endl;
 
-      if(run.excitation->SH_cond)
+      if(run.excitation->SH_cond){
       outSSec_SH << lam << "\t" << scaCS_SH_vec.sum() << std::endl;
       std::cout<<scaCS_SH_vec.sum()<<std::endl;
-      std::cout<<absCS_SH_vec.sum()<<std::endl;
+       }
       }
 
       

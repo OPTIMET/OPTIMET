@@ -39,7 +39,8 @@ public:
   std::vector<Scatterer> objects; /**< The list of scatterers. */
 
   ElectroMagnetic bground; /**< The properties of the background. */
-
+  
+  bool ACA_cond_;
   /**
    * Default constructor for the Geometry class. Does not initialize.
    */
@@ -62,6 +63,10 @@ public:
    * @return 0 if add successful, 1 otherwise
    */
   void pushObject(Scatterer const &object_);
+  
+  // conditions for ACA compression
+  void ACAcompression(bool ACA_cond){ACA_cond_ = ACA_cond;}
+  bool get_ACAcond()const{return ACA_cond_;}
 
   //! \brief Validate geometry
   //! \details Fails if no objects, or if two objects overlap.
