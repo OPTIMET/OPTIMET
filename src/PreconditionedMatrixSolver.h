@@ -47,13 +47,20 @@ public:
               Vector<t_complex> &X_int_SH, std::vector<double *> CGcoeff) const override {
   
     // fundamental frequency
-    
+
+    double tol = 1e-6;
+    int maxit = 520;
+
+    if (geometry->ACA_cond_)
+    X_sca_ = Gmres_Zcomp(S_comp_FF, Q, tol, maxit, *geometry);
+    else
     X_sca_ = S.colPivHouseholderQr().solve(Q);
     
     unprecondition(X_sca_, X_int_);
     
     // SH frequency
     if(incWave->SH_cond){
+
     Vector<t_complex> K, K1, K1ana, X_int_conj;
     X_int_conj = X_int_.conjugate();
 
@@ -62,35 +69,48 @@ public:
     K1ana = source_vectorSH_K1ana(*geometry, incWave, X_int_conj, X_sca_, CGcoeff);
 
     K1 = source_vectorSHarb1(*geometry, incWave, X_sca_);
-
+    
+    if (geometry->ACA_cond_)
+    X_sca_SH = Gmres_Zcomp(S_comp_SH, K, tol, maxit, *geometry);
+    else
     X_sca_SH = V.colPivHouseholderQr().solve(K);
         
     unprecondition_SH(X_sca_SH, X_int_SH, K1, K1ana);
     }
   }
   
-    
 
   void update() override {
   
     Q = source_vector(*geometry, incWave);
 
+    if (geometry->ACA_cond_)
+    Scattering_matrix_ACA_FF(*geometry, incWave, S_comp_FF);
+    else
     S = preconditioned_scattering_matrix(*geometry, incWave);
-    if(incWave->SH_cond)
+
+    if(incWave->SH_cond){
+
+    if (geometry->ACA_cond_)
+    Scattering_matrix_ACA_SH(*geometry, incWave, S_comp_SH);
+    else
     V = preconditioned_scattering_matrixSH(*geometry, incWave);
+
+ }
 
   }
   
 
 protected:
-  //! The scattering matrix S = I - T*AB
+  //! FF scattering matrix
   Matrix<t_complex> S;
-  //! The local field matrix Q = AB*a sources fundamental frequency
+  //! Sources fundamental frequency
   Vector<t_complex> Q;
-  // Second harmonic scattering matrix, outer coefficients
+  // Second harmonic scattering matrix
   Matrix<t_complex> V;
-  //! The local field matrix K= AB*a sources SH frequency
-  Vector<t_complex> K;
+
+  std::vector<Matrix_ACA> S_comp_FF;
+  std::vector<Matrix_ACA> S_comp_SH;
 
   //! Unpreconditions the result of preconditioned computation
   void unprecondition(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_) const {

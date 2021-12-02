@@ -1,15 +1,7 @@
 <simulation>
-  <harmonics nmax="5"/>
+  <harmonics nmax="2"/>
+<ACA compression="yes" />
 </simulation>
-<ParameterList name="Belos">
-  <Parameter name="Solver" type="string" value="GMRES"/>
-  <Parameter name="Convergence Tolerance" type="double" value="1.0e-5"/>
-  <Parameter name="Verbosity" type="int" value="8"/>
-  <Parameter name="Maximum Iterations" type="int" value="50"/>
-  <Parameter name="Num Blocks" type="int" value="30"/>
-  <Parameter name="Block Size" type="int" value="1"/>
-  <Parameter name="Maximum Restarts" type="int" value="20"/>
-</ParameterList>
 <source type="planewave">
   <wavelength value="568" />
   <propagation theta="45" phi="90" />

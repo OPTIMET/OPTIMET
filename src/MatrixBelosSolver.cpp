@@ -32,14 +32,22 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vec
     int nMaxS = geometry->nMaxS();
     int N = nMaxS * (nMaxS + 2);
     int nobj = geometry->objects.size();
+    double tol = 1e-6;
+    int maxit = 520;
+    Vector<t_complex> Q;
+
+    if (geometry->ACA_cond_){
+    Q = source_vector(*geometry, incWave);
+    X_sca_ = Gmres_Zcomp(S_comp_FF, Q, tol, maxit, *geometry);
+    PreconditionedMatrix::unprecondition(X_sca_, X_int_);
+    }
+  else{
   if(context().is_valid()) {
    auto const solver = belos_parameters()->get<std::string>("Solver");
     if(solver == "scalapack") {
       Scalapack::solve(X_sca_, X_int_, X_sca_SH, X_int_SH, CGcoeff);
       return;
     }
- 
-    int uppLIM =nobj * 2 * N;
     //belos_parameters()->set("Maximum Iterations", uppLIM);
     //belos_parameters()->set("Num Blocks", 1000);
 
@@ -47,15 +55,8 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vec
     auto input = parallel_input();
 
     // Now the actual work
-    auto start3 = high_resolution_clock::now();
     auto const gls_result = scalapack::gmres_linear_system(std::get<0>(input), std::get<1>(input),
                                                            belos_parameters(), splitcomm);
-    auto stop3 = high_resolution_clock::now();
-     auto duration3 = duration_cast<microseconds>(stop3 - start3);
-   if(communicator().rank() == 0) {
-     std::cout << "FF solve iterate-" << std::endl;
-     std::cout << duration3.count()/1e6 <<"e-"<<  std::endl;
-              }
 
     if(std::get<1>(gls_result) != 0)
       throw std::runtime_error("Error encountered while solving the linear system");
@@ -63,6 +64,7 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vec
     X_sca_ = gather_all_source_vector(std::get<0>(gls_result));
     PreconditionedMatrix::unprecondition(X_sca_, X_int_);
    }
+}
    if(context().size() != communicator().size()) {
     broadcast_to_out_of_context(X_sca_, context(), communicator());
     broadcast_to_out_of_context(X_int_, context(), communicator());
@@ -81,6 +83,11 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vec
   K1 = distributed_vector_SH_AR1(*geometry, incWave, X_sca_);
   MPI_Barrier(MPI_COMM_WORLD);
 
+  if (geometry->ACA_cond_){
+  X_sca_SH = Gmres_Zcomp(S_comp_SH, KmNOD, tol, maxit, *geometry);
+  PreconditionedMatrix::unprecondition_SH(X_sca_SH, X_int_SH, K1, K1ana);
+  }
+  else{
   if(context().is_valid()) {
   //SH part
    
@@ -92,16 +99,9 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vec
      auto input_SH = parallel_input_SH(K, Dims);
 
    // Now the actual work
-    auto start4 = high_resolution_clock::now();
     auto const gls_result_SH =
     scalapack::gmres_linear_system(std::get<0>(input_SH), std::get<1>(input_SH),
                                                            belos_parameters(), splitcomm);
-    auto stop4 = high_resolution_clock::now();
-     auto duration4 = duration_cast<microseconds>(stop4 - start4);
-   if(communicator().rank() == 0) {
-     std::cout << "SH solve iterate-" << std::endl;
-     std::cout << duration4.count()/1e6 <<"e-"<<  std::endl;
-              }
 
     if(std::get<1>(gls_result_SH) != 0)
       throw std::runtime_error("Error encountered while solving the linear system");
@@ -109,9 +109,8 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vec
     X_sca_SH = gather_all_source_vector(std::get<0>(gls_result_SH));
 
     PreconditionedMatrix::unprecondition_SH(X_sca_SH, X_int_SH, K1, K1ana);
-
-
   }
+}
   if(context().size() != communicator().size()) {
 
     broadcast_to_out_of_context(X_sca_SH, context(), communicator());

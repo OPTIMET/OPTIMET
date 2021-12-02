@@ -1,15 +1,7 @@
 <simulation>
-  <harmonics nmax="5" />
+  <harmonics nmax="10" />
+  <ACA compression="yes" />
 </simulation>
-<ParameterList name="Belos">
-  <Parameter name="Solver" type="string" value="GMRES"/>
-  <Parameter name="Convergence Tolerance" type="double" value="1.0e-5"/>
-  <Parameter name="Verbosity" type="int" value="8"/>
-  <Parameter name="Maximum Iterations" type="int" value="50"/>
-  <Parameter name="Num Blocks" type="int" value="30"/>
-  <Parameter name="Block Size" type="int" value="1"/>
-  <Parameter name="Maximum Restarts" type="int" value="20"/>
-</ParameterList>
 <source type="planewave">
   <wavelength value="1200" />
   <propagation theta="45.0" phi="90.0" />
@@ -19,16 +11,16 @@
 <geometry>
   <structure type="cube">
     <object type="sphere">
-    <properties radius="40.0" />
+    <properties radius="100.0" />
     <epsilon type="SiliconModel"/>
     <mu type="relative" value.real="1.0" value.imag="0.0" />
     </object>
-    <properties points="5" distance="100.0" />
+    <properties points="4" distance="500.0" />
    </structure>
 </geometry>
 <output type="response">
   <scan type="A+E">
-    <wavelength initial="1000" final="1450" stepsize="25" />
+    <wavelength initial="500" final="1000" stepsize="25" />
   </scan>
 </output>
 

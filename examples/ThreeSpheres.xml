@@ -1,5 +1,6 @@
 <simulation>
-  <harmonics nmax="8" />
+  <harmonics nmax="3" />
+<ACA compression="yes" />
 </simulation>
 <source type="planewave">
   <wavelength value="1000" />
@@ -44,7 +45,7 @@
 </geometry>
 <output type="response">
   <scan type="A+E">
-    <wavelength initial="400" final="1200" stepsize="25" />
+    <wavelength initial="400" final="401" stepsize="1" />
   </scan>
 </output>
 

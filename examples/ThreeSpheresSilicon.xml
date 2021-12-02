@@ -1,5 +1,6 @@
 <simulation>
   <harmonics nmax="8" />
+  <ACA compression="yes" />
 </simulation>
 <source type="planewave">
   <wavelength value="1460" />
