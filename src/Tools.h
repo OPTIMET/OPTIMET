@@ -123,7 +123,7 @@ public:
    // dot product SphericalP
    static std::complex<double> dot(double* uvec,  SphericalP<std::complex<double>> vvec);
 
-    // dot product (cmplex double, SphericalP)
+    // dot product (complex double, SphericalP)
     static std::complex<double> dot(std::complex<double>* uvec,  SphericalP<std::complex<double>> vvec);
 
    // cross product of two vectors (double) 

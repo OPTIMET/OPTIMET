@@ -45,7 +45,7 @@ void CompoundIterator::backwardMap() {
 }
 
 CompoundIterator::~CompoundIterator() {
-  //
+
 }
 
 void CompoundIterator::init(int compound_) {

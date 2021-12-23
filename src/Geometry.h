@@ -40,7 +40,7 @@ public:
 
   ElectroMagnetic bground; /**< The properties of the background. */
   
-  bool ACA_cond_;
+  bool ACA_cond_; //condition for the existence of ACA compression
   /**
    * Default constructor for the Geometry class. Does not initialize.
    */
@@ -72,7 +72,7 @@ public:
   //! \details Fails if no objects, or if two objects overlap.
   bool is_valid() const;
   
-  // vector used in the transformation of outer to inner expansion coefficients Analytical results FF
+  // transformation of scattered to inner expansion coefficients Analytical results FF
   int getCabsAux(double omega_, int objectIndex_, int nMax_, double *Cabs_aux_);
 
   /**
@@ -82,35 +82,35 @@ public:
    */
   int checkInner(Spherical<double> R_);
   // Clebsch Gordan series coeff
+  #ifdef OPTIMET_MPI
   void Coefficients(int nMax, int nMaxS, std::vector<double *> CLGcoeff, int gran1, int gran2);
+  #endif
+  void Coefficients(int nMax, int nMaxS, std::vector<double *> CLGcoeff);
 
    // Incident coefficients for the second harmonic case                  
   int getIncLocalSH(std::vector<double *> CLGcoeff, int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_,
          optimet::Vector<optimet::t_complex> &internalCoef_FF_, int nMaxS_, std::complex<double> *Inc_local); 
   
-  // Incident coefficients for the second harmonic case for parallelization                 
+  #ifdef OPTIMET_MPI                 
   int getIncLocalSH_parallel(std::vector<double *> CLGcoeff, int gran1, int gran2, std::shared_ptr<optimet::Excitation const> incWave_,
-         optimet::Vector<optimet::t_complex> &internalCoef_FF_, int nMaxS_, std::complex<double> *Inc_local);     
+         optimet::Vector<optimet::t_complex> &internalCoef_FF_, int nMaxS_, std::complex<double> *Inc_local);
+  #endif     
            
- // Coefficient for absorption cross section second harmonic      
+ // Coefficients for absorption cross section calculation at second harmonic 
+ #ifdef OPTIMET_MPI    
   int AbsCSSHcoeff(std::vector<double *> CLGcoeff, int gran1, int gran2, std::shared_ptr<optimet::Excitation const> incWave_, 
             optimet::Vector<optimet::t_complex> &internalCoef_FF_, optimet::Vector<optimet::t_complex> &internalCoef_SH_, int 
-            nMaxS_, std::complex<double> *coefABS); 
+            nMaxS_, std::complex<double> *coefABS);
+ #endif
+
+int AbsCSSHcoeff(std::vector<double *> CLGcoeff, int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_,
+optimet::Vector<optimet::t_complex> &internalCoef_FF_, optimet::Vector<optimet::t_complex> &internalCoef_SH_,
+        int nMaxS_, std::complex<double> *coefABS); 
             
    // Coefficients for the particular solution of SH differential equations                                     
   int COEFFpartSH(int objectIndex_, std::shared_ptr<optimet::Excitation const> incWave_, optimet::Vector<optimet::t_complex> 
                   &internalCoef_FF_, double r, int nMaxS_, std::complex<double> *coefXmn, std::complex<double> *coefXpl, 
                    std::vector<double *> CLGcoeff);
-
- // vectors needed for the SH arbitrary shapes
-  void getEXCvecSH_ARB3(optimet::Vector<optimet::t_complex>& EXvec, std::shared_ptr<optimet::Excitation const> excitation, optimet::Vector<optimet::t_complex> &externalCoef_FF_, int objIndex);       
-  
- void getEXCvecSH_ARB1(optimet::Vector<optimet::t_complex>& EXvec, std::shared_ptr<optimet::Excitation const> excitation, optimet::Vector<optimet::t_complex> &externalCoef_FF_, int objIndex);                                            
-// vectors needed for the SH arbitrary shape in parallel
-void getEXCvecSH_ARB3_parall(optimet::Vector<optimet::t_complex>& EXvec, std::shared_ptr<optimet::Excitation const> excitation, optimet::Vector<optimet::t_complex> &externalCoef_FF_, int gran1, int gran2);
-
-void getEXCvecSH_ARB1_parall(optimet::Vector<optimet::t_complex>& EXvec, std::shared_ptr<optimet::Excitation const> excitation, optimet::Vector<optimet::t_complex> &externalCoef_FF_, int gran1, int gran2);
-
   /**
    * Updates the Geometry object to a new Excitation.
    * @param lambda_ the new wavelength.

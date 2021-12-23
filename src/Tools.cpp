@@ -61,7 +61,7 @@ double Tools::dot(double *uvec,  double *vvec)
 	   return uvec[0] * vvec.rrr + uvec[1] * vvec.the + uvec[2] * vvec.phi;
    }
    
-   // dot product (cmplex double, SphericalP)
+   // dot product (complex double, SphericalP)
    std::complex<double> Tools::dot(std::complex<double>* uvec,  SphericalP<std::complex<double>> vvec)
    {
 	   return uvec[0] * vvec.rrr + uvec[1] * vvec.the + uvec[2] * vvec.phi;
@@ -107,7 +107,7 @@ void Tools::crossTanTr(std::complex<double>* res, std::complex<double>* resCR, d
 
 }
 
-// nxnx
+// nxnxE
 void Tools::crossTan(std::complex<double>* res, std::complex<double>* resCR, double* u, std::complex<double>* v){
         
         resCR[0] = u[1] * v[2] - u[2] *  v[1];
@@ -132,7 +132,7 @@ double Tools::norm2(double* vec)
 	   return sqrt(norm2(vec));
    }
    
-   // Gauss-Legendre points on a triangle
+ // Gauss-Legendre points on a triangle
  std::vector<double> Tools::getWeights4() {
 
 	std::vector<double> w(4);

@@ -15,9 +15,6 @@
 // along with Optimet. If not, see <http://www.gnu.org/licenses/>.
 
 // OPTIMET 3D - main.cpp
-//
-// Restricted to testing for the moment.
-//
 
 #include "Simulation.h"
 #include "mpi/Session.h"

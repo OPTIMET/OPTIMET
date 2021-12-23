@@ -21,7 +21,7 @@
 #include <vector>
 
 /**
- * @brief The ElectroMagnetic class implements EM properties for scatterers.
+ * @brief The ElectroMagnetic class implements EM properties of scatterers.
  * The ElectroMagnetic class can be used to create a collection of related
  * electromagnetic properties for scatterers which are either directly
  * initialized or calculated from existing data.
@@ -47,9 +47,8 @@ public:
    */
   ElectroMagnetic(std::complex<double> epsilon_r_, std::complex<double> mu_r_, std::complex<double> epsilon_r_SH, std::complex<double> ksippp, std::complex<double> ksiparppar, std::complex<double> gamma);
 
-  /**
-   * Default destructor for ElectroMagnetic.
-   */
+  
+  //Default destructor for ElectroMagnetic.
   virtual ~ElectroMagnetic();
   // Model variables
   int modelType; /**< Mode being used. Currently supports 0-fixed, 3-Hydrodynamic_Gold_Johnson, 4-Silicon_Schinke */
@@ -57,8 +56,7 @@ public:
   double lambda;
  
 
-// Schinke data for lambda range 0.5 - 1.45um
-
+// Schinke data for lambda in range 0.5 - 1.45um
    std::vector<double> refInd, Extcoeff;
 
   // Fundamental Frequency variables
@@ -67,10 +65,10 @@ public:
   std::complex<double> epsilon_r; /**< The relative electric permittivity. */
   std::complex<double> mu_r;      /**< The relative magnetic permeability. */
 
-  // Second Harmonic variables
-  std::complex<double> a_SH; /**< The a Non-Linear coefficient (cfn13arx). */
-  std::complex<double> b_SH; /**< The b Non-Linear coefficient (cfn13arx). */
-  std::complex<double> d_SH; /**< The d Non-Linear coefficient (cfn13arx). */
+  // Second Harmonic variables, Rudnick-Stern parameters
+  std::complex<double> a_SH; 
+  std::complex<double> b_SH; 
+  std::complex<double> d_SH; 
   std::complex<double>
       epsilon_SH; /**< The absolute second harmonic electric permittivity. */
   std::complex<double>
@@ -79,12 +77,13 @@ public:
       epsilon_r_SH; /**< The relative second harmonic electric permittivity. */
   std::complex<double>
       mu_r_SH; /**< The relative second harmonic magnetic permeability. */
-      
-  std::complex<double> ksippp; // value of the surface parameter perpendicular-perpendicular-perpendicular    
   
-  std::complex<double> ksiparppar; // value of the surface parameter parallel-perpendicular-parallel
-  
-  std::complex<double> gamma; // value of the parameter gamma  
+  // surface tensor components    
+  std::complex<double> ksippp;    
+  std::complex<double> ksiparppar;
+
+  // bulk tensor component
+  std::complex<double> gamma;  
   
   /**
    * Initialization function for ElectroMagnetic.

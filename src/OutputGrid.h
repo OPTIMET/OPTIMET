@@ -44,8 +44,6 @@ namespace optimet {
  *          parameters[6] - the starting value for the Z axis.
  *          parameters[7] - the end value for the Z axis.
  *          parameters[8] - the number of points on the Z axis.
- *
- * At the moment, output will be E fields for all values.
  */
 class OutputGrid {
 private:

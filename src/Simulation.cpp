@@ -46,10 +46,18 @@ int Simulation::run() {
 
   switch(run.outputType) {
   case 0:
+    #ifdef OPTIMET_MPI
+    field_simulation_parallel(run, solver);
+    #else
     field_simulation(run, solver);
+    #endif
     break;
   case 11:
+    #ifdef OPTIMET_MPI
+    scan_wavelengths_parallel(run, solver);
+    #else
     scan_wavelengths(run, solver);
+    #endif
     break;
   default:
     std::cerr << "Nothing to do?\n";
@@ -58,9 +66,10 @@ int Simulation::run() {
   return 0;
 }
 
-void Simulation::field_simulation(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
+#ifdef OPTIMET_MPI
+void Simulation::field_simulation_parallel(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
   // Determine the simulation type and proceed accordingly
-  
+    
   Result result(run.geometry, run.excitation);
  
    int nMax = run.geometry->nMax();
@@ -305,7 +314,62 @@ if(communicator().rank() == communicator().root_id()) {
     }
   }
 }
+#endif
 
+void Simulation::field_simulation(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
+
+  Result result(run.geometry, run.excitation);
+  
+  int nMax = run.geometry->nMax();
+  int nMaxS = run.geometry->nMaxS();
+  int flatMax = nMax * (nMax + 2);
+  int flatMaxS = nMaxS * (nMaxS + 2);
+  int sizeCF = flatMaxS * flatMax * flatMax;
+  
+  std::vector<double> C_10m1(sizeCF), C_11m1(sizeCF), C_00m1(sizeCF), C_01m1(sizeCF);
+  std::vector<double> W_m1m1(sizeCF), W_11(sizeCF), W_00(sizeCF), W_10(sizeCF), W_01(sizeCF);
+  
+  std::vector<double *> CLGcoeff = {&C_10m1[0], &C_11m1[0], &C_00m1[0], &C_01m1[0], &W_m1m1[0], &W_11[0], &W_00[0], &W_10[0], &W_01[0]};
+  
+  run.geometry->Coefficients(nMax, nMaxS, CLGcoeff);
+  
+  solver->solve(result.scatter_coef, result.internal_coef, result.scatter_coef_SH, result.internal_coef_SH, CLGcoeff);
+
+  
+
+  if(communicator().rank() == communicator().root_id()) {
+    
+     
+    Output oFile_FF(caseFile + "_FF.h5");
+    Output oFile_SH(caseFile + "_SH.h5");
+    
+    
+    OutputGrid oEGrid_FF(O3DCartesianRegular, run.params, oFile_FF.getHandle("Field_E"));
+    OutputGrid oHGrid_FF(O3DCartesianRegular, run.params, oFile_FF.getHandle("Field_H"));
+    
+    
+    OutputGrid oEGrid_SH(O3DCartesianRegular, run.params, oFile_SH.getHandle("Field_E"));
+    OutputGrid oHGrid_SH(O3DCartesianRegular, run.params, oFile_SH.getHandle("Field_H"));
+    
+
+      result.setFields(oEGrid_FF, oHGrid_FF, oEGrid_SH, oHGrid_SH, run.projection, CLGcoeff);
+        
+
+    oEGrid_FF.close();
+    oHGrid_FF.close();
+    oFile_FF.close();
+    oEGrid_SH.close();
+    oHGrid_SH.close();
+    oFile_SH.close();
+    if(!run.excitation->SH_cond){
+    std::string SH = caseFile + "_SH.h5";
+    const char *cstr = SH.c_str();
+    remove(cstr);
+    }
+  }
+}
+
+#ifdef OPTIMET_MPI
 void Simulation::All2all (std::vector<double *> CLGcoeff, std::vector<double *> CLGcoeff_par, int sizeVec){
 
     int size = communicator().size();
@@ -324,9 +388,10 @@ void Simulation::All2all (std::vector<double *> CLGcoeff, std::vector<double *> 
 
 
 }
+#endif
 
-
-void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
+#ifdef OPTIMET_MPI
+void Simulation::scan_wavelengths_parallel(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
   std::ofstream outASec_FF, outSSec_FF, outSSec_SH, outASec_SH;
  
   int nMax = run.geometry->nMax();
@@ -379,7 +444,7 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
     
   }
 
-  // Now scan over the wavelengths given in params
+  // Now go over the wavelength range given in input file
   double lami = run.params[0];
   double lamf = run.params[1];
   int steps = run.params[2];
@@ -400,7 +465,7 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
     run.excitation->updateWavelength(lam);
     run.geometry->update(run.excitation);
 
-    solver->update(run); // building of the sistem matrices   
+    solver->update(run); // building of the system matrices   
 
     Vector<double> absCS_SH_vec(size), scaCS_SH_vec(size), scaCS_FF_vec(size), extCS_FF_vec(size);
 
@@ -413,8 +478,8 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
   Result result(run.geometry, run.excitation);
    
   solver->solve(result.scatter_coef, result.internal_coef, result.scatter_coef_SH, result.internal_coef_SH, CLGcoeff);
-
-      if (size <= NO) {  // if the number of processes is less or eq numb of part
+ 
+      if (size <= NO) {  // if the number of processes is less or eq numb of particles
 
     if (rank < (NO % size)) {
     gran1 = rank * (NO/size + 1);
@@ -464,7 +529,7 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
   }// if
 
 
- else if (size > NO)  {  // if the number of processes is more than numb of part
+ else if (size > NO)  {  // if the number of processes is more than numb of particles
 
     if (rank < (TMax % size)) {
     gran1AC = rank * (TMax/size + 1);
@@ -515,7 +580,7 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
 
       if(run.excitation->SH_cond){
       outSSec_SH << lam << "\t" << scaCS_SH_vec.sum() << std::endl;
-      std::cout<<scaCS_SH_vec.sum()<<std::endl;
+      std::cout<<absCS_SH_vec.sum()<<std::endl;
        }
       }
 
@@ -523,7 +588,6 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
 }// else if
 
 }// for
-
 
   if(communicator().rank() == communicator().root_id()) {
 
@@ -535,7 +599,90 @@ void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolv
    }
   }
 }
+#endif
 
+void Simulation::scan_wavelengths(Run &run, std::shared_ptr<solver::AbstractSolver> solver) {
+  std::ofstream outASec_FF, outSSec_FF, outSSec_SH, outASec_SH;
+
+  int nMax = run.geometry->nMax();
+  int nMaxS = run.geometry->nMaxS();
+  int flatMax = nMax * (nMax + 2);
+  int flatMaxS = nMaxS * (nMaxS + 2);
+  int sizeCF = flatMaxS * flatMax * flatMax;
+  
+  std::vector<double> C_10m1(sizeCF), C_11m1(sizeCF), C_00m1(sizeCF), C_01m1(sizeCF);
+  std::vector<double> W_m1m1(sizeCF), W_11(sizeCF), W_00(sizeCF), W_10(sizeCF), W_01(sizeCF);
+  
+  std::vector<double *> CLGcoeff = {&C_10m1[0], &C_11m1[0], &C_00m1[0], &C_01m1[0], &W_m1m1[0], &W_11[0], &W_00[0], &W_10[0], &W_01[0]};
+  
+  run.geometry->Coefficients(nMax, nMaxS, CLGcoeff);
+  
+
+  if(communicator().rank() == communicator().root_id()) {
+  
+ 
+    outASec_FF.open(caseFile + "_AbsorptionCS_FF.dat");
+    outSSec_FF.open(caseFile + "_ScatteringCS_FF.dat");
+    
+   if(run.excitation->SH_cond){
+    outSSec_SH.open(caseFile + "_ScatteringCS_SH.dat");
+    outASec_SH.open(caseFile + "_AbsorptionCS_SH.dat");
+    }
+    
+  }
+
+  double lami = run.params[0];
+  double lamf = run.params[1];
+  int steps = run.params[2];
+
+  double lam;
+  double lams;
+
+  lams = (lamf - lami) / (steps - 1);
+
+  for(int i = 0; i < steps; i++) {
+    lam = lami + i * lams;
+
+    std::cout << "Solving for Lambda = " << lam << std::endl;
+
+    run.excitation->updateWavelength(lam);
+    run.geometry->update(run.excitation);
+    
+    solver->update(run);
+    
+    Result result(run.geometry, run.excitation);
+    
+    solver->solve(result.scatter_coef, result.internal_coef, result.scatter_coef_SH, result.internal_coef_SH, CLGcoeff);
+  
+    if(communicator().rank() == communicator().root_id()) {
+    
+      outASec_FF << lam << "\t" << result.getExtinctionCrossSection() -  result.getScatteringCrossSection()<< std::endl;
+      outSSec_FF << lam << "\t" << result.getScatteringCrossSection()<< std::endl;
+      
+        std::cout<< result.getScatteringCrossSection()<< std::endl;
+       //std::cout<< result.getExtinctionCrossSection()<< std::endl;
+
+       if(run.excitation->SH_cond){
+      outSSec_SH << lam << "\t" << result.getScatteringCrossSection_SH() << std::endl;
+      outASec_SH << lam << "\t" << result.getAbsorptionCrossSection_SH(CLGcoeff) << std::endl;
+       std::cout<< result.getScatteringCrossSection_SH()<< std::endl;
+       //std::cout<< result.getAbsorptionCrossSection_SH(CLGcoeff)<< std::endl;
+       }
+      
+  
+    }
+  }
+
+  if(communicator().rank() == communicator().root_id()) {
+    outASec_FF.close();
+    outSSec_FF.close();
+    
+    if(run.excitation->SH_cond){
+    outSSec_SH.close();
+    outASec_SH.close();
+    }
+  }
+}
 
 
 int Simulation::done() {

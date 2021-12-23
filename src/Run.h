@@ -55,7 +55,7 @@ public:
 
   //!  The maximum value of the n iterator
   t_int nMax;
-  t_int nMaxS; // second harmonic number of spherical harmonics
+  t_int nMaxS; // SH number of spherical harmonics
 
   //! This bit will be moved to the case or where it is appropiate
   t_int projection;
@@ -77,13 +77,6 @@ public:
   bool do_fmm;
   //! Number of subdiagonals when setting up fmm local vs non-local mpi distribution
   t_int fmm_subdiagonals;
-
-  /**
-   * Params:
-   *    -> for Field see OutputGrid
-   *    -> For cross section only 3 used: params[0] - initial lambda, params[1]
-   * - final lambda, params[2] - number of steps
-   */
 
   /**
    * Default constructor for the Case class.

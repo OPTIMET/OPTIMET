@@ -67,7 +67,7 @@ void OutputGrid::init(int type_, std::array<t_real, 9> const &parameters_, hid_t
     dims[1] = gridParameters[5];
     dims[2] = gridParameters[8];
 
-    // Create the dataspaces for real and imag
+    // Create the dataspaces for real and imag parts
     for(int i = 0; i < 7; i++) {
       vecDSpaceId[i] = H5Screate_simple(3, dims, NULL);
     }
@@ -147,7 +147,7 @@ Spherical<double> OutputGrid::getPoint() {
     double local_x = gridParameters[0] + cursor[0] * aux[0] + 1e-12; // Correct for 0
     double local_y = gridParameters[3] + cursor[1] * aux[1] + 1e-12; // Correct for 0
     double local_z = gridParameters[6] + cursor[2] * aux[2] + 1e-12; // Correct for 0
-    // diagonal plane just for zincblende local_z=local_y
+    // diagonal plane just for zincblende lattices: local_z=local_y;
     // Create a spherical vector from Cartesian and return it with the local
     // coordinates
     return Tools::toSpherical(Cartesian<double>(local_x, local_y, local_z));
@@ -177,7 +177,7 @@ void OutputGrid::pushData(SphericalP<std::complex<double>> data_) {
     double real, imag, data_abs;
     real = data_.rrr.real();
 
-     data_abs = std::sqrt( std::pow((std::abs(data_.rrr)), 2) + std::pow((std::abs(data_.the)), 2)                    + std::pow((std::abs(data_.phi)), 2) );
+    data_abs = std::sqrt(std::pow((std::abs(data_.rrr)), 2) + std::pow((std::abs(data_.the)), 2) + std::pow((std::abs(data_.phi)), 2));
 
     H5Sselect_elements(vecDSpaceId[0], H5S_SELECT_SET, 1, (const hsize_t *)coord);
     H5Dwrite(vecDataId[0], H5T_NATIVE_DOUBLE, mid2, vecDSpaceId[0], H5P_DEFAULT, &real);
