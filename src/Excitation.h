@@ -29,9 +29,7 @@ namespace optimet {
  * The Excitation class implements the incoming wave coefficients.
  * Possible Excitation types are:
  *  plane wave -- FF
- * The wave is considered to be in freespace. Do not forget to divide by
- * relative
- * SH - sources - Polarization densities
+ * SH sources - Polarization densities surface and bulk
  */
 class Excitation {
 public:
@@ -40,8 +38,8 @@ public:
   Spherical<double> vKInc; /**< The incoming wavevector angular values as (R,
                               Kinc_the, Kinc_pphi). */
   long nMax;               /**< The maximum value for the n iterator. */
-  unsigned long type;      /**< The Excitation type. */
-  bool SH_cond; // condition for the SH sources
+  unsigned long type;     
+  bool SH_cond; // condition for the existence SH sources
   Vector<t_complex> dataIncAp; /**< The incoming wave a_n^m coefficients. */
   Vector<t_complex> dataIncBp; /**< The incoming wave b_n^m coefficients. */
 
@@ -90,8 +88,7 @@ public:
    */
   int getIncLocal(Spherical<double> point_, std::complex<double> *Inc_local_,
                   int nMax_) const;
-                  
-                                          
+                                  
   /**
    * Updates the wavelength of the current excitation object to a new value.
    * @param lambda_ the new value of the wavelength.

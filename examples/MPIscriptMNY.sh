@@ -7,10 +7,10 @@
 #$ -S /bin/bash
 
 # 2. Request ten minutes of wallclock time (format hours:minutes:seconds).
-#$ -l h_rt=15:10:0
+#$ -l h_rt=19:10:0
 
 # 3. Request 1 gigabyte of RAM per process (must be an integer)
-#$ -l mem=5G
+#$ -l mem=7G
 
 module unload default-modules/2018
 
@@ -30,7 +30,7 @@ make
 #$ -N ManySpheres
 
 # 6. Select the MPI parallel environment and number of processes.
-#$ -pe mpi 64
+#$ -pe mpi 100
 
 # 7. Set the working directory to somewhere in your scratch space.  This is
 # a necessary step with the upgraded software stack as compute nodes cannot

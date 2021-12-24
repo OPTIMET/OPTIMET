@@ -39,8 +39,8 @@ public:
     return Cartesian<T>(rrr * std::sin(the) * std::cos(phi), rrr * std::sin(the) * std::sin(phi),
                         rrr * std::cos(the));
   }
+
   //! \brief Transforms to cartesian vector, but not home-brewed version
-  //! \details Because reinventing the square wheel sucks
   Eigen::Matrix<optimet::t_real, 3, 1> toEigenCartesian() const {
     return Eigen::Matrix<optimet::t_real, 3, 1>(rrr * std::sin(the) * std::cos(phi),
                                                 rrr * std::sin(the) * std::sin(phi),

@@ -48,7 +48,7 @@ double CleGor(int j, int m, int j1, int m1, int j2, int m2) {
 }
 
 
-// A numbers
+
 std::complex<double> A_0(int n, double R, const std::complex<double> &waveK_i,
                          const std::complex<double> &cmn, int nMax) {
                                                  
@@ -151,7 +151,7 @@ double W(int L1, int J1, int M1, int L2, int J2, int M2, int L, int M) {
 
 } // namespace
 
-// function for upp
+// function for the u'
 std::complex<double> up_mn(CompoundIterator &kk, double *C_10m1, double *C_11m1, int nMax,
                            optimet::Vector<optimet::t_complex> &internalCoef_FF_,
                            int objectIndex_, double omega,
@@ -169,9 +169,8 @@ std::complex<double> up_mn(CompoundIterator &kk, double *C_10m1, double *C_11m1,
   
   
   // SH Basic relations
-  const std::complex<double> ksiparppar = object.elmag.ksiparppar; // SH coefficient
+  const std::complex<double> ksiparppar = object.elmag.ksiparppar; // SH surface tensor coefficient
 
-  // Auxiliary variables
   const std::complex<double> waveK_j1 =
       (omega) * std::sqrt(object.elmag.epsilon * object.elmag.mu);
   std::complex<double> sum(0.0, 0.0);
@@ -216,7 +215,7 @@ std::complex<double> up_mn(CompoundIterator &kk, double *C_10m1, double *C_11m1,
   
 
 
-// function for the v-prime////////////////////////////////////////////////////////////////////////////
+// function for the v'
 std::complex<double> vp_mn(CompoundIterator &kk, double *C_00m1, double *C_01m1, int nMax,
                            optimet::Vector<optimet::t_complex> &internalCoef_FF_,
                            int objectIndex_,double omega,
@@ -232,9 +231,8 @@ std::complex<double> vp_mn(CompoundIterator &kk, double *C_00m1, double *C_01m1,
   const std::complex<double> mu_b = bground.mu;
   const std::complex<double> eps_b = bground.epsilon;
   // SH Basic relations
-  const std::complex<double> ksiparppar = object.elmag.ksiparppar;
+  const std::complex<double> ksiparppar = object.elmag.ksiparppar; // surface tensor coeff
   
-  // Auxiliary variables
   const std::complex<double> waveK_j1 =
       (omega) * std::sqrt(object.elmag.epsilon * object.elmag.mu);
       
@@ -277,8 +275,7 @@ std::complex<double> vp_mn(CompoundIterator &kk, double *C_00m1, double *C_01m1,
          (std::sqrt(mu_b / eps_b) / std::sqrt(mu_0 / eps_0));
 }
 
-// function for the uprime.prime, vprime.prime=0///
-
+// function for the u''
 std::complex<double> upp_mn(CompoundIterator &kk, double *W_m1m1, double *W_00, double *W_11, double *W_10, double *W_01, int nMax,
                             optimet::Vector<optimet::t_complex> &internalCoef_FF_,
                             int objectIndex_, double omega,
@@ -296,11 +293,10 @@ std::complex<double> upp_mn(CompoundIterator &kk, double *W_m1m1, double *W_00, 
   
   
   // SH Basic relations
-  const std::complex<double> ksippp = object.elmag.ksippp;
-  const std::complex<double> gamma = object.elmag.gamma;
+  const std::complex<double> ksippp = object.elmag.ksippp; // surface tensor coeff
+  const std::complex<double> gamma = object.elmag.gamma; // bulk tensor coeff
   const std::complex<double> eps_j2 = object.elmag.epsilon_SH;
   
-  // Auxiliary variables
   const std::complex<double> waveK_01 = (omega) * std::sqrt(eps_0 * mu_0); 
   const std::complex<double> waveK_j1 = (omega) * std::sqrt(eps_j * mu_j);
   
@@ -358,7 +354,7 @@ std::complex<double> upp_mn(CompoundIterator &kk, double *W_m1m1, double *W_00, 
 
 
                  
- // function for absorption cross section coefficients, second harmonic
+ // function for the absorption cross section calculation at second harmonic
 std::complex<double> ACSshcoeff(CompoundIterator &kk, double *W_m1m1, double *W_00, double *W_11, int nMax, int nMaxS,
                             optimet::Vector<optimet::t_complex> &internalCoef_FF_,
                             std::complex<double> cmnSH,
@@ -377,12 +373,10 @@ std::complex<double> ACSshcoeff(CompoundIterator &kk, double *W_m1m1, double *W_
 
 
   // SH Basic relations
-
   const std::complex<double> gamma = object.elmag.gamma;
   const std::complex<double> eps_j2 = object.elmag.epsilon_SH;
   const std::complex<double> mu_j2 = object.elmag.mu_SH;
 
-  // Auxiliary variables
   const std::complex<double> waveK_01 = (omega) * std::sqrt(eps_0 * mu_0);
   const std::complex<double> waveK_j1 = (omega) * std::sqrt(eps_j * mu_j);
   auto const waveK_SH = 2.0 * omega * std::sqrt(eps_j2 * mu_j2);
@@ -400,7 +394,7 @@ std::complex<double> ACSshcoeff(CompoundIterator &kk, double *W_m1m1, double *W_
  std::complex<double> cmn_1, dmn_1, cmn_2, dmn_2;
  std::vector<std::complex<double>> data, ddata;
  int brojac;
- // Gauss Legendre points and weights
+ // Gauss Legendre line integration points and weights
  std::vector<double> xi {-0.3399810435848563, 0.3399810435848563, -0.8611363115940526, 0.8611363115940526};
  std::vector<double> wi {0.6521451548625461, 0.6521451548625461, 0.3478548451374538, 0.3478548451374538};
 
@@ -503,12 +497,10 @@ std::complex<double> CXm1(CompoundIterator &kk, double *W_m1m1, double *W_00, do
   
   
   // SH Basic relations
-
   const std::complex<double> gamma = object.elmag.gamma;
   const std::complex<double> eps_j2 = object.elmag.epsilon_SH;
   const std::complex<double> mu_j2 = object.elmag.mu_SH;
   
-  // Auxiliary variables
   const std::complex<double> waveK_01 = (omega) * std::sqrt(eps_0 * mu_0); 
   const std::complex<double> waveK_j1 = (omega) * std::sqrt(eps_j * mu_j);
 
@@ -583,12 +575,10 @@ std::complex<double> CXp1(CompoundIterator &kk, double *W_m1m1, double *W_00, do
   
   
   // SH Basic relations
-
   const std::complex<double> gamma = object.elmag.gamma;
   const std::complex<double> eps_j2 = object.elmag.epsilon_SH;
   const std::complex<double> mu_j2 = object.elmag.mu_SH;
   
-  // Auxiliary variables
   const std::complex<double> waveK_01 = (omega) * std::sqrt(eps_0 * mu_0); 
   const std::complex<double> waveK_j1 = (omega) * std::sqrt(eps_j * mu_j);
 
@@ -625,9 +615,7 @@ std::complex<double> CXp1(CompoundIterator &kk, double *W_m1m1, double *W_00, do
    
    W11 = W_11[kk*size1 +brojac];
                  
-   
-                          
-   
+    
    COEFFXp1 += (-eps_0 / eps_j2) * gamma * ( cmn_1 * cmn_2 * W00 * std::sqrt(n * (n + 1)) * (1.0 / r) * F_00(p.first, q.first, r, waveK_j1, nMax) + 
 
               dmn_1  * dmn_2 * (1.0 / (std::pow(waveK_j1, 2.0))) * (W11 * std::sqrt(n * (n + 1)) * (1.0 / r) * 
@@ -646,8 +634,8 @@ std::complex<double> CXp1(CompoundIterator &kk, double *W_m1m1, double *W_00, do
 
 }
 
- // C numbers
-
+// Clebsch Gordan numbers
+#ifdef OPTIMET_MPI
 void C_10m1coeff (double *C_10m1, int nMax, int nMaxS, int gran1, int gran2){
 
 CompoundIterator p, q, k;
@@ -739,7 +727,7 @@ M2 = q.second;
               CleGor(J + 1, 0, J1 + 1, 0, J2 - 1, 0) *
               std::sqrt(J / (2.0 * J + 1.0)) -
           std::sqrt(J1 * (J2 + 1) * (2.0 * J1 + 3.0) * (2.0 * J2 + 3.0)) *
-              Wigner9j(J1, J1 + 1, 1, J2, J2 + 1, 1, J, J + 1, 1) *         // seems alright
+              Wigner9j(J1, J1 + 1, 1, J2, J2 + 1, 1, J, J + 1, 1) *         
               CleGor(J + 1, 0, J1 + 1, 0, J2 + 1, 0) *
               std::sqrt(J / (2.0 * J + 1.0)) +
           std::sqrt((J1 + 1.0) * J2 * (2.0 * J1 - 1.0) * (2.0 * J2 - 1.0)) *
@@ -844,7 +832,6 @@ M2 = q.second;
 }
 }
 
-// W numbers
 
 void W_m1m1coeff (double *W_m1m1, int nMax, int nMaxS, int gran1, int gran2){
 
@@ -1042,7 +1029,421 @@ M2 = q.second;
          brojac++;
                       
      }
-   }                   
+   }
+
+#endif
+
+void C_10m1coeff (double *C_10m1, int nMax, int nMaxS){
+
+CompoundIterator p, q, k;
+  int pMax = p.max(nMax);
+  int qMax = q.max(nMax);
+  int kMax = k.max(nMaxS);
+  
+  int brojac(0), J, M, J1, M1, J2, M2;
+  
+for (k = 0; k < kMax; k++) {
+
+J =k.first;
+M = k.second;
+
+for (p = 0; p < pMax; p++) {
+
+J1 =p.first;
+M1 = p.second;
+
+for (q = 0; q < qMax; q++){ 
+
+J2 =q.first;
+M2 = q.second; 
+
+C_10m1[brojac] =std::sqrt(3.0 / 2.0 / consPi) * (2.0 * J1 + 1.0) *
+         CleGor(J, M, J1, M1, J2, M2) *
+         (std::sqrt(J2 * (2.0 * J2 - 1.0)) *  
+              Wigner9j(J1, J1, 1, J2, J2 - 1, 1, J, J + 1, 1) *
+              CleGor(J + 1, 0, J1, 0, J2 - 1, 0) *
+              std::sqrt(J / (2.0 * J + 1.0)) -
+          std::sqrt((J2 + 1.0) * (2.0 * J2 + 3.0)) *
+              Wigner9j(J1, J1, 1, J2, J2 + 1, 1, J, J + 1, 1) *
+              CleGor(J + 1, 0, J1, 0, J2 + 1, 0) *
+              std::sqrt(J / (2.0 * J + 1.0)) +
+          std::sqrt(J2 * (2.0 * J2 - 1.0)) *
+              Wigner9j(J1, J1, 1, J2, J2 - 1, 1, J, J - 1, 1) *
+              CleGor(J - 1, 0, J1, 0, J2 - 1, 0) *
+              std::sqrt((J + 1.0) / (2.0 * J + 1.0)) -
+          std::sqrt((J2 + 1) * (2.0 * J2 + 3.0)) *      
+              Wigner9j(J1, J1, 1, J2, J2 + 1, 1, J, J - 1, 1) *
+              CleGor(J - 1, 0, J1, 0, J2 + 1, 0) *
+              std::sqrt((J + 1) / (2.0 * J + 1.0)));
+              
+              brojac++;
+              
+              }
+              }
+              }
+
+}
+
+
+void C_11m1coeff (double *C_11m1, int nMax, int nMaxS){
+
+CompoundIterator p, q, k;
+  int pMax = p.max(nMax);
+  int qMax = q.max(nMax);
+  int kMax = k.max(nMaxS);
+  
+  int brojac(0), J, M, J1, M1, J2, M2;
+  
+for (k = 0; k < kMax; k++) {
+
+J =k.first;
+M = k.second;
+
+for (p = 0; p < pMax; p++) {
+
+J1 =p.first;
+M1 = p.second;
+
+for (q = 0; q < qMax; q++){ 
+
+J2 =q.first;
+M2 = q.second; 
+
+  C_11m1[brojac] = std::sqrt(3.0 / 2.0 / consPi) * CleGor(J, M, J1, M1, J2, M2) *
+         (std::sqrt((J1 + 1.0) * J2 * (2.0 * J1 - 1.0) * (2.0 * J2 - 1.0)) *
+              Wigner9j(J1, J1 - 1, 1, J2, J2 - 1, 1, J, J + 1, 1) *
+              CleGor(J + 1, 0, J1 - 1, 0, J2 - 1, 0) *
+              std::sqrt(J / (2.0 * J + 1.0)) -
+          std::sqrt((J1 + 1.0) * (J2 + 1) * (2.0 * J1 - 1.0) *
+                    (2.0 * J2 + 3.0)) *
+              Wigner9j(J1, J1 - 1, 1, J2, J2 + 1, 1, J, J + 1, 1) *
+              CleGor(J + 1, 0, J1 - 1, 0, J2 + 1, 0) *
+              std::sqrt(J / (2.0 * J + 1.0)) +
+          sqrt(J1 * J2 * (2.0 * J1 + 3.0) * (2.0 * J2 - 1.0)) *
+              Wigner9j(J1, J1 + 1, 1, J2, J2 - 1, 1, J, J + 1, 1) *
+              CleGor(J + 1, 0, J1 + 1, 0, J2 - 1, 0) *
+              std::sqrt(J / (2.0 * J + 1.0)) -
+          std::sqrt(J1 * (J2 + 1) * (2.0 * J1 + 3.0) * (2.0 * J2 + 3.0)) *
+              Wigner9j(J1, J1 + 1, 1, J2, J2 + 1, 1, J, J + 1, 1) *       
+              CleGor(J + 1, 0, J1 + 1, 0, J2 + 1, 0) *
+              std::sqrt(J / (2.0 * J + 1.0)) +
+          std::sqrt((J1 + 1.0) * J2 * (2.0 * J1 - 1.0) * (2.0 * J2 - 1.0)) *
+              Wigner9j(J1, J1 - 1, 1, J2, J2 - 1, 1, J, J - 1, 1) *
+              CleGor(J - 1, 0, J1 - 1, 0, J2 - 1, 0) *
+              std::sqrt((J + 1) / (2.0 * J + 1.0)) -
+          std::sqrt((J1 + 1.0) * (J2 + 1) * (2.0 * J1 - 1.0) *
+                    (2.0 * J2 + 3.0)) *
+              Wigner9j(J1, J1 - 1, 1, J2, J2 + 1, 1, J, J - 1, 1) *
+              CleGor(J - 1, 0, J1 - 1, 0, J2 + 1, 0) *
+              std::sqrt((J + 1) / (2.0 * J + 1.0)) +
+          std::sqrt(J1 * J2 * (2.0 * J1 + 3.0) * (2.0 * J2 - 1.0)) *
+              Wigner9j(J1, J1 + 1, 1, J2, J2 - 1, 1, J, J - 1, 1) *
+              CleGor(J - 1, 0, J1 + 1, 0, J2 - 1, 0) *
+              std::sqrt((J + 1) / (2.0 * J + 1.0)) -
+          std::sqrt(J1 * (J2 + 1) * (2.0 * J1 + 3.0) * (2.0 * J2 + 3.0)) *
+              Wigner9j(J1, J1 + 1, 1, J2, J2 + 1, 1, J, J - 1, 1) *
+              CleGor(J - 1, 0, J1 + 1, 0, J2 + 1, 0) *
+              std::sqrt((J + 1) / (2.0 * J + 1.0)));
+              
+              brojac++;
+}
+}
+}
+}
+
+void C_00m1coeff(double *C_00m1, int nMax, int nMaxS){
+
+CompoundIterator p, q, k;
+  int pMax = p.max(nMax);
+  int qMax = q.max(nMax);
+  int kMax = k.max(nMaxS);
+  
+  int brojac(0), J, M, J1, M1, J2, M2;
+  
+for (k = 0; k < kMax; k++) {
+
+J =k.first;
+M = k.second;
+
+for (p = 0; p < pMax; p++) {
+
+J1 =p.first;
+M1 = p.second;
+
+for (q = 0; q < qMax; q++){ 
+
+J2 =q.first;
+M2 = q.second; 
+
+  C_00m1[brojac] = std::sqrt(3.0 / 2.0 / consPi) * (2.0 * J1 + 1.0) *
+         CleGor(J, M, J1, M1, J2, M2) *
+         (std::sqrt(J2 * (2.0 * J2 - 1.0)) * 
+              Wigner9j(J1, J1, 1, J2, J2 - 1, 1, J, J, 1) *
+              CleGor(J, 0, J1, 0, J2 - 1, 0) -
+          std::sqrt((J2 + 1.0) * (2.0 * J2 + 3.0)) *
+              Wigner9j(J1, J1, 1, J2, J2 + 1, 1, J, J, 1) *
+              CleGor(J, 0, J1, 0, J2 + 1, 0)); 
+              
+              brojac++;
+}
+}
+}
+}
+
+void C_01m1coeff(double *C_01m1, int nMax, int nMaxS){
+
+CompoundIterator p, q, k;
+  int pMax = p.max(nMax);
+  int qMax = q.max(nMax);
+  int kMax = k.max(nMaxS);
+  
+  int brojac(0), J, M, J1, M1, J2, M2;
+  
+for (k = 0; k < kMax; k++) {
+
+J =k.first;
+M = k.second;
+
+for (p = 0; p < pMax; p++) {
+
+J1 =p.first;
+M1 = p.second;
+
+for (q = 0; q < qMax; q++){ 
+
+J2 =q.first;
+M2 = q.second; 
+
+  C_01m1[brojac] = std::sqrt(3.0 / 2.0 / consPi) * CleGor(J, M, J1, M1, J2, M2) *
+         (std::sqrt((J1 + 1.0) * J2 * (2.0 * J1 - 1.0) * (2.0 * J2 - 1.0)) *
+              Wigner9j(J1, J1 - 1, 1, J2, J2 - 1, 1, J, J, 1) *
+              CleGor(J, 0, J1 - 1, 0, J2 - 1, 0) -
+          std::sqrt((J1 + 1.0) * (J2 + 1.0) * (2.0 * J1 - 1.0) *
+                    (2.0 * J2 + 3.0)) *
+              Wigner9j(J1, J1 - 1, 1, J2, J2 + 1, 1, J, J, 1) *
+              CleGor(J, 0, J1 - 1, 0, J2 + 1, 0) +
+          std::sqrt(J1 * J2 * (2.0 * J1 + 3.0) * (2.0 * J2 - 1.0)) *
+              Wigner9j(J1, J1 + 1, 1, J2, J2 - 1, 1, J, J, 1) *
+              CleGor(J, 0, J1 + 1, 0, J2 - 1, 0) -
+          std::sqrt(J1 * (J2 + 1) * (2.0 * J1 + 3.0) * (2.0 * J2 + 3.0)) *  
+              Wigner9j(J1, J1 + 1.0, 1.0, J2, J2 + 1.0, 1.0, J, J, 1.0) *
+              CleGor(J, 0, J1 + 1.0, 0, J2 + 1.0, 0));
+              
+              brojac++;
+              
+}
+}
+}
+}
+
+
+void W_m1m1coeff (double *W_m1m1, int nMax, int nMaxS){
+
+CompoundIterator p, q, k;
+  int pMax = p.max(nMax);
+  int qMax = q.max(nMax);
+  int kMax = k.max(nMaxS);
+  
+  int brojac(0), J, M, J1, M1, J2, M2;
+  
+for (k = 0; k < kMax; k++) {
+
+J =k.first;
+M = k.second;
+
+for (p = 0; p < pMax; p++) {
+
+J1 =p.first;
+M1 = p.second;
+
+for (q = 0; q < qMax; q++){ 
+
+J2 =q.first;
+M2 = q.second; 
+
+W_m1m1[brojac] = std::sqrt(J1 / (2.0 * J1 + 1.0)) *
+                  std::sqrt(J2 / (2.0 * J2 + 1.0)) * 
+                  W(J1 - 1, J1, M1, J2 - 1, J2,
+                    M2, J, M) +
+              std::sqrt((J1 + 1) / (2.0 * J1 + 1.0)) *
+                  std::sqrt((J2 + 1) / (2.0 * J2 + 1.0)) *
+                  W(J1 + 1, J1, M1, J2 + 1, J2,  
+                    M2, J, M) -
+              std::sqrt(J1 / (2.0 * J1 + 1.0)) *
+                  std::sqrt((J2 + 1) / (2.0 * J2 + 1.0)) *
+                  W(J1 - 1, J1, M1, J2 + 1, J2,
+                    M2, J, M) -
+              std::sqrt((J1 + 1) / (2.0 * J1 + 1.0)) *
+                  std::sqrt(J2 / (2.0 * J2 + 1.0)) *
+                  W(J1 + 1, J1, M1, J2 - 1, J2,
+                    M2, J, M);
+              
+              brojac++;
+              
+              }
+              }
+              }
+              
+     }
+     
+     
+void W_11coeff (double *W_11, int nMax, int nMaxS){
+
+CompoundIterator p, q, k;
+  int pMax = p.max(nMax);
+  int qMax = q.max(nMax);
+  int kMax = k.max(nMaxS);
+  
+  int brojac(0), J, M, J1, M1, J2, M2;
+  
+for (k = 0; k < kMax; k++) {
+
+J =k.first;
+M = k.second;
+
+for (p = 0; p < pMax; p++) {
+
+J1 =p.first;
+M1 = p.second;
+
+for (q = 0; q < qMax; q++){ 
+
+J2 =q.first;
+M2 = q.second;   
+
+  W_11[brojac] =  std::sqrt((J1 + 1.0) / (2.0 * J1 + 1.0)) *
+               std::sqrt((J2 + 1.0) / (2.0 * J2 + 1.0)) *
+               W(J1 - 1, J1, M1, J2 - 1, J2, M2,
+                 J, M) +
+           std::sqrt(J1 / (2.0 * J1 + 1.0)) *
+               std::sqrt(J2 / (2.0 * J2 + 1.0)) *
+               W(J1 + 1.0, J1, M1, J2 + 1.0, J2, M2,
+                 J, M) +                                                             
+           std::sqrt((J1 + 1.0) / (2.0 * J1 + 1.0)) *
+               std::sqrt(J2 / (2.0 * J2 + 1.0)) *
+               W(J1 - 1.0, J1, M1, J2 + 1.0, J2, M2,
+                 J, M) +
+           std::sqrt(J1 / (2.0 * J1 + 1.0)) *
+               std::sqrt((J2 + 1.0) / (2.0 * J2 + 1.0)) *
+               W(J1 + 1.0, J1, M1, J2 - 1.0, J2, M2,
+                 J, M);  
+                 
+                 brojac++;
+                 
+        }
+        }
+        }
+  }
+  
+void W_00coeff (double *W_00, int nMax, int nMaxS){
+
+CompoundIterator p, q, k;
+  int pMax = p.max(nMax);
+  int qMax = q.max(nMax);
+  int kMax = k.max(nMaxS);
+  
+  int brojac(0), J, M, J1, M1, J2, M2;
+  
+for (k = 0; k < kMax; k++) {
+
+J =k.first;
+M = k.second;
+
+for (p = 0; p < pMax; p++) {
+
+J1 =p.first;
+M1 = p.second;
+
+for (q = 0; q < qMax; q++){ 
+
+J2 =q.first;
+M2 = q.second;
+
+W_00[brojac] = W(J1, J1, M1, J2, J2, M2, J, M);
+
+brojac++;
+
+}
+}
+}
+}
+
+void W_10coeff (double *W_10, int nMax, int nMaxS){
+
+CompoundIterator p, q, k;
+  int pMax = p.max(nMax);
+  int qMax = q.max(nMax);
+  int kMax = k.max(nMaxS);
+  
+  int brojac(0), J, M, J1, M1, J2, M2;
+  
+for (k = 0; k < kMax; k++) {
+
+J =k.first;
+M = k.second;
+
+for (p = 0; p < pMax; p++) {
+
+J1 =p.first;
+M1 = p.second;
+
+for (q = 0; q < qMax; q++){ 
+
+J2 =q.first;
+M2 = q.second;
+
+ W_10[brojac] = std::sqrt((J1 + 1.0) / (2.0 * J1 + 1.0)) *
+                    W(J1 - 1.0, J1, M1, J2, J2,
+                      M2, J, M) +
+                std::sqrt(J1 / (2.0 * J1 + 1.0)) *
+                    W(J1 + 1.0, J1, M1, J2, J2,
+                      M2, J, M);
+
+            brojac++;
+            
+            }
+            }
+            }
+  }          
+
+
+void W_01coeff (double *W_01, int nMax, int nMaxS){
+
+CompoundIterator p, q, k;
+  int pMax = p.max(nMax);
+  int qMax = q.max(nMax);
+  int kMax = k.max(nMaxS);
+  
+  int brojac(0), J, M, J1, M1, J2, M2;
+  
+for (k = 0; k < kMax; k++) {
+
+J =k.first;
+M = k.second;
+
+for (p = 0; p < pMax; p++) {
+
+J1 =p.first;
+M1 = p.second;
+
+for (q = 0; q < qMax; q++){ 
+
+J2 =q.first;
+M2 = q.second;
+
+   W_01[brojac] = std::sqrt((J2 + 1.0) / (2.0 * J2 + 1.0)) *
+                    W(J1, J1, M1, J2 - 1.0, J2,
+                      M2, J, M) +
+                  std::sqrt(J2 / (2.0 * J2 + 1.0)) *
+                    W(J1, J1, M1, J2 + 1.0, J2,
+                      M2, J, M);
+                      
+                      brojac++;
+                      
+                      }
+                      }
+                      }
+   }                                      
 
          
 

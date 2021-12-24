@@ -131,7 +131,7 @@ bessel(const std::complex<double> &z, long int max_order) {
   }
 
    if ( (z.imag() == 0.0) && (BesselType == Bessel) ){   
-   // corrects the error if the imaginary part of the argument is exactly zero fro Bessel func
+   // corrects the error if the imaginary part of the argument is exactly zero
    for (int i = 0; i <= max_order; i++){
    data[i]=data[i].real();
    ddata[i]=ddata[i].real();
@@ -234,7 +234,7 @@ bessel3der(const std::complex<double> &z, long int max_order) {
   }
 
   if ( (z.imag() == 0.0) && (BesselType == Bessel) ){
-   // corrects the error if the imaginary part of the argument is exactly zero for Bessel func
+   // corrects the error if the imaginary part of the argument is exactly zero
    for (int i = 1; i <= max_order; i++){
    dddata[i]=dddata[i].real();
    }

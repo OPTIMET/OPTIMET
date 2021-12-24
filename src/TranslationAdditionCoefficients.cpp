@@ -25,7 +25,7 @@
 
 namespace optimet {
 namespace {
-//! True if n and m within shperical harmonics validity regime
+//! True if n and m within spherical harmonics validity regime
 constexpr bool is_valid(t_int n, t_int m) { return n >= 0 and std::abs(m) <= n; }
 //! True if both pairs are valid
 constexpr bool is_valid(t_int n, t_int m, t_int l, t_int k) {

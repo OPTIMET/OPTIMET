@@ -3,7 +3,7 @@
   <ACA compression="yes" />
 </simulation>
 <source type="planewave">
-  <wavelength value="1200" />
+  <wavelength value="800" />
   <propagation theta="45.0" phi="90.0" />
   <polarization Etheta.real="1.0" Etheta.imag="0.0" Ephi.real="0.0" Ephi.imag="0.0" />
   <SHsources condition="yes" />
@@ -15,7 +15,7 @@
     <epsilon type="SiliconModel"/>
     <mu type="relative" value.real="1.0" value.imag="0.0" />
     </object>
-    <properties points="4" distance="500.0" />
+    <properties points="10" distance="350.0" />
    </structure>
 </geometry>
 <output type="response">
@@ -23,6 +23,9 @@
     <wavelength initial="500" final="1000" stepsize="25" />
   </scan>
 </output>
+
+
+
 
 
 

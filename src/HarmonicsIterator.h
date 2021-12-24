@@ -23,16 +23,6 @@
 
 namespace optimet {
 //! \brief Iterator over harmonics parameters (n, m)
-//! \details When dereferenced, gives a flat index:
-//!
-//! ~~~
-//! HarmonicsIterator iterator;
-//! for(t_uint i(0); iterator != HarmonicsIterator::end(3); ++i, ++iterator)
-//!   if(*iterator != i)
-//!     throw std::runtime_error("This is unexpected");
-//! ~~~
-//!
-//! The code loops over all harmonics parameters from (0, 0) to (3, 3) inclusive.
 //! \note In order to be more compatible with the original CompoundIterator, the m are increment
 //! backwards: (0, 0) -> (1, 1) -> (1, 0) -> (1, -1) -> (2, 2) ...
 class HarmonicsIterator : public std::iterator<std::bidirectional_iterator_tag, t_uint const> {

@@ -40,5 +40,5 @@ make
 
 # 8. Run our MPI job.  GERun is a wrapper that launches MPI jobs on our clusters.
 cd /home/uceeise/Scratch/OPTIMET/examples
-gerun /home/uceeise/Scratch/OPTIMET/build_belos/Optimet3D TwoSpheresSilicon.xml | grep "e-"
+gerun /home/uceeise/Scratch/OPTIMET/build_belos/Optimet3D TwoSpheresSilicon.xml
 

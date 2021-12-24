@@ -31,8 +31,6 @@ namespace optimet {
 /**
  * The AuxCoefficients class implements the spherical functions M, N, B and C.
  * Also implements the dn symbol for incoming wave definition.
- * @author Ahmed Al-Jarro (original code)
- * @author Claudiu Biris (OOP framework implementation)
  */
 class AuxCoefficients {
 public:

@@ -33,12 +33,13 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vec
     int N = nMaxS * (nMaxS + 2);
     int nobj = geometry->objects.size();
     double tol = 1e-6;
-    int maxit = 520;
+    int maxit = 340;
+    int no_rest = 1;
     Vector<t_complex> Q;
 
     if (geometry->ACA_cond_){
     Q = source_vector(*geometry, incWave);
-    X_sca_ = Gmres_Zcomp(S_comp_FF, Q, tol, maxit, *geometry);
+    X_sca_ = Gmres_Zcomp(S_comp_FF, Q, tol, maxit, no_rest, *geometry);
     PreconditionedMatrix::unprecondition(X_sca_, X_int_);
     }
   else{
@@ -48,8 +49,6 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vec
       Scalapack::solve(X_sca_, X_int_, X_sca_SH, X_int_SH, CGcoeff);
       return;
     }
-    //belos_parameters()->set("Maximum Iterations", uppLIM);
-    //belos_parameters()->set("Num Blocks", 1000);
 
     // FF part
     auto input = parallel_input();
@@ -80,12 +79,9 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vec
   K1ana = source_vectorSH_K1ana_parallel(*geometry, incWave, X_int_conj, X_sca_, CGcoeff);
   MPI_Barrier(MPI_COMM_WORLD);
 
-  K1 = distributed_vector_SH_AR1(*geometry, incWave, X_sca_);
-  MPI_Barrier(MPI_COMM_WORLD);
-
   if (geometry->ACA_cond_){
-  X_sca_SH = Gmres_Zcomp(S_comp_SH, KmNOD, tol, maxit, *geometry);
-  PreconditionedMatrix::unprecondition_SH(X_sca_SH, X_int_SH, K1, K1ana);
+  X_sca_SH = Gmres_Zcomp(S_comp_SH, KmNOD, tol, maxit, no_rest, *geometry);
+  PreconditionedMatrix::unprecondition_SH(X_sca_SH, X_int_SH, K1ana);
   }
   else{
   if(context().is_valid()) {
@@ -108,7 +104,7 @@ void MatrixBelos::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_,Vec
     // Transfer back to root
     X_sca_SH = gather_all_source_vector(std::get<0>(gls_result_SH));
 
-    PreconditionedMatrix::unprecondition_SH(X_sca_SH, X_int_SH, K1, K1ana);
+    PreconditionedMatrix::unprecondition_SH(X_sca_SH, X_int_SH, K1ana);
   }
 }
   if(context().size() != communicator().size()) {

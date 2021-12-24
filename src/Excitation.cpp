@@ -15,17 +15,14 @@
 // along with Optimet. If not, see <http://www.gnu.org/licenses/>.
 
 #include "Excitation.h"
-
 #include "Symbol.h"
 #include "Algebra.h"
 #include "Geometry.h"
 #include "AuxCoefficients.h"
 #include "CompoundIterator.h"
-
 #include "Coupling.h"
 #include "Tools.h"
 #include "constants.h"
-
 #include <cmath>
 #include <iostream>
 
@@ -58,7 +55,7 @@ int Excitation::populate() {
     SphericalP<std::complex<double>> B_local = coef.B(static_cast<long>(p));
 
     SphericalP<std::complex<double>> conjAux(std::conj(C_local.rrr), std::conj(C_local.the),
-                                             std::conj(C_local.phi)); // std::complex conjugate of C
+                                             std::conj(C_local.phi)); 
     dataIncAp[p] = 4 * constant::pi * std::pow(-1.0, p.second) * std::pow(consCi, p.first) *
                    coef.dn(p.first) * (conjAux * Einc) *
                    std::exp(consCmi * (double)p.second * vKInc.phi);
@@ -66,7 +63,7 @@ int Excitation::populate() {
 
     conjAux =
         SphericalP<std::complex<double>>(std::conj(B_local.rrr), std::conj(B_local.the),
-                                         std::conj(B_local.phi)); // std::complex conjugate of B
+                                         std::conj(B_local.phi)); 
     dataIncBp[p] = 4 * constant::pi * std::pow(-1.0, p.second) * std::pow(consCi, p.first - 1) *
                    coef.dn(p.first) * (conjAux * Einc) *
                    std::exp(consCmi * (double)p.second * vKInc.phi);
@@ -130,7 +127,6 @@ int Excitation::getIncLocal(Spherical<double> point_, std::complex<double> *Inc_
 
   return 0;
 }
-
 
 
 void Excitation::updateWavelength(double lambda_) {

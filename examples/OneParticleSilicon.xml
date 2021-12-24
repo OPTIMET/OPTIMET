@@ -17,7 +17,7 @@
 </geometry>
 <output type="response">
   <scan type="A+E">
-    i<wavelength initial="500" final="1000" stepsize="10" />
+    <wavelength initial="500" final="1000" stepsize="10" />
   </scan>
 </output>
 

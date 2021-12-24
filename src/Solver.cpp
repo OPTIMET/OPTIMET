@@ -68,12 +68,6 @@ Vector<t_complex> convertInternal(Vector<t_complex> const &scattered, t_real con
     result.segment(i, N).array() =
         scattered.segment(i, N).array() * object.getIaux(omega, bground).array();
     }
-   else if (object.scatterer_type == "arbitrary.shape"){
-
-    object.getQLocal(Intrmatrix, omega, bground);  
-    result.segment(i, N) = Intrmatrix * scattered.segment(i, N);
-   
-    }
 
     i += N;
 
@@ -81,8 +75,6 @@ Vector<t_complex> convertInternal(Vector<t_complex> const &scattered, t_real con
    
   return result;
 }
-
-
 
 Vector<t_complex> convertIndirect(Vector<t_complex> const &scattered, t_real const &omega,
                                   ElectroMagnetic const &bground,
@@ -100,7 +92,7 @@ Vector<t_complex> convertIndirect_SH_outer(Vector<t_complex> const &scattered, t
 }
 
 
-Vector<t_complex> convertInternal_SH(Vector<t_complex> const &scattered, Vector<t_complex> const &K_1, Vector<t_complex> const &K_1ana, t_real const &omega,
+Vector<t_complex> convertInternal_SH(Vector<t_complex> const &scattered, Vector<t_complex> const &K_1ana, t_real const &omega,
                                   ElectroMagnetic const &bground,
                                   std::vector<Scatterer> const &objects) {
   Vector<t_complex> result(scattered.size());
@@ -119,20 +111,7 @@ Vector<t_complex> convertInternal_SH(Vector<t_complex> const &scattered, Vector<
   
     i += N;
   }
- }
- else if (objects[0].scatterer_type == "arbitrary.shape"){
-  
-  for(auto const &object : objects) {
-  
-  object.getQLocalSH(Intrmatrix, omega, bground);
-    
-  result.segment(i, N) = Intrmatrix.inverse()*((-consCi/k_b_SH)*scattered.segment(i, N) + K_1.segment(i, N));
-  
-  i += N;
-  
-  }
-  
-  } 
+ } 
   return result;
 }
 

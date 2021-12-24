@@ -58,13 +58,13 @@ std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &inputFile) {
   if(!simulation_node)
     throw std::runtime_error("Simulation parameters not defined!");
 
-  bool ACA_cond;
+  bool ACA_cond; //condition for ACA
   if(!std::strcmp(simulation_node.child("ACA").attribute("compression").value(), "yes"))
   ACA_cond = true;
   else
   ACA_cond = false;
   auto const nMax = simulation_node.child("harmonics").attribute("nmax").as_int();
-  auto const nMaxS = 1 * nMax; //SH number of harmonics
+  auto const nMaxS = 1 * nMax; //number of harmonics for SH expansion
   // Find the geometry node
   auto const geo_node = inputFile.child("geometry");
   if(!geo_node)
@@ -120,7 +120,7 @@ std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax, 
   }
   
   
-  //assembly of spheres into a cube
+  //constructs a cubic cluster of spheres
   if(!std::strcmp(struct_node.attribute("type").value(), "cube")) {
     // Build a cube of spherical scatterers with a corner in origin
     double d; //  distance between spheres
@@ -517,12 +517,12 @@ if(!std::strcmp(struct_node.attribute("type").value(), "GaAscube")) {
   geometry->ACAcompression(ACA_cond);
 }
 
- //assembly of spheres into a surface
+ // constructs a cluster of spheres on surface (part of metasurface)
   if(!std::strcmp(struct_node.attribute("type").value(), "surface")) {
     // Build a metasurface of spherical scatterers with a corner in origin
     double d; //  distance between spheres
     
-    int  No, Ntot;  // number of objects per side of the cube // total number of particles in cube
+    int  No, Ntot;  // number of objects per side of the metasurface // total number of particles in metasurface
 
       No = struct_node.child("properties").attribute("points").as_int();
       
@@ -634,8 +634,7 @@ Scatterer read_scatterer(pugi::xml_node const &node, t_int nMax, t_int nMaxS) {
     }
 
     else if(node.child("epsilon").attribute("type").value() == std::string("HydroModel")) {
-      // Hydrodynamic model (Sipe or Bachelier)
-   
+      // Hydrodynamic model (Sipe or Bachelier)  
       std::complex<double> const a_SH(node.child("epsilon").child("parameters").attribute("a.real").as_double(),
           node.child("epsilon").child("parameters").attribute("a.imag").as_double());
       std::complex<double> const b_SH(
@@ -662,6 +661,7 @@ Scatterer read_scatterer(pugi::xml_node const &node, t_int nMax, t_int nMaxS) {
       throw std::runtime_error("Unknown type for epsilon");
   }
   }
+// non-spherical particle mesh analysis
 else if(node.attribute("type").value() == std::string("arbitrary.shape")){
   result.scatterer_type = "arbitrary.shape";
   
@@ -689,7 +689,6 @@ else if(node.attribute("type").value() == std::string("arbitrary.shape")){
  
         std::vector<double> coord;
 	std::vector<int> topol;
-
 
 	double num1 = 0;
 	int num2 = 0;

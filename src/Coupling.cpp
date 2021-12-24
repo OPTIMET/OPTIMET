@@ -59,7 +59,7 @@ transfer_coefficients(Spherical<double> R, std::complex<double> waveK, bool regu
   TranslationAdditionCoefficients ta(R, waveK, regular);
 
   // start at harmonic n = 1. (because n=0 spherical and hence symmetrically incompatible with
-  // propagating wave?)
+  // propagating wave)
   for(t_int n(1); n <= n_max; ++n)
     for(t_int m(-n); m <= n; ++m) {
 
