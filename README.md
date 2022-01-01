@@ -6,7 +6,7 @@ Optimet
 [![manual](https://img.shields.io/badge/manual-docx-yellow.svg)](manuals/manual.docx)
 [![manual](https://img.shields.io/badge/manual-pdf-yellow.svg)](manuals/manual.pdf)
 
-Optimet is a simulation of multiple-scattering of light on a distribution of homogeneous spherical
+Optimet can be used for scattering analysis of light at fundamental and second-harmonic frequency on a distribution of homogeneous spherical or nonspherical
 nanoparticles embedded in a homogeneous medium. It can run in parallel on large clusters, using MPI.
 It accepts several linear-system solvers, including a direct solver from
 [Scalapack](http://www.netlib.org/scalapack/), and the iterative solvers from
@@ -38,11 +38,11 @@ Optimet depends on the following external packages. In most cases, the build sys
 download and install dependencies it cannot find on the system.
 
 - [CMake](https://cmake.org/): The build system. Must be installed independantly.
-- MPI: Required to run in parallel. Must be installed independantly.
-- Scalapack: (optional) Parallel linear algebra. Must be installed independantly. Only usefull whhen
+- MPI: Required to run in parallel. Must be installed independantly. Essential for nonspherical particles.
+- Scalapack: (optional) Parallel linear algebra. Must be installed independantly. Only useful when
   compiling with MPI.
 - [Belos](https://trilinos.org/packages/belos/): (optional) A library of iterative solvers. Must be
-  installed independantly. Only usefull when compiling with MPI.
+  installed independantly. Only usefull when compiling with MPI. Version 12-10-1 of Trilinos is used (git checkout trilinos-release-12-10-1)
 - [Boost](http://www.boost.org/): (required) A set of peer-reviewed c++ libraries. At this juncture,
   Optimet only requires the [math special functions
   module](http://www.boost.org/doc/libs/1_63_0/libs/math/doc/html/special.html). Automatically
@@ -55,10 +55,6 @@ download and install dependencies it cannot find on the system.
 - [GSL](https://www.gnu.org/software/gsl/): (required) Numerical library for C and C++.
   Automatically downloaded if unavailable.
 - [F2C](http://www.netlib.org/f2c/): (required) Fortran to C library. Required by the Amos package.
-- [Benchmark](https://github.com/google/benchmark): (optional) Micro-benchmarking library from
-  google. Automatically downloaded if unavailable *and* benchmarks are requested.
-- [Catch](https://github.com/philsquared/Catch): (optional) A c++ testing framework. Downloaded
-  automatically if tests are required.
 
 Installation
 ------------
@@ -72,20 +68,15 @@ The cannonical usage is as follows:
 cd /path/to/optimet_source
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -Ddompi=ON -Ddotesting=OFF -Ddobenchmarks=OFF ..
+cmake -DCMAKE_BUILD_TYPE=Release -Ddompi=ON -Ddoarshp=OFF ..
 make
 ```
 
-The example above will *not* compile the tests and benchmarks. Leave these options out (or set them
-to `ON`) if you would rather have them. Similarly, the example compiles with MPI parallelization
-enabled. Remove or set to `ON` to compile a serial code only.
+The example above will *not* compile the code responsible for the analysis of nonspherical targets. Set this option
+to `ON` if you would rather have it. The code used for the TMM analysis of nonspherical particles has to be compiled with the MPI option set to ON.
 
 The executable `Optimet3D` should be directly in the build directory. We currently provide not
 installation mechanism.
-
-The benchmarks and unit-tests (when compiled) are in the `benchmarks` and `unittests` subdirectories
-of the build directory. They consists in a number of executables which can be invoked manually.
-Alternatively, the tests can be invoked from the build directory with `make test` or `ctest .`.
 
 Supported Platforms
 -------------------
