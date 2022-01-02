@@ -31,6 +31,7 @@ project(Optimet3D CXX C)
 
 option(dompi "Enable mpi" off)
 option(doarshp "Enable arshp" on)
+
 # looks for all dependencies used by optimet
 include(dependencies)
 
@@ -41,7 +42,6 @@ set(FOLDERsrc "srcAr")
 else()
 set(FOLDERsrc "srcAna")
 endif()
-
 include_directories(${PROJECT_SOURCE_DIR}/${FOLDERsrc} ${PROJECT_SOURCE_DIR})
 include_directories(SYSTEM
   ${GSL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS}
@@ -64,12 +64,12 @@ if(dompi)
   include(DetectIntegerArchitecture)
   DetectIntegerArchitecture(OPTIMET)
 else()
-  file(GLOB EXCLUDE src/ScalapackSolver.cpp ${FOLDERsrc}/MatrixBelosSolver.cpp ${FOLDERsrc}/FMMBelosSolver.cpp)
+  file(GLOB EXCLUDE ${FOLDERsrc}/ScalapackSolver.cpp ${FOLDERsrc}/MatrixBelosSolver.cpp)
   list(REMOVE_ITEM SRC ${EXCLUDE})
 endif()
 
 if(NOT OPTIMET_BELOS)
-  file(GLOB EXCLUDE ${FOLDERsrc}/MatrixBelosSolver.cpp ${FOLDERsrc}/FMMBelosSolver.cpp)
+  file(GLOB EXCLUDE ${FOLDERsrc}/MatrixBelosSolver.cpp)
   list(REMOVE_ITEM SRC ${EXCLUDE})
 endif()
 
