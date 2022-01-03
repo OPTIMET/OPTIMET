@@ -27,7 +27,7 @@ cd /home/uceeise/Scratch/OPTIMET/build_belos
 make
 
 # 5. Set the name of the job.
-#$ -N ThreeSpheresAu
+#$ -N ThreePartAu
 
 # 6. Select the MPI parallel environment and number of processes.
 #$ -pe mpi 50
@@ -40,5 +40,5 @@ make
 
 # 8. Run our MPI job.  GERun is a wrapper that launches MPI jobs on our clusters.
 cd /home/uceeise/Scratch/OPTIMET/examples
-gerun /home/uceeise/Scratch/OPTIMET/build_belos/Optimet3D ThreeSpheres.xml | grep "e-"
+gerun /home/uceeise/Scratch/OPTIMET/build_belos/Optimet3D ThreeParticlesAu.xml | grep "e-"
 

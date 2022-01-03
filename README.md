@@ -6,10 +6,10 @@ Optimet
 [![manual](https://img.shields.io/badge/manual-docx-yellow.svg)](manuals/manual.docx)
 [![manual](https://img.shields.io/badge/manual-pdf-yellow.svg)](manuals/manual.pdf)
 
-Optimet can be used for scattering analysis of light at fundamental and second-harmonic frequency on a distribution of homogeneous spherical or nonspherical
+Optimet can be used for the scattering analysis of light at fundamental and second-harmonic frequencies on a distribution of homogeneous spherical or nonspherical
 nanoparticles embedded in a homogeneous medium. It can run in parallel on large clusters, using MPI.
 It accepts several linear-system solvers, including a direct solver from
-[Scalapack](http://www.netlib.org/scalapack/), and the iterative solvers from
+[Scalapack](http://www.netlib.org/scalapack/), and iterative solvers from
 [Belos](https://trilinos.org/packages/belos/). Optimet is a c++11 program.
 
 Optimet is distributed under the GNU Public License.
