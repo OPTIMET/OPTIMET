@@ -91,7 +91,6 @@ public:
   Spherical<double> vR;  /**< The coordinates of the center of the scatterer.*/
   ElectroMagnetic elmag; /**< The electromagnetic properties of the scatterer.*/
   double radius;         /**< The radius of a sphere encompassing the scatterer.*/
-  double side;           // the length of the side of Platonic solid used in meshes
   int nMax;              /**< Maximum value of the n iterator. */
   int nMaxS;              /**< Maximum value of the n iterator SH */  
   std::string scatterer_type; // type of scatterer, sphere or arbitrary shaped

@@ -42,7 +42,7 @@ using namespace pugi;
 namespace optimet {
 namespace {
 std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &node);
-Scatterer read_scatterer(pugi::xml_node const &node, t_int nMax, t_int nMaxS, int brojac);
+Scatterer read_scatterer(pugi::xml_node const &node, t_int nMax, t_int nMaxS);
 std::shared_ptr<Geometry> read_structure(pugi::xml_node const &inputFile, t_int nMax, t_int nMaxS);
 std::shared_ptr<Excitation> read_excitation(pugi::xml_document const &inputFile, t_int nMax, ElectroMagnetic &bground);
 scalapack::Parameters read_parallel(const pugi::xml_node &node);
@@ -60,7 +60,6 @@ std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &inputFile) {
 
   auto const nMax = simulation_node.child("harmonics").attribute("nmax").as_int();
   auto const nMaxS = 1 * nMax; //SH number of harmonics
-  int brojac(0); //NO of arb shaped targets needed for the mesh geometry input
   // Find the geometry node
   auto const geo_node = inputFile.child("geometry");
   if(!geo_node)
@@ -74,8 +73,7 @@ std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &inputFile) {
 
   // Find all scattering objects
   for(xml_node node = geo_node.child("object"); node; node = node.next_sibling("object")){
-    result->pushObject(read_scatterer(node, nMax, nMaxS, brojac));
-   brojac++;
+    result->pushObject(read_scatterer(node, nMax, nMaxS));
    }
 
   // Add the background properties
@@ -101,7 +99,7 @@ std::shared_ptr<Geometry> read_geometry(pugi::xml_document const &inputFile) {
 std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax, t_int nMaxS) {
   auto geometry = std::make_shared<Geometry>();
   xml_node struct_node = geo_node_.child("structure");
-  int brojac = 0;
+ 
   // Add the background properties
   if(geo_node_.child("background")) {
     if(std::strcmp(geo_node_.child("background").attribute("type").value(), "relative")) {
@@ -118,10 +116,10 @@ std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax, 
   }
   
   
-  //assembly of spheres into a cube
+  //assembly of particles into a cube
   if(!std::strcmp(struct_node.attribute("type").value(), "cube")) {
-    // Build a cube of spherical scatterers with a corner in origin
-    double d; //  distance between spheres
+    // Build a cube of scatterers with a corner in origin
+    double d; //  distance between particles
     
     int  No, Ntot;  // number of objects per side of the cube // total number of particles in cube
 
@@ -162,9 +160,9 @@ std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax, 
    }
     
 
-    // convert to a spherical object and push
+    // convert and push
 
-    auto const scatterer = read_scatterer(struct_node.child("object"), nMax, nMaxS, brojac);
+    auto const scatterer = read_scatterer(struct_node.child("object"), nMax, nMaxS);
     
     geometry->pushObject(scatterer);
    
@@ -178,7 +176,7 @@ std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax, 
 
 }
 
-//assembly of spheres into a zincblende structure (GaAs) with unit cells forming a surface in xy plane
+//assembly of particles into a zincblende structure (GaAs) with unit cells forming a surface in xy plane
 
   if(!std::strcmp(struct_node.attribute("type").value(), "GaAssurf")) {
  // Build a noncentrosymmetric surface lattice of GaAs
@@ -293,8 +291,8 @@ std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax, 
 
  Ntot = X.size();
 
-    // convert to a spherical object and push
- auto const scatterer = read_scatterer(struct_node.child("object"), nMax, nMaxS, brojac);
+    // convert and push
+ auto const scatterer = read_scatterer(struct_node.child("object"), nMax, nMaxS);
     
     geometry->pushObject(scatterer);
   
@@ -312,7 +310,7 @@ std::shared_ptr<Geometry> read_structure(xml_node const &geo_node_, t_int nMax, 
 
 }
    
-//assembly of spheres into a zincblende structure (GaAs) with unit cells forming a cube in first quadrant
+//assembly of particles into a zincblende structure (GaAs) with unit cells forming a cube in first quadrant
 if(!std::strcmp(struct_node.attribute("type").value(), "GaAscube")) {
     // Build a noncentrosymmetric cubic lattice of GaAs
 
@@ -495,9 +493,9 @@ if(!std::strcmp(struct_node.attribute("type").value(), "GaAscube")) {
  
  Ntot = X.size();
 
- // convert to a spherical object and push
+ // convert and push
  
- auto const scatterer = read_scatterer(struct_node.child("object"), nMax, nMaxS, brojac);
+ auto const scatterer = read_scatterer(struct_node.child("object"), nMax, nMaxS);
     
     geometry->pushObject(scatterer);
   
@@ -555,9 +553,9 @@ if(!std::strcmp(struct_node.attribute("type").value(), "GaAscube")) {
      }
     
 
-    // convert to a spherical object and push
+    // convert and push
 
-    auto const scatterer = read_scatterer(struct_node.child("object"), nMax, nMaxS, brojac);
+    auto const scatterer = read_scatterer(struct_node.child("object"), nMax, nMaxS);
     
     geometry->pushObject(scatterer);
    
@@ -580,7 +578,7 @@ if(!std::strcmp(struct_node.attribute("type").value(), "GaAscube")) {
 
 }
 
-Scatterer read_scatterer(pugi::xml_node const &node, t_int nMax, t_int nMaxS, int brojac) {
+Scatterer read_scatterer(pugi::xml_node const &node, t_int nMax, t_int nMaxS) {
   Scatterer result(nMax, nMaxS);
   if(node.attribute("type").value() == std::string("sphere")){
    result.scatterer_type = "sphere";
@@ -661,6 +659,7 @@ Scatterer read_scatterer(pugi::xml_node const &node, t_int nMax, t_int nMaxS, in
   }
   }
 else if(node.attribute("type").value() == std::string("arbitrary.shape")){
+  std::string dimens = node.attribute("dims").value();// dimensions (radii) of the spheroid in meshlib
   result.scatterer_type = "arbitrary.shape";
     
   // Assign coordinates to the center of the object
@@ -679,17 +678,15 @@ else if(node.attribute("type").value() == std::string("arbitrary.shape")){
      
     // Assign properties to the Scatterer 
     if(node.child("properties").attribute("radius"))
-    result.radius = node.child("properties").attribute("radius").as_double() * consFrnmTom; // if the mesh is spheres
+    result.radius = node.child("properties").attribute("radius").as_double() * consFrnmTom; // radius of the circumscribed sphere
 
-    else if(node.child("properties").attribute("side"))
-    result.side = node.child("properties").attribute("side").as_double() * consFrnmTom; // if the mesh is one of the Platonic solids
     // reading the mesh data
-    std::string tpl = "topol";
-    std::string crd = "coord";
+    std::string tpl = "meshlib/topol_";
+    std::string crd = "meshlib/coord_";
     std::string restpl, rescrd;
     
-    restpl = tpl + std::to_string(brojac);
-    rescrd = crd + std::to_string(brojac);
+    restpl = tpl + dimens;
+    rescrd = crd + dimens;
     restpl = restpl + ".txt";
     rescrd = rescrd + ".txt";
     
@@ -702,7 +699,8 @@ else if(node.attribute("type").value() == std::string("arbitrary.shape")){
 
 	double num1 = 0;
 	int num2 = 0;
-	
+    
+    if (file1.is_open()) {	
 	while (file1 >> num1) {
 		coord.emplace_back(num1);
 		
@@ -727,6 +725,13 @@ else if(node.attribute("type").value() == std::string("arbitrary.shape")){
 	}
         
         result.Mesh(coord, topol);
+        
+       }// if the mesh exists in library
+
+     else{
+    std::ostringstream sstr;
+    sstr << "This mesh does not exist in the library, please create it and name it accordingly";
+    throw std::runtime_error(sstr.str()); }
 
        if(node.child("epsilon") || node.child("mu")) {
     
