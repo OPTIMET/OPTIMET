@@ -55,7 +55,7 @@ void Scalapack::solve(Vector<t_complex> &X_sca_, Vector<t_complex> &X_int_, Vect
                       Vector<t_complex> &X_int_SH, std::vector<double *> CGcoeff) const {
     
     // parameters for ACA-gmres solver
-    double tol = 1e-6;
+    double tol = 1e-7;
     int maxit = 250;
     int no_rest = 3;
     // FF part

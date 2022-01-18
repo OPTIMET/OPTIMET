@@ -1,0 +1,35 @@
+<simulation>
+  <harmonics nmax="8" />
+  <ACA compression="yes" />
+</simulation>
+<source type="planewave">
+  <wavelength value="800" />
+  <propagation theta="45.0" phi="90.0" />
+  <polarization Etheta.real="1.0" Etheta.imag="0.0" Ephi.real="0.0" Ephi.imag="0.0" />
+  <SHsources condition="yes" />
+</source>
+<geometry>
+  <structure type="cube">
+    <object type="sphere">
+    <properties radius="50.0" />
+    <epsilon type="SiliconModel"/>
+    <mu type="relative" value.real="1.0" value.imag="0.0" />
+    </object>
+    <properties points="7" distance="190.0" />
+   </structure>
+</geometry>
+<output type="response">
+  <scan type="A+E">
+    <wavelength initial="500" final="1000" stepsize="20" />
+  </scan>
+</output>
+
+
+
+
+
+
+
+
+
+

@@ -6,7 +6,7 @@ Optimet
 [![manual](https://img.shields.io/badge/manual-docx-yellow.svg)](manuals/manual.docx)
 [![manual](https://img.shields.io/badge/manual-pdf-yellow.svg)](manuals/manual.pdf)
 
-Optimet can be used for the scattering analysis of light at fundamental and second-harmonic frequencies on a distribution of homogeneous spherical or nonspherical
+Optimet can be used for the scattering analysis of light at fundamental and second-harmonic frequencies on distribution of homogeneous spherical or nonspherical
 nanoparticles embedded in a homogeneous medium. It can run in parallel on large clusters, using MPI.
 It accepts several linear-system solvers, including a direct solver from
 [Scalapack](http://www.netlib.org/scalapack/), and iterative solvers from
@@ -37,12 +37,12 @@ Dependencies
 Optimet depends on the following external packages. In most cases, the build system will try to
 download and install dependencies it cannot find on the system.
 
-- [CMake](https://cmake.org/): The build system. Must be installed independantly.
-- MPI: Required to run in parallel. Must be installed independantly. Essential for nonspherical particles.
-- Scalapack: (optional) Parallel linear algebra. Must be installed independantly. Only useful when
+- [CMake](https://cmake.org/): The build system. Must be installed independently.
+- MPI: Required to run in parallel. Must be installed independently. Essential for nonspherical particles.
+- Scalapack: (optional) Parallel linear algebra. Must be installed independently. Only useful when
   compiling with MPI.
 - [Belos](https://trilinos.org/packages/belos/): (optional) A library of iterative solvers. Must be
-  installed independantly. Only usefull when compiling with MPI. Version 12-10-1 of Trilinos is used (git checkout trilinos-release-12-10-1)
+  installed independently. Only useful when compiling with MPI. Belos comes as a part of Trilinos package. Version 12-10-1 of Trilinos is used (git checkout trilinos-release-12-10-1).
 - [Boost](http://www.boost.org/): (required) A set of peer-reviewed c++ libraries. At this juncture,
   Optimet only requires the [math special functions
   module](http://www.boost.org/doc/libs/1_63_0/libs/math/doc/html/special.html). Automatically
@@ -62,7 +62,7 @@ Installation
 The build system is [CMake](https://cmake.org/). It can generate a build environment from a fair
 number of systems, from Unix makefiles to Xcode projects.
 
-The cannonical usage is as follows:
+The canonical usage is as follows:
 
 ```
 cd /path/to/optimet_source
@@ -75,8 +75,7 @@ make
 The example above will *not* compile the code responsible for the analysis of nonspherical targets. Set this option
 to `ON` if you would rather have it. The code used for the TMM analysis of nonspherical particles has to be compiled with the MPI option set to ON.
 
-The executable `Optimet3D` should be directly in the build directory. We currently provide not
-installation mechanism.
+The executable `Optimet3D` should be directly in the build directory.
 
 Supported Platforms
 -------------------

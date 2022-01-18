@@ -633,7 +633,7 @@ Scatterer read_scatterer(pugi::xml_node const &node, t_int nMax, t_int nMaxS) {
       result.elmag.init_r(epsilon, aux_mu, epsilon_SH, ksippp, ksiparppar, gamma);
     }
 
-    else if(node.child("epsilon").attribute("type").value() == std::string("HydroModel")) {
+    else if(node.child("epsilon").attribute("type").value() == std::string("GoldModel")) {
       // Hydrodynamic model (Sipe or Bachelier)  
       std::complex<double> const a_SH(node.child("epsilon").child("parameters").attribute("a.real").as_double(),
           node.child("epsilon").child("parameters").attribute("a.imag").as_double());
@@ -747,7 +747,7 @@ else if(node.attribute("type").value() == std::string("arbitrary.shape")){
       
       
     } 
-    else if(node.child("epsilon").attribute("type").value() == std::string("HydroModel")) {
+    else if(node.child("epsilon").attribute("type").value() == std::string("GoldModel")) {
       // Hydrodynamic model (Sipe or Bachelier)
      std::complex<double> const a_SH(node.child("epsilon").child("parameters").attribute("a.real").as_double(),
           node.child("epsilon").child("parameters").attribute("a.imag").as_double());

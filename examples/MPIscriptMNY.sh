@@ -7,7 +7,7 @@
 #$ -S /bin/bash
 
 # 2. Request ten minutes of wallclock time (format hours:minutes:seconds).
-#$ -l h_rt=19:10:0
+#$ -l h_rt=14:10:0
 
 # 3. Request 1 gigabyte of RAM per process (must be an integer)
 #$ -l mem=7G
@@ -27,7 +27,7 @@ cd /home/uceeise/Scratch/OPTIMET/build_belos
 make
  
 # 5. Set the name of the job.
-#$ -N ManyParticles
+#$ -N ManyParticles_noACA
 
 # 6. Select the MPI parallel environment and number of processes.
 #$ -pe mpi 100

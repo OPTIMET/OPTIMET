@@ -11,7 +11,7 @@
 <object type="sphere">
     <cartesian x="0.0" y="0.0" z="0.0" />
     <properties radius="100.0" />
-    <epsilon type="HydroModel">
+    <epsilon type="GoldModel">
     <parameters
     a.real="1.0" a.imag="0.0"
     b.real="-1.0" b.imag="0.0"
