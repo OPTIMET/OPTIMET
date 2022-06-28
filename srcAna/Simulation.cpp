@@ -580,7 +580,7 @@ void Simulation::scan_wavelengths_parallel(Run &run, std::shared_ptr<solver::Abs
 
       if(run.excitation->SH_cond){
       outSSec_SH << lam << "\t" << scaCS_SH_vec.sum() << std::endl;
-      std::cout<<absCS_SH_vec.sum()<<std::endl;
+      std::cout<<scaCS_SH_vec.sum()<<std::endl;
        }
       }
 

@@ -455,7 +455,7 @@ void Scattering_matrix_ACA_FF_parallel(Geometry const &geometry, std::shared_ptr
         CoupSubm = - Tmatrix * CoupSubm;
         
 
-        if (distance >= 4.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
+        if (distance >= 2.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
         
         ACA_compression(U , V, CoupSubm);
         
@@ -523,7 +523,7 @@ void Scattering_matrix_ACA_FF(Geometry const &geometry, std::shared_ptr<Excitati
         CoupSubm = - (Tmatrix) * CoupSubm;
         
 
-        if (distance >= 4.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
+        if (distance >= 2.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
         
         ACA_compression(U , V, CoupSubm);
         
@@ -664,7 +664,7 @@ void Scattering_matrix_ACA_SH_parallel(Geometry const &geometry, std::shared_ptr
         CoupSubmSH = - (TmatrixSH) * CoupSubmSH;
         
 
-        if (distance >= 4.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
+        if (distance >= 2.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
 
         ACA_compression(U , V, CoupSubmSH);
         
@@ -733,7 +733,7 @@ void Scattering_matrix_ACA_SH(Geometry const &geometry, std::shared_ptr<Excitati
         CoupSubmSH = - (TmatrixSH) * CoupSubmSH;
         
 
-        if (distance >= 4.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
+        if (distance >= 2.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
 
         ACA_compression(U , V, CoupSubmSH);
         
@@ -1022,7 +1022,7 @@ for(int ii = gran1; ii < gran2; ii++)  {
 
   distance = Tools::findDistance(geometry.objects[ii].vR, geometry.objects[jj].vR);
 
-   if (distance >= 4.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
+   if (distance >= 2.0*(geometry.objects[ii].radius + geometry.objects[jj].radius)){ //admissibility criterion for ACA
       
         Y_proc.segment(brojac1*N , N) = Y_proc.segment(brojac1*N , N) + (S_comp[brojac2].U)*(S_comp[brojac2].V * J.segment(jj*N , N));
         

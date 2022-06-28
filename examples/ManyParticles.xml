@@ -1,6 +1,6 @@
 <simulation>
-  <harmonics nmax="10" />
-  <ACA compression="yes" />
+  <harmonics nmax="8" />
+  <ACA compression="no" />
 </simulation>
 <source type="planewave">
   <wavelength value="800" />
@@ -11,25 +11,17 @@
 <geometry>
   <structure type="cube">
     <object type="sphere">
-    <properties radius="100.0" />
+    <properties radius="50.0" />
     <epsilon type="SiliconModel"/>
     <mu type="relative" value.real="1.0" value.imag="0.0" />
     </object>
-    <properties points="10" distance="350.0" />
+    <properties points="7" distance="190.0" />
    </structure>
 </geometry>
-<output type="response">
-  <scan type="A+E">
-    <wavelength initial="500" final="1000" stepsize="25" />
-  </scan>
+<output type="field">
+<grid type="cartesian">
+    <x min ="-70" max="1210" steps="171" />
+    <y min ="-70" max="1210" steps="171" />
+    <z min ="569.9" max="570.1" steps="2" />
+</grid>
 </output>
-
-
-
-
-
-
-
-
-
-
